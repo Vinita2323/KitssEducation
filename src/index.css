@@ -1,0 +1,91 @@
+@import "tailwindcss";
+
+@theme {
+  --color-navy: #0A1D3F;
+  --color-navy-light: #133C8B;
+  --color-navy-dark: #061226;
+  --color-orange: #FF8A00;
+  --color-orange-light: #FFF4E5;
+  --color-orange-hover: #E67C00;
+  --color-green: #17B26A;
+  --color-green-light: #ECFDF3;
+  --color-purple: #6C4AB6;
+  --color-purple-light: #F4F0FF;
+  --color-bg-light: #F7F8FA;
+  --color-border-light: #E6E8EC;
+  --color-text-primary: #0A1D3F;
+  --color-text-secondary: #667085;
+  --color-danger: #D92D20;
+  --font-poppins: "Poppins", system-ui, -apple-system, sans-serif;
+}
+
+:root {
+  --primary-navy: #0A1D3F;
+  --secondary-blue: #133C8B;
+  --primary-orange: #FF8A00;
+  --success-green: #17B26A;
+  --purple: #6C4AB6;
+  --light-bg: #F7F8FA;
+  --border-color: #E6E8EC;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #F7F8FA;
+}
+::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94A3B8;
+}
+
+/* Hide scrollbar utility */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Mobile Touch Targets */
+.touch-target {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* Smooth Tap Highlight on Mobile */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Glass & Card effects */
+.card-shadow {
+  box-shadow: 0 2px 8px -2px rgba(10, 29, 63, 0.05), 0 4px 16px -4px rgba(10, 29, 63, 0.08);
+}
+.card-shadow-hover {
+  transition: all 0.2s ease-in-out;
+}
+.card-shadow-hover:hover {
+  box-shadow: 0 8px 24px -4px rgba(10, 29, 63, 0.12);
+  transform: translateY(-2px);
+}
+
+/* Print Styles for Marksheet/Results */
+@media print {
+  body {
+    background: #ffffff !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+  .print-only {
+    display: block !important;
+  }
+}
