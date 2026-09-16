@@ -1,19 +1,17 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { BookOpen, Video, Award, Sparkles, TrendingUp, Bell } from "lucide-react";
-import { useAuth } from "../../context/AuthContext";
+import { Sparkles } from "lucide-react";
 import { bookService } from "../../services/bookService";
 import { coachingService } from "../../services/coachingService";
 import { notificationService } from "../../services/notificationService";
-import { HeroGreeting, ContinueLearningCard } from "../../components/dashboard/HeroGreeting";
 import { QuickAccessGrid, AnnouncementBanner } from "../../components/dashboard/QuickAccessGrid";
+import { HomeCollegeSection } from "../../components/college/HomeCollegeSection";
 import { SectionHeader } from "../../components/common/SectionHeader";
 import { BookCard } from "../../components/books/BookCard";
 import { CourseCard } from "../../components/coaching/CourseCard";
 import { SkeletonLoader } from "../../components/common/EmptyState";
 
 export const HomeDashboardPage = () => {
-  const { user } = useAuth();
 
   const [books, setBooks] = useState([]);
   const [courses, setCourses] = useState([]);
@@ -43,18 +41,7 @@ export const HomeDashboardPage = () => {
 
   return (
     <div className="space-y-5 max-w-7xl mx-auto">
-      {/* 1. Hero Greeting */}
-      <HeroGreeting user={user} />
-
-      {/* 2. Continue Learning Card */}
-      <ContinueLearningCard
-        subject="Mathematics"
-        topic="Linear Equations in Two Variables"
-        progress={63}
-        courseId="course-201"
-      />
-
-      {/* 3. Quick Access 4-Category Grid */}
+      {/* 1. Quick Access 4-Category Grid */}
       <div>
         <div className="flex items-center justify-between mb-2.5">
           <h3 className="text-xs font-bold text-[#667085] uppercase tracking-wider">
@@ -70,10 +57,13 @@ export const HomeDashboardPage = () => {
         <QuickAccessGrid />
       </div>
 
-      {/* 4. Latest Announcements */}
+      {/* 2. Latest Announcements */}
       <AnnouncementBanner announcements={announcements} />
 
-      {/* 5. Popular Digital Books */}
+      {/* 3. Find Your College (Education Franchise / Partner Colleges) */}
+      <HomeCollegeSection />
+
+      {/* 4. Popular Digital Books */}
       <div className="space-y-3">
         <SectionHeader
           title="Popular Books"
@@ -99,7 +89,7 @@ export const HomeDashboardPage = () => {
         )}
       </div>
 
-      {/* 6. Popular Online Coaching Courses */}
+      {/* 4. Popular Online Coaching Courses */}
       <div className="space-y-3 pt-2">
         <SectionHeader
           title="Popular Courses"
@@ -118,7 +108,7 @@ export const HomeDashboardPage = () => {
         )}
       </div>
 
-      {/* 7. Why KITSS Education Section (Desktop & Tablet Value Add) */}
+      {/* 5. Why KITSS Education Section (Desktop & Tablet Value Add) */}
       <div className="mt-8 p-6 bg-white rounded-3xl border border-[#E6E8EC] shadow-xs">
         <div className="max-w-2xl">
           <div className="inline-flex items-center gap-1 text-xs font-bold text-[#FF8A00] bg-orange-50 px-3 py-1 rounded-full mb-2">

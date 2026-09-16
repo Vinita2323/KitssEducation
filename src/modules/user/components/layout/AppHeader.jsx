@@ -11,7 +11,8 @@ import {
   User,
   LogOut,
   Settings,
-  ChevronDown
+  ChevronDown,
+  Shield
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 
@@ -23,6 +24,7 @@ export const AppHeader = ({ onOpenDrawer, unreadCount = 2 }) => {
 
   const navLinks = [
     { name: "Home", path: "/home" },
+    { name: "Colleges", path: "/colleges" },
     { name: "Books", path: "/books" },
     { name: "Online Coaching", path: "/coaching" },
     { name: "My Library", path: "/library" },
@@ -172,6 +174,15 @@ export const AppHeader = ({ onOpenDrawer, unreadCount = 2 }) => {
                       >
                         <Settings className="w-4 h-4 text-[#667085]" />
                         <span>Settings</span>
+                      </Link>
+
+                      <Link
+                        to="/admin"
+                        onClick={() => setProfileDropdownOpen(false)}
+                        className="flex items-center gap-2.5 px-3 py-2 text-xs font-bold text-[#FF8A00] bg-orange-50/70 rounded-xl hover:bg-orange-100/70 transition"
+                      >
+                        <Shield className="w-4 h-4 text-[#FF8A00]" />
+                        <span>Admin Portal</span>
                       </Link>
 
                       <div className="border-t border-[#E6E8EC] my-1" />

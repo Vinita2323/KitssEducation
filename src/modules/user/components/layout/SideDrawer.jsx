@@ -15,7 +15,9 @@ import {
   HelpCircle,
   LogOut,
   ChevronRight,
-  Sparkles
+  Sparkles,
+  GraduationCap,
+  Shield
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { Modal } from "../common/Modal";
@@ -32,6 +34,7 @@ export const SideDrawer = ({ isOpen, onClose }) => {
 
   const menuItems = [
     { label: "Home", path: "/home", icon: Home },
+    { label: "Partner Colleges", path: "/colleges", icon: GraduationCap },
     { label: "Digital Books", path: "/books", icon: BookOpen },
     { label: "My Library", path: "/library", icon: Library },
     { label: "Online Coaching", path: "/coaching", icon: Video },
@@ -164,6 +167,14 @@ export const SideDrawer = ({ isOpen, onClose }) => {
 
           {/* Bottom Actions: Help & Logout */}
           <div className="p-3 border-t border-[#E6E8EC] bg-white space-y-1">
+            <button
+              onClick={() => handleLinkClick("/admin")}
+              className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-bold text-[#FF8A00] bg-orange-50/70 hover:bg-orange-100/70 rounded-xl transition"
+            >
+              <Shield className="w-4 h-4" />
+              <span>Admin Management Portal</span>
+            </button>
+
             <button
               onClick={() => setShowHelpModal(true)}
               className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-[#667085] hover:text-[#0A1D3F] hover:bg-gray-50 rounded-xl transition"
