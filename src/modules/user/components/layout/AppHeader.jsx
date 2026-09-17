@@ -27,7 +27,6 @@ export const AppHeader = ({ onOpenDrawer, unreadCount = 2 }) => {
     { name: "Colleges", path: "/colleges" },
     { name: "Books", path: "/books" },
     { name: "Online Coaching", path: "/coaching" },
-    { name: "My Library", path: "/library" },
     { name: "Results", path: "/results" },
     { name: "My Orders", path: "/orders" },
   ];
@@ -39,16 +38,16 @@ export const AppHeader = ({ onOpenDrawer, unreadCount = 2 }) => {
   };
 
   return (
-    <header className="sticky top-0 z-40 bg-white border-b border-[#E6E8EC] shadow-xs">
+    <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200/80 shadow-2xs">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-18 sm:h-20">
+        <div className="flex items-center justify-between h-14 sm:h-16">
           {/* Left: Brand Logo */}
           <div className="flex items-center">
             <Link to="/home" className="flex items-center py-1">
               <img
                 src="/KitssLogo.png"
                 alt="KITSS EDUCATION"
-                className="h-14 sm:h-16 md:h-18 w-auto object-contain transition hover:opacity-95"
+                className="h-8 sm:h-9 w-auto object-contain transition-opacity hover:opacity-90"
                 onError={(e) => {
                   e.target.style.display = "none";
                 }}
@@ -57,17 +56,17 @@ export const AppHeader = ({ onOpenDrawer, unreadCount = 2 }) => {
           </div>
 
           {/* Center: Desktop Navigation Links */}
-          <nav className="hidden md:flex items-center gap-1 lg:gap-2">
+          <nav className="hidden md:flex items-center gap-1">
             {navLinks.map((link) => {
               const isActive = location.pathname === link.path || (link.path !== "/home" && location.pathname.startsWith(link.path));
               return (
                 <Link
                   key={link.name}
                   to={link.path}
-                  className={`px-3 py-2 rounded-xl text-sm font-semibold transition-all ${
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                     isActive
-                      ? "bg-[#0A1D3F] text-white shadow-xs"
-                      : "text-[#667085] hover:text-[#0A1D3F] hover:bg-gray-50"
+                      ? "bg-slate-900 text-white shadow-2xs"
+                      : "text-slate-600 hover:text-slate-900 hover:bg-slate-100/70"
                   }`}
                 >
                   {link.name}
@@ -77,11 +76,11 @@ export const AppHeader = ({ onOpenDrawer, unreadCount = 2 }) => {
           </nav>
 
           {/* Right: Actions (Search, Notification, Profile) */}
-          <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-2 sm:gap-2.5">
             {/* Desktop Search Shortcut */}
             <Link
               to="/books"
-              className="hidden lg:flex items-center gap-2 px-3 py-1.5 bg-[#F7F8FA] border border-[#E6E8EC] rounded-xl text-xs text-[#667085] hover:border-gray-300 transition"
+              className="hidden lg:flex items-center gap-2 px-3 py-1.5 bg-slate-50 border border-slate-200/80 rounded-lg text-xs text-slate-500 hover:border-slate-300 transition"
             >
               <Search className="w-3.5 h-3.5" />
               <span>Search books & courses...</span>
@@ -90,14 +89,12 @@ export const AppHeader = ({ onOpenDrawer, unreadCount = 2 }) => {
             {/* Notification Bell */}
             <Link
               to="/notifications"
-              className="relative p-2.5 rounded-xl text-[#0A1D3F] hover:bg-gray-100 transition active:scale-95"
+              className="relative p-2 rounded-lg text-slate-700 hover:bg-slate-100 transition active:scale-95"
               aria-label="Notifications"
             >
-              <Bell className="w-5 h-5" />
+              <Bell className="w-4 h-4" />
               {unreadCount > 0 && (
-                <span className="absolute top-1.5 right-1.5 w-4 h-4 bg-[#FF8A00] text-white text-[10px] font-bold rounded-full flex items-center justify-center ring-2 ring-white animate-pulse">
-                  {unreadCount}
-                </span>
+                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-orange-500 rounded-full ring-2 ring-white" />
               )}
             </Link>
 
@@ -107,12 +104,12 @@ export const AppHeader = ({ onOpenDrawer, unreadCount = 2 }) => {
                 <button
                   type="button"
                   onClick={() => setProfileDropdownOpen((prev) => !prev)}
-                  className="flex items-center gap-2 p-1.5 rounded-xl hover:bg-gray-50 border border-transparent hover:border-[#E6E8EC] transition"
+                  className="flex items-center gap-2 p-1 rounded-lg hover:bg-slate-100/70 border border-transparent hover:border-slate-200 transition"
                 >
                   <img
                     src={user.avatar}
                     alt={user.name}
-                    className="w-8 h-8 rounded-full object-cover border border-[#E6E8EC]"
+                    className="w-7 h-7 sm:w-8 sm:h-8 rounded-full object-cover border border-slate-200 shadow-2xs"
                   />
                   <div className="hidden lg:flex flex-col text-left">
                     <span className="text-xs font-bold text-[#0A1D3F] leading-tight">

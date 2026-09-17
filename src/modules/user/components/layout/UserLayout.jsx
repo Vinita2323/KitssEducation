@@ -6,21 +6,17 @@ import { SideDrawer } from "./SideDrawer";
 
 export const UserLayout = () => {
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const location = useLocation();
-  const isLibraryPage = location.pathname === "/library";
 
   return (
-    <div className="min-h-screen bg-[#F7F8FA] flex flex-col font-['Poppins',sans-serif] text-[#0A1D3F] antialiased">
-      {/* App Header (Sticky) - Hidden on pages with custom headers like /library */}
-      {!isLibraryPage && (
-        <AppHeader onOpenDrawer={() => setDrawerOpen(true)} unreadCount={2} />
-      )}
+    <div className="min-h-screen bg-[#F8FAFC] flex flex-col font-sans text-slate-900 antialiased selection:bg-slate-900 selection:text-white">
+      {/* App Header (Sticky) */}
+      <AppHeader onOpenDrawer={() => setDrawerOpen(true)} unreadCount={2} />
 
       {/* Mobile Slide Drawer */}
       <SideDrawer isOpen={drawerOpen} onClose={() => setDrawerOpen(false)} />
 
       {/* Main Content Area */}
-      <main className={`flex-1 max-w-7xl w-full mx-auto ${isLibraryPage ? "p-0 pb-20 md:pb-10" : "px-3.5 sm:px-6 lg:px-8 py-4 sm:py-6 pb-24 md:pb-12"}`}>
+      <main className="flex-1 max-w-7xl w-full mx-auto px-3.5 sm:px-6 lg:px-8 py-4 sm:py-6 pb-24 md:pb-12">
         <Outlet />
       </main>
 
@@ -59,7 +55,6 @@ export const UserLayout = () => {
                 <li><Link to="/books?board=ICSE" className="hover:text-[#FF8A00]">ICSE Board Books</Link></li>
                 <li><Link to="/books?board=NCERT" className="hover:text-[#FF8A00]">NCERT Solutions</Link></li>
                 <li><Link to="/books?board=State+Board" className="hover:text-[#FF8A00]">State Board Resources</Link></li>
-                <li><Link to="/library" className="hover:text-[#FF8A00]">My Accessible Library</Link></li>
               </ul>
             </div>
 

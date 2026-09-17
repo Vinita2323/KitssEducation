@@ -11,13 +11,13 @@ export const SectionHeader = ({
   className = ""
 }) => {
   return (
-    <div className={`flex items-end justify-between gap-2 mb-3.5 ${className}`}>
+    <div className={`flex items-end justify-between gap-2 mb-3 ${className}`}>
       <div>
-        <h2 className="text-lg md:text-xl font-bold text-[#0A1D3F] tracking-tight">
+        <h2 className="text-base sm:text-lg md:text-xl font-bold text-slate-900 tracking-tight">
           {title}
         </h2>
         {subtitle && (
-          <p className="text-xs md:text-sm text-[#667085] mt-0.5">{subtitle}</p>
+          <p className="text-xs text-slate-500 mt-0.5">{subtitle}</p>
         )}
       </div>
 
@@ -25,19 +25,19 @@ export const SectionHeader = ({
         viewAllLink ? (
           <Link
             to={viewAllLink}
-            className="inline-flex items-center gap-1 text-xs md:text-sm font-semibold text-[#FF8A00] hover:text-[#E67C00] transition group shrink-0"
+            className="inline-flex items-center gap-1 text-xs sm:text-sm font-semibold text-slate-600 hover:text-slate-950 transition-colors group shrink-0"
           >
             <span>{viewAllText}</span>
-            <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+            <ChevronRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-slate-950 group-hover:translate-x-0.5 transition-all" />
           </Link>
         ) : (
           <button
             type="button"
             onClick={onViewAll}
-            className="inline-flex items-center gap-1 text-xs md:text-sm font-semibold text-[#FF8A00] hover:text-[#E67C00] transition group shrink-0"
+            className="inline-flex items-center gap-1 text-xs sm:text-sm font-semibold text-slate-600 hover:text-slate-950 transition-colors group shrink-0 cursor-pointer"
           >
             <span>{viewAllText}</span>
-            <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+            <ChevronRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-slate-950 group-hover:translate-x-0.5 transition-all" />
           </button>
         )
       )}

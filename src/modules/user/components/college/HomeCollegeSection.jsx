@@ -1,12 +1,34 @@
-import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
-import { MapPin, GraduationCap, ArrowRight, Building2 } from "lucide-react";
+import React, { useState, useEffect, useMemo } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import {
+  Search,
+  ChevronRight,
+  Sparkles,
+  ArrowRight,
+  GraduationCap,
+  Building2,
+  MapPin,
+  CheckCircle2,
+  X
+} from "lucide-react";
 import { collegeService } from "../../services/collegeService";
-import { SectionHeader } from "../common/SectionHeader";
+import { CollegeCard } from "./CollegeCard";
+import { CollegeDetailsModal } from "./CollegeDetailsModal";
 
 export const HomeCollegeSection = () => {
+  const navigate = useNavigate();
   const [colleges, setColleges] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // Search & category filter states
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("All");
+
+  // College details modal state
+  const [selectedCollegeForModal, setSelectedCollegeForModal] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const categories = ["All", "University", "College", "School", "Institute"];
 
   useEffect(() => {
     let isMounted = true;
@@ -27,136 +49,188 @@ export const HomeCollegeSection = () => {
     };
   }, []);
 
-  return (
-    <div className="space-y-3.5 pt-2">
-      <SectionHeader
-        title="Find Your College"
-        subtitle="Explore our partner colleges and find the right course for your future."
-        viewAllLink="/colleges"
-        viewAllText="View All Colleges"
-      />
+  // Filter colleges locally in real-time
+  const filteredColleges = useMemo(() => {
+    let result = [...colleges];
 
+    // Category filter
+    if (selectedCategory !== "All") {
+      result = result.filter((c) => {
+        const cat = (c.category || c.collegeType || "").toLowerCase();
+        return cat.includes(selectedCategory.toLowerCase());
+      });
+    }
+
+    // Search query filter (name, city, course)
+    if (searchQuery && searchQuery.trim() !== "") {
+      const q = searchQuery.trim().toLowerCase();
+      result = result.filter((c) => {
+        const nameMatch = c.name?.toLowerCase().includes(q);
+        const cityMatch = c.city?.toLowerCase().includes(q);
+        const stateMatch = c.state?.toLowerCase().includes(q);
+        const locationMatch = c.location?.toLowerCase().includes(q);
+        const courseMatch = c.popularCourses?.some((crs) => crs.toLowerCase().includes(q));
+        const descMatch = c.description?.toLowerCase().includes(q);
+        return nameMatch || cityMatch || stateMatch || locationMatch || courseMatch || descMatch;
+      });
+    }
+
+    return result;
+  }, [colleges, selectedCategory, searchQuery]);
+
+  const handleOpenCollege = (college) => {
+    setSelectedCollegeForModal(college);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSelectedCollegeForModal(null);
+  };
+
+  return (
+    <section className="space-y-4 pt-3 pb-2">
+      {/* 1. Section Header */}
+      <div className="space-y-1">
+        <div className="flex items-center justify-between gap-2">
+          <div>
+            <h2 className="text-base sm:text-lg md:text-xl font-bold text-slate-900 tracking-tight">
+              Partner Colleges
+            </h2>
+            <p className="text-xs text-slate-500 leading-normal mt-0.5">
+              Explore verified institutions and course admissions.
+            </p>
+          </div>
+
+          <Link
+            to="/colleges"
+            className="inline-flex items-center gap-1 text-xs sm:text-sm font-semibold text-slate-600 hover:text-slate-950 transition-colors shrink-0 group whitespace-nowrap"
+          >
+            <span>View All</span>
+            <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform text-slate-400 group-hover:text-slate-950" />
+          </Link>
+        </div>
+      </div>
+
+      {/* 2. College Search Box */}
+      <div className="relative">
+        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Search by college name, city or course..."
+          className="w-full h-10 pl-9 pr-9 rounded-xl bg-white border border-slate-200/90 text-xs sm:text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-slate-400 focus:ring-2 focus:ring-slate-100 shadow-xs transition"
+        />
+        {searchQuery && (
+          <button
+            type="button"
+            onClick={() => setSearchQuery("")}
+            className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-700 cursor-pointer"
+            aria-label="Clear search"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        )}
+      </div>
+
+      {/* 3. Category Filter Chips */}
+      <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5">
+        {categories.map((cat) => {
+          const isSelected = selectedCategory === cat;
+          return (
+            <button
+              key={cat}
+              type="button"
+              onClick={() => setSelectedCategory(cat)}
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition cursor-pointer active:scale-98 ${
+                isSelected
+                  ? "bg-slate-900 text-white shadow-xs font-semibold"
+                  : "bg-white text-slate-600 border border-slate-200/80 hover:border-slate-300 hover:text-slate-900 shadow-2xs"
+              }`}
+            >
+              {cat}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* 4. Horizontal Swipeable Featured College Cards Carousel */}
       {loading ? (
-        <div className="flex gap-4 overflow-x-auto no-scrollbar pb-2">
+        <div className="flex gap-3.5 overflow-x-auto no-scrollbar pb-2">
           {[1, 2, 3].map((i) => (
             <div
               key={i}
-              className="w-72 sm:w-80 shrink-0 bg-white rounded-2xl border border-[#E6E8EC] p-3.5 animate-pulse flex flex-col gap-3"
+              className="w-[80vw] sm:w-[290px] shrink-0 bg-white rounded-xl border border-slate-200/80 p-3.5 animate-pulse flex flex-col gap-3"
             >
-              <div className="w-full h-36 bg-gray-200 rounded-xl" />
-              <div className="h-4 bg-gray-200 rounded w-3/4" />
-              <div className="h-3 bg-gray-200 rounded w-1/2" />
-              <div className="h-3 bg-gray-200 rounded w-5/6" />
-              <div className="h-9 bg-gray-200 rounded-xl mt-2" />
+              <div className="w-full aspect-16/10 bg-slate-100 rounded-lg" />
+              <div className="h-4 bg-slate-100 rounded w-3/4" />
+              <div className="h-3 bg-slate-100 rounded w-1/2" />
+              <div className="h-3 bg-slate-100 rounded w-5/6" />
+              <div className="h-8 bg-slate-100 rounded-lg mt-1" />
             </div>
           ))}
         </div>
-      ) : colleges.length === 0 ? null : (
-        <div className="flex gap-4 overflow-x-auto no-scrollbar pb-2 pt-1 snap-x snap-mandatory">
-          {colleges.map((college) => {
-            const collegeId = college._id || college.id;
-            return (
-              <div
-                key={collegeId}
-                className="w-72 sm:w-80 shrink-0 snap-start bg-white rounded-2xl border border-[#E6E8EC] shadow-2xs hover:shadow-md transition-all duration-200 flex flex-col justify-between overflow-hidden group hover:border-gray-300"
-              >
-                <div>
-                  {/* College Image Banner */}
-                  <div className="relative h-36 w-full overflow-hidden bg-gray-100">
-                    <img
-                      src={college.banner || "https://images.unsplash.com/photo-1541339907198-e08756dedf3f?w=600&auto=format&fit=crop&q=80"}
-                      alt={college.name}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                      loading="lazy"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
+      ) : filteredColleges.length === 0 ? (
+        /* Empty State */
+        <div className="bg-white rounded-xl border border-slate-200/80 p-6 text-center space-y-2 shadow-xs">
+          <p className="font-semibold text-sm text-slate-900">No colleges found</p>
+          <p className="text-xs text-slate-500">
+            Try searching with another college name, city or course.
+          </p>
+          <button
+            type="button"
+            onClick={() => {
+              setSearchQuery("");
+              setSelectedCategory("All");
+            }}
+            className="mt-2 text-xs font-semibold text-slate-900 hover:underline transition cursor-pointer"
+          >
+            Reset Filters
+          </button>
+        </div>
+      ) : (
+        /* Cards Carousel: ~1.15 cards visible on mobile with peeking edge */
+        <div className="flex gap-3.5 overflow-x-auto no-scrollbar pb-2 pt-0.5 snap-x snap-mandatory">
+          {filteredColleges.map((college) => (
+            <CollegeCard
+              key={college._id || college.id}
+              college={college}
+              onViewCollege={handleOpenCollege}
+            />
+          ))}
 
-                    {/* College Type Badge */}
-                    <span className="absolute top-2.5 right-2.5 px-2.5 py-1 bg-white/90 backdrop-blur-xs text-[#0A1D3F] text-[10px] font-bold rounded-full shadow-xs">
-                      {college.collegeType || "Partner College"}
-                    </span>
-
-                    {/* Logo Overlay */}
-                    <div className="absolute bottom-2.5 left-3 flex items-center gap-2">
-                      <div className="w-9 h-9 rounded-xl bg-white p-1 shadow-md border border-white/50 shrink-0 overflow-hidden flex items-center justify-center">
-                        {college.logo ? (
-                          <img
-                            src={college.logo}
-                            alt="Logo"
-                            className="w-full h-full object-cover rounded-lg"
-                          />
-                        ) : (
-                          <Building2 className="w-5 h-5 text-[#0A1D3F]" />
-                        )}
-                      </div>
-                      <span className="text-white text-xs font-semibold drop-shadow-sm truncate max-w-[170px]">
-                        Verified Partner
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Body Content */}
-                  <div className="p-3.5">
-                    <h3 className="text-sm sm:text-base font-bold text-[#0A1D3F] line-clamp-1 group-hover:text-[#FF8A00] transition">
-                      {college.name}
-                    </h3>
-
-                    {/* Location */}
-                    <div className="flex items-center gap-1.5 text-[#667085] text-xs mt-1">
-                      <MapPin className="w-3.5 h-3.5 text-[#FF8A00] shrink-0" />
-                      <span className="truncate">{college.location || college.city}</span>
-                    </div>
-
-                    {/* Short Description */}
-                    <p className="text-xs text-[#667085] mt-2 line-clamp-2 leading-relaxed">
-                      {college.description || college.about || "Explore undergraduate and postgraduate degrees with 100% admission guidance."}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Footer Meta & CTA */}
-                <div className="px-3.5 pb-3.5 pt-1 border-t border-[#F0F2F5] flex items-center justify-between gap-2 mt-auto">
-                  <div className="flex items-center gap-1.5 text-xs font-semibold text-[#0A1D3F] bg-[#F7F8FA] px-2.5 py-1 rounded-lg border border-[#E6E8EC]">
-                    <GraduationCap className="w-3.5 h-3.5 text-[#FF8A00]" />
-                    <span>{college.coursesCount || 0} Courses</span>
-                  </div>
-
-                  <Link
-                    to={`/colleges/${collegeId}`}
-                    className="inline-flex items-center gap-1 text-xs font-bold text-[#0A1D3F] hover:text-[#FF8A00] bg-gray-100 hover:bg-orange-50 px-3 py-1.5 rounded-xl transition active:scale-95"
-                  >
-                    <span>View Details</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </Link>
-                </div>
-              </div>
-            );
-          })}
-
-          {/* End Card: View All Colleges */}
-          <div className="w-56 shrink-0 snap-start bg-gradient-to-br from-[#0A1D3F] to-[#133C8B] rounded-2xl p-5 text-white flex flex-col justify-between shadow-md">
+          {/* End Card linking to full directory */}
+          <div className="w-48 sm:w-56 shrink-0 snap-start bg-gradient-to-br from-slate-900 via-slate-800 to-slate-950 rounded-xl border border-slate-800 p-4 text-white flex flex-col justify-between shadow-xs">
             <div>
-              <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-[#FF8A00] mb-3">
-                <GraduationCap className="w-6 h-6" />
+              <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center text-amber-400 mb-3">
+                <GraduationCap className="w-4 h-4" />
               </div>
-              <h3 className="text-base font-bold leading-snug">
-                Explore More Partner Colleges
+              <h3 className="text-sm font-semibold tracking-tight text-white leading-snug">
+                More Partner Colleges
               </h3>
-              <p className="text-xs text-blue-100/70 mt-2">
-                Discover degree programs, campus facilities, and admission requirements.
+              <p className="text-[11px] text-slate-300/80 mt-1 leading-relaxed">
+                Explore our full verified colleges directory and course admissions.
               </p>
             </div>
 
             <Link
               to="/colleges"
-              className="mt-4 inline-flex items-center justify-center gap-2 bg-[#FF8A00] hover:bg-[#E67C00] text-white text-xs font-bold py-2.5 px-4 rounded-xl shadow-xs transition active:scale-95"
+              className="mt-4 inline-flex items-center justify-center gap-1.5 bg-white hover:bg-slate-100 text-slate-950 text-xs font-semibold py-2 px-3 rounded-lg transition active:scale-98 shadow-xs"
             >
-              <span>View All Colleges</span>
-              <ArrowRight className="w-4 h-4" />
+              <span>Explore Directory</span>
+              <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>
         </div>
       )}
-    </div>
+
+      {/* 5. In-App College Details Preview Modal */}
+      <CollegeDetailsModal
+        college={selectedCollegeForModal}
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+      />
+    </section>
   );
 };

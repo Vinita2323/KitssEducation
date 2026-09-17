@@ -309,14 +309,15 @@ export const AdminCollegesPage = () => {
 
                       <td className="py-3.5 px-4 text-right">
                         <div className="flex items-center justify-end gap-1.5">
-                          <Link
-                            to={`/colleges/${colId}`}
+                          <a
+                            href={col.contactInformation?.website || col.website || `https://www.google.com/search?q=${encodeURIComponent(col.name + " official website")}`}
                             target="_blank"
-                            title="View Public Page"
+                            rel="noopener noreferrer"
+                            title="Visit Official Website"
                             className="p-1.5 rounded-lg text-gray-500 hover:text-[#0A1D3F] hover:bg-gray-100 transition"
                           >
                             <ExternalLink className="w-4 h-4" />
-                          </Link>
+                          </a>
 
                           <Link
                             to={`/admin/colleges/${colId}/courses`}

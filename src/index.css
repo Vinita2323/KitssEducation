@@ -1,41 +1,41 @@
 @import "tailwindcss";
 
 @theme {
-  --color-navy: #0A1D3F;
-  --color-navy-light: #133C8B;
-  --color-navy-dark: #061226;
-  --color-orange: #FF8A00;
-  --color-orange-light: #FFF4E5;
-  --color-orange-hover: #E67C00;
-  --color-green: #17B26A;
-  --color-green-light: #ECFDF3;
-  --color-purple: #6C4AB6;
-  --color-purple-light: #F4F0FF;
-  --color-bg-light: #F7F8FA;
-  --color-border-light: #E6E8EC;
-  --color-text-primary: #0A1D3F;
-  --color-text-secondary: #667085;
-  --color-danger: #D92D20;
-  --font-poppins: "Poppins", system-ui, -apple-system, sans-serif;
+  --color-navy: #0F172A;
+  --color-navy-light: #1E293B;
+  --color-navy-dark: #020617;
+  --color-orange: #EA580C;
+  --color-orange-light: #FFF7ED;
+  --color-orange-hover: #C2410C;
+  --color-green: #16A34A;
+  --color-green-light: #F0FDF4;
+  --color-purple: #6366F1;
+  --color-purple-light: #EEF2FF;
+  --color-bg-light: #F8FAFC;
+  --color-border-light: #E2E8F0;
+  --color-text-primary: #0F172A;
+  --color-text-secondary: #64748B;
+  --color-danger: #EF4444;
+  --font-sans: "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
 }
 
 :root {
-  --primary-navy: #0A1D3F;
-  --secondary-blue: #133C8B;
-  --primary-orange: #FF8A00;
-  --success-green: #17B26A;
-  --purple: #6C4AB6;
-  --light-bg: #F7F8FA;
-  --border-color: #E6E8EC;
+  --primary-navy: #0F172A;
+  --secondary-blue: #1E293B;
+  --primary-orange: #EA580C;
+  --success-green: #16A34A;
+  --purple: #6366F1;
+  --light-bg: #F8FAFC;
+  --border-color: #E2E8F0;
 }
 
 /* Custom scrollbar */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 ::-webkit-scrollbar-track {
-  background: #F7F8FA;
+  background: transparent;
 }
 ::-webkit-scrollbar-thumb {
   background: #CBD5E1;
@@ -56,8 +56,8 @@
 
 /* Mobile Touch Targets */
 .touch-target {
-  min-height: 44px;
-  min-width: 44px;
+  min-height: 40px;
+  min-width: 40px;
 }
 
 /* Smooth Tap Highlight on Mobile */
@@ -65,15 +65,15 @@
   -webkit-tap-highlight-color: transparent;
 }
 
-/* Glass & Card effects */
+/* Glass & Card effects - subtle ambient lighting */
 .card-shadow {
-  box-shadow: 0 2px 8px -2px rgba(10, 29, 63, 0.05), 0 4px 16px -4px rgba(10, 29, 63, 0.08);
+  box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.04), 0 1px 2px -1px rgba(15, 23, 42, 0.04);
 }
 .card-shadow-hover {
-  transition: all 0.2s ease-in-out;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .card-shadow-hover:hover {
-  box-shadow: 0 8px 24px -4px rgba(10, 29, 63, 0.12);
+  box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.08), 0 6px 10px -4px rgba(15, 23, 42, 0.04);
   transform: translateY(-2px);
 }
 
@@ -81,9 +81,21 @@
 @media print {
   body {
     background: #ffffff !important;
+    padding: 0 !important;
+    margin: 0 !important;
   }
+  header,
+  nav,
+  footer,
+  aside,
   .no-print {
     display: none !important;
+  }
+  main {
+    padding: 0 !important;
+    margin: 0 !important;
+    max-width: 100% !important;
+    width: 100% !important;
   }
   .print-only {
     display: block !important;

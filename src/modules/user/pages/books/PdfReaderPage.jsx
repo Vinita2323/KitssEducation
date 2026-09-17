@@ -78,7 +78,7 @@ export const PdfReaderPage = () => {
       <ErrorState
         title="Book Not Found"
         message="Could not load the requested book reader."
-        onRetry={() => navigate("/library")}
+        onRetry={() => navigate("/books")}
       />
     );
   }

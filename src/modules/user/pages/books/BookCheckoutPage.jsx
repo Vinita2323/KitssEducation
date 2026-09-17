@@ -293,10 +293,10 @@ export const BookCheckoutPage = () => {
             </PrimaryButton>
 
             <Link
-              to="/library"
-              className="inline-block text-xs font-bold text-[#FF8A00] hover:underline"
+              to="/books"
+              className="inline-block text-xs font-semibold text-slate-600 hover:text-slate-900 hover:underline"
             >
-              Go to My Library
+              Browse More Books
             </Link>
           </div>
         </div>

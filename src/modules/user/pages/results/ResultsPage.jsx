@@ -1,24 +1,74 @@
 import React, { useState, useEffect } from "react";
-import { Award, Search, FileCheck, Calendar, User, GraduationCap, CheckCircle2 } from "lucide-react";
-import { resultService } from "../../services/resultService";
+import { Search, FileCheck, ArrowLeft, RotateCcw, GraduationCap, Building2 } from "lucide-react";
+import { resultService, ResultNotFoundError } from "../../services/resultService";
 import { useToast } from "../../context/ToastContext";
-import { PrimaryButton } from "../../components/common/PrimaryButton";
+import { ResultTypeSelector } from "../../components/results/ResultTypeSelector";
+import { BoardSelector } from "../../components/results/BoardSelector";
+import { ResultSearchForm } from "../../components/results/ResultSearchForm";
+import { ResultLoading } from "../../components/results/ResultLoading";
+import { ResultNotFound } from "../../components/results/ResultNotFound";
 import { ResultMarksheet, ResultCard } from "../../components/results/ResultMarksheet";
 import { SkeletonLoader, EmptyState } from "../../components/common/EmptyState";
 
 export const ResultsPage = () => {
-  const [activeTab, setActiveTab] = useState("search"); // 'search' | 'my-results'
-  const { showError } = useToast();
+  const { showError, showSuccess } = useToast();
 
-  const [board, setBoard] = useState("CBSE");
-  const [rollNumber, setRollNumber] = useState("1024501");
-  const [dob, setDob] = useState("2009-08-15");
-  const [loading, setLoading] = useState(false);
+  // Primary Tab: 'search' | 'history'
+  const [activeTab, setActiveTab] = useState("search");
+
+  /**
+   * Flow Steps for Search Tab:
+   * 'landing'         -> Initial view with prominent School vs University cards
+   * 'board_selection' -> "Which Board are you from?" selection
+   * 'search_form'     -> Dynamic board-specific form
+   * 'loading'         -> Simulated searching state
+   * 'result'          -> Official marksheet display
+   * 'not_found'       -> Result not found error state
+   */
+  const [flowStep, setFlowStep] = useState("landing");
+
+  // Selection & Form State (Preserved across back/forward navigation)
+  const [resultType, setResultType] = useState("school"); // 'school' | 'university'
+  const [boards, setBoards] = useState([]);
+  const [selectedBoardId, setSelectedBoardId] = useState(null);
+  const [currentBoardConfig, setCurrentBoardConfig] = useState(null);
+  const [savedFormValues, setSavedFormValues] = useState({});
+  const [lastSearchedRoll, setLastSearchedRoll] = useState("");
+
+  // Result & History State
   const [searchResult, setSearchResult] = useState(null);
-
+  const [searchError, setSearchError] = useState(null);
   const [myResults, setMyResults] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(false);
 
+  // Load boards when resultType changes
+  useEffect(() => {
+    const loadBoards = async () => {
+      try {
+        const data = await resultService.getBoards(resultType);
+        setBoards(data);
+      } catch (err) {
+        console.error("Error loading boards:", err);
+      }
+    };
+    loadBoards();
+  }, [resultType]);
+
+  // Load board configuration when board is selected
+  useEffect(() => {
+    if (!selectedBoardId) {
+      setCurrentBoardConfig(null);
+      return;
+    }
+
+    const loadConfig = async () => {
+      const config = await resultService.getBoardConfig(selectedBoardId, resultType);
+      setCurrentBoardConfig(config);
+    };
+    loadConfig();
+  }, [selectedBoardId, resultType]);
+
+  // Load student history on mount
   useEffect(() => {
     const loadHistory = async () => {
       try {
@@ -34,74 +84,148 @@ export const ResultsPage = () => {
     loadHistory();
   }, []);
 
-  const handleSearch = async (e) => {
-    e.preventDefault();
-    if (!rollNumber.trim()) {
-      showError("Please enter your examination Roll Number.");
-      return;
-    }
+  /**
+   * Handlers for Flow Transitions
+   */
+
+  // 1. Landing: User clicks "Check Result" on School or University card
+  const handleSelectResultTypeFromLanding = (type) => {
+    setResultType(type);
+    setSelectedBoardId(null);
+    setCurrentBoardConfig(null);
+    setFlowStep("board_selection");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  // Switch type from top tabs while in the search flow
+  const handleSwitchResultType = (type) => {
+    setResultType(type);
+    setSelectedBoardId(null);
+    setCurrentBoardConfig(null);
+    setFlowStep("board_selection");
+  };
+
+  // 2. Board Selection: User selects a board card
+  const handleSelectBoard = (boardId) => {
+    setSelectedBoardId(boardId);
+    setFlowStep("search_form");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  // 3. Dynamic Form: User submits search
+  const handleSearchSubmit = async (formPayload) => {
+    setSavedFormValues(formPayload);
+    setLastSearchedRoll(formPayload.rollNumber || "");
+    setFlowStep("loading");
+    setSearchError(null);
 
     try {
-      setLoading(true);
-      const data = await resultService.searchResult(board, rollNumber, dob);
-      setSearchResult(data);
+      const result = await resultService.searchResult(formPayload);
+      setSearchResult(result);
+      setFlowStep("result");
+      window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (err) {
-      showError(err.message || "Result not found.");
-    } finally {
-      setLoading(false);
+      console.warn("Search caught error:", err);
+      setSearchError(err.message);
+      setFlowStep("not_found");
     }
   };
 
+  // 4. View historical result
   const handleViewHistoricalResult = async (item) => {
-    setLoading(true);
     setActiveTab("search");
-    setRollNumber(item.rollNumber);
-    const data = await resultService.searchResult(item.board, item.rollNumber, "2009-08-15");
-    setSearchResult(data);
-    setLoading(false);
+    setFlowStep("loading");
+    try {
+      const result = await resultService.searchResult({
+        boardId: item.board,
+        rollNumber: item.rollNumber,
+        type: item.type || "school"
+      });
+      setSearchResult(result);
+      setFlowStep("result");
+    } catch (err) {
+      showError(err.message || "Result not found");
+      setFlowStep("landing");
+    }
+  };
+
+  // 5. Back Navigation Logic (Preserves state step-by-step)
+  const handleGoBack = () => {
+    if (flowStep === "result" || flowStep === "not_found") {
+      setFlowStep("search_form");
+    } else if (flowStep === "search_form") {
+      setFlowStep("board_selection");
+    } else if (flowStep === "board_selection") {
+      setFlowStep("landing");
+      setSelectedBoardId(null);
+    }
+  };
+
+  const handleResetToLanding = () => {
+    setFlowStep("landing");
+    setSelectedBoardId(null);
+    setSearchResult(null);
+    setSearchError(null);
   };
 
   return (
-    <div className="space-y-3.5 sm:space-y-4 max-w-3xl w-full mx-auto box-border">
-      {/* Top Header */}
-      <div>
-        <h1 className="text-lg sm:text-xl font-extrabold text-[#0A1D3F] tracking-tight">
-          Examination Results
-        </h1>
-        <p className="text-xs text-[#667085] mt-0.5">
-          Search, download, and print official board examination marksheets
-        </p>
+    <div className="space-y-3 max-w-3xl w-full mx-auto box-border">
+      {/* 1. Page Header (Hidden on print) */}
+      <div className="no-print space-y-0.5">
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <div>
+            <h1 className="text-base sm:text-lg md:text-xl font-bold text-slate-900 tracking-tight">
+              Examination Results
+            </h1>
+            <p className="text-xs text-slate-500">
+              Check School and University examination marksheets online.
+            </p>
+          </div>
+
+          {flowStep !== "landing" && activeTab === "search" && (
+            <button
+              type="button"
+              onClick={handleGoBack}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-slate-200 bg-white text-xs font-semibold text-slate-700 hover:text-slate-950 hover:bg-slate-50 transition active:scale-95 shadow-2xs cursor-pointer"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              <span>Back</span>
+            </button>
+          )}
+        </div>
       </div>
 
-      {/* Responsive Segmented Tabs */}
-      <div className="grid grid-cols-2 w-full p-1 bg-[#EAECF0] rounded-xl gap-1 box-border">
+      {/* 2. Top Segmented Navigation Tabs (Hidden on print) */}
+      <div className="no-print grid grid-cols-2 w-full p-1 bg-slate-100 rounded-xl gap-1 box-border">
         <button
+          type="button"
           onClick={() => setActiveTab("search")}
-          className={`w-full py-1.5 px-2 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all min-w-0 ${
+          className={`w-full py-1.5 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all touch-target cursor-pointer ${
             activeTab === "search"
-              ? "bg-white text-[#0A1D3F] shadow-xs"
-              : "text-[#667085] hover:text-[#0A1D3F]"
+              ? "bg-white text-slate-900 shadow-xs"
+              : "text-slate-500 hover:text-slate-800"
           }`}
         >
           <Search className="w-3.5 h-3.5 shrink-0" />
-          <span className="truncate">Result Search</span>
+          <span>Search Result</span>
         </button>
 
         <button
-          onClick={() => setActiveTab("my-results")}
-          className={`w-full py-1.5 px-2 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all min-w-0 ${
-            activeTab === "my-results"
-              ? "bg-white text-[#0A1D3F] shadow-xs"
-              : "text-[#667085] hover:text-[#0A1D3F]"
+          type="button"
+          onClick={() => setActiveTab("history")}
+          className={`w-full py-1.5 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all touch-target cursor-pointer ${
+            activeTab === "history"
+              ? "bg-white text-slate-900 shadow-xs"
+              : "text-slate-500 hover:text-slate-800"
           }`}
         >
           <FileCheck className="w-3.5 h-3.5 shrink-0" />
-          <span className="truncate">History</span>
+          <span>My History</span>
           <span
-            className={`px-1.5 py-0.2 rounded-full text-[10px] shrink-0 ${
-              activeTab === "my-results"
-                ? "bg-[#FF8A00] text-white"
-                : "bg-gray-200 text-gray-700"
+            className={`px-1.5 py-0.2 rounded text-[10px] shrink-0 font-medium ${
+              activeTab === "history"
+                ? "bg-slate-900 text-white"
+                : "bg-slate-200 text-slate-700"
             }`}
           >
             {myResults.length}
@@ -109,123 +233,117 @@ export const ResultsPage = () => {
         </button>
       </div>
 
-      {/* Tab 1: Board Result Search or Marksheet View */}
-      {activeTab === "search" ? (
-        searchResult ? (
-          <ResultMarksheet
-            result={searchResult}
-            onBack={() => setSearchResult(null)}
-          />
-        ) : (
-          <div className="bg-white rounded-2xl border border-[#E6E8EC] p-4 sm:p-6 shadow-xs space-y-4">
-            {/* Visual Header */}
-            <div className="text-center space-y-1 max-w-sm mx-auto">
-              <div className="w-10 h-10 rounded-2xl bg-blue-50 border border-blue-200/60 flex items-center justify-center text-[#0A1D3F] mx-auto shadow-inner text-lg">
-                📜
-              </div>
-
-              <h2 className="text-base font-extrabold text-[#0A1D3F] tracking-tight">
-                Check Your Result
-              </h2>
-              <p className="text-[11px] text-[#667085]">
-                Enter your official board exam details to view and download your marksheet.
-              </p>
+      {/* 3. Search Flow Content Area */}
+      {activeTab === "search" && (
+        <div className="space-y-3">
+          {/* STEP 0: LANDING SCREEN */}
+          {flowStep === "landing" && (
+            <div className="space-y-2">
+              <ResultTypeSelector
+                selectedType={null}
+                onSelectType={handleSelectResultTypeFromLanding}
+                mode="cards"
+              />
             </div>
+          )}
 
-            {/* Form */}
-            <form onSubmit={handleSearch} className="max-w-md mx-auto space-y-3">
-              {/* Select Board */}
-              <div>
-                <label className="block text-xs font-bold text-[#0A1D3F] mb-1">
-                  Examination Board
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
-                    <GraduationCap className="w-4 h-4" />
-                  </div>
-                  <select
-                    value={board}
-                    onChange={(e) => setBoard(e.target.value)}
-                    className="w-full pl-9 pr-3 py-2 bg-[#F7F8FA] border border-[#E6E8EC] rounded-xl text-xs sm:text-sm text-[#0A1D3F] focus:outline-none focus:ring-1 focus:ring-[#0A1D3F]"
-                  >
-                    <option value="CBSE">Central Board of Secondary Education (CBSE)</option>
-                    <option value="ICSE">Council for the Indian School Certificate (ICSE)</option>
-                    <option value="State Board">State Board Examination Council</option>
-                  </select>
-                </div>
-              </div>
+          {/* STEP 1: BOARD SELECTION */}
+          {flowStep === "board_selection" && (
+            <div className="space-y-3">
+              {/* Type Switcher Tabs at top */}
+              <ResultTypeSelector
+                selectedType={resultType}
+                onSelectType={handleSwitchResultType}
+                mode="tabs"
+              />
 
-              {/* Roll Number */}
-              <div>
-                <label className="block text-xs font-bold text-[#0A1D3F] mb-1">
-                  Examination Roll Number
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
-                    <User className="w-4 h-4" />
-                  </div>
-                  <input
-                    type="text"
-                    value={rollNumber}
-                    onChange={(e) => setRollNumber(e.target.value)}
-                    placeholder="e.g. 1024501"
-                    className="w-full pl-9 pr-3 py-2 bg-[#F7F8FA] border border-[#E6E8EC] rounded-xl text-xs sm:text-sm font-mono font-bold text-[#0A1D3F] placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-[#0A1D3F]"
-                    required
-                  />
-                </div>
-                <p className="text-[10px] text-[#667085] mt-0.5">
-                  💡 Hint: Enter <strong>1024501</strong> or <strong>1024502</strong> for instant sample results.
-                </p>
+              {/* Board Selector */}
+              <div className="bg-white rounded-xl border border-slate-200/80 p-3.5 sm:p-5 shadow-xs">
+                <BoardSelector
+                  boards={boards}
+                  selectedBoardId={selectedBoardId}
+                  onSelectBoard={handleSelectBoard}
+                  resultType={resultType}
+                />
               </div>
+            </div>
+          )}
 
-              {/* Date of Birth */}
-              <div>
-                <label className="block text-xs font-bold text-[#0A1D3F] mb-1">
-                  Date of Birth
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
-                    <Calendar className="w-4 h-4" />
-                  </div>
-                  <input
-                    type="date"
-                    value={dob}
-                    onChange={(e) => setDob(e.target.value)}
-                    className="w-full pl-9 pr-3 py-2 bg-[#F7F8FA] border border-[#E6E8EC] rounded-xl text-xs sm:text-sm text-[#0A1D3F] focus:outline-none focus:ring-1 focus:ring-[#0A1D3F]"
-                    required
-                  />
-                </div>
-              </div>
+          {/* STEP 2: DYNAMIC BOARD FORM */}
+          {flowStep === "search_form" && currentBoardConfig && (
+            <div className="space-y-3">
+              {/* Type Switcher Tabs */}
+              <ResultTypeSelector
+                selectedType={resultType}
+                onSelectType={handleSwitchResultType}
+                mode="tabs"
+              />
 
-              {/* Submit CTA */}
-              <div className="pt-2">
-                <PrimaryButton
-                  type="submit"
-                  variant="navy"
-                  size="md"
-                  fullWidth
-                  loading={loading}
-                  icon={Search}
-                >
-                  View Marksheet
-                </PrimaryButton>
-              </div>
-            </form>
-          </div>
-        )
-      ) : (
-        /* Tab 2: My Results History */
+              {/* Dynamic Form for Selected Board */}
+              <ResultSearchForm
+                boardConfig={currentBoardConfig}
+                resultType={resultType}
+                initialValues={savedFormValues}
+                onSubmit={handleSearchSubmit}
+                loading={false}
+                onChangeBoard={() => setFlowStep("board_selection")}
+              />
+            </div>
+          )}
+
+          {/* STEP 3: LOADING STATE */}
+          {flowStep === "loading" && (
+            <div className="py-4">
+              <ResultLoading boardName={currentBoardConfig?.name || "Examination Board"} />
+            </div>
+          )}
+
+          {/* STEP 4: RESULT DISPLAY */}
+          {flowStep === "result" && searchResult && (
+            <ResultMarksheet
+              result={searchResult}
+              onBack={() => setFlowStep("search_form")}
+              onNewSearch={handleResetToLanding}
+            />
+          )}
+
+          {/* STEP 5: ERROR / NOT FOUND STATE */}
+          {flowStep === "not_found" && (
+            <div className="py-2">
+              <ResultNotFound
+                title="No Result Found"
+                message={searchError || "We couldn't find a result matching the information provided. Please check your details and try again."}
+                searchedRoll={lastSearchedRoll}
+                onTryAgain={() => setFlowStep("search_form")}
+                onReset={handleResetToLanding}
+              />
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* 4. History Tab Content */}
+      {activeTab === "history" && (
         <div className="space-y-2.5">
+          <div className="flex items-center justify-between pb-0.5">
+            <h3 className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+              Saved Examination Records
+            </h3>
+            <span className="text-xs font-semibold text-slate-800">
+              {myResults.length} Available
+            </span>
+          </div>
+
           {historyLoading ? (
-            <SkeletonLoader type="card" count={2} />
+            <SkeletonLoader type="card" count={3} />
           ) : myResults.length === 0 ? (
             <EmptyState
-              icon={Award}
+              icon={FileCheck}
               title="No Result History Found"
-              description="Your examination results will appear here once published."
+              description="Your examination results will appear here once published or verified."
             />
           ) : (
-            <div className="space-y-2.5">
+            <div className="space-y-2">
               {myResults.map((item) => (
                 <ResultCard
                   key={item.id}

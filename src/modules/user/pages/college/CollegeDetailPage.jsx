@@ -36,6 +36,7 @@ export const CollegeDetailPage = () => {
   const [selectedCourseForModal, setSelectedCourseForModal] = useState("");
 
   useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "instant" });
     const fetchCollege = async () => {
       try {
         setLoading(true);

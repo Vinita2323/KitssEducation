@@ -14,17 +14,25 @@ import { ForgotPasswordPage, ResetPasswordPage } from "../pages/auth/ForgotPassw
 // Main & Domain Pages
 import { HomeDashboardPage } from "../pages/dashboard/HomeDashboardPage";
 import { CollegesListingPage } from "../pages/college/CollegesListingPage";
-import { CollegeDetailPage } from "../pages/college/CollegeDetailPage";
 import { BooksHomePage } from "../pages/books/BooksHomePage";
 import { BookDetailsPage } from "../pages/books/BookDetailsPage";
 import { BookCheckoutPage } from "../pages/books/BookCheckoutPage";
 import { PdfReaderPage } from "../pages/books/PdfReaderPage";
-import { MyLibraryPage } from "../pages/library/MyLibraryPage";
+
+// Online Coaching Module Pages
 import { CoachingHomePage } from "../pages/coaching/CoachingHomePage";
 import { CourseDetailsPage } from "../pages/coaching/CourseDetailsPage";
+import { CourseRegistrationPage } from "../pages/coaching/CourseRegistrationPage";
+import { CourseSelectorPage } from "../pages/coaching/CourseSelectorPage";
+import { MyCoursesPage } from "../pages/coaching/MyCoursesPage";
+import { CourseDashboardPage } from "../pages/coaching/CourseDashboardPage";
+import { LecturePlayerPage } from "../pages/coaching/LecturePlayerPage";
+import { BookReaderPage } from "../pages/coaching/BookReaderPage";
 import { CourseSubscribePage } from "../pages/coaching/CourseSubscribePage";
 import { CoursePlayerPage } from "../pages/coaching/CoursePlayerPage";
 import { MySubscriptionsPage } from "../pages/coaching/MySubscriptionsPage";
+
+// Other Pages
 import { ResultsPage } from "../pages/results/ResultsPage";
 import { MyOrdersPage } from "../pages/orders/MyOrdersPage";
 import { NotificationsPage } from "../pages/notifications/NotificationsPage";
@@ -54,21 +62,27 @@ export const UserRoutes = () => {
         
         {/* Partner Colleges & Admissions */}
         <Route path="/colleges" element={<CollegesListingPage />} />
-        <Route path="/colleges/:id" element={<CollegeDetailPage />} />
+        <Route path="/colleges/:id" element={<Navigate to="/colleges" replace />} />
 
         {/* Books */}
         <Route path="/books" element={<BooksHomePage />} />
         <Route path="/books/:id" element={<BookDetailsPage />} />
         <Route path="/books/:id/checkout" element={<BookCheckoutPage />} />
         <Route path="/books/:id/read" element={<PdfReaderPage />} />
-        <Route path="/library" element={<MyLibraryPage />} />
+        <Route path="/library" element={<Navigate to="/home" replace />} />
 
-        {/* Online Coaching */}
+        {/* Online Coaching Hub */}
         <Route path="/coaching" element={<CoachingHomePage />} />
+        <Route path="/coaching/register" element={<CourseRegistrationPage />} />
+        <Route path="/coaching/select" element={<CourseSelectorPage />} />
+        <Route path="/coaching/my-courses" element={<MyCoursesPage />} />
         <Route path="/coaching/:id" element={<CourseDetailsPage />} />
+        <Route path="/coaching/:id/dashboard" element={<CourseDashboardPage />} />
+        <Route path="/coaching/:id/lecture/:lectureId" element={<LecturePlayerPage />} />
+        <Route path="/coaching/:id/book/:bookId" element={<BookReaderPage />} />
         <Route path="/coaching/:id/subscribe" element={<CourseSubscribePage />} />
         <Route path="/coaching/:id/player" element={<CoursePlayerPage />} />
-        <Route path="/subscriptions" element={<MySubscriptionsPage />} />
+        <Route path="/subscriptions" element={<MyCoursesPage />} />
 
         {/* Results */}
         <Route path="/results" element={<ResultsPage />} />

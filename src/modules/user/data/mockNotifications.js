@@ -30,7 +30,7 @@ export const mockNotifications = [
     color: "bg-orange-100 text-orange-700",
     time: "Yesterday",
     isRead: true,
-    link: "/library"
+    link: "/books"
   },
   {
     id: "notif-04",
