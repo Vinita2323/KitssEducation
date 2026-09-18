@@ -31,7 +31,7 @@ export const CourseDashboardPage = () => {
   const [course, setCourse] = useState(null);
   const [student, setStudent] = useState(null);
   const [allEnrolled, setAllEnrolled] = useState([]);
-  const [activeTab, setActiveTab] = useState("lectures"); // 'overview' | 'lectures' | 'books' | 'progress' | 'profile'
+  const [activeTab, setActiveTab] = useState("lectures"); // 'lectures' | 'books' | 'progress' | 'overview' | 'profile'
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -67,160 +67,120 @@ export const CourseDashboardPage = () => {
 
   if (loading) {
     return (
-      <div className="max-w-7xl mx-auto p-8 space-y-6">
-        <div className="h-44 bg-gray-200 rounded-3xl animate-pulse" />
-        <div className="h-64 bg-gray-200 rounded-2xl animate-pulse" />
+      <div className="max-w-7xl mx-auto p-4 space-y-4">
+        <div className="h-28 bg-slate-200 rounded-md animate-pulse" />
+        <div className="h-64 bg-slate-200 rounded-md animate-pulse" />
       </div>
     );
   }
 
   if (!course) {
     return (
-      <div className="max-w-md mx-auto p-10 text-center bg-white rounded-2xl border border-[#E6E8EC] card-shadow space-y-3">
+      <div className="max-w-md mx-auto p-6 text-center bg-white rounded-md border border-[#E6E8EC] shadow-xs space-y-3 my-6">
         <h3 className="font-bold text-base text-[#0A1D3F]">Course Not Found</h3>
         <Link
           to="/coaching/my-courses"
-          className="inline-flex items-center gap-2 text-xs font-bold text-[#FF8A00]"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-[#0A1D3F] text-white font-bold text-xs"
         >
-          <ArrowLeft className="w-4 h-4" /> Go to My Courses
+          <ArrowLeft className="w-3.5 h-3.5" /> Go to My Courses
         </Link>
       </div>
     );
   }
 
+  const completedCount = course.completedLectures || 0;
+  const totalCount = course.totalLecturesCount || course.lecturesCount || 0;
+  const progressPct = course.progressPercentage || 0;
+
   return (
-    <div className="max-w-7xl mx-auto space-y-6">
-      {/* Top Breadcrumb & Mobile Course Header */}
+    <div className="max-w-7xl mx-auto space-y-3 sm:space-y-4">
+      {/* Top Breadcrumb & Access Status */}
       <div className="flex items-center justify-between">
         <Link
           to="/coaching/my-courses"
-          className="inline-flex items-center gap-2 text-xs font-bold text-[#667085] hover:text-[#0A1D3F] transition"
+          className="inline-flex items-center gap-1.5 text-xs font-bold text-[#667085] hover:text-[#0A1D3F] transition"
         >
-          <ArrowLeft className="w-4 h-4" />
+          <ArrowLeft className="w-3.5 h-3.5" />
           <span>My Courses</span>
         </Link>
 
-        <span className="text-xs font-bold text-[#17B26A] bg-[#17B26A]/10 px-3 py-1 rounded-full flex items-center gap-1.5">
-          <ShieldCheck className="w-3.5 h-3.5" />
+        <span className="text-[11px] font-bold text-[#17B26A] bg-[#17B26A]/10 px-2.5 py-0.5 rounded flex items-center gap-1">
+          <ShieldCheck className="w-3 h-3" />
           <span>Access Active</span>
         </span>
       </div>
 
       {/* Main Responsive Layout: Desktop Sidebar vs Tab Content */}
-      <div className="flex flex-col md:flex-row gap-6 items-start">
-        {/* Left Sidebar on Desktop / Top Tabs on Mobile */}
+      <div className="flex flex-col md:flex-row gap-3 sm:gap-4 items-start">
+        {/* Left Sidebar on Desktop / Single Top Tab Strip on Mobile */}
         <CoachingSidebar
           activeTab={activeTab}
           onTabChange={setActiveTab}
           courseTitle={course.title}
           courseId={course.id}
-          progressPercentage={course.progressPercentage || 0}
+          progressPercentage={progressPct}
         />
 
-        {/* Right Content Area */}
-        <main className="flex-1 min-w-0 w-full space-y-6">
-          {/* Course Header Banner */}
-          <div className="bg-white rounded-3xl border border-[#E6E8EC] p-5 sm:p-7 card-shadow space-y-4">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-              <div>
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#0A1D3F] text-white">
+        {/* Right Main Content Area */}
+        <main className="flex-1 min-w-0 w-full space-y-3 sm:space-y-3.5">
+          {/* Compact Course Header Card (No Duplicate Tabs!) */}
+          <div className="bg-white rounded-md border border-[#E6E8EC] p-3.5 sm:p-4 shadow-2xs space-y-2.5">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#0A1D3F] text-white">
                     {course.board}
                   </span>
-                  <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#F7F8FA] text-[#0A1D3F] border border-[#E6E8EC]">
-                    {course.class}
+                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#F7F8FA] text-[#0A1D3F] border border-[#E6E8EC]">
+                    Class {course.class}
                   </span>
                 </div>
-                <h1 className="text-xl sm:text-2xl font-black text-[#0A1D3F] mt-1">
+                <h1 className="text-base sm:text-lg font-black text-[#0A1D3F] mt-1 leading-snug">
                   {course.title}
                 </h1>
-                <p className="text-xs sm:text-sm text-[#667085] mt-0.5">
+                <p className="text-xs text-[#667085] line-clamp-1 mt-0.5">
                   {course.subtitle || course.description}
                 </p>
               </div>
 
-              <div className="text-right sm:text-right shrink-0">
-                <span className="text-[11px] font-bold uppercase text-[#667085] block">
-                  Course Expiry
-                </span>
-                <span className="text-xs sm:text-sm font-extrabold text-[#0A1D3F]">
-                  {course.expiryDate || "15 March 2027"}
+              <div className="flex items-center gap-1.5 shrink-0 bg-[#F7F8FA] border border-[#E6E8EC] px-2.5 py-1 rounded text-right self-start sm:self-center">
+                <Calendar className="w-3 h-3 text-[#FF8A00]" />
+                <span className="text-[10px] sm:text-[11px] font-semibold text-[#0A1D3F]">
+                  Expires: <span className="font-bold">{course.expiryDate || "30 April 2027"}</span>
                 </span>
               </div>
             </div>
 
-            {/* Course Overall Progress Bar */}
-            <div className="bg-[#F7F8FA] rounded-2xl p-4 border border-[#E6E8EC] space-y-2">
+            {/* Compact Progress Strip */}
+            <div className="pt-1.5 border-t border-[#E6E8EC] space-y-1">
               <div className="flex items-center justify-between text-xs">
-                <span className="font-bold text-[#0A1D3F] flex items-center gap-1.5">
-                  <TrendingUp className="w-4 h-4 text-[#FF8A00]" />
-                  Course Progress: {course.progressPercentage || 0}%
+                <span className="font-bold text-[#0A1D3F] flex items-center gap-1">
+                  <TrendingUp className="w-3.5 h-3.5 text-[#FF8A00]" />
+                  Course Progress: <span className="text-[#FF8A00]">{progressPct}%</span>
                 </span>
-                <span className="text-[#667085] font-semibold">
-                  {course.completedLectures || 0} / {course.totalLecturesCount || course.lecturesCount} Lectures Completed
+                <span className="text-[11px] text-[#667085] font-semibold">
+                  {completedCount} of {totalCount} Completed
                 </span>
               </div>
-              <div className="w-full h-2.5 bg-[#E6E8EC] rounded-full overflow-hidden">
+              <div className="w-full h-1.5 bg-[#E6E8EC] rounded overflow-hidden">
                 <div
-                  className="h-full bg-gradient-to-r from-[#FF8A00] to-[#17B26A] rounded-full transition-all duration-700"
-                  style={{ width: `${course.progressPercentage || 0}%` }}
+                  className="h-full bg-gradient-to-r from-[#FF8A00] to-[#17B26A] rounded transition-all duration-500"
+                  style={{ width: `${progressPct}%` }}
                 />
               </div>
             </div>
-
-            {/* In-page Tab Navigation Headers for Quick Access */}
-            <div className="flex items-center gap-2 border-b border-[#E6E8EC] pt-2">
-              <button
-                type="button"
-                onClick={() => setActiveTab("lectures")}
-                className={`pb-3 px-4 font-bold text-xs sm:text-sm flex items-center gap-2 border-b-2 transition cursor-pointer ${
-                  activeTab === "lectures"
-                    ? "border-[#FF8A00] text-[#FF8A00]"
-                    : "border-transparent text-[#667085] hover:text-[#0A1D3F]"
-                }`}
-              >
-                <Video className="w-4 h-4" />
-                <span>Lectures & Classes</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setActiveTab("books")}
-                className={`pb-3 px-4 font-bold text-xs sm:text-sm flex items-center gap-2 border-b-2 transition cursor-pointer ${
-                  activeTab === "books"
-                    ? "border-[#FF8A00] text-[#FF8A00]"
-                    : "border-transparent text-[#667085] hover:text-[#0A1D3F]"
-                }`}
-              >
-                <BookOpen className="w-4 h-4" />
-                <span>Books & Study Material</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setActiveTab("progress")}
-                className={`pb-3 px-4 font-bold text-xs sm:text-sm flex items-center gap-2 border-b-2 transition cursor-pointer ${
-                  activeTab === "progress"
-                    ? "border-[#FF8A00] text-[#FF8A00]"
-                    : "border-transparent text-[#667085] hover:text-[#0A1D3F]"
-                }`}
-              >
-                <TrendingUp className="w-4 h-4" />
-                <span>Detailed Progress</span>
-              </button>
-            </div>
           </div>
 
-          {/* Tab 1: LECTURES TAB */}
+          {/* TAB 1: LECTURES */}
           {activeTab === "lectures" && (
-            <div className="space-y-4">
+            <div className="space-y-2.5">
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-lg font-black text-[#0A1D3F]">
+                  <h2 className="text-sm sm:text-base font-bold text-[#0A1D3F]">
                     Course Lectures by Subject
                   </h2>
-                  <p className="text-xs text-[#667085]">
-                    Select any lecture to open the protected video player.
+                  <p className="text-[11px] text-[#667085]">
+                    Select any lesson to open the protected online player.
                   </p>
                 </div>
               </div>
@@ -233,16 +193,16 @@ export const CourseDashboardPage = () => {
             </div>
           )}
 
-          {/* Tab 2: BOOKS TAB */}
+          {/* TAB 2: BOOKS & STUDY MATERIAL */}
           {activeTab === "books" && (
-            <div className="space-y-4">
+            <div className="space-y-2.5">
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-lg font-black text-[#0A1D3F]">
+                  <h2 className="text-sm sm:text-base font-bold text-[#0A1D3F]">
                     Digital Books & Study Materials
                   </h2>
-                  <p className="text-xs text-[#667085]">
-                    Read your chapter workbooks and formula sheets online.
+                  <p className="text-[11px] text-[#667085]">
+                    Read chapter notes, workbooks, and formula sheets online.
                   </p>
                 </div>
               </div>
@@ -254,51 +214,42 @@ export const CourseDashboardPage = () => {
             </div>
           )}
 
-          {/* Tab 3: PROGRESS TAB */}
+          {/* TAB 3: PROGRESS */}
           {activeTab === "progress" && (
-            <div className="space-y-6">
+            <div className="space-y-3">
               <CourseProgress
                 courseTitle={course.title}
-                progressPercentage={course.progressPercentage || 0}
-                completedLectures={course.completedLectures || 0}
-                totalLectures={course.totalLecturesCount || course.lecturesCount}
+                progressPercentage={progressPct}
+                completedLectures={completedCount}
+                totalLectures={totalCount}
                 subjectsData={course.subjectsData}
               />
 
-              {/* Course Expiry Component */}
               <CourseExpiry
                 status="Active"
-                expiryDate={course.expiryDate || "15 March 2027"}
+                expiryDate={course.expiryDate || "30 April 2027"}
               />
             </div>
           )}
 
-          {/* Tab 4: PROFILE TAB */}
-          {activeTab === "profile" && (
-            <StudentProfile
-              student={student}
-              enrolledCourses={allEnrolled}
-            />
-          )}
-
-          {/* Tab 5: OVERVIEW TAB */}
+          {/* TAB 4: OVERVIEW */}
           {activeTab === "overview" && (
-            <div className="space-y-6">
-              <div className="bg-white rounded-2xl border border-[#E6E8EC] p-6 card-shadow space-y-4">
-                <h3 className="font-extrabold text-base text-[#0A1D3F]">
+            <div className="space-y-3">
+              <div className="bg-white rounded-md border border-[#E6E8EC] p-3.5 sm:p-4 shadow-2xs space-y-3">
+                <h3 className="font-extrabold text-sm sm:text-base text-[#0A1D3F]">
                   About This Course
                 </h3>
-                <p className="text-xs sm:text-sm text-[#667085] leading-relaxed">
+                <p className="text-xs text-[#667085] leading-relaxed">
                   {course.description}
                 </p>
 
-                <div className="pt-3 border-t border-[#E6E8EC] space-y-2">
-                  <h4 className="font-bold text-xs uppercase text-[#667085]">
+                <div className="pt-2.5 border-t border-[#E6E8EC] space-y-1.5">
+                  <h4 className="font-bold text-[11px] uppercase tracking-wider text-[#667085]">
                     Syllabus Coverage
                   </h4>
-                  <div className="space-y-1.5">
+                  <div className="space-y-1">
                     {(course.whatYouWillLearn || []).map((item, idx) => (
-                      <div key={idx} className="flex items-start gap-2 text-xs text-[#0A1D3F]">
+                      <div key={idx} className="flex items-start gap-1.5 text-xs text-[#0A1D3F]">
                         <CheckCircle2 className="w-3.5 h-3.5 text-[#17B26A] shrink-0 mt-0.5" />
                         <span>{item}</span>
                       </div>
@@ -309,9 +260,17 @@ export const CourseDashboardPage = () => {
 
               <CourseExpiry
                 status="Active"
-                expiryDate={course.expiryDate || "15 March 2027"}
+                expiryDate={course.expiryDate || "30 April 2027"}
               />
             </div>
+          )}
+
+          {/* TAB 5: PROFILE */}
+          {activeTab === "profile" && (
+            <StudentProfile
+              student={student}
+              enrolledCourses={allEnrolled}
+            />
           )}
         </main>
       </div>

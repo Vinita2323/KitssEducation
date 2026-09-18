@@ -1,48 +1,69 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Home, Video, ShieldCheck, User } from "lucide-react";
+import { motion } from "framer-motion";
+import { Home, Layers, GraduationCap, ShieldCheck, User } from "lucide-react";
 
 export const BottomNavigation = () => {
   const location = useLocation();
 
   const navItems = [
     { label: "Home", path: "/home", icon: Home },
-    { label: "Coaching", path: "/coaching", icon: Video },
+    { label: "Categories", path: "/categories", icon: Layers },
+    { label: "Colleges", path: "/colleges", icon: GraduationCap },
     { label: "Subscriptions", path: "/subscriptions", icon: ShieldCheck },
     { label: "Profile", path: "/profile", icon: User }
   ];
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/90 backdrop-blur-xl border-t border-slate-200/80 px-2 py-1.5 shadow-[0_-2px_12px_rgba(0,0,0,0.04)]">
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-xl border-t border-slate-200/90 px-2 pt-1.5 pb-[max(0.6rem,env(safe-area-inset-bottom,12px))] shadow-[0_-4px_20px_rgba(10,29,63,0.06)]">
       <div className="flex items-center justify-around max-w-md mx-auto">
         {navItems.map((item) => {
-          const isActive =
-            location.pathname === item.path ||
-            (item.path !== "/home" && location.pathname.startsWith(item.path));
           const Icon = item.icon;
+
+          const isHome =
+            item.path === "/home" &&
+            (location.pathname === "/home" || location.pathname === "/");
+          const isActive =
+            isHome ||
+            (item.path !== "/home" &&
+              (location.pathname === item.path || location.pathname.startsWith(item.path)));
 
           return (
             <Link
               key={item.label}
               to={item.path}
-              className={`flex flex-col items-center justify-center py-1 px-3 rounded-xl transition-all duration-150 touch-target ${
-                isActive
-                  ? "text-slate-950 font-semibold bg-slate-100/70"
-                  : "text-slate-500 hover:text-slate-800"
-              }`}
+              className="relative flex flex-col items-center justify-center py-1.5 px-3 rounded-2xl touch-target cursor-pointer transition-colors"
             >
-              <Icon
-                className={`w-4.5 h-4.5 transition-transform ${
-                  isActive ? "stroke-[2.2] scale-105 text-slate-950" : "stroke-[1.6]"
-                }`}
-              />
-              <span
-                className={`text-[10px] mt-0.5 tracking-tight ${
-                  isActive ? "font-semibold text-slate-950" : "font-medium text-slate-500"
-                }`}
+              <motion.div
+                whileTap={{ scale: 0.88 }}
+                className="flex flex-col items-center justify-center relative z-10"
               >
-                {item.label}
-              </span>
+                {/* Sliding Active Pill Indicator */}
+                {isActive && (
+                  <motion.div
+                    layoutId="bottomNavActivePill"
+                    className="absolute inset-0 -top-1 -bottom-1 -left-2.5 -right-2.5 bg-orange-50 border border-orange-200/70 rounded-2xl -z-10 shadow-2xs"
+                    transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                  />
+                )}
+
+                <Icon
+                  className={`w-5 h-5 transition-all duration-200 ${
+                    isActive
+                      ? "stroke-[2.4] scale-110 text-[#FF8A00]"
+                      : "stroke-[1.8] text-slate-500"
+                  }`}
+                />
+                <span
+                  className={`text-[10px] mt-0.5 tracking-tight transition-colors ${
+                    isActive
+                      ? "font-bold text-[#FF8A00]"
+                      : "font-medium text-slate-500"
+                  }`}
+                >
+                  {item.label}
+                </span>
+              </motion.div>
             </Link>
           );
         })}

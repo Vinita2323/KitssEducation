@@ -6,9 +6,23 @@ import { SideDrawer } from "./SideDrawer";
 
 export const UserLayout = () => {
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const location = useLocation();
+
+  // Immersive reader pages (e.g. /books/:id/read or /coaching/.../read) should have 100% of screen without standard navigation bars
+  const isImmersiveReader = location.pathname.includes("/read");
+
+  if (isImmersiveReader) {
+    return (
+      <div className="h-screen w-full max-w-full overflow-hidden bg-[#F1F3F7] flex flex-col font-sans text-slate-900 antialiased select-none">
+        <main className="flex-1 w-full h-full min-w-0 overflow-hidden flex flex-col">
+          <Outlet />
+        </main>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] flex flex-col font-sans text-slate-900 antialiased selection:bg-slate-900 selection:text-white">
+    <div className="min-h-screen bg-[#F8FAFC] flex flex-col font-sans text-slate-900 antialiased selection:bg-slate-900 selection:text-white w-full max-w-full overflow-x-hidden">
       {/* App Header (Sticky) */}
       <AppHeader onOpenDrawer={() => setDrawerOpen(true)} unreadCount={2} />
 
@@ -16,7 +30,7 @@ export const UserLayout = () => {
       <SideDrawer isOpen={drawerOpen} onClose={() => setDrawerOpen(false)} />
 
       {/* Main Content Area */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-3.5 sm:px-6 lg:px-8 py-4 sm:py-6 pb-24 md:pb-12">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-3 sm:py-5 pb-28 md:pb-12 min-w-0 overflow-x-hidden">
         <Outlet />
       </main>
 

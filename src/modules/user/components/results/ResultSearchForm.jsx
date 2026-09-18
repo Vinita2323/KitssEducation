@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { Search, Calendar, User, Hash, AlertCircle, Sparkles, Building2, BookOpen } from "lucide-react";
+import { Search, Calendar, User, Hash, AlertCircle, Building2, BookOpen } from "lucide-react";
 import { PrimaryButton } from "../common/PrimaryButton";
-import { DEMO_PRESETS } from "../../data/mockBoards";
 
 /**
  * ResultSearchForm
@@ -137,34 +136,19 @@ export const ResultSearchForm = ({
     });
   };
 
-  const handleApplyPreset = (preset) => {
-    setFormData((prev) => ({
-      ...prev,
-      rollNumber: preset.rollNumber,
-      dob: preset.dob || prev.dob || "2009-08-15",
-      motherName: preset.motherName || prev.motherName || ""
-    }));
-    setErrors({});
-  };
-
-  // Filter demo presets matching current result type and board
-  const relevantPresets = DEMO_PRESETS.filter(
-    (p) => p.type === resultType && (p.boardId === boardConfig.id || p.rollNumber === "999999")
-  );
-
   return (
-    <div className="bg-white rounded-xl border border-slate-200/80 p-3.5 sm:p-5 shadow-xs space-y-3.5">
+    <div className="bg-white rounded-2xl border border-slate-200/80 p-3.5 sm:p-5 shadow-2xs space-y-3.5">
       {/* Selected Board Header Banner */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-3 border-b border-slate-200/80">
         <div className="flex items-center gap-2.5 min-w-0">
-          <div className="w-8 h-8 rounded-lg bg-slate-900 text-white flex items-center justify-center font-bold text-xs shrink-0">
+          <div className="w-8 h-8 rounded-xl bg-[#0A1D3F] text-[#FF8A00] flex items-center justify-center font-bold text-xs shrink-0">
             {boardConfig.code || "BD"}
           </div>
           <div className="min-w-0">
-            <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider block">
+            <span className="text-[10px] font-bold text-[#FF8A00] uppercase tracking-wider block">
               Step 2: Examination Details
             </span>
-            <h3 className="text-sm font-bold text-slate-900 truncate">
+            <h3 className="text-sm font-bold text-[#0A1D3F] truncate">
               {boardConfig.fullName || boardConfig.name}
             </h3>
           </div>
@@ -174,34 +158,12 @@ export const ResultSearchForm = ({
           <button
             type="button"
             onClick={onChangeBoard}
-            className="self-start sm:self-center text-xs font-medium text-slate-700 hover:text-slate-950 border border-slate-200 hover:border-slate-300 px-2.5 py-1 rounded-lg transition-colors shrink-0 cursor-pointer"
+            className="self-start sm:self-center text-xs font-bold text-slate-700 hover:text-[#FF8A00] border border-slate-200/80 hover:border-[#FF8A00] px-2.5 py-1 rounded-lg transition-colors shrink-0 cursor-pointer"
           >
             Change Board
           </button>
         )}
       </div>
-
-      {/* Demo Credentials Quick-Fill Chips */}
-      {relevantPresets.length > 0 && (
-        <div className="p-2 bg-slate-50 rounded-lg border border-slate-200/70 space-y-1.5">
-          <div className="flex items-center gap-1.5 text-[10px] font-semibold text-slate-700">
-            <Sparkles className="w-3 h-3 text-amber-500" />
-            <span>Quick Test Credentials (Click to Auto-fill):</span>
-          </div>
-          <div className="flex flex-wrap gap-1.5">
-            {relevantPresets.map((preset, idx) => (
-              <button
-                key={idx}
-                type="button"
-                onClick={() => handleApplyPreset(preset)}
-                className="text-[10px] font-medium px-2 py-0.5 rounded-md bg-white border border-slate-200 text-slate-800 hover:border-slate-400 transition active:scale-95 shadow-2xs cursor-pointer"
-              >
-                {preset.label}: <strong className="font-mono font-semibold">{preset.rollNumber}</strong>
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
 
       {/* Dynamic Form based on Board Configuration */}
       <form onSubmit={handleSubmit} className="space-y-3.5">

@@ -174,9 +174,17 @@ export const ProtectedVideoPlayer = ({
         <div className="relative aspect-16/9 bg-neutral-950 flex items-center justify-center overflow-hidden">
           <video
             ref={videoRef}
-            src={lecture?.videoUrl || "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"}
+            src={lecture?.videoUrl || "/videos/sample-lecture.mp4"}
             onTimeUpdate={handleTimeUpdate}
             onLoadedMetadata={handleLoadedMetadata}
+            onPlay={() => setIsPlaying(true)}
+            onPause={() => setIsPlaying(false)}
+            onError={(e) => {
+              if (e.target.src !== window.location.origin + "/videos/sample-lecture.mp4") {
+                e.target.src = "/videos/sample-lecture.mp4";
+                e.target.load();
+              }
+            }}
             onEnded={() => {
               setIsPlaying(false);
               if (onLectureComplete) onLectureComplete();
@@ -184,6 +192,7 @@ export const ProtectedVideoPlayer = ({
             className="w-full h-full object-contain cursor-pointer"
             onClick={togglePlay}
             playsInline
+            preload="auto"
             controlsList="nodownload noplaybackrate noremoteplayback"
             disablePictureInPicture
           />

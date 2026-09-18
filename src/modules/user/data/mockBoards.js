@@ -6,8 +6,8 @@
 export const RESULT_TYPES = [
   {
     id: "school",
-    title: "School Result",
-    subtitle: "Check your school examination or board result.",
+    title: "Board Result",
+    subtitle: "Check your board examination result.",
     badge: "Secondary & Higher Secondary",
     iconName: "GraduationCap",
     accentColor: "#0A1D3F",

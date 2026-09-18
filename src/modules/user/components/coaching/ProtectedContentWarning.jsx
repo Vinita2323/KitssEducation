@@ -24,26 +24,10 @@ export const ProtectedContentWarning = ({
       }
     };
 
-    // 2. Detect Window Blur (user switching windows / active screen capture utility taking focus)
-    const handleBlur = () => {
-      setShowWarning(true);
-    };
-
-    // 3. Detect Tab Visibility Change
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === "hidden") {
-        setShowWarning(true);
-      }
-    };
-
     window.addEventListener("keyup", handleKeyDown);
-    window.addEventListener("blur", handleBlur);
-    document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
       window.removeEventListener("keyup", handleKeyDown);
-      window.removeEventListener("blur", handleBlur);
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, [isActive]);
 

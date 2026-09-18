@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   X,
   Home,
@@ -29,8 +30,6 @@ export const SideDrawer = ({ isOpen, onClose }) => {
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [showHelpModal, setShowHelpModal] = useState(false);
 
-  if (!isOpen) return null;
-
   const menuItems = [
     { label: "Home", path: "/home", icon: Home },
     { label: "Partner Colleges", path: "/colleges", icon: GraduationCap },
@@ -58,36 +57,54 @@ export const SideDrawer = ({ isOpen, onClose }) => {
 
   return (
     <>
-      <div className="fixed inset-0 z-50 flex">
-        {/* Backdrop */}
-        <div
-          className="fixed inset-0 bg-[#0A1D3F]/60 backdrop-blur-xs transition-opacity"
-          onClick={onClose}
-        />
+      <AnimatePresence>
+        {isOpen && (
+        <div className="fixed inset-0 z-50 flex">
+          {/* Backdrop with fade animation */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 bg-[#0A1D3F]/60 backdrop-blur-xs cursor-pointer"
+            onClick={onClose}
+          />
 
-        {/* Drawer Panel */}
-        <div className="relative w-4/5 max-w-xs bg-white h-full shadow-2xl z-10 flex flex-col justify-between animate-in slide-in-from-left duration-300">
-          {/* Top Header & Student Info */}
-          <div>
-            <div className="flex items-center justify-between p-4 border-b border-[#E6E8EC]">
-              <div className="flex items-center gap-2">
-                <img
-                  src="/KitssLogo.png"
-                  alt="KITSS Logo"
-                  className="h-8 w-auto object-contain"
-                />
-                <span className="font-extrabold text-[#0A1D3F] text-sm tracking-tight">
-                  KITSS <span className="text-[#FF8A00]">EDUCATION</span>
-                </span>
+          {/* Drawer Panel with spring slide */}
+          <motion.div
+            initial={{ x: "-100%" }}
+            animate={{ x: 0 }}
+            exit={{ x: "-100%" }}
+            transition={{ type: "spring", damping: 28, stiffness: 280 }}
+            className="relative w-[82vw] max-w-xs bg-white h-full shadow-2xl z-10 flex flex-col justify-between"
+          >
+            {/* Top Header & Student Info */}
+            <div>
+              <div className="flex items-center justify-between p-4 border-b border-slate-200">
+                <div className="flex items-center gap-2">
+                  <img
+                    src="/KitssLogo.png"
+                    alt="KITSS Logo"
+                    className="h-8 w-auto object-contain"
+                  />
+                  <div className="flex items-center gap-1 leading-none">
+                    <span className="font-black text-[#0A1D3F] text-sm tracking-tight">
+                      KITSS
+                    </span>
+                    <span className="font-black text-[#FF8A00] text-sm tracking-tight">
+                      EDUCATION
+                    </span>
+                  </div>
+                </div>
+                <motion.button
+                  type="button"
+                  whileTap={{ scale: 0.9 }}
+                  onClick={onClose}
+                  className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </motion.button>
               </div>
-              <button
-                type="button"
-                onClick={onClose}
-                className="p-1 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
 
             {/* Student Profile Card in Drawer */}
             {user ? (
@@ -191,10 +208,12 @@ export const SideDrawer = ({ isOpen, onClose }) => {
               </button>
             )}
           </div>
-        </div>
+        </motion.div>
       </div>
+    )}
+  </AnimatePresence>
 
-      {/* Logout Confirmation Modal */}
+  {/* Logout Confirmation Modal */}
       <Modal
         isOpen={showLogoutModal}
         onClose={() => setShowLogoutModal(false)}

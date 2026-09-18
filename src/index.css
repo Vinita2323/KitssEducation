@@ -1,32 +1,57 @@
 @import "tailwindcss";
 
 @theme {
-  --color-navy: #0F172A;
-  --color-navy-light: #1E293B;
-  --color-navy-dark: #020617;
-  --color-orange: #EA580C;
+  --color-brand-navy: #0A1D3F;
+  --color-brand-navy-dark: #06132A;
+  --color-brand-navy-light: #132A56;
+  --color-brand-orange: #FF8A00;
+  --color-brand-orange-light: #FFF7ED;
+  --color-brand-orange-hover: #E67A00;
+  --color-brand-teal: #0D9488;
+  --color-brand-teal-light: #F0FDFA;
+  --color-brand-teal-dark: #0F766E;
+  --color-navy: #0A1D3F;
+  --color-navy-light: #132A56;
+  --color-navy-dark: #06132A;
+  --color-orange: #FF8A00;
   --color-orange-light: #FFF7ED;
-  --color-orange-hover: #C2410C;
+  --color-orange-hover: #E67A00;
+  --color-teal: #0D9488;
+  --color-teal-light: #F0FDFA;
+  --color-teal-dark: #0F766E;
   --color-green: #16A34A;
   --color-green-light: #F0FDF4;
   --color-purple: #6366F1;
   --color-purple-light: #EEF2FF;
   --color-bg-light: #F8FAFC;
   --color-border-light: #E2E8F0;
-  --color-text-primary: #0F172A;
+  --color-text-primary: #0A1D3F;
   --color-text-secondary: #64748B;
   --color-danger: #EF4444;
   --font-sans: "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
 }
 
 :root {
-  --primary-navy: #0F172A;
-  --secondary-blue: #1E293B;
-  --primary-orange: #EA580C;
+  --primary-navy: #0A1D3F;
+  --primary-orange: #FF8A00;
+  --secondary-teal: #0D9488;
+  --secondary-blue: #132A56;
   --success-green: #16A34A;
-  --purple: #6366F1;
   --light-bg: #F8FAFC;
   --border-color: #E2E8F0;
+}
+
+html,
+body {
+  overflow-x: hidden;
+  max-width: 100vw;
+  width: 100%;
+}
+
+#root {
+  overflow-x: hidden;
+  max-width: 100%;
+  width: 100%;
 }
 
 /* Custom scrollbar */
@@ -54,10 +79,21 @@
   scrollbar-width: none;
 }
 
-/* Mobile Touch Targets */
+/* Mobile Touch Targets (WCAG 2.5.5 Compliant) */
 .touch-target {
-  min-height: 40px;
-  min-width: 40px;
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* Mobile Safe Area Insets for iOS & Android Gesture Bars */
+.pb-safe {
+  padding-bottom: max(0.75rem, env(safe-area-inset-bottom, 12px));
+}
+.pb-nav-safe {
+  padding-bottom: calc(4.5rem + env(safe-area-inset-bottom, 16px));
+}
+.pt-safe {
+  padding-top: env(safe-area-inset-top, 0px);
 }
 
 /* Smooth Tap Highlight on Mobile */
@@ -88,7 +124,8 @@
   nav,
   footer,
   aside,
-  .no-print {
+  .no-print,
+  .no-print-reader {
     display: none !important;
   }
   main {
@@ -100,4 +137,17 @@
   .print-only {
     display: block !important;
   }
+  .print-drm-notice {
+    display: flex !important;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    text-align: center;
+    padding: 2rem;
+  }
+}
+
+.print-drm-notice {
+  display: none;
 }

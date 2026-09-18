@@ -12,6 +12,7 @@ import {
   X
 } from "lucide-react";
 import { collegeService } from "../../services/collegeService";
+import { STATE_DISTRICT_MAP } from "../../data/mockColleges";
 import { EmptyState, SkeletonLoader } from "../../components/common/EmptyState";
 import { PrimaryButton, SecondaryButton } from "../../components/common/PrimaryButton";
 import { AdmissionApplicationModal } from "../../components/college/AdmissionApplicationModal";
@@ -24,7 +25,8 @@ export const CollegesListingPage = () => {
   // Filters state
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
-  const [selectedCity, setSelectedCity] = useState("All");
+  const [selectedState, setSelectedState] = useState("All");
+  const [selectedDistrict, setSelectedDistrict] = useState("All");
 
   // Application Modal state
   const [applyModalOpen, setApplyModalOpen] = useState(false);
@@ -35,7 +37,16 @@ export const CollegesListingPage = () => {
   const [selectedCollegeForDetails, setSelectedCollegeForDetails] = useState(null);
 
   const categories = ["All", "University", "College", "School", "Institute"];
-  const cities = ["All", "New Delhi", "Phagwara", "Manipal", "Noida", "Pune", "Bangalore", "Jaipur"];
+  const states = ["All", ...Object.keys(STATE_DISTRICT_MAP)];
+
+  // Districts available based on selected state
+  const availableDistricts = React.useMemo(() => {
+    if (selectedState === "All") {
+      const all = Object.values(STATE_DISTRICT_MAP).flat();
+      return ["All", ...Array.from(new Set(all))];
+    }
+    return ["All", ...(STATE_DISTRICT_MAP[selectedState] || [])];
+  }, [selectedState]);
 
   const fetchColleges = async () => {
     try {
@@ -43,7 +54,8 @@ export const CollegesListingPage = () => {
       const data = await collegeService.getColleges({
         search: searchQuery,
         category: selectedCategory,
-        city: selectedCity,
+        state: selectedState,
+        district: selectedDistrict,
       });
       setColleges(data);
     } catch (err) {
@@ -55,7 +67,7 @@ export const CollegesListingPage = () => {
 
   useEffect(() => {
     fetchColleges();
-  }, [selectedCategory, selectedCity]);
+  }, [selectedCategory, selectedState, selectedDistrict]);
 
   // Debounced or on-submit search
   const handleSearchSubmit = (e) => {
@@ -63,10 +75,17 @@ export const CollegesListingPage = () => {
     fetchColleges();
   };
 
+  const handleStateChange = (e) => {
+    const newState = e.target.value;
+    setSelectedState(newState);
+    setSelectedDistrict("All");
+  };
+
   const handleClearFilters = () => {
     setSearchQuery("");
     setSelectedCategory("All");
-    setSelectedCity("All");
+    setSelectedState("All");
+    setSelectedDistrict("All");
   };
 
   const openApplyModal = (collegeId) => {
@@ -80,7 +99,7 @@ export const CollegesListingPage = () => {
   };
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto pb-10">
+    <div className="space-y-4 sm:space-y-6 max-w-7xl mx-auto pb-10 w-full min-w-0">
       {/* Header Banner */}
       <div className="relative overflow-hidden bg-gradient-to-r from-[#0A1D3F] via-[#133C8B] to-[#0A1D3F] text-white rounded-3xl p-6 sm:p-8 shadow-md">
         <div className="relative z-10 max-w-2xl space-y-2">
@@ -102,16 +121,17 @@ export const CollegesListingPage = () => {
       </div>
 
       {/* Search & Filter Bar */}
-      <div className="bg-white p-4 sm:p-5 rounded-2xl border border-[#E6E8EC] shadow-xs space-y-3.5">
-        <form onSubmit={handleSearchSubmit} className="flex gap-2">
-          <div className="relative flex-1">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#667085]" />
+      <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-[#E6E8EC] shadow-xs space-y-3 w-full min-w-0 overflow-hidden">
+        {/* Search input + button */}
+        <form onSubmit={handleSearchSubmit} className="flex items-center gap-2 w-full">
+          <div className="relative flex-1 min-w-0">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#667085] shrink-0" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search by college name, city or course.."
-              className="w-full pl-10 pr-10 py-2.5 bg-[#F7F8FA] border border-[#E6E8EC] rounded-xl text-xs sm:text-sm text-[#0A1D3F] placeholder-[#667085] focus:outline-none focus:border-[#FF8A00] transition"
+              placeholder="Search college, course, state, district..."
+              className="w-full pl-9 sm:pl-10 pr-9 py-2.5 bg-[#F7F8FA] border border-[#E6E8EC] rounded-xl text-xs sm:text-sm text-[#0A1D3F] placeholder-[#667085] focus:outline-none focus:border-[#FF8A00] transition"
             />
             {searchQuery && (
               <button
@@ -120,69 +140,99 @@ export const CollegesListingPage = () => {
                   setSearchQuery("");
                   fetchColleges();
                 }}
-                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600 cursor-pointer"
               >
-                <X className="w-4 h-4" />
+                <X className="w-3.5 h-3.5" />
               </button>
             )}
           </div>
           <button
             type="submit"
-            className="px-5 py-2.5 bg-[#FF8A00] hover:bg-[#E67C00] text-white text-xs font-bold rounded-xl shadow-xs transition"
+            className="px-4 sm:px-5 py-2.5 bg-[#FF8A00] hover:bg-[#E67C00] text-white text-xs font-bold rounded-xl shadow-xs transition shrink-0 cursor-pointer"
           >
             Search
           </button>
         </form>
 
-        {/* Filter Dropdowns & Category Pills */}
-        <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-[#F0F2F5]">
-          <div className="flex flex-wrap items-center gap-2">
-            {/* Category Filter Chips */}
-            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
-              {categories.map((cat) => (
-                <button
-                  key={cat}
-                  onClick={() => setSelectedCategory(cat)}
-                  className={`px-3.5 py-1 rounded-full text-xs font-semibold transition ${
-                    selectedCategory === cat
-                      ? "bg-[#FF8A00] text-white font-bold shadow-xs"
-                      : "bg-[#F7F8FA] text-[#0A1D3F] hover:bg-gray-200 border border-[#E6E8EC]"
-                  }`}
-                >
-                  {cat}
-                </button>
-              ))}
+        {/* Category Filter Chips - Dedicated Horizontal Scroll Row */}
+        <div className="w-full min-w-0 overflow-x-auto no-scrollbar py-0.5">
+          <div className="flex items-center gap-1.5 w-max">
+            {categories.map((cat) => (
+              <button
+                key={cat}
+                type="button"
+                onClick={() => setSelectedCategory(cat)}
+                className={`px-3.5 py-1 rounded-full text-xs font-semibold whitespace-nowrap transition cursor-pointer ${
+                  selectedCategory === cat
+                    ? "bg-[#FF8A00] text-white font-bold shadow-xs"
+                    : "bg-[#F7F8FA] text-[#0A1D3F] hover:bg-gray-200 border border-[#E6E8EC]"
+                }`}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Location Dropdowns & Reset Filters Row */}
+        <div className="pt-2.5 border-t border-[#F0F2F5] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 w-full min-w-0">
+          <div className="grid grid-cols-2 sm:flex sm:items-center gap-2 w-full sm:w-auto">
+            {/* State Dropdown */}
+            <div className="flex items-center gap-1.5 bg-[#F7F8FA] px-2.5 py-1.5 rounded-xl border border-[#E6E8EC] hover:border-[#FF8A00]/50 transition min-w-0">
+              <MapPin className="w-3.5 h-3.5 text-[#FF8A00] shrink-0" />
+              <select
+                aria-label="Filter by State"
+                value={selectedState}
+                onChange={handleStateChange}
+                className="w-full text-xs font-semibold bg-transparent text-[#0A1D3F] focus:outline-none cursor-pointer truncate"
+              >
+                <option value="All">All States</option>
+                {states.filter((s) => s !== "All").map((st) => (
+                  <option key={st} value={st}>
+                    {st}
+                  </option>
+                ))}
+              </select>
             </div>
 
-            {/* City Dropdown */}
-            <select
-              value={selectedCity}
-              onChange={(e) => setSelectedCity(e.target.value)}
-              className="text-xs font-semibold px-3 py-1 rounded-lg bg-[#F7F8FA] text-[#0A1D3F] border border-[#E6E8EC] focus:outline-none"
-            >
-              <option value="All">All Cities</option>
-              {cities.filter((c) => c !== "All").map((c) => (
-                <option key={c} value={c}>
-                  {c}
+            {/* District Dropdown */}
+            <div className="flex items-center gap-1.5 bg-[#F7F8FA] px-2.5 py-1.5 rounded-xl border border-[#E6E8EC] hover:border-[#FF8A00]/50 transition min-w-0">
+              <Building2 className="w-3.5 h-3.5 text-[#667085] shrink-0" />
+              <select
+                aria-label="Filter by District"
+                value={selectedDistrict}
+                onChange={(e) => setSelectedDistrict(e.target.value)}
+                className="w-full text-xs font-semibold bg-transparent text-[#0A1D3F] focus:outline-none cursor-pointer truncate"
+              >
+                <option value="All">
+                  {selectedState === "All" ? "All Districts" : `All Districts`}
                 </option>
-              ))}
-            </select>
+                {availableDistricts.filter((d) => d !== "All").map((dist) => (
+                  <option key={dist} value={dist}>
+                    {dist}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
 
-          {(selectedCategory !== "All" || selectedCity !== "All" || searchQuery) && (
-            <button
-              onClick={handleClearFilters}
-              className="text-xs font-bold text-[#FF8A00] hover:underline"
-            >
-              Reset Filters
-            </button>
+          {(selectedCategory !== "All" || selectedState !== "All" || selectedDistrict !== "All" || searchQuery) && (
+            <div className="flex items-center justify-end">
+              <button
+                type="button"
+                onClick={handleClearFilters}
+                className="text-xs font-bold text-[#FF8A00] hover:underline cursor-pointer py-0.5"
+              >
+                Reset Filters
+              </button>
+            </div>
           )}
         </div>
       </div>
 
       {/* Result Count Header */}
-      <div className="flex items-center justify-between px-1">
-        <h2 className="text-sm font-bold text-[#0A1D3F] uppercase tracking-wider">
+      <div className="flex items-center justify-between px-1 gap-2 flex-wrap">
+        <h2 className="text-xs sm:text-sm font-bold text-[#0A1D3F] uppercase tracking-wider truncate">
           {loading ? "Searching Colleges..." : `Showing ${colleges.length} Partner Institutions`}
         </h2>
         <span className="text-xs text-[#667085]">
@@ -259,7 +309,7 @@ export const CollegesListingPage = () => {
                     {/* Location */}
                     <div className="flex items-center gap-1.5 text-xs text-[#667085]">
                       <MapPin className="w-4 h-4 text-[#FF8A00] shrink-0" />
-                      <span>{college.location || `${college.city}, ${college.state}`}</span>
+                      <span>{college.district ? `${college.district}, ${college.state}` : college.location || `${college.city}, ${college.state}`}</span>
                     </div>
 
                     {/* Description */}

@@ -1,5 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
+import { motion } from "framer-motion";
 import {
   Video,
   BookOpen,
@@ -16,6 +17,7 @@ export const CourseCard = ({
   course,
   showJoinAction = false,
   onJoinClick,
+  layout = "default",
 }) => {
   if (!course) return null;
 
@@ -37,6 +39,135 @@ export const CourseCard = ({
     progressPercentage = 0,
     completedLectures = 0,
   } = course;
+
+  // Modern compact discovery card for Home page
+  if (layout === "compact") {
+    return (
+      <motion.div
+        whileHover={{ y: -4 }}
+        whileTap={{ scale: 0.98 }}
+        className="w-[82vw] sm:w-[310px] md:w-[320px] shrink-0 snap-start bg-white rounded-3xl border border-slate-200/90 shadow-2xs hover:shadow-lg hover:border-slate-300 transition-all duration-300 overflow-hidden group cursor-pointer flex flex-col justify-between"
+      >
+        <Link to={`/coaching/${id}`} className="block">
+          {/* Thumbnail Area */}
+          <div className="relative h-38 sm:h-40 w-full overflow-hidden bg-slate-900">
+            <img
+              src={
+                thumbnail ||
+                "https://images.unsplash.com/photo-1532094349884-543bc11b234d?w=600&auto=format&fit=crop&q=80"
+              }
+              alt={title}
+              className="w-full h-full object-cover group-hover:scale-106 transition-transform duration-500 ease-out"
+              loading="lazy"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#0A1D3F] via-[#0A1D3F]/20 to-black/20 pointer-events-none" />
+
+            {/* Top Badges */}
+            <div className="absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between pointer-events-none">
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-[#0A1D3F]/85 text-white backdrop-blur-md border border-white/15 shadow-xs uppercase tracking-wider">
+                <span>{board}</span>
+                <span>•</span>
+                <span>{gradeClass}</span>
+              </span>
+
+              <span
+                className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold shadow-xs ${
+                  isEnrolled
+                    ? "bg-emerald-500 text-white"
+                    : "bg-white/95 text-[#0A1D3F] backdrop-blur-md border border-slate-100"
+                }`}
+              >
+                <span
+                  className={`w-1.5 h-1.5 rounded-full ${
+                    isEnrolled ? "bg-white" : "bg-emerald-500"
+                  } animate-pulse`}
+                />
+                <span>{isEnrolled ? "Enrolled" : status}</span>
+              </span>
+            </div>
+
+            {/* Enrolled Progress Bar on Thumbnail */}
+            {isEnrolled && (
+              <div className="absolute bottom-2.5 left-2.5 right-2.5 bg-black/60 backdrop-blur-md rounded-xl p-1.5 px-2.5 flex items-center justify-between text-white text-[10px] border border-white/10">
+                <div className="flex items-center gap-1.5">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                  <span className="font-semibold text-white/90">
+                    {progressPercentage}% Complete
+                  </span>
+                </div>
+                <div className="w-16 h-1.5 bg-white/20 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-emerald-400 rounded-full"
+                    style={{ width: `${progressPercentage}%` }}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Details Content */}
+          <div className="p-3.5 space-y-2">
+            {/* Subjects Tags */}
+            {subjects.length > 0 && (
+              <div className="flex flex-wrap gap-1">
+                {subjects.slice(0, 3).map((sub, idx) => (
+                  <span
+                    key={idx}
+                    className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-slate-50 text-slate-600 border border-slate-200/80"
+                  >
+                    {sub}
+                  </span>
+                ))}
+              </div>
+            )}
+
+            {/* Title */}
+            <h3 className="font-extrabold text-sm sm:text-base text-[#0A1D3F] line-clamp-1 group-hover:text-[#FF8A00] transition-colors tracking-tight">
+              {title}
+            </h3>
+
+            {/* Instructor */}
+            {teacher && (
+              <div className="flex items-center gap-1.5 text-xs text-slate-500 font-medium">
+                <User className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                <span className="truncate">{teacher}</span>
+              </div>
+            )}
+
+            {/* Quick Metrics */}
+            <div className="flex items-center gap-3 pt-0.5 text-xs text-slate-500 font-medium">
+              <span className="flex items-center gap-1">
+                <Video className="w-3.5 h-3.5 text-slate-400" />
+                <span>{lecturesCount || 0} Lectures</span>
+              </span>
+              <span className="text-slate-300">•</span>
+              <span className="flex items-center gap-1">
+                <Clock className="w-3.5 h-3.5 text-slate-400" />
+                <span>{duration || "6 Months"}</span>
+              </span>
+            </div>
+          </div>
+        </Link>
+
+        {/* Footer Action Strip */}
+        <div className="px-3.5 pb-3.5 pt-2 flex items-center justify-between border-t border-slate-100 text-xs">
+          <Link
+            to={isEnrolled ? `/coaching/${id}/dashboard` : `/coaching/${id}`}
+            className="flex items-center gap-1 font-bold text-[#FF8A00] group-hover:text-[#E67A00] transition-colors"
+          >
+            <span>{isEnrolled ? "Continue Learning" : "View Course"}</span>
+            <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+          </Link>
+
+          {isEnrolled && (
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200/60">
+              Active Batch
+            </span>
+          )}
+        </div>
+      </motion.div>
+    );
+  }
 
   return (
     <div className="bg-white rounded-xl border border-slate-200/80 overflow-hidden shadow-xs hover:border-slate-300 hover:shadow-md flex flex-col h-full transition-all duration-200 group">

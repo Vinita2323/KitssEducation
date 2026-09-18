@@ -7,6 +7,8 @@ export const collegeService = {
   async getColleges({
     search = "",
     city = "All",
+    state = "All",
+    district = "All",
     degree = "All",
     location = "All",
     category = "All",
@@ -43,6 +45,7 @@ export const collegeService = {
       colleges = colleges.filter(
         (c) =>
           c.name?.toLowerCase().includes(q) ||
+          c.district?.toLowerCase().includes(q) ||
           c.city?.toLowerCase().includes(q) ||
           c.state?.toLowerCase().includes(q) ||
           c.location?.toLowerCase().includes(q) ||
@@ -51,7 +54,22 @@ export const collegeService = {
       );
     }
 
-    // City filter
+    // State filter
+    if (state && state !== "All") {
+      colleges = colleges.filter(
+        (c) => (c.state || "").toLowerCase() === state.toLowerCase()
+      );
+    }
+
+    // District filter
+    if (district && district !== "All") {
+      colleges = colleges.filter(
+        (c) =>
+          (c.district || c.city || "").toLowerCase() === district.toLowerCase()
+      );
+    }
+
+    // City filter (retained for backward compatibility)
     if (city && city !== "All") {
       colleges = colleges.filter((c) => c.city?.toLowerCase() === city.toLowerCase());
     }
@@ -61,6 +79,7 @@ export const collegeService = {
       colleges = colleges.filter(
         (c) =>
           c.location?.toLowerCase().includes(location.toLowerCase()) ||
+          c.district?.toLowerCase().includes(location.toLowerCase()) ||
           c.state?.toLowerCase().includes(location.toLowerCase())
       );
     }

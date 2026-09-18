@@ -53,7 +53,7 @@ export const INITIAL_COACHING_COURSES = [
             teacher: "Dr. Alok Verma",
             isCompleted: true,
             isLocked: false,
-            videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+            videoUrl: "/videos/sample-lecture.mp4",
             summary: "Laws of reflection, focal length calculation, and ray diagrams for concave and convex mirrors."
           },
           {
@@ -63,7 +63,7 @@ export const INITIAL_COACHING_COURSES = [
             teacher: "Dr. Alok Verma",
             isCompleted: true,
             isLocked: false,
-            videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4",
+            videoUrl: "/videos/sample-lecture.mp4",
             summary: "Snell's Law, refractive index calculation, lens maker formula, and power of a lens."
           },
           {
@@ -73,7 +73,7 @@ export const INITIAL_COACHING_COURSES = [
             teacher: "Dr. Alok Verma",
             isCompleted: false,
             isLocked: false,
-            videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
+            videoUrl: "/videos/sample-lecture.mp4",
             summary: "Defects of vision (myopia, hypermetropia, presbyopia), dispersion through a prism, and atmospheric refraction."
           },
           {
@@ -83,7 +83,7 @@ export const INITIAL_COACHING_COURSES = [
             teacher: "Dr. Alok Verma",
             isCompleted: false,
             isLocked: false,
-            videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4",
+            videoUrl: "/videos/sample-lecture.mp4",
             summary: "Electric current, potential difference, series and parallel circuit calculations, and Joule's heating effect."
           },
           {
@@ -93,7 +93,7 @@ export const INITIAL_COACHING_COURSES = [
             teacher: "Dr. Alok Verma",
             isCompleted: false,
             isLocked: true,
-            videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+            videoUrl: "/videos/sample-lecture.mp4",
             summary: "Right-Hand Thumb rule, Fleming's Left-Hand rule, electric motor, and electromagnetic induction principles."
           }
         ],
@@ -134,7 +134,7 @@ export const INITIAL_COACHING_COURSES = [
             teacher: "Dr. Neha Gupta",
             isCompleted: true,
             isLocked: false,
-            videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+            videoUrl: "/videos/sample-lecture.mp4",
             summary: "Balancing chemical equations, combination, decomposition, displacement, and redox reactions with real-world examples."
           },
           {
@@ -144,7 +144,7 @@ export const INITIAL_COACHING_COURSES = [
             teacher: "Dr. Neha Gupta",
             isCompleted: false,
             isLocked: false,
-            videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4",
+            videoUrl: "/videos/sample-lecture.mp4",
             summary: "Indicator reactions, universal indicator, pH scale applications, bleaching powder, and Plaster of Paris preparation."
           },
           {
@@ -154,7 +154,7 @@ export const INITIAL_COACHING_COURSES = [
             teacher: "Dr. Neha Gupta",
             isCompleted: false,
             isLocked: false,
-            videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
+            videoUrl: "/videos/sample-lecture.mp4",
             summary: "Physical and chemical properties, ionic compounds formation, metallurgy extraction steps, and corrosion prevention."
           },
           {
@@ -164,7 +164,7 @@ export const INITIAL_COACHING_COURSES = [
             teacher: "Dr. Neha Gupta",
             isCompleted: false,
             isLocked: true,
-            videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4",
+            videoUrl: "/videos/sample-lecture.mp4",
             summary: "Tetravalency, catenation, homologous series, functional groups, and cleansing action of soaps vs detergents."
           }
         ],
@@ -205,7 +205,7 @@ export const INITIAL_COACHING_COURSES = [
             teacher: "Dr. Neha Gupta",
             isCompleted: true,
             isLocked: false,
-            videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+            videoUrl: "/videos/sample-lecture.mp4",
             summary: "Autotrophic and heterotrophic nutrition, human digestive tract mechanism, aerobic vs anaerobic respiration pathways."
           },
           {
@@ -215,7 +215,7 @@ export const INITIAL_COACHING_COURSES = [
             teacher: "Dr. Neha Gupta",
             isCompleted: false,
             isLocked: false,
-            videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4",
+            videoUrl: "/videos/sample-lecture.mp4",
             summary: "Structure of the human heart, double circulation, xylem & phloem translocation, structure of nephron."
           },
           {
@@ -225,7 +225,7 @@ export const INITIAL_COACHING_COURSES = [
             teacher: "Dr. Neha Gupta",
             isCompleted: false,
             isLocked: false,
-            videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
+            videoUrl: "/videos/sample-lecture.mp4",
             summary: "Neuron anatomy, reflex arc mechanism, central and peripheral nervous system, plant hormones (auxins, gibberellins)."
           },
           {
@@ -235,7 +235,7 @@ export const INITIAL_COACHING_COURSES = [
             teacher: "Dr. Neha Gupta",
             isCompleted: false,
             isLocked: true,
-            videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4",
+            videoUrl: "/videos/sample-lecture.mp4",
             summary: "Monohybrid and dihybrid cross, sex determination in humans, dominant vs recessive traits, and phenotype ratios."
           }
         ],
@@ -315,7 +315,7 @@ export const INITIAL_COACHING_COURSES = [
             teacher: "Prof. Rajesh Malhotra",
             isCompleted: false,
             isLocked: false,
-            videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+            videoUrl: "/videos/sample-lecture.mp4",
             summary: "Coulomb's Law in vector form, electric field lines, electric dipole, and applications of Gauss Theorem."
           },
           {
@@ -325,7 +325,7 @@ export const INITIAL_COACHING_COURSES = [
             teacher: "Prof. Rajesh Malhotra",
             isCompleted: false,
             isLocked: true,
-            videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4",
+            videoUrl: "/videos/sample-lecture.mp4",
             summary: "Equipotential surfaces, energy stored in capacitors, dielectrics, and combinations of capacitors."
           }
         ],
@@ -355,7 +355,7 @@ export const INITIAL_COACHING_COURSES = [
             teacher: "Dr. S. Raman",
             isCompleted: false,
             isLocked: false,
-            videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
+            videoUrl: "/videos/sample-lecture.mp4",
             summary: "Limits review, standard derivative proofs, chain rule, implicit differentiation, and Rolle's Theorem."
           }
         ],
@@ -419,13 +419,13 @@ export const INITIAL_COACHING_COURSES = [
         lectures: [
           {
             id: "lec-mp10-sci-01",
-            title: "1. रासायनिक अभिक्रियाएं एवं समीकरण (Chemical Reactions)",
+            title: "1. à¤°à¤¾à¤¸à¤¾à¤¯à¤¨à¤¿à¤• à¤…à¤­à¤¿à¤•à¥à¤°à¤¿à¤¯à¤¾à¤à¤‚ à¤à¤µà¤‚ à¤¸à¤®à¥€à¤•à¤°à¤£ (Chemical Reactions)",
             duration: "21:30",
             teacher: "Er. Manoj Tiwari",
             isCompleted: false,
             isLocked: false,
-            videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
-            summary: "अभिक्रियाओं के प्रकार, समीकरण संतुलन की सरल विधि, संक्षारण और विकृतगंधिता।"
+            videoUrl: "/videos/sample-lecture.mp4",
+            summary: "à¤…à¤­à¤¿à¤•à¥à¤°à¤¿à¤¯à¤¾à¤“à¤‚ à¤•à¥‡ à¤ªà¥à¤°à¤•à¤¾à¤°, à¤¸à¤®à¥€à¤•à¤°à¤£ à¤¸à¤‚à¤¤à¥à¤²à¤¨ à¤•à¥€ à¤¸à¤°à¤² à¤µà¤¿à¤§à¤¿, à¤¸à¤‚à¤•à¥à¤·à¤¾à¤°à¤£ à¤”à¤° à¤µà¤¿à¤•à¥ƒà¤¤à¤—à¤‚à¤§à¤¿à¤¤à¤¾à¥¤"
           }
         ],
         books: [
@@ -433,12 +433,12 @@ export const INITIAL_COACHING_COURSES = [
             id: "book-mp10-sci-01",
             title: "MP Board Class 10 Vigyan Prashnottari (Science Guide)",
             subject: "Science",
-            chapter: "सम्पूर्ण पाठ्यक्रम",
+            chapter: "à¤¸à¤®à¥à¤ªà¥‚à¤°à¥à¤£ à¤ªà¤¾à¤ à¥à¤¯à¤•à¥à¤°à¤®",
             pages: 60,
             currentPage: 1,
             isLocked: false,
             cover: "https://images.unsplash.com/photo-1532094349884-543bc11b234d?w=400&auto=format&fit=crop&q=80",
-            description: "ब्लूप्रिंट आधारित वस्तुनिष्ठ प्रश्न, अति लघु, लघु एवं दीर्घ उत्तरीय प्रश्नोत्तर।"
+            description: "à¤¬à¥à¤²à¥‚à¤ªà¥à¤°à¤¿à¤‚à¤Ÿ à¤†à¤§à¤¾à¤°à¤¿à¤¤ à¤µà¤¸à¥à¤¤à¥à¤¨à¤¿à¤·à¥à¤  à¤ªà¥à¤°à¤¶à¥à¤¨, à¤…à¤¤à¤¿ à¤²à¤˜à¥, à¤²à¤˜à¥ à¤à¤µà¤‚ à¤¦à¥€à¤°à¥à¤˜ à¤‰à¤¤à¥à¤¤à¤°à¥€à¤¯ à¤ªà¥à¤°à¤¶à¥à¤¨à¥‹à¤¤à¥à¤¤à¤°à¥¤"
           }
         ]
       },
@@ -449,13 +449,13 @@ export const INITIAL_COACHING_COURSES = [
         lectures: [
           {
             id: "lec-mp10-math-01",
-            title: "1. वास्तविक संख्याएं (Real Numbers) & Euclid Division",
+            title: "1. à¤µà¤¾à¤¸à¥à¤¤à¤µà¤¿à¤• à¤¸à¤‚à¤–à¥à¤¯à¤¾à¤à¤‚ (Real Numbers) & Euclid Division",
             duration: "23:10",
             teacher: "Smt. Vandana Sharma",
             isCompleted: false,
             isLocked: false,
-            videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4",
-            summary: "यूक्लिड विभाजन प्रमेयिका, HCF एवं LCM ज्ञात करना, अपरिमेय संख्याओं की सिद्धि।"
+            videoUrl: "/videos/sample-lecture.mp4",
+            summary: "à¤¯à¥‚à¤•à¥à¤²à¤¿à¤¡ à¤µà¤¿à¤­à¤¾à¤œà¤¨ à¤ªà¥à¤°à¤®à¥‡à¤¯à¤¿à¤•à¤¾, HCF à¤à¤µà¤‚ LCM à¤œà¥à¤žà¤¾à¤¤ à¤•à¤°à¤¨à¤¾, à¤…à¤ªà¤°à¤¿à¤®à¥‡à¤¯ à¤¸à¤‚à¤–à¥à¤¯à¤¾à¤“à¤‚ à¤•à¥€ à¤¸à¤¿à¤¦à¥à¤§à¤¿à¥¤"
           }
         ],
         books: [
@@ -463,12 +463,12 @@ export const INITIAL_COACHING_COURSES = [
             id: "book-mp10-math-01",
             title: "MP Board Class 10 Ganit Formula & Solution Bank",
             subject: "Mathematics",
-            chapter: "गणित सूत्र संग्रह",
+            chapter: "à¤—à¤£à¤¿à¤¤ à¤¸à¥‚à¤¤à¥à¤° à¤¸à¤‚à¤—à¥à¤°à¤¹",
             pages: 54,
             currentPage: 1,
             isLocked: false,
             cover: "https://images.unsplash.com/photo-1509228468518-180dd4864904?w=400&auto=format&fit=crop&q=80",
-            description: "सभी अध्यायों के सूत्र, प्रमेयों की उपपत्ति और परीक्षा उपयोगी हल प्रश्न।"
+            description: "à¤¸à¤­à¥€ à¤…à¤§à¥à¤¯à¤¾à¤¯à¥‹à¤‚ à¤•à¥‡ à¤¸à¥‚à¤¤à¥à¤°, à¤ªà¥à¤°à¤®à¥‡à¤¯à¥‹à¤‚ à¤•à¥€ à¤‰à¤ªà¤ªà¤¤à¥à¤¤à¤¿ à¤”à¤° à¤ªà¤°à¥€à¤•à¥à¤·à¤¾ à¤‰à¤ªà¤¯à¥‹à¤—à¥€ à¤¹à¤² à¤ªà¥à¤°à¤¶à¥à¤¨à¥¤"
           }
         ]
       }
@@ -523,7 +523,7 @@ export const INITIAL_COACHING_COURSES = [
             teacher: "Dr. Alok Verma",
             isCompleted: false,
             isLocked: false,
-            videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+            videoUrl: "/videos/sample-lecture.mp4",
             summary: "Scalar and vector quantities, uniform and non-uniform motion, graphical derivation of kinematic equations."
           }
         ],
@@ -566,6 +566,41 @@ export const INITIAL_COACHING_COURSES = [
     banner: "https://images.unsplash.com/photo-1532938911079-1b06ac7ceec7?w=1200&auto=format&fit=crop&q=80",
     expiryDate: "15 March 2027",
     isEnrolled: false,
+    price: 1499,
+    originalPrice: 4999,
+    discountText: "70% OFF",
+    subscriptionPlans: [
+      {
+        id: "plan-12m",
+        name: "12 Months Full NEET Master Pass",
+        duration: "12 Months Access",
+        price: 1499,
+        originalPrice: 4999,
+        discount: "70% OFF",
+        isPopular: true,
+        features: ["All 95 Video Lectures", "14 Digital Handbooks", "Weekly NEET Assessments", "Doubt Mentorship"]
+      },
+      {
+        id: "plan-6m",
+        name: "6 Months Semester Sprint",
+        duration: "6 Months Access",
+        price: 899,
+        originalPrice: 2999,
+        discount: "70% OFF",
+        isPopular: false,
+        features: ["All 95 Video Lectures", "14 Digital Handbooks", "Monthly Tests"]
+      },
+      {
+        id: "plan-3m",
+        name: "3 Months Exam Crash Course",
+        duration: "3 Months Access",
+        price: 499,
+        originalPrice: 1499,
+        discount: "66% OFF",
+        isPopular: false,
+        features: ["High-Yield Lectures", "Formula & Revision Notes"]
+      }
+    ],
     progressPercentage: 0,
     completedLectures: 0,
     whatYouWillLearn: [
@@ -592,7 +627,7 @@ export const INITIAL_COACHING_COURSES = [
             teacher: "Dr. Pratibha Saxena",
             isCompleted: false,
             isLocked: false,
-            videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+            videoUrl: "/videos/sample-lecture.mp4",
             summary: "Characteristics of living organisms, binomial nomenclature rules, and taxonomic ranks."
           }
         ],
@@ -644,6 +679,36 @@ export function getCoachingStore() {
     if (raw) {
       const parsed = JSON.parse(raw);
       if (parsed && Array.isArray(parsed.courses) && parsed.student) {
+        // Auto-migrate any broken or dead video URLs to local static review video
+        let needsUpdate = false;
+        (parsed.courses || []).forEach((c) => {
+          // Sync pricing and plans if missing from older store
+          const initialMatch = INITIAL_COACHING_COURSES.find((init) => init.id === c.id);
+          if (initialMatch) {
+            if (!c.price && initialMatch.price) {
+              c.price = initialMatch.price;
+              c.originalPrice = initialMatch.originalPrice;
+              c.discountText = initialMatch.discountText;
+              needsUpdate = true;
+            }
+            if (!c.subscriptionPlans && initialMatch.subscriptionPlans) {
+              c.subscriptionPlans = initialMatch.subscriptionPlans;
+              needsUpdate = true;
+            }
+          }
+
+          (c.subjectsData || []).forEach((subj) => {
+            (subj.lectures || []).forEach((lec) => {
+              if (!lec.videoUrl || lec.videoUrl.includes("commondatastorage.googleapis.com")) {
+                lec.videoUrl = "/videos/sample-lecture.mp4";
+                needsUpdate = true;
+              }
+            });
+          });
+        });
+        if (needsUpdate) {
+          saveCoachingStore(parsed);
+        }
         return parsed;
       }
     }
@@ -666,3 +731,4 @@ export function saveCoachingStore(data) {
     console.warn("Could not write coaching store to localStorage", e);
   }
 }
+

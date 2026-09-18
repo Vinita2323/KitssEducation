@@ -10,32 +10,32 @@ export const CourseExpiry = ({
 
   return (
     <div
-      className={`rounded-2xl p-4 sm:p-5 border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 ${
+      className={`rounded-md p-3 sm:p-3.5 border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 ${
         isExpired
           ? "bg-[#FEF3F2] border-[#FECDCA] text-[#B42318]"
           : "bg-[#ECFDF3] border-[#ABEFC6] text-[#067647]"
       }`}
     >
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2.5">
         <div
-          className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+          className={`w-8 h-8 rounded-md flex items-center justify-center shrink-0 ${
             isExpired ? "bg-[#FECDCA] text-[#B42318]" : "bg-[#D1FADF] text-[#067647]"
           }`}
         >
           {isExpired ? (
-            <AlertTriangle className="w-5 h-5" />
+            <AlertTriangle className="w-4 h-4" />
           ) : (
-            <ShieldCheck className="w-5 h-5" />
+            <ShieldCheck className="w-4 h-4" />
           )}
         </div>
 
         <div>
           <div className="flex items-center gap-2">
-            <span className="font-extrabold text-sm sm:text-base">
+            <span className="font-extrabold text-xs sm:text-sm">
               Course Access: {status}
             </span>
             <span
-              className={`px-2 py-0.2 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+              className={`px-1.5 py-0.2 rounded text-[10px] font-bold uppercase tracking-wider ${
                 isExpired ? "bg-[#B42318] text-white" : "bg-[#067647] text-white"
               }`}
             >
@@ -43,12 +43,12 @@ export const CourseExpiry = ({
             </span>
           </div>
 
-          <p className="text-xs mt-0.5 opacity-90 flex items-center gap-1.5">
-            <Calendar className="w-3.5 h-3.5" />
+          <p className="text-[11px] mt-0.5 opacity-90 flex items-center gap-1">
+            <Calendar className="w-3 h-3" />
             <span>
               {isExpired
                 ? "Your course access has expired. Please renew your course to continue learning."
-                : `Valid through ${expiryDate}. Enjoy uninterrupted video lectures & digital notes.`}
+                : `Valid through ${expiryDate}. Enjoy uninterrupted lessons & notes.`}
             </span>
           </p>
         </div>
@@ -58,9 +58,9 @@ export const CourseExpiry = ({
         <button
           type="button"
           onClick={() => onRenew && onRenew()}
-          className="shrink-0 px-4 py-2 rounded-xl bg-[#D92D20] hover:bg-[#B42318] text-white font-bold text-xs sm:text-sm flex items-center gap-1.5 shadow-sm transition active:scale-95 cursor-pointer"
+          className="shrink-0 px-3 py-1.5 rounded-md bg-[#D92D20] hover:bg-[#B42318] text-white font-bold text-xs flex items-center gap-1 shadow-2xs transition active:scale-95 cursor-pointer"
         >
-          <RefreshCw className="w-4 h-4" />
+          <RefreshCw className="w-3.5 h-3.5" />
           <span>Renew Course</span>
         </button>
       )}

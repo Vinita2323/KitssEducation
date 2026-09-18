@@ -104,7 +104,7 @@ export const CollegeDetailsModal = ({ college, isOpen, onClose }) => {
 
               <p className="text-xs text-slate-500 flex items-center gap-1.5 pt-0.5">
                 <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                <span>{college.location || `${college.city}, ${college.state}`}</span>
+                <span>{college.district ? `${college.district}, ${college.state}` : college.location || `${college.city}, ${college.state}`}</span>
               </p>
             </div>
 

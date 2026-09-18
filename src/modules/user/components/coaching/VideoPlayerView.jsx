@@ -97,7 +97,7 @@ export const VideoPlayerView = ({
       <div className="relative aspect-16/9 bg-neutral-900 flex items-center justify-center overflow-hidden">
         <video
           ref={videoRef}
-          src={lecture?.videoUrl}
+          src={lecture?.videoUrl || "/videos/sample-lecture.mp4"}
           onTimeUpdate={handleTimeUpdate}
           onLoadedMetadata={handleLoadedMetadata}
           onEnded={() => {
@@ -107,6 +107,7 @@ export const VideoPlayerView = ({
           className="w-full h-full object-contain cursor-pointer"
           onClick={togglePlay}
           playsInline
+          preload="auto"
         />
 
         {/* Center Big Play Button when paused */}

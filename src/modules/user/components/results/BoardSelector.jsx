@@ -22,10 +22,10 @@ export const BoardSelector = ({
     <div className="space-y-3">
       {/* Section Title */}
       <div className="space-y-0.5">
-        <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">
+        <span className="text-[11px] font-bold text-[#FF8A00] uppercase tracking-wider block">
           Step 1: Board Selection
         </span>
-        <h2 className="text-sm sm:text-base font-bold text-slate-900 tracking-tight">
+        <h2 className="text-sm sm:text-base font-bold text-[#0A1D3F] tracking-tight">
           {title}
         </h2>
         <p className="text-xs text-slate-500">
@@ -50,20 +50,20 @@ export const BoardSelector = ({
                   onSelectBoard(board.id);
                 }
               }}
-              className={`group relative text-left p-3 sm:p-3.5 rounded-xl border transition-all duration-150 cursor-pointer touch-target flex flex-col justify-between ${
+              className={`group relative text-left p-3 sm:p-3.5 rounded-2xl border transition-all duration-150 cursor-pointer touch-target flex flex-col justify-between ${
                 isSelected
-                  ? "bg-white border-slate-900 ring-2 ring-slate-900/10 shadow-xs"
-                  : "bg-white border-slate-200/80 hover:border-slate-300 shadow-2xs hover:shadow-xs"
+                  ? "bg-orange-50/20 border-[#FF8A00] ring-2 ring-[#FF8A00]/20 shadow-xs"
+                  : "bg-white border-slate-200/80 hover:border-[#FF8A00]/40 shadow-2xs hover:shadow-xs"
               }`}
             >
               <div>
                 <div className="flex items-start justify-between gap-2.5 mb-1.5">
                   <div className="flex items-center gap-2.5 min-w-0">
                     <div
-                      className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-xs shrink-0 transition-colors ${
+                      className={`w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs shrink-0 transition-colors ${
                         isSelected
-                          ? "bg-slate-900 text-white"
-                          : "bg-slate-100 text-slate-700 group-hover:bg-slate-900 group-hover:text-white"
+                          ? "bg-[#0A1D3F] text-[#FF8A00]"
+                          : "bg-slate-100 text-slate-700 group-hover:bg-[#0A1D3F] group-hover:text-white"
                       }`}
                     >
                       {board.code ? board.code.slice(0, 4) : "BD"}
@@ -71,11 +71,11 @@ export const BoardSelector = ({
 
                     <div className="min-w-0">
                       <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className="text-xs sm:text-sm font-bold text-slate-900 group-hover:text-slate-700">
+                        <span className="text-xs sm:text-sm font-bold text-[#0A1D3F] group-hover:text-[#FF8A00] transition-colors">
                           {board.name}
                         </span>
                         {board.tag && (
-                          <span className="text-[9px] font-medium px-1.5 py-0.5 rounded bg-slate-100 text-slate-600">
+                          <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-teal-50 text-teal-700 border border-teal-200/50">
                             {board.tag}
                           </span>
                         )}
@@ -90,8 +90,8 @@ export const BoardSelector = ({
                     <div
                       className={`w-4.5 h-4.5 rounded-full flex items-center justify-center transition-all ${
                         isSelected
-                          ? "bg-emerald-600 text-white"
-                          : "border border-slate-300 group-hover:border-slate-400"
+                          ? "bg-[#FF8A00] text-white"
+                          : "border border-slate-300 group-hover:border-[#FF8A00]"
                       }`}
                     >
                       {isSelected && <CheckCircle2 className="w-3.5 h-3.5 stroke-[2.5]" />}
@@ -105,12 +105,12 @@ export const BoardSelector = ({
               </div>
 
               <div className="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] font-semibold">
-                <span className={isSelected ? "text-slate-900" : "text-slate-500 group-hover:text-slate-900"}>
+                <span className={isSelected ? "text-[#FF8A00] font-bold" : "text-slate-500 group-hover:text-[#0A1D3F]"}>
                   {isSelected ? "Selected ✓" : "Select Board"}
                 </span>
                 <ChevronRight
                   className={`w-3.5 h-3.5 transition-transform ${
-                    isSelected ? "text-slate-900 translate-x-0.5" : "text-slate-400 group-hover:translate-x-0.5"
+                    isSelected ? "text-[#FF8A00] translate-x-0.5" : "text-slate-400 group-hover:translate-x-0.5 group-hover:text-[#0A1D3F]"
                   }`}
                 />
               </div>

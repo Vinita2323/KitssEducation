@@ -1,4 +1,4 @@
-export const mockCourseCategories = [
+﻿export const mockCourseCategories = [
   { id: "CBSE", name: "CBSE", icon: "GraduationCap", color: "from-blue-600 to-indigo-700" },
   { id: "State Board", name: "State Board", icon: "Building2", color: "from-amber-500 to-orange-600" },
   { id: "JEE", name: "JEE", icon: "Trophy", color: "from-emerald-600 to-teal-700" },
@@ -44,7 +44,7 @@ export const mockCourses = [
             id: "lec-101",
             title: "1. Introduction & Standard Forms",
             duration: "10:20",
-            videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+            videoUrl: "/videos/sample-lecture.mp4",
             isCompleted: true,
             notes: "Introduction to ax + by + c = 0, geometrical representation as straight lines.",
             resources: [
@@ -56,7 +56,7 @@ export const mockCourses = [
             id: "lec-102",
             title: "2. Terms, Expressions & Graphical Method",
             duration: "12:15",
-            videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4",
+            videoUrl: "/videos/sample-lecture.mp4",
             isCompleted: true,
             notes: "Consistent vs Inconsistent systems, intersecting vs parallel vs coincident lines.",
             resources: [
@@ -67,7 +67,7 @@ export const mockCourses = [
             id: "lec-103",
             title: "3. Algebraic Methods: Substitution & Elimination",
             duration: "18:30",
-            videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
+            videoUrl: "/videos/sample-lecture.mp4",
             isCompleted: true,
             notes: "Stepwise substitution, coefficient balancing in elimination method.",
             resources: [
@@ -78,7 +78,7 @@ export const mockCourses = [
             id: "lec-104",
             title: "4. Word Problems & Practical Applications",
             duration: "15:10",
-            videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4",
+            videoUrl: "/videos/sample-lecture.mp4",
             isCompleted: false,
             notes: "Speed-time-distance problems, age problems, upstream/downstream boat cases.",
             resources: [
@@ -97,18 +97,18 @@ export const mockCourses = [
             id: "lec-201",
             title: "1. Standard Quadratic Form & Factorisation",
             duration: "16:40",
-            videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+            videoUrl: "/videos/sample-lecture.mp4",
             isCompleted: false,
-            notes: "Roots of ax² + bx + c = 0 by splitting the middle term.",
+            notes: "Roots of axÂ² + bx + c = 0 by splitting the middle term.",
             resources: [{ name: "Factorisation-Guide.pdf", size: "1.2 MB" }]
           },
           {
             id: "lec-202",
             title: "2. Quadratic Formula & Discriminant Analysis",
             duration: "18:25",
-            videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4",
+            videoUrl: "/videos/sample-lecture.mp4",
             isCompleted: false,
-            notes: "Nature of roots based on D = b² - 4ac (real, distinct, equal, imaginary).",
+            notes: "Nature of roots based on D = bÂ² - 4ac (real, distinct, equal, imaginary).",
             resources: [{ name: "Discriminant-Chart.pdf", size: "900 KB" }]
           }
         ]
@@ -123,7 +123,7 @@ export const mockCourses = [
             id: "lec-301",
             title: "1. Basic Proportionality Theorem (Thales Theorem)",
             duration: "20:10",
-            videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
+            videoUrl: "/videos/sample-lecture.mp4",
             isCompleted: false,
             notes: "Full formal geometric proof and converse with board questions.",
             resources: [{ name: "BPT-Proofs.pdf", size: "2.5 MB" }]
@@ -170,7 +170,7 @@ export const mockCourses = [
             id: "lec-p101",
             title: "1. Coulomb's Law & Principle of Superposition",
             duration: "18:40",
-            videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+            videoUrl: "/videos/sample-lecture.mp4",
             isCompleted: false,
             notes: "Vector form of Coulomb's Law, dielectric constant.",
             resources: [{ name: "Electrostatics-Derivations.pdf", size: "3.2 MB" }]
@@ -217,9 +217,9 @@ export const mockCourses = [
             id: "lec-j101",
             title: "1. Advanced Limits & L'Hopital Rule Shortcut Tricks",
             duration: "24:10",
-            videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+            videoUrl: "/videos/sample-lecture.mp4",
             isCompleted: false,
-            notes: "Series expansion method, 0/0 and ∞/∞ forms.",
+            notes: "Series expansion method, 0/0 and âˆž/âˆž forms.",
             resources: [{ name: "JEE-Limits-Mastery.pdf", size: "4.1 MB" }]
           }
         ]
@@ -264,7 +264,7 @@ export const mockCourses = [
             id: "lec-b101",
             title: "1. Gastrointestinal Tract & Enzymatic Actions",
             duration: "22:15",
-            videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+            videoUrl: "/videos/sample-lecture.mp4",
             isCompleted: false,
             notes: "NCERT tables for salivary, gastric, pancreatic, and intestinal enzymes.",
             resources: [{ name: "Human-Physio-Notes.pdf", size: "3.8 MB" }]
@@ -274,3 +274,4 @@ export const mockCourses = [
     ]
   }
 ];
+

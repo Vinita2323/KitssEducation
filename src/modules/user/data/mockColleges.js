@@ -1,6 +1,15 @@
 // Static Mock Data for Colleges, Courses, and Applications
 // Persisted in localStorage so changes made in Admin or Admission Modal persist in session.
 
+export const STATE_DISTRICT_MAP = {
+  "Delhi": ["New Delhi", "Central Delhi", "South Delhi", "North Delhi"],
+  "Punjab": ["Kapurthala", "Ludhiana", "Jalandhar", "Amritsar"],
+  "Karnataka": ["Udupi", "Bengaluru Urban", "Mysuru", "Dakshina Kannada"],
+  "Uttar Pradesh": ["Gautam Buddha Nagar", "Lucknow", "Varanasi", "Kanpur Nagar"],
+  "Maharashtra": ["Pune", "Mumbai City", "Nagpur", "Thane"],
+  "Rajasthan": ["Jaipur", "Kota", "Jodhpur", "Udaipur"],
+};
+
 export const INITIAL_COLLEGES = [
   {
     _id: "col-delhi-univ",
@@ -12,6 +21,7 @@ export const INITIAL_COLLEGES = [
     description: "Centrally funded premier collegiate university recognized globally for academic rigor, distinguished alumni, and research excellence.",
     address: "Benito Juarez Marg, South Campus & North Campus",
     city: "New Delhi",
+    district: "New Delhi",
     state: "Delhi",
     country: "India",
     location: "New Delhi, Delhi",
@@ -50,6 +60,7 @@ export const INITIAL_COLLEGES = [
     description: "India's largest single-campus ultra-modern university known for global corporate placements, patent filings, and international exchange.",
     address: "Jalandhar - Delhi G.T. Road, National Highway 1",
     city: "Phagwara",
+    district: "Kapurthala",
     state: "Punjab",
     country: "India",
     location: "Phagwara, Punjab",
@@ -88,6 +99,7 @@ export const INITIAL_COLLEGES = [
     description: "Institution of Eminence deemed university acclaimed for top-ranked engineering, health sciences, management, and global research.",
     address: "Tiger Circle, Madhav Nagar, Eshwar Nagar",
     city: "Manipal",
+    district: "Udupi",
     state: "Karnataka",
     country: "India",
     location: "Manipal, Karnataka",
@@ -126,6 +138,7 @@ export const INITIAL_COLLEGES = [
     description: "Premier NAAC 'A+' accredited partner university campus offering industry-certified engineering, AI, and management programs.",
     address: "Sector 62, Institutional Area, Knowledge Park",
     city: "Noida",
+    district: "Gautam Buddha Nagar",
     state: "Uttar Pradesh",
     country: "India",
     location: "Noida, Uttar Pradesh",
@@ -164,6 +177,7 @@ export const INITIAL_COLLEGES = [
     description: "Leading medical and healthcare sciences partner institution affiliated with multi-specialty teaching hospitals.",
     address: "Kothrud Central Campus, Paud Road",
     city: "Pune",
+    district: "Pune",
     state: "Maharashtra",
     country: "India",
     location: "Pune, Maharashtra",
@@ -202,6 +216,7 @@ export const INITIAL_COLLEGES = [
     description: "Silicon Valley of India's top-ranked business school specializing in FinTech, E-Commerce, and Supply Chain management.",
     address: "Electronic City Phase 1, Near Infosys Gate 3",
     city: "Bangalore",
+    district: "Bengaluru Urban",
     state: "Karnataka",
     country: "India",
     location: "Bangalore, Karnataka",
@@ -240,6 +255,7 @@ export const INITIAL_COLLEGES = [
     description: "BCI-recognized premier legal academy with active moot courts, constitutional law chambers, and legal aid clinics.",
     address: "Civil Lines, Near High Court Junction",
     city: "Jaipur",
+    district: "Jaipur",
     state: "Rajasthan",
     country: "India",
     location: "Jaipur, Rajasthan",
@@ -278,6 +294,7 @@ export const INITIAL_COLLEGES = [
     description: "Centrally affiliated exemplary senior secondary school renowned for holistic pedagogy, STEM innovation, and sports leadership.",
     address: "Mathura Road Campus, Near Central Metro",
     city: "New Delhi",
+    district: "Central Delhi",
     state: "Delhi",
     country: "India",
     location: "New Delhi, Delhi",
@@ -305,6 +322,118 @@ export const INITIAL_COLLEGES = [
     },
     createdAt: "2026-09-16T11:57:04.265Z",
     updatedAt: "2026-09-16T11:57:04.265Z"
+  },
+  {
+    _id: "col-lucknow-medical",
+    id: "col-lucknow-medical",
+    name: "Avadh Institute of Medical & Allied Health Sciences",
+    logo: "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=160&auto=format&fit=crop&q=80",
+    banner: "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?w=1200&auto=format&fit=crop&q=80",
+    image: "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?w=800&auto=format&fit=crop&q=80",
+    description: "State-of-the-art medical and paramedical institute affiliated with super-specialty teaching hospital.",
+    address: "Shaheed Path, Gomti Nagar Extension",
+    city: "Lucknow",
+    district: "Lucknow",
+    state: "Uttar Pradesh",
+    country: "India",
+    location: "Lucknow, Uttar Pradesh",
+    collegeType: "College",
+    category: "College",
+    verified: true,
+    status: "active",
+    coursesCount: 16,
+    rating: 4.8,
+    popularCourses: ["B.Sc Nursing", "B.Pharm (Pharmacy)", "Bachelor of Physiotherapy (BPT)"],
+    about: "Avadh Institute of Medical Sciences offers comprehensive clinical hands-on education with 600-bed hospital rotations and certified accreditation.",
+    facilities: ["Clinical Simulation Laboratory", "Super-Specialty Hospital Ward", "Central Medical Library", "Hostel & Canteen"],
+    admissionInformation: "Counseling and direct admission quota open for 2026-2027.",
+    contactInformation: { phone: "+91 522 239 8800", email: "admissions@avadhaims.edu.in", website: "https://avadhaims.edu.in" },
+    createdAt: "2026-09-18T10:00:00.000Z",
+    updatedAt: "2026-09-18T10:00:00.000Z"
+  },
+  {
+    _id: "col-mumbai-metro",
+    id: "col-mumbai-metro",
+    name: "Mumbai Metropolitan Institute of Technology & AI",
+    logo: "https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=160&auto=format&fit=crop&q=80",
+    banner: "https://images.unsplash.com/photo-1562774053-701939374585?w=1200&auto=format&fit=crop&q=80",
+    image: "https://images.unsplash.com/photo-1562774053-701939374585?w=800&auto=format&fit=crop&q=80",
+    description: "Premier AI and software engineering campus located in Mumbai financial district with top MNC tie-ups.",
+    address: "Bandra Kurla Complex (BKC), Institutional Zone",
+    city: "Mumbai",
+    district: "Mumbai City",
+    state: "Maharashtra",
+    country: "India",
+    location: "Mumbai, Maharashtra",
+    collegeType: "Institute",
+    category: "Institute",
+    verified: true,
+    status: "active",
+    coursesCount: 20,
+    rating: 4.9,
+    popularCourses: ["B.Tech Artificial Intelligence", "BCA Cloud Computing", "B.Sc Data Analytics"],
+    about: "Mumbai Metropolitan Institute is an innovation-first institution preparing students for high-impact careers in generative AI and cloud infrastructure.",
+    facilities: ["NVIDIA GPU Compute Center", "Fintech Sandbox Lab", "Modern Smart Auditoriums", "Student Cafes"],
+    admissionInformation: "Applications invited for tech and data cohorts.",
+    contactInformation: { phone: "+91 22 6123 4500", email: "admissions@mumbaimetro.edu.in", website: "https://mumbaimetro.edu.in" },
+    createdAt: "2026-09-18T10:00:00.000Z",
+    updatedAt: "2026-09-18T10:00:00.000Z"
+  },
+  {
+    _id: "col-ludhiana-eng",
+    id: "col-ludhiana-eng",
+    name: "Punjab Institute of Engineering & Robotics",
+    logo: "https://images.unsplash.com/photo-1541339907198-e08756dedf3f?w=160&auto=format&fit=crop&q=80",
+    banner: "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=1200&auto=format&fit=crop&q=80",
+    image: "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=80",
+    description: "Leading northern technological institute recognized for mechatronics, industrial automation, and patent research.",
+    address: "Ferozepur Road, Near Aggar Nagar",
+    city: "Ludhiana",
+    district: "Ludhiana",
+    state: "Punjab",
+    country: "India",
+    location: "Ludhiana, Punjab",
+    collegeType: "College",
+    category: "College",
+    verified: true,
+    status: "active",
+    coursesCount: 15,
+    rating: 4.7,
+    popularCourses: ["B.Tech Mechanical & Mechatronics", "B.Tech Electrical Engineering", "Diploma in Industrial Robotics"],
+    about: "Punjab Institute of Engineering & Robotics provides hands-on industry apprenticeships and robotics labs for engineering excellence.",
+    facilities: ["Robotics Automation Foundry", "CNC & Heavy Machining Workshop", "Cad/Cam Lab", "Sports Arena"],
+    admissionInformation: "JEE Main / State merit counseling admissions open.",
+    contactInformation: { phone: "+91 161 240 5500", email: "admissions@pier.edu.in", website: "https://pier.edu.in" },
+    createdAt: "2026-09-18T10:00:00.000Z",
+    updatedAt: "2026-09-18T10:00:00.000Z"
+  },
+  {
+    _id: "col-kota-tech",
+    id: "col-kota-tech",
+    name: "Kota National Institute of Science & Technology",
+    logo: "https://images.unsplash.com/photo-1546410531-bb4caa6b424d?w=160&auto=format&fit=crop&q=80",
+    banner: "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=1200&auto=format&fit=crop&q=80",
+    image: "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=800&auto=format&fit=crop&q=80",
+    description: "Renowned education center located in India's coaching capital, specializing in applied sciences and engineering.",
+    address: "Jhalawar Road, Electronic Complex",
+    city: "Kota",
+    district: "Kota",
+    state: "Rajasthan",
+    country: "India",
+    location: "Kota, Rajasthan",
+    collegeType: "Institute",
+    category: "Institute",
+    verified: true,
+    status: "active",
+    coursesCount: 14,
+    rating: 4.8,
+    popularCourses: ["B.Tech Computer Science", "B.Sc Physics Honours", "M.Sc Applied Mathematics"],
+    about: "Kota National Institute combines rigorous conceptual foundation with tech-forward engineering research.",
+    facilities: ["Advanced Physics & Optics Labs", "Modern Digital Classroom Pods", "Hostel & Dining Complex"],
+    admissionInformation: "Direct admissions and merit scholarship admissions open for 2026.",
+    contactInformation: { phone: "+91 744 248 9900", email: "info@kotanist.edu.in", website: "https://kotanist.edu.in" },
+    createdAt: "2026-09-18T10:00:00.000Z",
+    updatedAt: "2026-09-18T10:00:00.000Z"
   }
 ];
 
@@ -462,6 +591,55 @@ export function getLocalStore() {
     if (raw) {
       const parsed = JSON.parse(raw);
       if (parsed && Array.isArray(parsed.colleges) && parsed.colleges.length >= 7) {
+        let needsSave = false;
+
+        // Ensure every college has a district
+        parsed.colleges.forEach((c) => {
+          if (!c.district) {
+            const match = INITIAL_COLLEGES.find((init) => String(init.id || init._id) === String(c.id || c._id));
+            if (match && match.district) {
+              c.district = match.district;
+              needsSave = true;
+            } else if (c.city === "New Delhi") {
+              c.district = "New Delhi";
+              needsSave = true;
+            } else if (c.city === "Noida") {
+              c.district = "Gautam Buddha Nagar";
+              needsSave = true;
+            } else if (c.city === "Bangalore") {
+              c.district = "Bengaluru Urban";
+              needsSave = true;
+            } else if (c.city === "Phagwara") {
+              c.district = "Kapurthala";
+              needsSave = true;
+            } else if (c.city === "Pune") {
+              c.district = "Pune";
+              needsSave = true;
+            } else if (c.city === "Jaipur") {
+              c.district = "Jaipur";
+              needsSave = true;
+            } else if (c.city === "Manipal") {
+              c.district = "Udupi";
+              needsSave = true;
+            } else {
+              c.district = c.city || c.state;
+              needsSave = true;
+            }
+          }
+        });
+
+        // Add any newly added colleges from INITIAL_COLLEGES if not present
+        INITIAL_COLLEGES.forEach((initCol) => {
+          const exists = parsed.colleges.some((c) => String(c._id || c.id) === String(initCol._id || initCol.id));
+          if (!exists) {
+            parsed.colleges.push(initCol);
+            needsSave = true;
+          }
+        });
+
+        if (needsSave) {
+          saveLocalStore(parsed);
+        }
         return parsed;
       }
     }

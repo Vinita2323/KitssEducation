@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { coachingService } from "../../services/coachingService";
 import { orderService } from "../../services/orderService";
+import { openRazorpayCheckout } from "../../services/razorpayService";
 import { useLibrary } from "../../context/LibraryContext";
 import { useToast } from "../../context/ToastContext";
 import { PrimaryButton } from "../../components/common/PrimaryButton";
@@ -85,28 +86,60 @@ export const CourseSubscribePage = () => {
 
     try {
       setProcessing(true);
-      const res = await coachingService.subscribeCourse(course.id, {
-        planName: currentPlan.name,
-        price: currentPlan.price
-      });
+      await openRazorpayCheckout({
+        amountInRupees: currentPlan.price,
+        course,
+        plan: currentPlan,
+        student: {
+          name: "Rohan Sharma",
+          email: "rohan.sharma@example.com",
+          phone: "+91 98765 43210",
+        },
+        onSuccess: async (razorpayResponse) => {
+          try {
+            const res = await coachingService.subscribeCourse(course.id, {
+              planName: currentPlan.name,
+              price: currentPlan.price,
+              transactionId: razorpayResponse.razorpay_payment_id,
+            });
 
-      // Register order
-      await orderService.createOrder({
-        productName: `${course.title} (${currentPlan.name})`,
-        type: "Course",
-        category: "Online Coaching",
-        amount: currentPlan.price,
-        originalAmount: currentPlan.originalPrice,
-        discountAmount: currentPlan.originalPrice - currentPlan.price,
-        paymentMethod: paymentMethod === "upi" ? "UPI (Google Pay / PhonePe)" : "Card / Net Banking"
-      });
+            // Register order
+            await orderService.createOrder({
+              productName: `${course.title} (${currentPlan.name})`,
+              type: "Course",
+              category: "Online Coaching",
+              amount: currentPlan.price,
+              originalAmount: currentPlan.originalPrice,
+              discountAmount: currentPlan.originalPrice - currentPlan.price,
+              paymentMethod: `Razorpay (${razorpayResponse.razorpay_payment_id})`,
+              transactionId: razorpayResponse.razorpay_payment_id,
+            });
 
-      markCourseSubscribed(course.id);
-      setSubscriptionResult(res);
-      setShowSuccessModal(true);
+            markCourseSubscribed(course.id);
+            setSubscriptionResult({
+              ...res,
+              paymentId: razorpayResponse.razorpay_payment_id,
+            });
+            setShowSuccessModal(true);
+            showSuccess(`Payment Successful! Payment ID: ${razorpayResponse.razorpay_payment_id}`);
+          } catch (err) {
+            console.error("Subscription sync error:", err);
+            showError("Payment received, error activating subscription.");
+          } finally {
+            setProcessing(false);
+          }
+        },
+        onFailure: (err) => {
+          showError(err.message || "Payment transaction could not be processed.");
+          setProcessing(false);
+        },
+        onDismiss: () => {
+          showError("Razorpay checkout was dismissed.");
+          setProcessing(false);
+        },
+      });
     } catch (err) {
-      showError(err.message || "Failed to complete subscription.");
-    } finally {
+      showError("Could not launch Razorpay checkout.");
       setProcessing(false);
     }
   };
@@ -209,37 +242,18 @@ export const CourseSubscribePage = () => {
           })}
         </div>
 
-        {/* Payment Methods */}
-        <div className="space-y-2">
-          <label className="text-xs font-bold text-[#0A1D3F] uppercase tracking-wider block">
-            Payment Mode
-          </label>
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              type="button"
-              onClick={() => setPaymentMethod("upi")}
-              className={`p-3 rounded-xl border text-xs font-bold flex items-center gap-2 transition ${
-                paymentMethod === "upi"
-                  ? "bg-[#0A1D3F] text-white border-[#0A1D3F]"
-                  : "bg-white text-[#667085] border-[#E6E8EC]"
-              }`}
-            >
-              <Smartphone className="w-4 h-4" />
-              <span>UPI / QR</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setPaymentMethod("card")}
-              className={`p-3 rounded-xl border text-xs font-bold flex items-center gap-2 transition ${
-                paymentMethod === "card"
-                  ? "bg-[#0A1D3F] text-white border-[#0A1D3F]"
-                  : "bg-white text-[#667085] border-[#E6E8EC]"
-              }`}
-            >
-              <CreditCard className="w-4 h-4" />
-              <span>Cards / Net Banking</span>
-            </button>
+        {/* Payment Gateway Info */}
+        <div className="p-3 bg-[#0A1D3F]/5 rounded-xl border border-[#0A1D3F]/10 flex items-center justify-between text-xs">
+          <div className="flex items-center gap-2">
+            <ShieldCheck className="w-4 h-4 text-[#FF8A00] shrink-0" />
+            <div>
+              <span className="font-bold text-[#0A1D3F]">Razorpay Payment Gateway</span>
+              <p className="text-[11px] text-[#667085]">Supports UPI, Cards, Net Banking & Wallets</p>
+            </div>
           </div>
+          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#17B26A]/10 text-[#17B26A] border border-[#17B26A]/20">
+            Test Mode
+          </span>
         </div>
 
         {/* Order Bill Summary */}
@@ -267,7 +281,7 @@ export const CourseSubscribePage = () => {
             onClick={handleSubscribe}
             loading={processing}
           >
-            Subscribe Now for ₹{currentPlan.price}
+            Pay ₹{currentPlan.price} with Razorpay
           </PrimaryButton>
         </div>
       </div>

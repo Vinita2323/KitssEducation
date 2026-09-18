@@ -229,6 +229,29 @@ export const ProfilePage = () => {
             </button>
 
             <Link
+              to="/coaching"
+              className="w-full flex items-center justify-between p-2.5 bg-[#FFF7ED] hover:bg-[#FFEDD5] rounded-xl border border-[#FF8A00]/30 text-left transition block group cursor-pointer shadow-2xs"
+            >
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-[#FF8A00]/15 flex items-center justify-center text-[#FF8A00] shrink-0">
+                  <GraduationCap className="w-4 h-4" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-1.5">
+                    <h4 className="text-xs font-bold text-[#0A1D3F] group-hover:text-[#FF8A00] transition">
+                      Purchase Course
+                    </h4>
+                    <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-[#FF8A00] text-white">
+                      New Batches
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-[#667085]">Explore & enroll in coaching courses</p>
+                </div>
+              </div>
+              <ChevronRight className="w-3.5 h-3.5 text-[#FF8A00] group-hover:translate-x-0.5 transition-all" />
+            </Link>
+
+            <Link
               to="/subscriptions"
               className="w-full flex items-center justify-between p-2.5 bg-[#F7F8FA] hover:bg-gray-100 rounded-xl border border-[#E6E8EC] text-left transition block"
             >

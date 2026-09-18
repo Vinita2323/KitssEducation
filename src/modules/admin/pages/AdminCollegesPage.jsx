@@ -39,6 +39,7 @@ export const AdminCollegesPage = () => {
     description: "",
     address: "",
     city: "",
+    district: "",
     state: "",
     country: "India",
     location: "",
@@ -87,6 +88,7 @@ export const AdminCollegesPage = () => {
       description: college.description || "",
       address: college.address || "",
       city: college.city || "",
+      district: college.district || college.city || "",
       state: college.state || "",
       country: college.country || "India",
       location: college.location || "",
@@ -279,7 +281,7 @@ export const AdminCollegesPage = () => {
                         <div className="font-semibold text-[#0A1D3F]">{col.collegeType}</div>
                         <div className="text-[11px] text-[#667085] flex items-center gap-1 mt-0.5">
                           <MapPin className="w-3 h-3 text-[#FF8A00]" />
-                          <span>{col.location || col.city}</span>
+                          <span>{col.district ? `${col.district}, ${col.state}` : col.location || col.city}</span>
                         </div>
                       </td>
 
@@ -431,6 +433,19 @@ export const AdminCollegesPage = () => {
                     value={formData.city}
                     onChange={(e) => setFormData({ ...formData, city: e.target.value })}
                     placeholder="e.g. Noida, Pune, Bangalore"
+                    className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-[#E6E8EC] focus:border-[#FF8A00] focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-[#0A1D3F] mb-1">
+                    District
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.district}
+                    onChange={(e) => setFormData({ ...formData, district: e.target.value })}
+                    placeholder="e.g. Gautam Buddha Nagar, Pune, Jaipur"
                     className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-[#E6E8EC] focus:border-[#FF8A00] focus:outline-none"
                   />
                 </div>
