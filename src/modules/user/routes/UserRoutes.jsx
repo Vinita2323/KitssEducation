@@ -13,6 +13,7 @@ import { ForgotPasswordPage, ResetPasswordPage } from "../pages/auth/ForgotPassw
 
 // Main & Domain Pages
 import { HomeDashboardPage } from "../pages/dashboard/HomeDashboardPage";
+import { AboutPage } from "../pages/about/AboutPage";
 import { CategoriesPage } from "../pages/categories/CategoriesPage";
 import { CollegesListingPage } from "../pages/college/CollegesListingPage";
 import { BooksHomePage } from "../pages/books/BooksHomePage";
@@ -60,6 +61,7 @@ export const UserRoutes = () => {
       {/* Main Student Portal Screens with UserLayout */}
       <Route element={<UserLayout />}>
         <Route path="/home" element={<HomeDashboardPage />} />
+        <Route path="/about" element={<AboutPage />} />
         <Route path="/categories" element={<CategoriesPage />} />
         
         {/* Partner Colleges & Admissions */}

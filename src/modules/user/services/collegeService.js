@@ -145,4 +145,30 @@ export const collegeService = {
       application: newApp,
     };
   },
+
+  // Submit College Franchise Application
+  async submitFranchiseApplication(franchiseData) {
+    await delay(300);
+    const store = getLocalStore();
+
+    const newFranchise = {
+      _id: "fran_" + Date.now().toString(36) + Math.random().toString(36).substring(2, 6),
+      applicationId: "FRAN-2026-" + Math.floor(10000 + Math.random() * 90000),
+      ...franchiseData,
+      status: "Under Review",
+      submissionDate: new Date().toISOString(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    store.franchiseApplications = [newFranchise, ...(store.franchiseApplications || [])];
+    saveLocalStore(store);
+
+    return {
+      success: true,
+      message: "Franchise application submitted successfully!",
+      applicationId: newFranchise.applicationId,
+      application: newFranchise,
+    };
+  },
 };

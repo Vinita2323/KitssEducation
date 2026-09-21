@@ -17,7 +17,8 @@ import {
   ChevronRight,
   Sparkles,
   GraduationCap,
-  Shield
+  Shield,
+  Info
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { Modal } from "../common/Modal";
@@ -32,6 +33,7 @@ export const SideDrawer = ({ isOpen, onClose }) => {
 
   const menuItems = [
     { label: "Home", path: "/home", icon: Home },
+    { label: "About Us", path: "/about", icon: Info },
     { label: "Partner Colleges", path: "/colleges", icon: GraduationCap },
     { label: "Digital Books", path: "/books", icon: BookOpen },
     { label: "Online Coaching", path: "/coaching", icon: Video },
