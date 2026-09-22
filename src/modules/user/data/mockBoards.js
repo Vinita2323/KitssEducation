@@ -33,64 +33,24 @@ export const MOCK_BOARDS = {
       tag: "National Board",
       fields: [
         {
-          id: "academicYear",
-          label: "Academic Session",
-          type: "select",
-          required: true,
-          defaultValue: "2026",
-          gridSpan: "half",
-          options: [
-            { value: "2026", label: "2025 - 2026 (Latest)" },
-            { value: "2025", label: "2024 - 2025" },
-            { value: "2024", label: "2023 - 2024" }
-          ]
-        },
-        {
           id: "classGrade",
-          label: "Examination Class",
+          label: "Class",
           type: "select",
           required: true,
           defaultValue: "10",
           gridSpan: "half",
           options: [
-            { value: "10", label: "Class X (Secondary School)" },
-            { value: "12", label: "Class XII (Senior School Certificate)" }
+            { value: "10", label: "Class X (10th)" },
+            { value: "12", label: "Class XII (12th)" }
           ]
-        },
-        {
-          id: "examType",
-          label: "Examination Type",
-          type: "select",
-          required: true,
-          defaultValue: "main",
-          gridSpan: "half",
-          options: [
-            { value: "main", label: "Main Annual Examination" },
-            { value: "compartment", label: "Compartment / Supplementary" },
-            { value: "improvement", label: "Improvement Examination" }
-          ]
-        },
-        {
-          id: "schoolCode",
-          label: "School Code (5 Digits)",
-          type: "text",
-          required: false,
-          placeholder: "e.g. 85201",
-          helperText: "Found on your official Admit Card",
-          gridSpan: "half",
-          validation: {
-            pattern: "^[0-9]{5}$",
-            message: "School code must be a 5-digit number"
-          }
         },
         {
           id: "rollNumber",
           label: "Roll Number",
           type: "text",
           required: true,
-          placeholder: "Enter 7 or 8-digit Roll Number (e.g. 1024501)",
+          placeholder: "e.g. 1024501",
           gridSpan: "half",
-          helperText: "As mentioned on your Admit Card",
           validation: {
             minLength: 4,
             message: "Roll number must be at least 4 digits"
@@ -102,8 +62,7 @@ export const MOCK_BOARDS = {
           type: "date",
           required: true,
           defaultValue: "2009-08-15",
-          gridSpan: "half",
-          helperText: "Required for identity verification"
+          gridSpan: "full"
         }
       ]
     },
@@ -116,20 +75,8 @@ export const MOCK_BOARDS = {
       tag: "Council Board",
       fields: [
         {
-          id: "academicYear",
-          label: "Academic Year",
-          type: "select",
-          required: true,
-          defaultValue: "2026",
-          gridSpan: "half",
-          options: [
-            { value: "2026", label: "Examination 2026" },
-            { value: "2025", label: "Examination 2025" }
-          ]
-        },
-        {
           id: "classGrade",
-          label: "Course",
+          label: "Class / Course",
           type: "select",
           required: true,
           defaultValue: "ICSE",
@@ -141,21 +88,11 @@ export const MOCK_BOARDS = {
         },
         {
           id: "rollNumber",
-          label: "Unique ID (UID)",
+          label: "Unique ID / Roll No",
           type: "text",
           required: true,
-          placeholder: "7-digit Unique ID (e.g. ICSE-90412)",
-          gridSpan: "half",
-          helperText: "Unique 7-digit ID assigned to candidate"
-        },
-        {
-          id: "indexNumber",
-          label: "Index Number",
-          type: "text",
-          required: true,
-          placeholder: "e.g. B/9452/012",
-          gridSpan: "half",
-          helperText: "Provided by your school center"
+          placeholder: "e.g. 904128",
+          gridSpan: "half"
         },
         {
           id: "dob",
@@ -163,8 +100,7 @@ export const MOCK_BOARDS = {
           type: "date",
           required: true,
           defaultValue: "2009-03-22",
-          gridSpan: "full",
-          helperText: "DD/MM/YYYY format matching school record"
+          gridSpan: "full"
         }
       ]
     },
@@ -178,121 +114,35 @@ export const MOCK_BOARDS = {
       fields: [
         {
           id: "stateName",
-          label: "Select State",
+          label: "State",
           type: "select",
           required: true,
           defaultValue: "Maharashtra",
           gridSpan: "half",
           options: [
-            { value: "Maharashtra", label: "Maharashtra State Board (MSBSHSE)" },
-            { value: "Uttar Pradesh", label: "UP Board (UPMSP)" },
-            { value: "Karnataka", label: "Karnataka School Examination (KSEAB)" },
-            { value: "Bihar", label: "Bihar School Examination (BSEB)" },
-            { value: "Tamil Nadu", label: "Tamil Nadu Directorate of Govt Exams" },
-            { value: "Delhi", label: "Delhi State Education Board" }
-          ]
-        },
-        {
-          id: "classGrade",
-          label: "Examination Level",
-          type: "select",
-          required: true,
-          defaultValue: "HSC",
-          gridSpan: "half",
-          options: [
-            { value: "SSLC", label: "10th Standard (SSLC / Matriculation)" },
-            { value: "HSC", label: "12th Standard (HSC / Intermediate)" }
-          ]
-        },
-        {
-          id: "academicYear",
-          label: "Examination Year",
-          type: "select",
-          required: true,
-          defaultValue: "2026",
-          gridSpan: "half",
-          options: [
-            { value: "2026", label: "Annual Exam 2026" },
-            { value: "2025", label: "Annual Exam 2025" }
+            { value: "Maharashtra", label: "Maharashtra (MSBSHSE)" },
+            { value: "Uttar Pradesh", label: "Uttar Pradesh (UPMSP)" },
+            { value: "Karnataka", label: "Karnataka (KSEAB)" },
+            { value: "Bihar", label: "Bihar (BSEB)" },
+            { value: "Tamil Nadu", label: "Tamil Nadu (TNDGE)" },
+            { value: "Delhi", label: "Delhi State Board" }
           ]
         },
         {
           id: "rollNumber",
-          label: "Seat Number / Roll Number",
+          label: "Roll / Seat Number",
           type: "text",
           required: true,
           placeholder: "e.g. SB-774120",
-          gridSpan: "half",
-          helperText: "Alphanumeric Seat Number from Hall Ticket"
-        },
-        {
-          id: "motherName",
-          label: "Mother's First Name",
-          type: "text",
-          required: true,
-          placeholder: "e.g. SUNITA",
-          gridSpan: "half",
-          helperText: "Required verification field for State Board"
+          gridSpan: "half"
         },
         {
           id: "dob",
           label: "Date of Birth",
           type: "date",
           required: false,
-          gridSpan: "half"
-        }
-      ]
-    },
-    {
-      id: "OTHER_BOARD",
-      code: "OTHER",
-      name: "Other Board",
-      fullName: "Other Recognized National & Open Schooling Boards",
-      description: "NIOS, Cambridge IGCSE, International Baccalaureate (IB), and others",
-      tag: "Alternative Boards",
-      fields: [
-        {
-          id: "boardName",
-          label: "Recognized Board Name",
-          type: "select",
-          required: true,
-          defaultValue: "NIOS",
-          gridSpan: "half",
-          options: [
-            { value: "NIOS", label: "National Institute of Open Schooling (NIOS)" },
-            { value: "CAMBRIDGE", label: "Cambridge Assessment International (IGCSE/A-Level)" },
-            { value: "IB", label: "International Baccalaureate (IB Diploma)" },
-            { value: "OTHER", label: "Other Recognized Board" }
-          ]
-        },
-        {
-          id: "academicYear",
-          label: "Examination Session",
-          type: "select",
-          required: true,
-          defaultValue: "2026",
-          gridSpan: "half",
-          options: [
-            { value: "2026", label: "Session 2025-2026" },
-            { value: "2025", label: "Session 2024-2025" }
-          ]
-        },
-        {
-          id: "rollNumber",
-          label: "Enrollment / Candidate Number",
-          type: "text",
-          required: true,
-          placeholder: "e.g. NIOS-489211",
-          gridSpan: "half",
-          helperText: "Unique enrollment number"
-        },
-        {
-          id: "dob",
-          label: "Date of Birth",
-          type: "date",
-          required: true,
           defaultValue: "2008-05-14",
-          gridSpan: "half"
+          gridSpan: "full"
         }
       ]
     }
@@ -308,36 +158,22 @@ export const MOCK_BOARDS = {
       tag: "Central Institution",
       fields: [
         {
-          id: "universityName",
-          label: "University / Institute",
-          type: "select",
-          required: true,
-          defaultValue: "University of Delhi",
-          gridSpan: "half",
-          options: [
-            { value: "University of Delhi", label: "University of Delhi (DU)" },
-            { value: "Banaras Hindu University", label: "Banaras Hindu University (BHU)" },
-            { value: "Jawaharlal Nehru University", label: "Jawaharlal Nehru University (JNU)" },
-            { value: "Jamia Millia Islamia", label: "Jamia Millia Islamia (JMI)" }
-          ]
-        },
-        {
           id: "course",
-          label: "Course / Degree Program",
+          label: "Course / Degree",
           type: "select",
           required: true,
           defaultValue: "B.Com",
           gridSpan: "half",
           options: [
-            { value: "B.Com", label: "Bachelor of Commerce (Honours)" },
-            { value: "B.A", label: "Bachelor of Arts (Honours)" },
-            { value: "B.Sc", label: "Bachelor of Science" },
-            { value: "MBA", label: "Master of Business Administration" }
+            { value: "B.Com", label: "B.Com (Honours)" },
+            { value: "B.A", label: "B.A (Honours)" },
+            { value: "B.Sc", label: "Bachelor of Science (B.Sc)" },
+            { value: "MBA", label: "MBA" }
           ]
         },
         {
           id: "semester",
-          label: "Semester / Year",
+          label: "Semester",
           type: "select",
           required: true,
           defaultValue: "4",
@@ -352,34 +188,12 @@ export const MOCK_BOARDS = {
           ]
         },
         {
-          id: "academicYear",
-          label: "Examination Session",
-          type: "select",
-          required: true,
-          defaultValue: "2026",
-          gridSpan: "half",
-          options: [
-            { value: "2026", label: "May-June 2026 Regular" },
-            { value: "2025", label: "Nov-Dec 2025 Winter" }
-          ]
-        },
-        {
           id: "rollNumber",
-          label: "Roll Number / Examination Roll",
+          label: "Roll Number",
           type: "text",
           required: true,
           placeholder: "e.g. UNV-66214",
-          gridSpan: "half",
-          helperText: "College Examination Roll Number"
-        },
-        {
-          id: "enrollmentNumber",
-          label: "Enrollment Number",
-          type: "text",
-          required: false,
-          placeholder: "e.g. 22DU-884102",
-          gridSpan: "half",
-          helperText: "Permanent University Enrollment Number"
+          gridSpan: "full"
         }
       ]
     },
@@ -392,31 +206,17 @@ export const MOCK_BOARDS = {
       tag: "Technical Board",
       fields: [
         {
-          id: "universityName",
-          label: "Technical University",
-          type: "select",
-          required: true,
-          defaultValue: "State Technological University",
-          gridSpan: "half",
-          options: [
-            { value: "State Technological University", label: "State Technological University (STU)" },
-            { value: "APJ Abdul Kalam Technical University", label: "Dr. A.P.J. Abdul Kalam Technical University" },
-            { value: "Visvesvaraya Technological University", label: "Visvesvaraya Technological University (VTU)" },
-            { value: "Anna University", label: "Anna University Technical Board" }
-          ]
-        },
-        {
           id: "course",
-          label: "Degree Program",
+          label: "Program",
           type: "select",
           required: true,
           defaultValue: "B.Tech",
           gridSpan: "half",
           options: [
-            { value: "B.Tech", label: "Bachelor of Technology (B.Tech - CSE)" },
-            { value: "B.Tech-ECE", label: "Bachelor of Technology (B.Tech - ECE)" },
-            { value: "B.Pharma", label: "Bachelor of Pharmacy (B.Pharm)" },
-            { value: "MCA", label: "Master of Computer Applications (MCA)" }
+            { value: "B.Tech", label: "B.Tech (CSE)" },
+            { value: "B.Tech-ECE", label: "B.Tech (ECE)" },
+            { value: "B.Pharma", label: "B.Pharma" },
+            { value: "MCA", label: "MCA" }
           ]
         },
         {
@@ -427,38 +227,18 @@ export const MOCK_BOARDS = {
           defaultValue: "6",
           gridSpan: "half",
           options: [
-            { value: "4", label: "4th Semester (2nd Year)" },
-            { value: "6", label: "6th Semester (3rd Year)" },
-            { value: "8", label: "8th Semester (Final Year)" }
-          ]
-        },
-        {
-          id: "academicYear",
-          label: "Examination Year",
-          type: "select",
-          required: true,
-          defaultValue: "2026",
-          gridSpan: "half",
-          options: [
-            { value: "2026", label: "Even Semester 2026" },
-            { value: "2025", label: "Odd Semester 2025" }
+            { value: "4", label: "4th Semester" },
+            { value: "6", label: "6th Semester" },
+            { value: "8", label: "8th Semester" }
           ]
         },
         {
           id: "rollNumber",
-          label: "University Roll / Enrollment No",
+          label: "Roll / Enrollment No",
           type: "text",
           required: true,
           placeholder: "e.g. UNV-88421",
-          gridSpan: "half",
-          helperText: "Unique student enrollment identifier"
-        },
-        {
-          id: "dob",
-          label: "Date of Birth",
-          type: "date",
-          required: false,
-          gridSpan: "half"
+          gridSpan: "full"
         }
       ]
     },
@@ -471,19 +251,6 @@ export const MOCK_BOARDS = {
       tag: "Autonomous",
       fields: [
         {
-          id: "universityName",
-          label: "Institute Name",
-          type: "select",
-          required: true,
-          defaultValue: "KITSS Deemed University",
-          gridSpan: "half",
-          options: [
-            { value: "KITSS Deemed University", label: "KITSS Institute of Higher Education" },
-            { value: "Autonomous Engineering College", label: "Autonomous Engineering College" },
-            { value: "Global Business Institute", label: "Global Business Institute" }
-          ]
-        },
-        {
           id: "course",
           label: "Program",
           type: "select",
@@ -492,8 +259,8 @@ export const MOCK_BOARDS = {
           gridSpan: "half",
           options: [
             { value: "B.Tech", label: "B.Tech Computer Science" },
-            { value: "BBA", label: "Bachelor of Business Administration" },
-            { value: "BCA", label: "Bachelor of Computer Applications" }
+            { value: "BBA", label: "BBA" },
+            { value: "BCA", label: "BCA" }
           ]
         },
         {
@@ -511,12 +278,11 @@ export const MOCK_BOARDS = {
         },
         {
           id: "rollNumber",
-          label: "Registration Number",
+          label: "Registration / Roll No",
           type: "text",
           required: true,
           placeholder: "e.g. UNV-88421",
-          gridSpan: "half",
-          helperText: "Registration ID found on Student Portal ID"
+          gridSpan: "full"
         }
       ]
     }

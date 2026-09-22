@@ -1,12 +1,14 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, Bell, Smartphone, ShieldCheck, Moon, Sun, Info, Trash2 } from "lucide-react";
+import { ArrowLeft, Bell, Smartphone, Laptop, ShieldCheck, Moon, Sun, Info, Trash2 } from "lucide-react";
+import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../context/ToastContext";
 import { PrimaryButton } from "../../components/common/PrimaryButton";
 
 export const SettingsPage = () => {
   const navigate = useNavigate();
   const { showSuccess } = useToast();
+  const { deviceInfo, handleTransferDeviceSession } = useAuth();
 
   const [examAlerts, setExamAlerts] = useState(true);
   const [courseUpdates, setCourseUpdates] = useState(true);
@@ -88,27 +90,48 @@ export const SettingsPage = () => {
 
       {/* Single Device Security */}
       <div className="bg-white rounded-3xl border border-[#E6E8EC] p-5 sm:p-6 shadow-xs space-y-3">
-        <div className="flex items-center gap-2 text-xs font-bold text-[#0A1D3F] uppercase tracking-wider">
-          <ShieldCheck className="w-4 h-4 text-[#17B26A]" />
-          <span>Device Security</span>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 text-xs font-bold text-[#0A1D3F] uppercase tracking-wider">
+            <ShieldCheck className="w-4 h-4 text-[#17B26A]" />
+            <span>Single Device Security</span>
+          </div>
+          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
+            Enforced (1 Device)
+          </span>
         </div>
 
-        <div className="p-4 bg-emerald-50/60 rounded-2xl border border-emerald-200/60 flex items-center justify-between gap-3">
+        <div className="p-4 bg-emerald-50/60 rounded-2xl border border-emerald-200/60 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <Smartphone className="w-5 h-5 text-[#17B26A]" />
+            {deviceInfo?.type === "Mobile" ? (
+              <Smartphone className="w-5 h-5 text-[#17B26A] shrink-0" />
+            ) : (
+              <Laptop className="w-5 h-5 text-[#17B26A] shrink-0" />
+            )}
             <div>
-              <h4 className="text-xs font-bold text-[#0A1D3F]">
-                Primary Active Device
-              </h4>
-              <p className="text-[11px] text-[#667085]">
-                Chrome Web / Windows 11 • Verified Single Device Token
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <h4 className="text-xs font-bold text-[#0A1D3F]">
+                  {deviceInfo?.label || "Primary Active Device"}
+                </h4>
+                <span className="text-[10px] font-semibold text-[#17B26A] bg-white px-2 py-0.2 rounded-full border border-emerald-200">
+                  Current Session
+                </span>
+              </div>
+              <p className="text-[11px] text-[#667085] mt-0.5">
+                Token ID: <span className="font-mono font-semibold">{deviceInfo?.deviceId || "DEV-PRIMARY"}</span> • Authorized Single Session
               </p>
             </div>
           </div>
 
-          <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-[#17B26A] text-white">
-            Secured
-          </span>
+          <button
+            type="button"
+            onClick={() => {
+              handleTransferDeviceSession();
+              showSuccess("Other device sessions deauthorized. Current device is primary.");
+            }}
+            className="px-3 py-1.5 rounded-xl bg-white border border-[#E6E8EC] hover:bg-gray-50 text-[11px] font-bold text-[#0A1D3F] shadow-2xs transition active:scale-95 cursor-pointer whitespace-nowrap"
+          >
+            Deauthorize Others
+          </button>
         </div>
       </div>
 

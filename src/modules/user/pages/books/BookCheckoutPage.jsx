@@ -8,7 +8,8 @@ import {
   Building,
   CheckCircle2,
   Lock,
-  ArrowRight
+  ArrowRight,
+  BookOpen
 } from "lucide-react";
 import { bookService } from "../../services/bookService";
 import { orderService } from "../../services/orderService";
@@ -21,7 +22,7 @@ import { SkeletonLoader, ErrorState } from "../../components/common/EmptyState";
 export const BookCheckoutPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { markBookPurchased } = useLibrary();
+  const { markBookPurchased, isBookOwned } = useLibrary();
   const { showSuccess, showError } = useToast();
 
   const [book, setBook] = useState(null);
@@ -53,13 +54,13 @@ export const BookCheckoutPage = () => {
       setProcessing(true);
       const res = await bookService.purchaseBook(book.id, paymentMethod.toUpperCase());
       
-      // Also register order in orderService
+      // Register order in orderService
       const orderRes = await orderService.createOrder({
         productName: `${book.title} - ${book.subtitle}`,
         type: "Book",
         category: "Digital Books",
         amount: book.price,
-        originalAmount: book.originalPrice,
+        originalAmount: book.originalPrice || book.price,
         discountAmount: (book.originalPrice || book.price) - book.price,
         paymentMethod: paymentMethod === "upi" ? "UPI (Google Pay / PhonePe)" : "Card / Net Banking"
       });
@@ -88,6 +89,37 @@ export const BookCheckoutPage = () => {
     );
   }
 
+  const isFree = book.isFree === true || Number(book.price) === 0;
+  const alreadyOwned = isBookOwned(book.id) || isFree;
+
+  if (alreadyOwned) {
+    return (
+      <div className="max-w-md mx-auto py-8 text-center space-y-4">
+        <div className="w-16 h-16 rounded-full bg-emerald-50 border border-emerald-200 flex items-center justify-center text-[#17B26A] mx-auto shadow-xs">
+          <CheckCircle2 className="w-8 h-8" />
+        </div>
+        <h2 className="text-lg font-extrabold text-[#0A1D3F]">
+          {isFree ? "This Book is Free!" : "You Already Own This Book!"}
+        </h2>
+        <p className="text-xs text-[#667085]">
+          You have full access to read "{book.title}" in your library.
+        </p>
+        <div className="pt-2 flex justify-center gap-3">
+          <Link to={`/books/${book.id}/read`}>
+            <PrimaryButton variant="green" size="md" icon={BookOpen}>
+              Open in PDF Reader
+            </PrimaryButton>
+          </Link>
+          <Link to="/books">
+            <button className="px-4 py-2 border border-[#E6E8EC] rounded-xl text-xs font-semibold text-[#0A1D3F] hover:bg-gray-50">
+              Browse More
+            </button>
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   const discountVal = (book.originalPrice || book.price) - book.price;
 
   return (
@@ -97,7 +129,7 @@ export const BookCheckoutPage = () => {
         <button
           type="button"
           onClick={() => navigate(-1)}
-          className="flex items-center gap-1.5 text-xs font-bold text-[#0A1D3F] hover:text-[#FF8A00] transition"
+          className="flex items-center gap-1.5 text-xs font-bold text-[#0A1D3F] hover:text-[#FF8A00] transition cursor-pointer"
         >
           <ArrowLeft className="w-4 h-4" />
           <span>Back to Details</span>
@@ -119,7 +151,7 @@ export const BookCheckoutPage = () => {
         {/* Selected Product Card */}
         <div className="p-4 bg-[#F7F8FA] rounded-2xl border border-[#E6E8EC] flex items-center justify-between gap-3">
           <div className="min-w-0">
-            <span className="text-[10px] font-bold px-2 py-0.2 rounded-full bg-[#0A1D3F] text-white">
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#0A1D3F] text-white">
               {book.board}
             </span>
             <h4 className="text-sm font-bold text-[#0A1D3F] truncate mt-1">
@@ -142,7 +174,7 @@ export const BookCheckoutPage = () => {
           </div>
         </div>
 
-        {/* Payment Methods Placeholder */}
+        {/* Payment Methods */}
         <div className="space-y-2.5">
           <label className="text-xs font-bold text-[#0A1D3F] uppercase tracking-wider block">
             Select Payment Method
@@ -162,7 +194,7 @@ export const BookCheckoutPage = () => {
                   key={method.id}
                   type="button"
                   onClick={() => setPaymentMethod(method.id)}
-                  className={`w-full flex items-center justify-between p-3 rounded-2xl border text-left transition ${
+                  className={`w-full flex items-center justify-between p-3 rounded-2xl border text-left transition cursor-pointer ${
                     isSelected
                       ? "bg-orange-50/50 border-[#FF8A00] ring-1 ring-[#FF8A00]"
                       : "bg-white border-[#E6E8EC] hover:bg-gray-50"

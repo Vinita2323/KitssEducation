@@ -79,14 +79,14 @@ Digital Verification ID: ${result?.admitCardId || result?.qrCodeString || "VERIF
   };
 
   return (
-    <div className="no-print flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 bg-white p-2 sm:p-2.5 rounded-xl border border-slate-200/80 shadow-xs">
+    <div className="no-print flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 bg-white p-1.5 sm:p-2 rounded-md border border-slate-200/80 shadow-2xs">
       {/* Back Button */}
       <div className="flex items-center gap-1.5">
         {onBack && (
           <button
             type="button"
             onClick={onBack}
-            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:text-slate-950 hover:bg-slate-50 rounded-lg transition touch-target cursor-pointer"
+            className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-slate-700 hover:text-slate-950 hover:bg-slate-50 rounded-md transition touch-target cursor-pointer"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
             <span>Search Form</span>

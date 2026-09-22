@@ -130,49 +130,43 @@ export const AboutPage = () => {
       {/* ========================================================================= */}
       {/* 1. COMPACT HERO HEADER                                                    */}
       {/* ========================================================================= */}
-      <section className="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-to-br from-[#0A1D3F] via-[#0E2856] to-[#123979] text-white p-4 sm:p-6 shadow-sm">
-        <div className="relative z-10 space-y-2 max-w-3xl">
+      <section className="relative overflow-hidden rounded-xl bg-gradient-to-r from-[#0A1D3F] via-[#0E2856] to-[#123979] text-white p-3 sm:p-4 shadow-xs">
+        <div className="relative z-10 space-y-2">
           <div className="flex items-center justify-between gap-2">
             <Link
               to="/home"
-              className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-300 hover:text-white bg-white/10 px-2.5 py-1 rounded-full border border-white/10 transition-colors"
+              className="inline-flex items-center gap-1 text-[10.5px] font-bold text-slate-300 hover:text-white bg-white/10 px-2.5 py-0.5 rounded-lg border border-white/10 transition-colors"
             >
               <ArrowLeft className="w-3 h-3" />
               <span>Back to Home</span>
             </Link>
 
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#FF8A00]/20 border border-[#FF8A00]/40 text-[#FF8A00] text-[10px] font-black uppercase tracking-wider">
+            <span className="inline-flex items-center gap-1 text-[10px] font-extrabold text-[#FF8A00] bg-[#FF8A00]/15 px-2 py-0.5 rounded-md border border-[#FF8A00]/30 uppercase tracking-wider">
               <Sparkles className="w-3 h-3" />
-              <span>About KITSS Education</span>
-            </div>
+              <span>Est. 2012</span>
+            </span>
           </div>
 
-          <h1 className="text-lg sm:text-2xl md:text-3xl font-black tracking-tight leading-snug">
-            Pioneering Excellence in Education & Mentorship
-          </h1>
+          <div>
+            <h1 className="text-base sm:text-lg md:text-xl font-black tracking-tight text-white leading-snug">
+              About KITSS Education
+            </h1>
+            <p className="text-[11px] sm:text-xs text-slate-300 leading-snug font-normal max-w-2xl mt-0.5">
+              Empowering 50,000+ students with board coaching, exam preparation, digital resources & verified college admissions.
+            </p>
+          </div>
 
-          <p className="text-[11px] sm:text-xs text-slate-300 leading-relaxed font-normal max-w-2xl">
-            Established in 2012, KITSS Education empowers over 50,000 learners with top-tier board coaching, JEE/NEET prep, digital learning resources, and verified college admissions.
-          </p>
-
-          {/* Compact Stats Ribbon */}
-          <div className="grid grid-cols-4 gap-2 pt-2 border-t border-white/15 text-center">
-            <div className="p-1">
-              <span className="block text-sm sm:text-lg font-black text-[#FF8A00]">2012</span>
-              <span className="text-[10px] text-slate-300">Established</span>
-            </div>
-            <div className="p-1">
-              <span className="block text-sm sm:text-lg font-black text-white">50k+</span>
-              <span className="text-[10px] text-slate-300">Students</span>
-            </div>
-            <div className="p-1">
-              <span className="block text-sm sm:text-lg font-black text-emerald-400">200+</span>
-              <span className="text-[10px] text-slate-300">Colleges</span>
-            </div>
-            <div className="p-1">
-              <span className="block text-sm sm:text-lg font-black text-amber-300">95%</span>
-              <span className="text-[10px] text-slate-300">Success</span>
-            </div>
+          {/* Compact Inline Stats */}
+          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 pt-1.5 border-t border-white/10 text-[10.5px]">
+            <span className="px-2 py-0.5 rounded-md bg-white/10 text-slate-200 font-semibold border border-white/10">
+              🎓 <span className="font-extrabold text-[#FF8A00]">50k+</span> Students
+            </span>
+            <span className="px-2 py-0.5 rounded-md bg-white/10 text-slate-200 font-semibold border border-white/10">
+              🏛️ <span className="font-extrabold text-emerald-400">200+</span> Colleges
+            </span>
+            <span className="px-2 py-0.5 rounded-md bg-white/10 text-slate-200 font-semibold border border-white/10">
+              ⭐ <span className="font-extrabold text-amber-300">95%</span> Success
+            </span>
           </div>
         </div>
       </section>
@@ -461,40 +455,6 @@ export const AboutPage = () => {
               </div>
             </div>
           ))}
-        </div>
-      </section>
-
-      {/* ========================================================================= */}
-      {/* 6. COMPACT CTA STRIP                                                      */}
-      {/* ========================================================================= */}
-      <section className="bg-gradient-to-r from-[#0A1D3F] via-[#0E2958] to-[#123877] rounded-2xl p-3.5 sm:p-4 text-white flex flex-col sm:flex-row items-center justify-between gap-3 shadow-xs">
-        <div className="space-y-0.5 text-center sm:text-left">
-          <div className="inline-flex items-center gap-1 text-[10px] font-bold text-[#FF8A00]">
-            <Sparkles className="w-3 h-3" />
-            <span>Ready to Begin?</span>
-          </div>
-          <h3 className="text-xs sm:text-sm font-black">
-            Accelerate Your Learning with KITSS Education
-          </h3>
-          <p className="text-[10.5px] text-slate-300">
-            Connect with counselors or explore our partner colleges & online courses.
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2 shrink-0">
-          <Link
-            to="/colleges"
-            className="px-3 py-1.5 rounded-xl bg-white hover:bg-slate-100 text-[#0A1D3F] text-[11px] font-black transition shadow-2xs"
-          >
-            Partner Colleges
-          </Link>
-          <Link
-            to="/coaching"
-            className="px-3 py-1.5 rounded-xl bg-[#FF8A00] hover:bg-[#E67A00] text-white text-[11px] font-black transition shadow-2xs inline-flex items-center gap-1"
-          >
-            <span>Courses</span>
-            <ArrowRight className="w-3 h-3" />
-          </Link>
         </div>
       </section>
     </motion.div>

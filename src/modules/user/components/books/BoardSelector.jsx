@@ -5,200 +5,265 @@ import {
   Building2,
   Library,
   Sparkles,
-  ChevronRight,
-  Calculator,
-  Atom,
-  BookMarked,
-  Globe2,
+  ChevronDown,
+  Layers,
   Languages,
-  Layers
+  X
 } from "lucide-react";
 
-const boardIcons = {
-  GraduationCap,
-  BookOpen,
-  Building2,
-  Library,
-  Sparkles,
-  Layers
-};
-
-const subjectIcons = {
-  Calculator,
-  Atom,
-  BookMarked,
-  Globe2,
-  Languages,
-  BookOpen
-};
-
-export const BoardSelector = ({ boards = [], selectedBoard = "All", onSelect }) => {
-  const allBoards = [
-    { id: "All", name: "All Boards", icon: "Layers" },
-    ...boards
-  ];
-
+export const BoardDropdown = ({
+  boards = [],
+  selectedBoard = "All",
+  onSelect
+}) => {
   return (
-    <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5 -mx-3 px-3 sm:mx-0 sm:px-0 w-auto max-w-full min-w-0 scroll-smooth">
-      {allBoards.map((board) => {
-        const isSelected = selectedBoard === board.id;
-        const Icon = boardIcons[board.icon] || GraduationCap;
-
-        return (
+    <div className="space-y-1 min-w-0">
+      <div className="flex items-center justify-between">
+        <label className="text-[11px] font-bold text-[#0A1D3F] uppercase tracking-wider flex items-center gap-1.5 truncate">
+          <GraduationCap className="w-3.5 h-3.5 text-[#FF8A00] shrink-0" />
+          <span>1. Select Board</span>
+        </label>
+        {selectedBoard !== "All" && (
           <button
-            key={board.id}
             type="button"
-            onClick={() => onSelect(board.id)}
-            className={`flex flex-col items-center justify-center py-2 px-1 rounded-xl border transition-all duration-150 shrink-0 w-[68px] sm:w-20 cursor-pointer ${
-              isSelected
-                ? "bg-[#0A1D3F] border-[#0A1D3F] text-white shadow-xs font-bold"
-                : "bg-white border-[#E6E8EC] text-[#0A1D3F] hover:border-gray-300"
-            }`}
+            onClick={() => onSelect("All")}
+            className="text-[10px] font-bold text-[#FF8A00] hover:text-[#E67A00] flex items-center gap-0.5 cursor-pointer"
+            title="Reset Board"
           >
-            <div
-              className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center mb-1 transition-colors ${
-                isSelected ? "bg-white/20 text-white" : "bg-[#F7F8FA] text-[#0A1D3F]"
-              }`}
-            >
-              <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-            </div>
-            <span className="text-[10px] sm:text-[11px] font-semibold tracking-tight truncate w-full text-center px-0.5">
-              {board.name}
-            </span>
+            <span>Reset</span>
+            <X className="w-2.5 h-2.5" />
           </button>
-        );
-      })}
-    </div>
-  );
-};
-
-export const ClassSelector = ({ classes = [], selectedClass = "All", onSelect }) => {
-  return (
-    <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 -mx-3 px-3 sm:mx-0 sm:px-0 w-auto max-w-full min-w-0 scroll-smooth">
-      <button
-        type="button"
-        onClick={() => onSelect("All")}
-        className={`px-3 py-1 rounded-lg text-xs font-bold transition-all shrink-0 cursor-pointer ${
-          selectedClass === "All"
-            ? "bg-[#0A1D3F] text-white shadow-xs"
-            : "bg-white text-[#667085] border border-[#E6E8EC] hover:bg-gray-50"
-        }`}
-      >
-        All Classes
-      </button>
-      {classes.map((cls) => {
-        const isSelected = selectedClass === cls;
-        return (
-          <button
-            key={cls}
-            type="button"
-            onClick={() => onSelect(cls)}
-            className={`px-3 py-1 rounded-lg text-xs font-bold transition-all shrink-0 cursor-pointer ${
-              isSelected
-                ? "bg-[#FF8A00] text-white shadow-xs"
-                : "bg-white text-[#0A1D3F] border border-[#E6E8EC] hover:bg-gray-50"
-            }`}
-          >
-            Class {cls}
-          </button>
-        );
-      })}
-    </div>
-  );
-};
-
-export const SubjectSelector = ({ subjects = [], selectedSubject = "All", onSelect }) => {
-  return (
-    <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 -mx-3 px-3 sm:mx-0 sm:px-0 w-auto max-w-full min-w-0 scroll-smooth">
-      <button
-        type="button"
-        onClick={() => onSelect("All")}
-        className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold shrink-0 transition-all cursor-pointer border ${
-          selectedSubject === "All"
-            ? "bg-[#0A1D3F] text-white border-[#0A1D3F] shadow-xs"
-            : "bg-white text-[#475467] border-[#E6E8EC] hover:bg-gray-50 hover:text-[#0A1D3F]"
-        }`}
-      >
-        <span>All Subjects</span>
-      </button>
-
-      {subjects.map((sub) => {
-        const isSelected = selectedSubject === sub.id;
-        const Icon = subjectIcons[sub.icon] || BookOpen;
-
-        return (
-          <button
-            key={sub.id}
-            type="button"
-            onClick={() => onSelect(sub.id)}
-            className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold shrink-0 transition-all cursor-pointer border ${
-              isSelected
-                ? "bg-[#0A1D3F] text-white border-[#0A1D3F] shadow-xs"
-                : "bg-white text-[#475467] border-[#E6E8EC] hover:bg-gray-50 hover:text-[#0A1D3F]"
-            }`}
-          >
-            <span
-              className="w-2 h-2 rounded-full shrink-0"
-              style={{ backgroundColor: isSelected ? "#FF8A00" : (sub.color || "#0A1D3F") }}
-            />
-            <span>{sub.name}</span>
-            {sub.bookCount !== undefined && (
-              <span
-                className={`text-[10px] px-1.5 py-0.2 rounded-full ${
-                  isSelected ? "bg-white/20 text-white" : "bg-gray-100 text-[#667085]"
-                }`}
-              >
-                {sub.bookCount}
-              </span>
-            )}
-          </button>
-        );
-      })}
-    </div>
-  );
-};
-
-export const SubjectCard = ({ subject, isSelected = false, onClick }) => {
-  const Icon = subjectIcons[subject.icon] || BookOpen;
-
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`w-full flex items-center justify-between p-2.5 rounded-xl border shadow-2xs hover:shadow-xs transition-all active:scale-[0.99] text-left group cursor-pointer ${
-        isSelected
-          ? "bg-[#0A1D3F] border-[#0A1D3F] text-white"
-          : "bg-white border-[#E6E8EC] hover:border-gray-300 text-[#0A1D3F]"
-      }`}
-    >
-      <div className="flex items-center gap-2.5 min-w-0">
-        <div
-          className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 shadow-2xs text-white"
-          style={{ backgroundColor: isSelected ? "#FF8A00" : (subject.color || "#0A1D3F") }}
-        >
-          <Icon className="w-4 h-4" />
-        </div>
-        <div className="min-w-0">
-          <h4
-            className={`text-xs font-bold truncate ${
-              isSelected ? "text-white" : "text-[#0A1D3F] group-hover:text-[#FF8A00]"
-            } transition`}
-          >
-            {subject.name}
-          </h4>
-          <p className={`text-[11px] truncate ${isSelected ? "text-white/70" : "text-[#667085]"}`}>
-            {subject.bookCount} Books Available
-          </p>
-        </div>
+        )}
       </div>
-
-      <ChevronRight
-        className={`w-4 h-4 shrink-0 transition-all ${
-          isSelected
-            ? "text-white/80"
-            : "text-gray-300 group-hover:text-[#0A1D3F] group-hover:translate-x-0.5"
-        }`}
-      />
-    </button>
+      <div className="relative">
+        <select
+          value={selectedBoard}
+          onChange={(e) => onSelect(e.target.value)}
+          className={`w-full pl-3 pr-8 py-2.5 rounded-xl text-xs font-bold transition appearance-none cursor-pointer border focus:outline-none focus:ring-1 ${
+            selectedBoard !== "All"
+              ? "bg-[#0A1D3F] text-white border-[#0A1D3F] focus:ring-[#0A1D3F]"
+              : "bg-[#F7F8FA] text-[#0A1D3F] border-[#E6E8EC] hover:border-gray-300 focus:ring-[#0A1D3F] focus:border-[#0A1D3F]"
+          }`}
+        >
+          <option value="All" className="bg-white text-[#0A1D3F] font-semibold">
+            All Boards
+          </option>
+          {boards.map((b) => (
+            <option key={b.id} value={b.id} className="bg-white text-[#0A1D3F] font-semibold">
+              {b.name}
+            </option>
+          ))}
+        </select>
+        <ChevronDown
+          className={`w-4 h-4 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none transition ${
+            selectedBoard !== "All" ? "text-white" : "text-[#667085]"
+          }`}
+        />
+      </div>
+    </div>
   );
 };
+
+export const ClassDropdown = ({
+  classes = [],
+  selectedClass = "All",
+  onSelect
+}) => {
+  return (
+    <div className="space-y-1 min-w-0">
+      <div className="flex items-center justify-between">
+        <label className="text-[11px] font-bold text-[#0A1D3F] uppercase tracking-wider flex items-center gap-1.5 truncate">
+          <Layers className="w-3.5 h-3.5 text-[#133C8B] shrink-0" />
+          <span>2. Select Class</span>
+        </label>
+        {selectedClass !== "All" && (
+          <button
+            type="button"
+            onClick={() => onSelect("All")}
+            className="text-[10px] font-bold text-[#FF8A00] hover:text-[#E67A00] flex items-center gap-0.5 cursor-pointer"
+            title="Reset Class"
+          >
+            <span>Reset</span>
+            <X className="w-2.5 h-2.5" />
+          </button>
+        )}
+      </div>
+      <div className="relative">
+        <select
+          value={selectedClass}
+          onChange={(e) => onSelect(e.target.value)}
+          className={`w-full pl-3 pr-8 py-2.5 rounded-xl text-xs font-bold transition appearance-none cursor-pointer border focus:outline-none focus:ring-1 ${
+            selectedClass !== "All"
+              ? "bg-[#FF8A00] text-white border-[#FF8A00] focus:ring-[#FF8A00]"
+              : "bg-[#F7F8FA] text-[#0A1D3F] border-[#E6E8EC] hover:border-gray-300 focus:ring-[#0A1D3F] focus:border-[#0A1D3F]"
+          }`}
+        >
+          <option value="All" className="bg-white text-[#0A1D3F] font-semibold">
+            All Classes
+          </option>
+          {classes.map((cls) => (
+            <option key={cls} value={cls} className="bg-white text-[#0A1D3F] font-semibold">
+              Class {cls}
+            </option>
+          ))}
+        </select>
+        <ChevronDown
+          className={`w-4 h-4 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none transition ${
+            selectedClass !== "All" ? "text-white" : "text-[#667085]"
+          }`}
+        />
+      </div>
+    </div>
+  );
+};
+
+export const SubjectDropdown = ({
+  subjects = [],
+  selectedSubject = "All",
+  onSelect
+}) => {
+  return (
+    <div className="space-y-1 min-w-0">
+      <div className="flex items-center justify-between">
+        <label className="text-[11px] font-bold text-[#0A1D3F] uppercase tracking-wider flex items-center gap-1.5 truncate">
+          <BookOpen className="w-3.5 h-3.5 text-[#17B26A] shrink-0" />
+          <span>3. Select Subject</span>
+        </label>
+        {selectedSubject !== "All" && (
+          <button
+            type="button"
+            onClick={() => onSelect("All")}
+            className="text-[10px] font-bold text-[#FF8A00] hover:text-[#E67A00] flex items-center gap-0.5 cursor-pointer"
+            title="Reset Subject"
+          >
+            <span>Reset</span>
+            <X className="w-2.5 h-2.5" />
+          </button>
+        )}
+      </div>
+      <div className="relative">
+        <select
+          value={selectedSubject}
+          onChange={(e) => onSelect(e.target.value)}
+          className={`w-full pl-3 pr-8 py-2.5 rounded-xl text-xs font-bold transition appearance-none cursor-pointer border focus:outline-none focus:ring-1 ${
+            selectedSubject !== "All"
+              ? "bg-[#0A1D3F] text-white border-[#0A1D3F] focus:ring-[#0A1D3F]"
+              : "bg-[#F7F8FA] text-[#0A1D3F] border-[#E6E8EC] hover:border-gray-300 focus:ring-[#0A1D3F] focus:border-[#0A1D3F]"
+          }`}
+        >
+          <option value="All" className="bg-white text-[#0A1D3F] font-semibold">
+            All Subjects
+          </option>
+          {subjects.map((sub) => (
+            <option key={sub.id} value={sub.id} className="bg-white text-[#0A1D3F] font-semibold">
+              {sub.name}
+            </option>
+          ))}
+        </select>
+        <ChevronDown
+          className={`w-4 h-4 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none transition ${
+            selectedSubject !== "All" ? "text-white" : "text-[#667085]"
+          }`}
+        />
+      </div>
+    </div>
+  );
+};
+
+export const LanguageDropdown = ({
+  selectedLanguage = "All",
+  onSelect
+}) => {
+  return (
+    <div className="space-y-1 min-w-0">
+      <div className="flex items-center justify-between">
+        <label className="text-[11px] font-bold text-[#0A1D3F] uppercase tracking-wider flex items-center gap-1.5 truncate">
+          <Languages className="w-3.5 h-3.5 text-[#E11D48] shrink-0" />
+          <span>4. Language Medium</span>
+        </label>
+        {selectedLanguage !== "All" && (
+          <button
+            type="button"
+            onClick={() => onSelect("All")}
+            className="text-[10px] font-bold text-[#FF8A00] hover:text-[#E67A00] flex items-center gap-0.5 cursor-pointer"
+            title="Reset Language"
+          >
+            <span>Reset</span>
+            <X className="w-2.5 h-2.5" />
+          </button>
+        )}
+      </div>
+      <div className="relative">
+        <select
+          value={selectedLanguage}
+          onChange={(e) => onSelect(e.target.value)}
+          className={`w-full pl-3 pr-8 py-2.5 rounded-xl text-xs font-bold transition appearance-none cursor-pointer border focus:outline-none focus:ring-1 ${
+            selectedLanguage !== "All"
+              ? "bg-[#0A1D3F] text-white border-[#0A1D3F] focus:ring-[#0A1D3F]"
+              : "bg-[#F7F8FA] text-[#0A1D3F] border-[#E6E8EC] hover:border-gray-300 focus:ring-[#0A1D3F] focus:border-[#0A1D3F]"
+          }`}
+        >
+          <option value="All" className="bg-white text-[#0A1D3F] font-semibold">
+            All Languages
+          </option>
+          <option value="English" className="bg-white text-[#0A1D3F] font-semibold">
+            English Medium
+          </option>
+          <option value="Hindi" className="bg-white text-[#0A1D3F] font-semibold">
+            Hindi Medium (हिंदी)
+          </option>
+        </select>
+        <ChevronDown
+          className={`w-4 h-4 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none transition ${
+            selectedLanguage !== "All" ? "text-white" : "text-[#667085]"
+          }`}
+        />
+      </div>
+    </div>
+  );
+};
+
+export const HierarchyDropdowns = ({
+  boards = [],
+  classes = [],
+  subjects = [],
+  selectedBoard = "All",
+  selectedClass = "All",
+  selectedSubject = "All",
+  selectedLanguage = "All",
+  onSelectBoard,
+  onSelectClass,
+  onSelectSubject,
+  onSelectLanguage
+}) => {
+  return (
+    <div className="bg-white rounded-2xl border border-[#E6E8EC] p-3 sm:p-4 shadow-2xs space-y-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3">
+        <BoardDropdown
+          boards={boards}
+          selectedBoard={selectedBoard}
+          onSelect={onSelectBoard}
+        />
+        <ClassDropdown
+          classes={classes}
+          selectedClass={selectedClass}
+          onSelect={onSelectClass}
+        />
+        <SubjectDropdown
+          subjects={subjects}
+          selectedSubject={selectedSubject}
+          onSelect={onSelectSubject}
+        />
+        <LanguageDropdown
+          selectedLanguage={selectedLanguage}
+          onSelect={onSelectLanguage}
+        />
+      </div>
+    </div>
+  );
+};
+
+// Legacy alias exports if needed anywhere
+export const BoardSelector = BoardDropdown;
+export const ClassSelector = ClassDropdown;
+export const SubjectSelector = SubjectDropdown;

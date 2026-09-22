@@ -10,6 +10,7 @@ export const UserLayout = () => {
 
   // Immersive reader pages (e.g. /books/:id/read or /coaching/.../read) should have 100% of screen without standard navigation bars
   const isImmersiveReader = location.pathname.includes("/read");
+  const isNotificationsPage = location.pathname.startsWith("/notifications");
 
   if (isImmersiveReader) {
     return (
@@ -23,8 +24,10 @@ export const UserLayout = () => {
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] flex flex-col font-sans text-slate-900 antialiased selection:bg-slate-900 selection:text-white w-full max-w-full overflow-x-hidden">
-      {/* App Header (Sticky) */}
-      <AppHeader onOpenDrawer={() => setDrawerOpen(true)} unreadCount={2} />
+      {/* App Header (Sticky) - hidden on notifications page as requested */}
+      {!isNotificationsPage && (
+        <AppHeader onOpenDrawer={() => setDrawerOpen(true)} unreadCount={2} />
+      )}
 
       {/* Mobile Slide Drawer */}
       <SideDrawer isOpen={drawerOpen} onClose={() => setDrawerOpen(false)} />

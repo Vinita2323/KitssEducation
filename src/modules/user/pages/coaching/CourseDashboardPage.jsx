@@ -56,6 +56,10 @@ export const CourseDashboardPage = () => {
   }, [id]);
 
   const handleSelectLecture = (lecture, subjectName) => {
+    if (course?.isExpired) {
+      navigate(`/coaching/${id}/subscribe`);
+      return;
+    }
     navigate(`/coaching/${id}/lecture/${lecture.id}`, {
       state: { subjectName, lectureTitle: lecture.title },
     });
@@ -123,6 +127,16 @@ export const CourseDashboardPage = () => {
 
         {/* Right Main Content Area */}
         <main className="flex-1 min-w-0 w-full space-y-3 sm:space-y-3.5">
+          {/* Expiry Warning Alert (when Expired or Expiring Soon) */}
+          {(course.isExpired || (course.daysRemaining !== undefined && course.daysRemaining <= 15)) && (
+            <CourseExpiry
+              status={course.expiryStatus || (course.isExpired ? "Expired" : "Active")}
+              expiryDate={course.expiryDate}
+              daysRemaining={course.daysRemaining}
+              onRenew={() => navigate(`/coaching/${id}/subscribe`)}
+            />
+          )}
+
           {/* Compact Course Header Card (No Duplicate Tabs!) */}
           <div className="bg-white rounded-md border border-[#E6E8EC] p-3.5 sm:p-4 shadow-2xs space-y-2.5">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
@@ -226,8 +240,10 @@ export const CourseDashboardPage = () => {
               />
 
               <CourseExpiry
-                status="Active"
-                expiryDate={course.expiryDate || "30 April 2027"}
+                status={course.expiryStatus || (course.isExpired ? "Expired" : "Active")}
+                expiryDate={course.expiryDate}
+                daysRemaining={course.daysRemaining}
+                onRenew={() => navigate(`/coaching/${id}/subscribe`)}
               />
             </div>
           )}

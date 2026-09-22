@@ -17,6 +17,74 @@ export class ResultValidationError extends Error {
   }
 }
 
+const INDIAN_STUDENT_NAMES = [
+  "AARAV SHARMA",
+  "PRIYA VERMA",
+  "ADITYA SINGH",
+  "ANANYA IYER",
+  "ROHAN GUPTA",
+  "SNEHA PATEL",
+  "VIKRAMADITYA RAO",
+  "ISHA CHATTERJEE",
+  "HARSH VARDHAN",
+  "POOJA NAIR",
+  "ARJUN MEHTA",
+  "RHEA SEN",
+  "KARAN DESHMUKH",
+  "DIVYA JOSHI"
+];
+
+const MOTHER_NAMES = [
+  "SUNITA SHARMA",
+  "ANITA VERMA",
+  "MEENA GUPTA",
+  "LAKSHMI RAO",
+  "KAVITA SINGH",
+  "SAROJ PATEL",
+  "REKHA DEVI",
+  "SHASHI MEHTA"
+];
+
+const FATHER_NAMES = [
+  "RAJESH SHARMA",
+  "SUNIL VERMA",
+  "VIJAY GUPTA",
+  "RAMESH PATEL",
+  "SURESH SINGH",
+  "ANIL MEHTA",
+  "DATTATRAYA DESHMUKH",
+  "MAHESH RAO"
+];
+
+function getDeterministicItem(list, seed = "") {
+  let hash = 0;
+  for (let i = 0; i < seed.length; i++) {
+    hash = (hash << 5) - hash + seed.charCodeAt(i);
+    hash |= 0;
+  }
+  return list[Math.abs(hash) % list.length];
+}
+
+function getRealisticAdmitCardId(boardId, cleanRoll) {
+  const lastDigits = cleanRoll.replace(/\D/g, "").slice(-6) || cleanRoll.slice(-6);
+  if (boardId === "STATE_BOARD") {
+    return `MSB-HSC-2026-${lastDigits}`;
+  }
+  if (boardId === "CBSE") {
+    return `CBSE2026-XII-${lastDigits}`;
+  }
+  if (boardId === "ICSE") {
+    return `CISCE-2026-X-${lastDigits}`;
+  }
+  if (boardId === "STATE_TECH_UNIV") {
+    return `STU-EXAM-2026-${lastDigits}`;
+  }
+  if (boardId === "CENTRAL_UNIV") {
+    return `CU-2026-SEM4-${lastDigits}`;
+  }
+  return `REG-2026-${lastDigits}`;
+}
+
 /**
  * Generates a realistic, verified marksheet dynamically
  * for any student roll number entered by the user.
@@ -26,26 +94,33 @@ function generateDynamicResult(searchParams, cleanRoll) {
   const boardId = searchParams.boardId || (isUniversity ? "STATE_TECH_UNIV" : "CBSE");
   const boardName = searchParams.boardName || (isUniversity ? "State Technological University" : "Central Board of Secondary Education");
 
+  const studentName = searchParams.studentName || getDeterministicItem(INDIAN_STUDENT_NAMES, cleanRoll);
+  const motherName = searchParams.motherName || getDeterministicItem(MOTHER_NAMES, cleanRoll);
+  const fatherName = searchParams.fatherName || getDeterministicItem(FATHER_NAMES, cleanRoll);
+  const admitCardId = getRealisticAdmitCardId(boardId, cleanRoll);
+
   if (isUniversity) {
+    const univName = searchParams.boardName || "State Technological University";
+    const instName = "Faculty of Engineering & Technology";
     return {
       id: `res-gen-${cleanRoll}`,
       type: "university",
       board: boardId,
-      boardName: boardName,
-      schoolName: "Affiliated Institute of Technology & Science",
-      universityName: boardName,
+      boardName: univName,
+      schoolName: instName,
+      universityName: univName,
       exam: "Bachelor of Technology / Undergraduate Examination 2026",
       examLevel: "Undergraduate (B.Tech)",
       course: searchParams.course || "B.Tech Computer Science & Engineering",
       semester: "Semester VI (6th Semester)",
       year: "2026",
       session: "May - June 2026 Regular",
-      studentName: "CANDIDATE STUDENT",
-      motherName: searchParams.motherName || "S. DEVI",
-      fatherName: "K. R. SHARMA",
+      studentName: studentName,
+      motherName: motherName,
+      fatherName: fatherName,
       rollNumber: cleanRoll,
       enrollmentNumber: `ENR-2023-${cleanRoll.slice(-5)}`,
-      admitCardId: `ADMIT-2026-${cleanRoll.slice(-6)}`,
+      admitCardId: admitCardId,
       dob: searchParams.dob || "2004-09-10",
       subjects: [
         { code: "CS601", name: "Cloud Computing & Systems", maxMarks: 100, obtained: 92, grade: "O", credits: 4 },
@@ -70,23 +145,44 @@ function generateDynamicResult(searchParams, cleanRoll) {
   }
 
   // School / Board Result
+  let schoolName = "Model Senior Secondary School";
+  let schoolCode = "85201";
+  let centerCode = "1104";
+  let boardDisplayName = boardName;
+
+  if (boardId === "STATE_BOARD") {
+    const state = searchParams.stateName || "State";
+    schoolName = `${state} Model Higher Secondary School`;
+    boardDisplayName = `${state} State Board of Secondary & Higher Secondary Education`;
+    schoolCode = "MH-11.02.001";
+    centerCode = "PUN-042";
+  } else if (boardId === "CBSE") {
+    schoolName = "Delhi Public School, R.K. Puram, New Delhi";
+    schoolCode = "85201";
+    centerCode = "1104";
+  } else if (boardId === "ICSE") {
+    schoolName = "The Heritage Academy, Kolkata";
+    schoolCode = "WB084";
+    centerCode = "WB-102";
+  }
+
   return {
     id: `res-gen-${cleanRoll}`,
     type: "school",
     board: boardId,
-    boardName: boardName,
-    schoolName: "Model Senior Secondary School, New Delhi",
-    schoolCode: "85201",
-    centerCode: "1104",
+    boardName: boardDisplayName,
+    schoolName: schoolName,
+    schoolCode: schoolCode,
+    centerCode: centerCode,
     exam: "Senior School Certificate Examination (Class XII) 2026",
     examLevel: "Class XII",
     year: "2026",
     session: "2025-2026",
-    studentName: "CANDIDATE STUDENT",
-    motherName: searchParams.motherName || "SUNITA DEVI",
-    fatherName: "RAJESH KUMAR",
+    studentName: studentName,
+    motherName: motherName,
+    fatherName: fatherName,
     rollNumber: cleanRoll,
-    admitCardId: `${boardId}-2026-${cleanRoll}`,
+    admitCardId: admitCardId,
     dob: searchParams.dob || "2008-08-15",
     subjects: [
       { code: "184", name: "English Core", theory: 74, maxTheory: 80, practical: 19, maxPractical: 20, maxMarks: 100, obtained: 93, grade: "A1" },

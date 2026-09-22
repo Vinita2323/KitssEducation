@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import {
   ArrowLeft,
   ChevronLeft,
@@ -17,17 +17,20 @@ import {
   ShieldAlert,
   Lock,
   EyeOff,
-  AlertOctagon,
+  ShoppingBag,
   ArrowRight
 } from "lucide-react";
 import { bookService } from "../../services/bookService";
 import { coachingService } from "../../services/coachingService";
+import { useLibrary } from "../../context/LibraryContext";
 import { useToast } from "../../context/ToastContext";
-import { SkeletonLoader, ErrorState } from "../../components/common/EmptyState";
+import { PrimaryButton } from "../../components/common/PrimaryButton";
+import { ErrorState } from "../../components/common/EmptyState";
 
 export const PdfReaderPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { canAccessBook, updateReadingProgress, getBookProgress, toggleBookmark, isPageBookmarked } = useLibrary();
   const { showSuccess, showInfo, showWarning } = useToast();
 
   const [book, setBook] = useState(null);
@@ -35,7 +38,6 @@ export const PdfReaderPage = () => {
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [zoomLevel, setZoomLevel] = useState(100);
-  const [isBookmarked, setIsBookmarked] = useState(false);
   const [showToc, setShowToc] = useState(false);
 
   // Anti-Screenshot & DRM Protection States
@@ -55,6 +57,12 @@ export const PdfReaderPage = () => {
         if (profileData) {
           setStudent(profileData);
         }
+
+        // Resume reading position
+        const savedProgress = getBookProgress(id);
+        if (savedProgress && savedProgress.currentPage) {
+          setCurrentPage(savedProgress.currentPage);
+        }
       } catch (err) {
         console.error("Reader load error:", err);
       } finally {
@@ -64,9 +72,15 @@ export const PdfReaderPage = () => {
     fetchReaderData();
   }, [id]);
 
-  // -------------------------------------------------------------
-  // SCREENSHOT & CAPTURE PREVENTION LISTENERS (Multi-Layer Protection)
-  // -------------------------------------------------------------
+  // Update reading progress whenever currentPage changes
+  useEffect(() => {
+    if (book && currentPage) {
+      const total = book.pages || 195;
+      updateReadingProgress(book.id, currentPage, total);
+    }
+  }, [currentPage, book]);
+
+  // DRM & Screenshot prevention listeners
   useEffect(() => {
     const triggerScreenshotBlock = (e) => {
       if (e) {
@@ -74,7 +88,6 @@ export const PdfReaderPage = () => {
         e.stopPropagation();
       }
 
-      // 1. Wipe clipboard to overwrite any captured image data
       try {
         if (navigator.clipboard && navigator.clipboard.writeText) {
           navigator.clipboard.writeText(
@@ -85,19 +98,16 @@ export const PdfReaderPage = () => {
         // clipboard access restricted
       }
 
-      // 2. Trigger the Security Modal & Toast
       setShowScreenshotModal(true);
       showWarning("Screenshot Blocked! Digital Rights Protection is active.");
     };
 
     const handleKeyDown = (e) => {
-      // 1. Detect PrintScreen Key
       if (e.key === "PrintScreen" || e.code === "PrintScreen" || e.keyCode === 44) {
         triggerScreenshotBlock(e);
         return false;
       }
 
-      // 2. Detect Windows Snipping Tool (Win + Shift + S or Ctrl + Shift + S)
       if (
         (e.shiftKey && (e.metaKey || e.ctrlKey) && (e.key === "S" || e.key === "s")) ||
         (e.ctrlKey && e.shiftKey && (e.key === "S" || e.key === "s"))
@@ -106,7 +116,6 @@ export const PdfReaderPage = () => {
         return false;
       }
 
-      // 3. Detect Mac Screenshot Shortcuts (Cmd + Shift + 3, 4, 5)
       if (
         e.metaKey &&
         e.shiftKey &&
@@ -116,28 +125,24 @@ export const PdfReaderPage = () => {
         return false;
       }
 
-      // 4. Block Print (Ctrl+P / Cmd+P)
       if ((e.ctrlKey || e.metaKey) && (e.key === "p" || e.key === "P")) {
         e.preventDefault();
         showWarning("Printing is disabled for protected digital textbooks.");
         return false;
       }
 
-      // 5. Block Save (Ctrl+S / Cmd+S)
       if ((e.ctrlKey || e.metaKey) && (e.key === "s" || e.key === "S")) {
         e.preventDefault();
         showWarning("Saving offline files is disabled for protected books.");
         return false;
       }
 
-      // 6. Block Copy (Ctrl+C / Cmd+C)
       if ((e.ctrlKey || e.metaKey) && (e.key === "c" || e.key === "C")) {
         e.preventDefault();
         showWarning("Text copying is disabled on licensed study material.");
         return false;
       }
 
-      // 7. Block Inspect / DevTools (F12, Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+Shift+C)
       if (
         e.key === "F12" ||
         ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === "I" || e.key === "J" || e.key === "C" || e.key === "i" || e.key === "j" || e.key === "c"))
@@ -154,7 +159,6 @@ export const PdfReaderPage = () => {
       }
     };
 
-    // When Snipping Tool / external recording utility gains focus, browser triggers window blur
     const handleWindowBlur = () => {
       setIsWindowBlurred(true);
     };
@@ -171,14 +175,12 @@ export const PdfReaderPage = () => {
       }
     };
 
-    // Block right-click context menu
     const handleContextMenu = (e) => {
       e.preventDefault();
       showInfo("Right-click context menu is disabled on protected textbooks.");
       return false;
     };
 
-    // Block text copy events
     const handleCopy = (e) => {
       e.preventDefault();
       if (e.clipboardData) {
@@ -210,6 +212,95 @@ export const PdfReaderPage = () => {
     };
   }, [showWarning, showInfo]);
 
+  if (loading) {
+    return (
+      <div className="flex-1 flex items-center justify-center bg-[#F1F3F7] p-8">
+        <div className="w-full max-w-md bg-white p-6 rounded-2xl shadow-md border border-slate-200 space-y-4">
+          <div className="h-6 bg-slate-200 rounded w-1/3 animate-pulse" />
+          <div className="h-4 bg-slate-100 rounded w-2/3 animate-pulse" />
+          <div className="h-64 bg-slate-50 rounded-xl animate-pulse" />
+        </div>
+      </div>
+    );
+  }
+
+  if (!book) {
+    return (
+      <div className="flex-1 flex items-center justify-center bg-[#F1F3F7] p-4">
+        <ErrorState
+          title="Book Not Found"
+          message="Could not load the requested digital book."
+          actionText="Back to Books"
+          onAction={() => navigate("/books")}
+        />
+      </div>
+    );
+  }
+
+  // Access check: Free books or Owned paid books only
+  const hasAccess = canAccessBook(book);
+
+  if (!hasAccess) {
+    return (
+      <div className="flex-1 flex items-center justify-center bg-[#F1F3F7] p-4">
+        <div className="max-w-md w-full bg-white rounded-3xl border border-[#E6E8EC] p-6 sm:p-8 text-center shadow-lg space-y-5">
+          <div className="w-16 h-16 rounded-2xl bg-amber-50 border border-amber-200 text-[#FF8A00] flex items-center justify-center mx-auto shadow-xs">
+            <Lock className="w-8 h-8" />
+          </div>
+
+          <div>
+            <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-[#0A1D3F] text-white uppercase tracking-wider">
+              {book.board} • Class {book.class}
+            </span>
+            <h2 className="text-lg sm:text-xl font-black text-[#0A1D3F] mt-2">
+              Purchase Required
+            </h2>
+            <p className="text-xs text-[#667085] mt-1 leading-relaxed">
+              "{book.title}" is a premium curriculum book. Purchase once to read anytime with lifetime access.
+            </p>
+          </div>
+
+          <div className="p-4 bg-[#F7F8FA] rounded-2xl border border-[#E6E8EC] flex items-center justify-between">
+            <div className="text-left">
+              <span className="text-xs text-[#667085] block">Price</span>
+              <span className="text-base font-extrabold text-[#0A1D3F]">₹{book.price}</span>
+            </div>
+            {book.originalPrice && (
+              <span className="text-xs text-[#667085] line-through">
+                ₹{book.originalPrice}
+              </span>
+            )}
+            {book.discount && (
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-50 text-emerald-700">
+                {book.discount}
+              </span>
+            )}
+          </div>
+
+          <div className="space-y-2 pt-1">
+            <Link to={`/books/${book.id}/checkout`} className="block">
+              <PrimaryButton
+                variant="orange"
+                size="md"
+                fullWidth
+                icon={ShoppingBag}
+              >
+                Buy Now for ₹{book.price}
+              </PrimaryButton>
+            </Link>
+
+            <Link
+              to={`/books/${book.id}`}
+              className="block text-xs font-semibold text-slate-600 hover:text-slate-900 py-1"
+            >
+              View Book Details & Preview Sample
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const totalPages = book?.pages || 195;
   const chapters = book?.chapters || [
     "1. Resources and Development",
@@ -220,12 +311,12 @@ export const PdfReaderPage = () => {
     "6. Manufacturing Industries"
   ];
 
-  // Calculate active chapter index
   const chapterIndex = Math.min(
     Math.floor(((currentPage - 1) / totalPages) * chapters.length),
     chapters.length - 1
   );
   const currentChapterTitle = chapters[chapterIndex] || "Chapter Overview";
+  const isBookmarked = isPageBookmarked(book.id, currentPage);
 
   const handleNextPage = () => {
     if (currentPage < totalPages) {
@@ -254,8 +345,8 @@ export const PdfReaderPage = () => {
     setZoomLevel((prev) => Math.max(prev - 15, 90));
   };
 
-  const toggleBookmark = () => {
-    setIsBookmarked((prev) => !prev);
+  const handleToggleBookmark = () => {
+    toggleBookmark(book.id, currentPage);
     if (!isBookmarked) {
       showSuccess(`Page ${currentPage} bookmarked!`);
     } else {
@@ -263,50 +354,13 @@ export const PdfReaderPage = () => {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex-1 flex items-center justify-center bg-[#F1F3F7] p-8">
-        <div className="w-full max-w-md bg-white p-6 rounded-2xl shadow-md border border-slate-200 space-y-4">
-          <div className="h-6 bg-slate-200 rounded w-1/3 animate-pulse" />
-          <div className="h-4 bg-slate-100 rounded w-2/3 animate-pulse" />
-          <div className="h-64 bg-slate-50 rounded-xl animate-pulse" />
-        </div>
-      </div>
-    );
-  }
-
-  if (!book) {
-    return (
-      <div className="flex-1 flex items-center justify-center bg-[#F1F3F7] p-4">
-        <ErrorState
-          title="Book Not Found"
-          message="Could not load the requested digital book."
-          actionText="Back to Books"
-          onAction={() => navigate("/books")}
-        />
-      </div>
-    );
-  }
-
   const progressPct = Math.round((currentPage / totalPages) * 100);
   const isGeography = book?.subject === "Social Science" || book?.id === "book-105";
 
   return (
     <div className="flex-1 flex flex-col h-full w-full max-w-full overflow-hidden bg-[#F1F3F7] relative select-none">
-      {/* Print media DRM Notice */}
-      <div className="print-drm-notice">
-        <h1 className="text-2xl font-bold text-red-600 mb-2">⚠️ PROTECTED ACADEMIC CURRICULUM</h1>
-        <p className="text-base text-slate-800">
-          Printing or exporting this digital textbook is strictly prohibited by KITSS EDUCATION.
-        </p>
-        <p className="text-sm text-slate-600 mt-2">
-          Authorized Student: {student.name} (ID: {student.id})
-        </p>
-      </div>
-
-      {/* 1. Top Reader App Bar (Fixed Header) */}
+      {/* 1. Top Reader App Bar */}
       <header className="no-print-reader shrink-0 h-14 bg-white border-b border-[#E6E8EC] px-3 sm:px-5 flex items-center justify-between gap-2 z-20 shadow-2xs">
-        {/* Left: Back Action */}
         <button
           type="button"
           onClick={() => navigate(-1)}
@@ -317,7 +371,6 @@ export const PdfReaderPage = () => {
           <span className="hidden sm:inline">Back</span>
         </button>
 
-        {/* Center: Book & Chapter Info */}
         <div className="min-w-0 text-center flex-1 px-2">
           <h2 className="text-xs sm:text-sm font-extrabold text-[#0A1D3F] truncate flex items-center justify-center gap-1.5">
             <span>{book.title}</span>
@@ -330,9 +383,7 @@ export const PdfReaderPage = () => {
           </p>
         </div>
 
-        {/* Right: Actions (TOC, Bookmark, Zoom) */}
         <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
-          {/* Table of Contents button */}
           <button
             type="button"
             onClick={() => setShowToc(true)}
@@ -343,10 +394,9 @@ export const PdfReaderPage = () => {
             <span className="hidden md:inline">Chapters</span>
           </button>
 
-          {/* Bookmark button */}
           <button
             type="button"
-            onClick={toggleBookmark}
+            onClick={handleToggleBookmark}
             className={`p-2 rounded-xl border transition cursor-pointer ${
               isBookmarked
                 ? "bg-amber-50 border-amber-300 text-amber-500 shadow-2xs"
@@ -357,7 +407,6 @@ export const PdfReaderPage = () => {
             <Bookmark className={`w-4 h-4 ${isBookmarked ? "fill-amber-500 text-amber-500" : ""}`} />
           </button>
 
-          {/* Zoom controls */}
           <div className="hidden sm:flex items-center border border-[#E6E8EC] rounded-xl overflow-hidden bg-white">
             <button
               type="button"
@@ -384,9 +433,8 @@ export const PdfReaderPage = () => {
         </div>
       </header>
 
-      {/* 2. Reading Stage with Security Protection Mask */}
+      {/* 2. Reading Canvas */}
       <div className="no-print-reader flex-1 overflow-y-auto overflow-x-hidden p-3 sm:p-6 flex justify-center items-start relative">
-        {/* PRIVACY BLUR MASK WHEN EXTERNAL CAPTURE TOOL ACTIVE / WINDOW BLURRED */}
         {isWindowBlurred && !showScreenshotModal && (
           <div
             onClick={() => setIsWindowBlurred(false)}
@@ -414,14 +462,13 @@ export const PdfReaderPage = () => {
           </div>
         )}
 
-        {/* Paper Document Canvas with Security Watermarks */}
         <div
           className={`bg-white rounded-2xl shadow-xl border border-slate-200/90 p-5 sm:p-10 w-full max-w-2xl min-h-[680px] flex flex-col justify-between my-2 transition-transform duration-150 origin-top relative overflow-hidden select-none ${
             isWindowBlurred ? "filter blur-lg" : ""
           }`}
           style={{ transform: `scale(${zoomLevel / 100})` }}
         >
-          {/* FLOATING ANTI-PIRACY REPEATING WATERMARKS (Protects against Camera Photos) */}
+          {/* Watermark overlay */}
           <div className="absolute inset-0 pointer-events-none flex flex-col justify-between p-8 opacity-[0.14] select-none overflow-hidden z-10">
             <div className="flex justify-between text-[11px] font-mono font-bold text-[#0A1D3F] rotate-[-15deg] whitespace-nowrap">
               <span>{student.name.toUpperCase()} ({student.id})</span>
@@ -437,7 +484,6 @@ export const PdfReaderPage = () => {
             </div>
           </div>
 
-          {/* Paper Header Strip */}
           <div>
             <div className="flex items-center justify-between border-b border-slate-200 pb-3 mb-5 text-[10px] sm:text-[11px] font-bold text-[#667085] uppercase tracking-wider">
               <span className="flex items-center gap-1.5 text-[#0A1D3F]">
@@ -452,7 +498,6 @@ export const PdfReaderPage = () => {
               </span>
             </div>
 
-            {/* Chapter Header Banner */}
             <div className="mb-5">
               <span className="inline-block px-2.5 py-0.5 rounded-md bg-[#FFF7ED] text-[#FF8A00] text-[11px] font-bold uppercase tracking-wider mb-1">
                 Chapter {chapterIndex + 1}
@@ -462,9 +507,7 @@ export const PdfReaderPage = () => {
               </h1>
             </div>
 
-            {/* Simulated Academic Content (Subject-Specific) */}
             {isGeography ? (
-              /* GEOGRAPHY / SOCIAL SCIENCE (BOOK-105) CONTENT */
               <div className="space-y-4 text-xs sm:text-sm text-slate-700 leading-relaxed">
                 <div>
                   <h3 className="text-xs sm:text-sm font-bold text-[#0A1D3F] mb-1 flex items-center gap-1.5">
@@ -476,7 +519,6 @@ export const PdfReaderPage = () => {
                   </p>
                 </div>
 
-                {/* Conceptual Framework Box */}
                 <div className="p-4 bg-[#F8FAFC] rounded-xl border border-slate-200 shadow-2xs font-mono text-xs sm:text-sm space-y-1.5">
                   <div className="flex items-center gap-1.5 text-[#0A1D3F] font-sans font-bold text-xs">
                     <Award className="w-4 h-4 text-[#FF8A00]" />
@@ -494,12 +536,8 @@ export const PdfReaderPage = () => {
                       <span className="text-slate-600">• Non-Renewable (Fossil fuels, Coal)</span>
                     </div>
                   </div>
-                  <p className="font-sans text-[11px] text-[#667085] pt-0.5">
-                    <strong>Sustainable Development:</strong> Development that meets the needs of the present without compromising the ability of future generations to meet their own needs.
-                  </p>
                 </div>
 
-                {/* Board Solved Exemplar Problem */}
                 <div className="p-4 bg-emerald-50/50 rounded-xl border border-emerald-200/80 space-y-2 text-xs sm:text-sm">
                   <div className="flex items-center justify-between">
                     <span className="font-bold text-emerald-800 text-[11px] uppercase tracking-wider flex items-center gap-1">
@@ -514,28 +552,20 @@ export const PdfReaderPage = () => {
                     <strong>Question:</strong> "India has enormous diversity in the availability of resources." Justify this statement with three suitable examples.
                   </p>
                   <div className="space-y-1.5 text-slate-600 text-xs pl-2.5 border-l-2 border-emerald-300">
-                    <p>
-                      <strong>Point 1: Mineral Wealth:</strong> States like Jharkhand, Chhattisgarh, and Madhya Pradesh are exceptionally rich in mineral deposits and coal, but lack technological processing infrastructure.
-                    </p>
-                    <p>
-                      <strong>Point 2: Water Resources:</strong> Arunachal Pradesh possesses abundance of water resources but lacks adequate infrastructural connectivity.
-                    </p>
-                    <p>
-                      <strong>Point 3: Renewable Energy:</strong> Rajasthan and Gujarat are richly endowed with solar and wind energy potential, but lack fresh water resources. Hence, balanced resource planning at national, state, and regional levels is imperative.
-                    </p>
+                    <p><strong>Point 1: Mineral Wealth:</strong> States like Jharkhand, Chhattisgarh, and Madhya Pradesh are exceptionally rich in mineral deposits and coal.</p>
+                    <p><strong>Point 2: Water Resources:</strong> Arunachal Pradesh possesses abundance of water resources but lacks adequate infrastructural connectivity.</p>
+                    <p><strong>Point 3: Renewable Energy:</strong> Rajasthan and Gujarat are richly endowed with solar and wind energy potential.</p>
                   </div>
                 </div>
 
-                {/* Exam Tip Note */}
                 <div className="p-3 bg-amber-50/60 rounded-xl border border-amber-200/70 flex items-start gap-2.5 text-xs">
                   <Lightbulb className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
                   <p className="text-amber-900 leading-relaxed text-[11px] sm:text-xs">
-                    <strong>Examiner's Marking Tip:</strong> When answering 3-mark and 5-mark geography questions, always structure answers with bold point headings and cite specific Indian state names for maximum marking credit.
+                    <strong>Examiner's Marking Tip:</strong> When answering 3-mark and 5-mark geography questions, always structure answers with bold point headings and cite specific Indian state names.
                   </p>
                 </div>
               </div>
             ) : (
-              /* STANDARD MATHEMATICS / SCIENCE CONTENT */
               <div className="space-y-4 text-xs sm:text-sm text-slate-700 leading-relaxed">
                 <div>
                   <h3 className="text-xs sm:text-sm font-bold text-[#0A1D3F] mb-1 flex items-center gap-1.5">
@@ -543,11 +573,10 @@ export const PdfReaderPage = () => {
                     1. Core Principles & Theoretical Background
                   </h3>
                   <p className="text-slate-600 leading-relaxed">
-                    In this chapter, students investigate key foundational theorems, standard definitions, and analytical methods strictly aligned with the latest {book.board} examination framework. Thorough understanding of each derivation step is crucial for securing maximum stepwise marks in national and state level assessments.
+                    In this chapter, students investigate key foundational theorems, standard definitions, and analytical methods strictly aligned with the latest {book.board} examination framework.
                   </p>
                 </div>
 
-                {/* Core Formula Box */}
                 <div className="p-4 bg-[#F8FAFC] rounded-xl border border-slate-200 shadow-2xs font-mono text-xs sm:text-sm space-y-1.5">
                   <div className="flex items-center gap-1.5 text-[#0A1D3F] font-sans font-bold text-xs">
                     <Award className="w-4 h-4 text-[#FF8A00]" />
@@ -557,11 +586,10 @@ export const PdfReaderPage = () => {
                     ax² + bx + c = 0 &nbsp;⟹&nbsp; x = (-b ± √(b² - 4ac)) / (2a)
                   </div>
                   <p className="font-sans text-[11px] text-[#667085] leading-normal pt-0.5">
-                    <strong>Discriminant Rule:</strong> When D = b² - 4ac &gt; 0, roots are real and distinct. When D = 0, roots are real and equal. When D &lt; 0, no real roots exist.
+                    <strong>Discriminant Rule:</strong> When D = b² - 4ac &gt; 0, roots are real and distinct. When D = 0, roots are real and equal.
                   </p>
                 </div>
 
-                {/* Solved Exemplar Problem */}
                 <div className="p-4 bg-emerald-50/50 rounded-xl border border-emerald-200/80 space-y-2 text-xs sm:text-sm">
                   <div className="flex items-center justify-between">
                     <span className="font-bold text-emerald-800 text-[11px] uppercase tracking-wider flex items-center gap-1">
@@ -573,17 +601,15 @@ export const PdfReaderPage = () => {
                     </span>
                   </div>
                   <p className="font-semibold text-slate-800">
-                    <strong>Problem:</strong> Determine whether the quadratic equation 2x² - 7x + 3 = 0 has real roots, and if so, find them using the quadratic formula.
+                    <strong>Problem:</strong> Determine whether 2x² - 7x + 3 = 0 has real roots, and if so, find them using the quadratic formula.
                   </p>
                   <div className="space-y-1 text-slate-600 text-xs pl-2 border-l-2 border-emerald-300">
-                    <p><strong>Step 1:</strong> Comparing with ax² + bx + c = 0 gives a = 2, b = -7, c = 3.</p>
-                    <p><strong>Step 2:</strong> Discriminant D = (-7)² - 4(2)(3) = 49 - 24 = 25 &gt; 0. Since D &gt; 0, two distinct real roots exist.</p>
-                    <p><strong>Step 3:</strong> Applying formula: x = (7 ± √25) / (2 × 2) = (7 ± 5) / 4.</p>
-                    <p className="font-bold text-emerald-700">⟹ x = 12/4 = 3 &nbsp;or&nbsp; x = 2/4 = 1/2.</p>
+                    <p><strong>Step 1:</strong> a = 2, b = -7, c = 3.</p>
+                    <p><strong>Step 2:</strong> D = (-7)² - 4(2)(3) = 49 - 24 = 25 &gt; 0 (Two real distinct roots).</p>
+                    <p className="font-bold text-emerald-700">⟹ x = (7 ± 5) / 4 ⟹ x = 3 or x = 1/2.</p>
                   </div>
                 </div>
 
-                {/* Exam Tip Note */}
                 <div className="p-3 bg-amber-50/60 rounded-xl border border-amber-200/70 flex items-start gap-2.5 text-xs">
                   <Lightbulb className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
                   <p className="text-amber-900 leading-relaxed text-[11px] sm:text-xs">
@@ -594,7 +620,6 @@ export const PdfReaderPage = () => {
             )}
           </div>
 
-          {/* Paper Footer Strip */}
           <div className="border-t border-slate-200 mt-8 pt-3 flex items-center justify-between text-[10px] sm:text-[11px] text-[#667085]">
             <span>© {new Date().getFullYear()} KITSS Academic Editorial Board • DRM Protected</span>
             <span className="font-mono font-bold text-[#0A1D3F]">
@@ -604,9 +629,8 @@ export const PdfReaderPage = () => {
         </div>
       </div>
 
-      {/* 3. Bottom Pagination Bar (Fixed Footer) */}
+      {/* 3. Bottom Pagination Bar */}
       <footer className="no-print-reader shrink-0 h-14 bg-white border-t border-[#E6E8EC] px-3 sm:px-6 flex items-center justify-between gap-2 z-20 shadow-xs">
-        {/* Previous Button */}
         <button
           type="button"
           onClick={handlePrevPage}
@@ -617,7 +641,6 @@ export const PdfReaderPage = () => {
           <span className="hidden sm:inline">Previous</span>
         </button>
 
-        {/* Center: Reading Progress */}
         <div className="flex flex-col items-center min-w-0 max-w-[200px] w-full px-2">
           <div className="flex items-center gap-1.5 text-xs font-mono font-bold text-[#0A1D3F]">
             <span>Page {currentPage}</span>
@@ -636,7 +659,6 @@ export const PdfReaderPage = () => {
           </div>
         </div>
 
-        {/* Next Button */}
         <button
           type="button"
           onClick={handleNextPage}
@@ -656,7 +678,6 @@ export const PdfReaderPage = () => {
             onClick={() => setShowToc(false)}
           />
           <div className="relative bg-white w-full max-w-md rounded-2xl shadow-2xl border border-slate-200 z-10 overflow-hidden flex flex-col max-h-[85vh] animate-in fade-in zoom-in-95 duration-200">
-            {/* TOC Header */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200">
               <div className="flex items-center gap-2">
                 <List className="w-4 h-4 text-[#FF8A00]" />
@@ -673,7 +694,6 @@ export const PdfReaderPage = () => {
               </button>
             </div>
 
-            {/* Chapter List */}
             <div className="p-3 overflow-y-auto divide-y divide-slate-100">
               {chapters.map((chap, idx) => {
                 const isActive = chapterIndex === idx;
@@ -721,11 +741,10 @@ export const PdfReaderPage = () => {
         </div>
       )}
 
-      {/* 5. SCREENSHOT BLOCKED SECURITY SHIELD MODAL */}
+      {/* 5. Screenshot Blocked Modal */}
       {showScreenshotModal && (
         <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 select-none animate-in fade-in duration-200">
           <div className="max-w-md w-full bg-[#0A1D3F] border border-[#FF8A00]/40 rounded-3xl p-6 sm:p-8 text-center text-white shadow-2xl space-y-4">
-            {/* Warning Shield Badge */}
             <div className="w-18 h-18 rounded-2xl bg-[#FF8A00]/20 border border-[#FF8A00]/40 mx-auto flex items-center justify-center text-[#FF8A00] shadow-lg">
               <ShieldAlert className="w-9 h-9 stroke-[2.2]" />
             </div>
@@ -742,7 +761,6 @@ export const PdfReaderPage = () => {
               </p>
             </div>
 
-            {/* Student & License Audit Details */}
             <div className="bg-white/5 border border-white/10 rounded-2xl p-3.5 text-xs text-white/70 text-left space-y-1.5">
               <div className="flex items-center justify-between pb-1 border-b border-white/10 text-white font-semibold">
                 <span>Security Audit Log</span>
@@ -756,13 +774,8 @@ export const PdfReaderPage = () => {
                 <span className="text-white/60">Student Roll ID:</span>
                 <span className="font-mono font-bold text-[#FF8A00]">{student.id}</span>
               </div>
-              <div className="flex justify-between text-[11px]">
-                <span className="text-white/60">Protection Level:</span>
-                <span className="font-medium text-white/90">Single-Device View Only</span>
-              </div>
             </div>
 
-            {/* Acknowledge Button */}
             <button
               type="button"
               onClick={() => setShowScreenshotModal(false)}

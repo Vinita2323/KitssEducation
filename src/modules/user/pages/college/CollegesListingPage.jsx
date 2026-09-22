@@ -9,6 +9,7 @@ import {
   ArrowRight,
   Sparkles,
   CheckCircle2,
+  ChevronDown,
   X
 } from "lucide-react";
 import { collegeService } from "../../services/collegeService";
@@ -101,13 +102,13 @@ export const CollegesListingPage = () => {
   return (
     <div className="space-y-4 sm:space-y-6 max-w-7xl mx-auto pb-10 w-full min-w-0">
       {/* Header Banner */}
-      <div className="relative overflow-hidden bg-gradient-to-r from-[#0A1D3F] via-[#133C8B] to-[#0A1D3F] text-white rounded-3xl p-6 sm:p-8 shadow-md">
-        <div className="relative z-10 max-w-2xl space-y-2">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 backdrop-blur-xs text-xs font-semibold text-[#FF8A00]">
+      <div className="relative overflow-hidden bg-gradient-to-r from-[#0A1D3F] via-[#133C8B] to-[#0A1D3F] text-white rounded-xl p-5 sm:p-7 shadow-xs">
+        <div className="relative z-10 max-w-2xl space-y-1.5">
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/10 backdrop-blur-xs text-[11px] font-semibold text-[#FF8A00]">
             <Sparkles className="w-3.5 h-3.5" />
             <span>Verified Education Partners Network</span>
           </div>
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight">
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-extrabold tracking-tight">
             Find Your <span className="text-[#FF8A00]">College</span>
           </h1>
           <p className="text-xs sm:text-sm text-blue-100/80 leading-relaxed font-normal">
@@ -121,17 +122,17 @@ export const CollegesListingPage = () => {
       </div>
 
       {/* Search & Filter Bar */}
-      <div className="bg-white p-3.5 sm:p-5 rounded-2xl border border-[#E6E8EC] shadow-xs space-y-3 w-full min-w-0 overflow-hidden">
+      <div className="bg-white p-3.5 sm:p-4 rounded-xl border border-[#E6E8EC] shadow-2xs space-y-3 w-full min-w-0">
         {/* Search input + button */}
         <form onSubmit={handleSearchSubmit} className="flex items-center gap-2 w-full">
           <div className="relative flex-1 min-w-0">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#667085] shrink-0" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#667085] shrink-0" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search college, course, state, district..."
-              className="w-full pl-9 sm:pl-10 pr-9 py-2.5 bg-[#F7F8FA] border border-[#E6E8EC] rounded-xl text-xs sm:text-sm text-[#0A1D3F] placeholder-[#667085] focus:outline-none focus:border-[#FF8A00] transition"
+              className="w-full pl-9 pr-8 py-2 bg-[#F7F8FA] border border-[#E6E8EC] rounded-lg text-xs sm:text-sm text-[#0A1D3F] placeholder-[#667085] focus:outline-none focus:border-[#FF8A00] transition"
             />
             {searchQuery && (
               <button
@@ -148,85 +149,157 @@ export const CollegesListingPage = () => {
           </div>
           <button
             type="submit"
-            className="px-4 sm:px-5 py-2.5 bg-[#FF8A00] hover:bg-[#E67C00] text-white text-xs font-bold rounded-xl shadow-xs transition shrink-0 cursor-pointer"
+            className="px-4 py-2 bg-[#FF8A00] hover:bg-[#E67C00] text-white text-xs font-bold rounded-lg shadow-2xs transition shrink-0 cursor-pointer"
           >
             Search
           </button>
         </form>
 
-        {/* Category Filter Chips - Dedicated Horizontal Scroll Row */}
-        <div className="w-full min-w-0 overflow-x-auto no-scrollbar py-0.5">
-          <div className="flex items-center gap-1.5 w-max">
-            {categories.map((cat) => (
-              <button
-                key={cat}
-                type="button"
-                onClick={() => setSelectedCategory(cat)}
-                className={`px-3.5 py-1 rounded-full text-xs font-semibold whitespace-nowrap transition cursor-pointer ${
-                  selectedCategory === cat
-                    ? "bg-[#FF8A00] text-white font-bold shadow-xs"
-                    : "bg-[#F7F8FA] text-[#0A1D3F] hover:bg-gray-200 border border-[#E6E8EC]"
+        {/* 3-Dropdown Filter Grid: Type, State, District */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-2 border-t border-[#E6E8EC]/60">
+          {/* 1. Institution Type / Category Dropdown */}
+          <div className="space-y-1 min-w-0">
+            <div className="flex items-center justify-between">
+              <label className="text-[11px] font-bold text-[#0A1D3F] uppercase tracking-wider flex items-center gap-1.5 truncate">
+                <GraduationCap className="w-3.5 h-3.5 text-[#FF8A00] shrink-0" />
+                <span>Institution Type</span>
+              </label>
+              {selectedCategory !== "All" && (
+                <button
+                  type="button"
+                  onClick={() => setSelectedCategory("All")}
+                  className="text-[10px] font-bold text-[#FF8A00] hover:text-[#E67A00] flex items-center gap-0.5 cursor-pointer"
+                  title="Reset Type"
+                >
+                  <span>Reset</span>
+                  <X className="w-2.5 h-2.5" />
+                </button>
+              )}
+            </div>
+            <div className="relative">
+              <select
+                aria-label="Filter by Institution Type"
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
+                className={`w-full pl-3 pr-8 py-2 rounded-lg text-xs font-bold transition appearance-none cursor-pointer border focus:outline-none focus:ring-1 ${
+                  selectedCategory !== "All"
+                    ? "bg-[#0A1D3F] text-white border-[#0A1D3F] focus:ring-[#0A1D3F]"
+                    : "bg-[#F7F8FA] text-[#0A1D3F] border-[#E6E8EC] hover:border-gray-300 focus:ring-[#0A1D3F] focus:border-[#0A1D3F]"
                 }`}
               >
-                {cat}
-              </button>
-            ))}
+                <option value="All" className="bg-white text-[#0A1D3F] font-semibold">
+                  All Types
+                </option>
+                {categories.filter((c) => c !== "All").map((cat) => (
+                  <option key={cat} value={cat} className="bg-white text-[#0A1D3F] font-semibold">
+                    {cat}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown
+                className={`w-4 h-4 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none transition ${
+                  selectedCategory !== "All" ? "text-white" : "text-[#667085]"
+                }`}
+              />
+            </div>
           </div>
-        </div>
 
-        {/* Location Dropdowns & Reset Filters Row */}
-        <div className="pt-2.5 border-t border-[#F0F2F5] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 w-full min-w-0">
-          <div className="grid grid-cols-2 sm:flex sm:items-center gap-2 w-full sm:w-auto">
-            {/* State Dropdown */}
-            <div className="flex items-center gap-1.5 bg-[#F7F8FA] px-2.5 py-1.5 rounded-xl border border-[#E6E8EC] hover:border-[#FF8A00]/50 transition min-w-0">
-              <MapPin className="w-3.5 h-3.5 text-[#FF8A00] shrink-0" />
+          {/* 2. State Dropdown */}
+          <div className="space-y-1 min-w-0">
+            <div className="flex items-center justify-between">
+              <label className="text-[11px] font-bold text-[#0A1D3F] uppercase tracking-wider flex items-center gap-1.5 truncate">
+                <MapPin className="w-3.5 h-3.5 text-[#133C8B] shrink-0" />
+                <span>Select State</span>
+              </label>
+              {selectedState !== "All" && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedState("All");
+                    setSelectedDistrict("All");
+                  }}
+                  className="text-[10px] font-bold text-[#FF8A00] hover:text-[#E67A00] flex items-center gap-0.5 cursor-pointer"
+                  title="Reset State"
+                >
+                  <span>Reset</span>
+                  <X className="w-2.5 h-2.5" />
+                </button>
+              )}
+            </div>
+            <div className="relative">
               <select
                 aria-label="Filter by State"
                 value={selectedState}
                 onChange={handleStateChange}
-                className="w-full text-xs font-semibold bg-transparent text-[#0A1D3F] focus:outline-none cursor-pointer truncate"
+                className={`w-full pl-3 pr-8 py-2 rounded-lg text-xs font-bold transition appearance-none cursor-pointer border focus:outline-none focus:ring-1 ${
+                  selectedState !== "All"
+                    ? "bg-[#FF8A00] text-white border-[#FF8A00] focus:ring-[#FF8A00]"
+                    : "bg-[#F7F8FA] text-[#0A1D3F] border-[#E6E8EC] hover:border-gray-300 focus:ring-[#0A1D3F] focus:border-[#0A1D3F]"
+                }`}
               >
-                <option value="All">All States</option>
+                <option value="All" className="bg-white text-[#0A1D3F] font-semibold">
+                  All States
+                </option>
                 {states.filter((s) => s !== "All").map((st) => (
-                  <option key={st} value={st}>
+                  <option key={st} value={st} className="bg-white text-[#0A1D3F] font-semibold">
                     {st}
                   </option>
                 ))}
               </select>
+              <ChevronDown
+                className={`w-4 h-4 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none transition ${
+                  selectedState !== "All" ? "text-white" : "text-[#667085]"
+                }`}
+              />
             </div>
+          </div>
 
-            {/* District Dropdown */}
-            <div className="flex items-center gap-1.5 bg-[#F7F8FA] px-2.5 py-1.5 rounded-xl border border-[#E6E8EC] hover:border-[#FF8A00]/50 transition min-w-0">
-              <Building2 className="w-3.5 h-3.5 text-[#667085] shrink-0" />
+          {/* 3. District Dropdown */}
+          <div className="space-y-1 min-w-0">
+            <div className="flex items-center justify-between">
+              <label className="text-[11px] font-bold text-[#0A1D3F] uppercase tracking-wider flex items-center gap-1.5 truncate">
+                <Building2 className="w-3.5 h-3.5 text-[#17B26A] shrink-0" />
+                <span>Select District</span>
+              </label>
+              {selectedDistrict !== "All" && (
+                <button
+                  type="button"
+                  onClick={() => setSelectedDistrict("All")}
+                  className="text-[10px] font-bold text-[#FF8A00] hover:text-[#E67A00] flex items-center gap-0.5 cursor-pointer"
+                  title="Reset District"
+                >
+                  <span>Reset</span>
+                  <X className="w-2.5 h-2.5" />
+                </button>
+              )}
+            </div>
+            <div className="relative">
               <select
                 aria-label="Filter by District"
                 value={selectedDistrict}
                 onChange={(e) => setSelectedDistrict(e.target.value)}
-                className="w-full text-xs font-semibold bg-transparent text-[#0A1D3F] focus:outline-none cursor-pointer truncate"
+                className={`w-full pl-3 pr-8 py-2 rounded-lg text-xs font-bold transition appearance-none cursor-pointer border focus:outline-none focus:ring-1 ${
+                  selectedDistrict !== "All"
+                    ? "bg-[#0A1D3F] text-white border-[#0A1D3F] focus:ring-[#0A1D3F]"
+                    : "bg-[#F7F8FA] text-[#0A1D3F] border-[#E6E8EC] hover:border-gray-300 focus:ring-[#0A1D3F] focus:border-[#0A1D3F]"
+                }`}
               >
-                <option value="All">
-                  {selectedState === "All" ? "All Districts" : `All Districts`}
+                <option value="All" className="bg-white text-[#0A1D3F] font-semibold">
+                  All Districts
                 </option>
                 {availableDistricts.filter((d) => d !== "All").map((dist) => (
-                  <option key={dist} value={dist}>
+                  <option key={dist} value={dist} className="bg-white text-[#0A1D3F] font-semibold">
                     {dist}
                   </option>
                 ))}
               </select>
+              <ChevronDown
+                className={`w-4 h-4 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none transition ${
+                  selectedDistrict !== "All" ? "text-white" : "text-[#667085]"
+                }`}
+              />
             </div>
           </div>
-
-          {(selectedCategory !== "All" || selectedState !== "All" || selectedDistrict !== "All" || searchQuery) && (
-            <div className="flex items-center justify-end">
-              <button
-                type="button"
-                onClick={handleClearFilters}
-                className="text-xs font-bold text-[#FF8A00] hover:underline cursor-pointer py-0.5"
-              >
-                Reset Filters
-              </button>
-            </div>
-          )}
         </div>
       </div>
 
@@ -242,17 +315,17 @@ export const CollegesListingPage = () => {
 
       {/* Colleges Grid */}
       {loading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
           {[1, 2, 3, 4, 5, 6].map((i) => (
             <div
               key={i}
-              className="bg-white rounded-2xl border border-[#E6E8EC] p-4 animate-pulse space-y-3"
+              className="bg-white rounded-md border border-[#E6E8EC] p-3.5 animate-pulse space-y-2.5"
             >
-              <div className="h-44 bg-gray-200 rounded-xl" />
-              <div className="h-5 bg-gray-200 rounded w-3/4" />
+              <div className="h-40 bg-gray-200 rounded" />
+              <div className="h-4 bg-gray-200 rounded w-3/4" />
               <div className="h-3 bg-gray-200 rounded w-1/2" />
-              <div className="h-4 bg-gray-200 rounded w-full" />
-              <div className="h-10 bg-gray-200 rounded-xl mt-4" />
+              <div className="h-3 bg-gray-200 rounded w-full" />
+              <div className="h-8 bg-gray-200 rounded mt-3" />
             </div>
           ))}
         </div>
@@ -265,17 +338,17 @@ export const CollegesListingPage = () => {
           onAction={handleClearFilters}
         />
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
           {colleges.map((college) => {
             const collegeId = college._id || college.id;
             return (
               <div
                 key={collegeId}
-                className="bg-white rounded-3xl border border-[#E6E8EC] shadow-2xs hover:shadow-md transition-all duration-200 flex flex-col justify-between overflow-hidden group hover:border-gray-300"
+                className="bg-white rounded-md border border-[#E6E8EC] shadow-2xs hover:shadow-md transition-all duration-200 flex flex-col justify-between overflow-hidden group hover:border-gray-300"
               >
                 <div>
                   {/* Banner Image */}
-                  <div className="relative h-44 w-full overflow-hidden bg-gray-100">
+                  <div className="relative h-40 sm:h-44 w-full overflow-hidden bg-gray-100">
                     <img
                       src={college.banner || college.image || "https://images.unsplash.com/photo-1541339907198-e08756dedf3f?w=600&auto=format&fit=crop&q=80"}
                       alt={college.name}
@@ -285,14 +358,14 @@ export const CollegesListingPage = () => {
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
 
                     {/* College Type Badge */}
-                    <span className="absolute top-3 right-3 px-3 py-1 bg-white/90 backdrop-blur-xs text-[#0A1D3F] text-xs font-bold rounded-full shadow-xs">
+                    <span className="absolute top-2.5 right-2.5 px-2.5 py-0.5 bg-white/95 backdrop-blur-xs text-[#0A1D3F] text-[11px] font-bold rounded shadow-xs">
                       {college.collegeType || college.category || "University"}
                     </span>
 
                     {/* Logo & Verified Badge */}
-                    <div className="absolute bottom-3 left-3 flex items-center gap-2.5">
+                    <div className="absolute bottom-2.5 left-2.5 flex items-center gap-2">
                       <div className="text-white drop-shadow-sm flex items-center gap-1.5">
-                        <span className="inline-flex items-center gap-1 text-[11px] font-bold bg-[#17B26A]/90 px-2.5 py-0.5 rounded-full backdrop-blur-xs">
+                        <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-[#17B26A]/90 px-2 py-0.5 rounded backdrop-blur-xs">
                           <CheckCircle2 className="w-3.5 h-3.5" />
                           <span>Verified Partner</span>
                         </span>
@@ -301,8 +374,8 @@ export const CollegesListingPage = () => {
                   </div>
 
                   {/* Body Content */}
-                  <div className="p-4 sm:p-5 space-y-2.5">
-                    <h3 className="text-base sm:text-lg font-bold text-[#0A1D3F] group-hover:text-[#FF8A00] transition line-clamp-1">
+                  <div className="p-3.5 sm:p-4 space-y-2">
+                    <h3 className="text-sm sm:text-base font-bold text-[#0A1D3F] group-hover:text-[#FF8A00] transition line-clamp-1">
                       {college.name}
                     </h3>
 
@@ -319,11 +392,11 @@ export const CollegesListingPage = () => {
 
                     {/* Popular Courses Chips */}
                     {college.popularCourses && college.popularCourses.length > 0 && (
-                      <div className="flex flex-wrap gap-1.5 pt-1">
+                      <div className="flex flex-wrap gap-1 pt-0.5">
                         {college.popularCourses.slice(0, 3).map((dt, idx) => (
                           <span
                             key={idx}
-                            className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-[#F7F8FA] text-[#0A1D3F] border border-[#E6E8EC]"
+                            className="text-[10px] font-semibold px-2 py-0.5 rounded bg-[#F7F8FA] text-[#0A1D3F] border border-[#E6E8EC]"
                           >
                             {dt}
                           </span>
@@ -334,12 +407,12 @@ export const CollegesListingPage = () => {
                 </div>
 
                 {/* Card Footer Actions */}
-                <div className="p-4 sm:p-5 pt-0 border-t border-[#F0F2F5] mt-3">
-                  <div className="flex items-center justify-between gap-2 pt-3">
+                <div className="p-3.5 sm:p-4 pt-0 border-t border-[#F0F2F5] mt-2">
+                  <div className="flex items-center justify-between gap-2 pt-2.5">
                     <button
                       type="button"
                       onClick={() => openDetailsModal(college)}
-                      className="px-3.5 py-2 rounded-xl text-xs font-bold text-[#0A1D3F] bg-gray-100 hover:bg-gray-200 transition cursor-pointer"
+                      className="px-3 py-1.5 rounded-md text-xs font-bold text-[#0A1D3F] bg-gray-100 hover:bg-gray-200 transition cursor-pointer"
                     >
                       View Details
                     </button>
@@ -347,7 +420,7 @@ export const CollegesListingPage = () => {
                     <button
                       type="button"
                       onClick={() => openApplyModal(collegeId)}
-                      className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-[#FF8A00] hover:bg-[#E67C00] transition active:scale-95 shadow-xs cursor-pointer"
+                      className="px-3.5 py-1.5 rounded-md text-xs font-bold text-white bg-[#FF8A00] hover:bg-[#E67C00] transition active:scale-95 shadow-2xs cursor-pointer"
                     >
                       Apply Now
                     </button>

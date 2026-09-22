@@ -4,6 +4,7 @@ import {
   LayoutDashboard,
   Building2,
   FileText,
+  BookOpen,
   ArrowLeft,
   Menu,
   X,
@@ -18,6 +19,7 @@ export const AdminLayout = () => {
 
   const navItems = [
     { label: "Dashboard", path: "/admin", icon: LayoutDashboard, exact: true },
+    { label: "Digital Books", path: "/admin/books", icon: BookOpen },
     { label: "Partner Colleges", path: "/admin/colleges", icon: Building2 },
     { label: "Admission Applications", path: "/admin/applications", icon: FileText },
   ];

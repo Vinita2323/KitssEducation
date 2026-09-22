@@ -1,17 +1,17 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Home, Layers, GraduationCap, ShieldCheck, User, Info } from "lucide-react";
+import { Home, Layers, GraduationCap, ShieldCheck, Info } from "lucide-react";
 
 export const BottomNavigation = () => {
   const location = useLocation();
 
   const navItems = [
     { label: "Home", path: "/home", icon: Home },
+    { label: "Categories", path: "/categories", icon: Layers },
     { label: "Colleges", path: "/colleges", icon: GraduationCap },
-    { label: "About Us", path: "/about", icon: Info },
     { label: "Courses", path: "/subscriptions", icon: ShieldCheck },
-    { label: "Profile", path: "/profile", icon: User }
+    { label: "About", path: "/about", icon: Info }
   ];
 
   return (
@@ -55,7 +55,7 @@ export const BottomNavigation = () => {
                   }`}
                 />
                 <span
-                  className={`text-[10px] mt-0.5 tracking-tight transition-colors ${
+                  className={`text-[10px] mt-0.5 tracking-tight transition-colors whitespace-nowrap ${
                     isActive
                       ? "font-bold text-[#FF8A00]"
                       : "font-medium text-slate-500"

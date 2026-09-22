@@ -9,7 +9,11 @@ import {
   Filter,
   Users,
   ShieldCheck,
-  CheckCircle2
+  CheckCircle2,
+  ChevronDown,
+  GraduationCap,
+  Layers,
+  X
 } from "lucide-react";
 import { coachingService } from "../../services/coachingService";
 import { CourseCard } from "../../components/coaching/CourseCard";
@@ -87,44 +91,96 @@ export const CoachingHomePage = () => {
           </button>
         </form>
 
-        {/* Categories / Boards Pills */}
-        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-0.5">
-          {categories.map((cat) => {
-            const isSelected = selectedCategory === cat.id;
-            return (
-              <button
-                key={cat.id}
-                type="button"
-                onClick={() => setSelectedCategory(cat.id)}
-                className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold whitespace-nowrap transition cursor-pointer ${
-                  isSelected
-                    ? "bg-[#0A1D3F] text-white shadow-2xs"
-                    : "bg-[#F7F8FA] text-[#667085] hover:bg-[#E6E8EC] hover:text-[#0A1D3F] border border-[#E6E8EC]"
+        {/* Dropdown Filters Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-2 border-t border-[#E6E8EC]/60">
+          {/* Board / Category Dropdown */}
+          <div className="space-y-1 min-w-0">
+            <div className="flex items-center justify-between">
+              <label className="text-[11px] font-bold text-[#0A1D3F] uppercase tracking-wider flex items-center gap-1.5 truncate">
+                <GraduationCap className="w-3.5 h-3.5 text-[#FF8A00] shrink-0" />
+                <span>Board / Category</span>
+              </label>
+              {selectedCategory !== "All" && (
+                <button
+                  type="button"
+                  onClick={() => setSelectedCategory("All")}
+                  className="text-[10px] font-bold text-[#FF8A00] hover:text-[#E67A00] flex items-center gap-0.5 cursor-pointer"
+                  title="Reset Category"
+                >
+                  <span>Reset</span>
+                  <X className="w-2.5 h-2.5" />
+                </button>
+              )}
+            </div>
+            <div className="relative">
+              <select
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
+                className={`w-full pl-3 pr-8 py-2 rounded-xl text-xs font-bold transition appearance-none cursor-pointer border focus:outline-none focus:ring-1 ${
+                  selectedCategory !== "All"
+                    ? "bg-[#0A1D3F] text-white border-[#0A1D3F] focus:ring-[#0A1D3F]"
+                    : "bg-[#F7F8FA] text-[#0A1D3F] border-[#E6E8EC] hover:border-gray-300 focus:ring-[#0A1D3F] focus:border-[#0A1D3F]"
                 }`}
               >
-                {cat.name}
-              </button>
-            );
-          })}
-        </div>
+                {categories.map((cat) => (
+                  <option key={cat.id} value={cat.id} className="bg-white text-[#0A1D3F] font-semibold">
+                    {cat.name}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown
+                className={`w-4 h-4 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none transition ${
+                  selectedCategory !== "All" ? "text-white" : "text-[#667085]"
+                }`}
+              />
+            </div>
+          </div>
 
-        {/* Grade / Class Quick Tabs */}
-        <div className="flex items-center gap-1.5 text-[11px] pt-1.5 border-t border-[#E6E8EC]/60 overflow-x-auto no-scrollbar">
-          <span className="font-semibold text-[#667085] shrink-0 text-[11px]">Class:</span>
-          {["All", "Class 9", "Class 10", "Class 11", "Class 12"].map((cls) => (
-            <button
-              key={cls}
-              type="button"
-              onClick={() => setSelectedClass(cls)}
-              className={`px-2 py-0.5 rounded-md font-semibold transition cursor-pointer shrink-0 text-[11px] ${
-                selectedClass === cls
-                  ? "bg-[#FF8A00] text-white"
-                  : "text-[#667085] hover:text-[#0A1D3F] hover:bg-gray-100"
-              }`}
-            >
-              {cls}
-            </button>
-          ))}
+          {/* Class / Grade Dropdown */}
+          <div className="space-y-1 min-w-0">
+            <div className="flex items-center justify-between">
+              <label className="text-[11px] font-bold text-[#0A1D3F] uppercase tracking-wider flex items-center gap-1.5 truncate">
+                <Layers className="w-3.5 h-3.5 text-[#133C8B] shrink-0" />
+                <span>Class / Grade</span>
+              </label>
+              {selectedClass !== "All" && (
+                <button
+                  type="button"
+                  onClick={() => setSelectedClass("All")}
+                  className="text-[10px] font-bold text-[#FF8A00] hover:text-[#E67A00] flex items-center gap-0.5 cursor-pointer"
+                  title="Reset Class"
+                >
+                  <span>Reset</span>
+                  <X className="w-2.5 h-2.5" />
+                </button>
+              )}
+            </div>
+            <div className="relative">
+              <select
+                value={selectedClass}
+                onChange={(e) => setSelectedClass(e.target.value)}
+                className={`w-full pl-3 pr-8 py-2 rounded-xl text-xs font-bold transition appearance-none cursor-pointer border focus:outline-none focus:ring-1 ${
+                  selectedClass !== "All"
+                    ? "bg-[#FF8A00] text-white border-[#FF8A00] focus:ring-[#FF8A00]"
+                    : "bg-[#F7F8FA] text-[#0A1D3F] border-[#E6E8EC] hover:border-gray-300 focus:ring-[#0A1D3F] focus:border-[#0A1D3F]"
+                }`}
+              >
+                <option value="All" className="bg-white text-[#0A1D3F] font-semibold">
+                  All Classes
+                </option>
+                {["Class 8", "Class 9", "Class 10", "Class 11", "Class 12"].map((cls) => (
+                  <option key={cls} value={cls} className="bg-white text-[#0A1D3F] font-semibold">
+                    {cls}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown
+                className={`w-4 h-4 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none transition ${
+                  selectedClass !== "All" ? "text-white" : "text-[#667085]"
+                }`}
+              />
+            </div>
+          </div>
         </div>
       </div>
 

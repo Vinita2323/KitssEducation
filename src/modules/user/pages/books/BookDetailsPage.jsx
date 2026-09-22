@@ -14,7 +14,9 @@ import {
   BookMarked,
   Globe2,
   Calendar,
-  Sparkles
+  Sparkles,
+  ShieldCheck,
+  ShoppingBag
 } from "lucide-react";
 import { bookService } from "../../services/bookService";
 import { useLibrary } from "../../context/LibraryContext";
@@ -36,7 +38,7 @@ const iconMap = {
 export const BookDetailsPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { isBookOwned, isWishlisted, toggleWishlist } = useLibrary();
+  const { isBookOwned, isWishlisted, toggleWishlist, getBookProgress } = useLibrary();
   const { showSuccess, showInfo } = useToast();
 
   const [book, setBook] = useState(null);
@@ -86,18 +88,20 @@ export const BookDetailsPage = () => {
     );
   }
 
-  const owned = isBookOwned(book.id) || book.isFree;
+  const isFree = book.isFree === true || Number(book.price) === 0;
+  const owned = isBookOwned(book.id);
   const wishlisted = isWishlisted(book.id);
+  const progress = getBookProgress(book.id);
   const IconComponent = iconMap[book.coverIcon] || BookOpen;
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="max-w-4xl mx-auto space-y-5 sm:space-y-6">
       {/* Top Header Actions */}
       <div className="flex items-center justify-between">
         <button
           type="button"
           onClick={() => navigate(-1)}
-          className="flex items-center gap-1.5 text-xs font-bold text-[#0A1D3F] hover:text-[#FF8A00] transition"
+          className="flex items-center gap-1.5 text-xs font-bold text-[#0A1D3F] hover:text-[#FF8A00] transition cursor-pointer"
         >
           <ArrowLeft className="w-4 h-4" />
           <span>Back</span>
@@ -107,7 +111,7 @@ export const BookDetailsPage = () => {
           <button
             type="button"
             onClick={() => toggleWishlist(book.id)}
-            className="p-2 rounded-xl bg-white border border-[#E6E8EC] hover:bg-gray-50 active:scale-95 transition text-[#0A1D3F]"
+            className="p-2 rounded-xl bg-white border border-[#E6E8EC] hover:bg-gray-50 active:scale-95 transition text-[#0A1D3F] cursor-pointer"
             aria-label="Wishlist"
           >
             <Heart
@@ -120,7 +124,7 @@ export const BookDetailsPage = () => {
           <button
             type="button"
             onClick={handleShare}
-            className="p-2 rounded-xl bg-white border border-[#E6E8EC] hover:bg-gray-50 active:scale-95 transition text-[#0A1D3F]"
+            className="p-2 rounded-xl bg-white border border-[#E6E8EC] hover:bg-gray-50 active:scale-95 transition text-[#0A1D3F] cursor-pointer"
             aria-label="Share"
           >
             <Share2 className="w-4 h-4" />
@@ -131,7 +135,7 @@ export const BookDetailsPage = () => {
       {/* Main Detail Card */}
       <div className="bg-white rounded-3xl border border-[#E6E8EC] p-5 sm:p-8 shadow-xs">
         <div className="grid grid-cols-1 md:grid-cols-12 gap-6 sm:gap-8">
-          {/* Left: Book Cover */}
+          {/* Left: Book Cover & Preview */}
           <div className="md:col-span-5 flex flex-col items-center">
             <div
               className={`w-full max-w-[260px] aspect-3/4 rounded-2xl bg-gradient-to-br ${
@@ -170,7 +174,7 @@ export const BookDetailsPage = () => {
                 onClick={() => setShowPreviewModal(true)}
                 icon={Sparkles}
               >
-                Preview Sample
+                Preview Sample Pages
               </SecondaryButton>
             </div>
           </div>
@@ -178,14 +182,22 @@ export const BookDetailsPage = () => {
           {/* Right: Book Details & Specs */}
           <div className="md:col-span-7 flex flex-col justify-between space-y-4">
             <div>
-              <div className="flex items-center gap-2 mb-2">
-                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#0A1D3F] text-white">
+              {/* Hierarchy Badges: Board -> Class -> Subject */}
+              <div className="flex flex-wrap items-center gap-1.5 mb-2">
+                <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#0A1D3F] text-white">
                   {book.board}
                 </span>
-                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#FF8A00]/15 text-[#FF8A00]">
+                <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#FF8A00]/15 text-[#FF8A00]">
                   Class {book.class}
                 </span>
-                <span className="text-xs text-[#667085]">{book.subject}</span>
+                <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-teal-50 text-teal-700 border border-teal-200">
+                  {book.subject}
+                </span>
+                {owned && !isFree && (
+                  <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1">
+                    <CheckCircle2 className="w-3 h-3" /> Purchased
+                  </span>
+                )}
               </div>
 
               <h1 className="text-xl sm:text-2xl font-extrabold text-[#0A1D3F] tracking-tight">
@@ -198,16 +210,16 @@ export const BookDetailsPage = () => {
               {/* Rating */}
               <div className="flex items-center gap-2 mt-2.5">
                 <RatingBadge rating={book.rating} count={book.reviewCount} />
-                <span className="text-xs text-[#667085]">• Verified Student Reviews</span>
+                <span className="text-xs text-[#667085]">• Verified Educational Curriculum</span>
               </div>
 
-              {/* Price */}
+              {/* Price Block */}
               <div className="mt-4 p-3.5 bg-[#F7F8FA] rounded-2xl border border-[#E6E8EC]">
                 <PriceDisplay
                   price={book.price}
                   originalPrice={book.originalPrice}
                   discount={book.discount}
-                  isFree={book.isFree}
+                  isFree={isFree}
                   size="lg"
                 />
               </div>
@@ -239,20 +251,35 @@ export const BookDetailsPage = () => {
                 <div className="p-3 bg-white rounded-xl border border-[#E6E8EC] text-center">
                   <BookOpen className="w-4 h-4 mx-auto text-[#FF8A00] mb-1" />
                   <span className="text-[10px] text-[#667085] block">Format</span>
-                  <span className="text-xs font-bold text-[#0A1D3F]">{book.format}</span>
+                  <span className="text-xs font-bold text-[#0A1D3F]">{book.format || "PDF"}</span>
                 </div>
 
                 <div className="p-3 bg-white rounded-xl border border-[#E6E8EC] text-center">
                   <HardDrive className="w-4 h-4 mx-auto text-[#6C4AB6] mb-1" />
                   <span className="text-[10px] text-[#667085] block">File Size</span>
-                  <span className="text-xs font-bold text-[#0A1D3F]">{book.fileSize}</span>
+                  <span className="text-xs font-bold text-[#0A1D3F]">{book.fileSize || "10 MB"}</span>
                 </div>
               </div>
             </div>
 
-            {/* CTAs */}
-            <div className="pt-4 border-t border-[#E6E8EC]">
-              {owned ? (
+            {/* CTAs strictly matching access rules:
+                1. Free book: [ Read Free PDF ] -> /books/:id/read
+                2. Paid book (owned): [ ✓ Purchased — Read Book ] -> /books/:id/read
+                3. Paid book (unpurchased): [ Buy Now for ₹Price ] -> /books/:id/checkout
+            */}
+            <div className="pt-4 border-t border-[#E6E8EC] space-y-2">
+              {isFree ? (
+                <Link to={`/books/${book.id}/read`} className="block">
+                  <PrimaryButton
+                    variant="navy"
+                    size="lg"
+                    fullWidth
+                    icon={BookOpen}
+                  >
+                    Read Free E-Book
+                  </PrimaryButton>
+                </Link>
+              ) : owned ? (
                 <Link to={`/books/${book.id}/read`} className="block">
                   <PrimaryButton
                     variant="green"
@@ -260,19 +287,28 @@ export const BookDetailsPage = () => {
                     fullWidth
                     icon={CheckCircle2}
                   >
-                    Read Book in PDF Viewer
+                    {progress?.currentPage > 1
+                      ? `Continue Reading (Page ${progress.currentPage})`
+                      : "Read Book in PDF Viewer"}
                   </PrimaryButton>
                 </Link>
               ) : (
-                <Link to={`/books/${book.id}/checkout`} className="block">
-                  <PrimaryButton
-                    variant="navy"
-                    size="lg"
-                    fullWidth
-                  >
-                    {book.isFree ? "Read for Free" : `Buy Now for ₹${book.price}`}
-                  </PrimaryButton>
-                </Link>
+                <div className="space-y-2">
+                  <Link to={`/books/${book.id}/checkout`} className="block">
+                    <PrimaryButton
+                      variant="orange"
+                      size="lg"
+                      fullWidth
+                      icon={ShoppingBag}
+                    >
+                      Buy Now for ₹{book.price}
+                    </PrimaryButton>
+                  </Link>
+                  <p className="text-[11px] text-[#667085] text-center flex items-center justify-center gap-1">
+                    <ShieldCheck className="w-3.5 h-3.5 text-[#17B26A]" />
+                    Instant access to complete PDF upon checkout
+                  </p>
+                </div>
               )}
             </div>
           </div>
@@ -280,18 +316,23 @@ export const BookDetailsPage = () => {
       </div>
 
       {/* Chapters Covered Section */}
-      {book.chapters && (
+      {book.chapters && book.chapters.length > 0 && (
         <div className="bg-white rounded-3xl border border-[#E6E8EC] p-5 sm:p-6 shadow-xs">
-          <h3 className="text-sm sm:text-base font-bold text-[#0A1D3F] mb-3">
-            Table of Contents ({book.chapters.length} Chapters)
-          </h3>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm sm:text-base font-bold text-[#0A1D3F]">
+              Table of Contents
+            </h3>
+            <span className="text-xs font-semibold text-[#667085]">
+              {book.chapters.length} Chapters Covered
+            </span>
+          </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {book.chapters.map((ch, idx) => (
               <div
                 key={idx}
-                className="p-3 rounded-xl bg-[#F7F8FA] border border-[#E6E8EC] text-xs font-medium text-[#0A1D3F] flex items-center gap-2"
+                className="p-3 rounded-xl bg-[#F7F8FA] border border-[#E6E8EC] text-xs font-medium text-[#0A1D3F] flex items-center gap-2.5"
               >
-                <span className="w-5 h-5 rounded-full bg-white border border-[#E6E8EC] flex items-center justify-center text-[10px] font-bold text-[#667085] shrink-0">
+                <span className="w-6 h-6 rounded-lg bg-white border border-[#E6E8EC] flex items-center justify-center text-[10px] font-bold text-[#0A1D3F] shrink-0 shadow-2xs">
                   {idx + 1}
                 </span>
                 <span className="truncate">{ch}</span>

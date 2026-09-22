@@ -1,6 +1,41 @@
 import { getCoachingStore, saveCoachingStore } from "../data/mockCoachingData";
+import { authService } from "./authService";
 
 const delay = (ms = 120) => new Promise((resolve) => setTimeout(resolve, ms));
+
+export function computeSubscriptionExpiry(course) {
+  let expiryTime = null;
+  if (course.expiryTimestamp) {
+    expiryTime = course.expiryTimestamp;
+  } else if (course.expiryDate) {
+    const parsed = new Date(course.expiryDate).getTime();
+    if (!isNaN(parsed)) {
+      expiryTime = parsed;
+    }
+  }
+
+  // Default fallback: 180 days from now if enrolled without date
+  if (!expiryTime) {
+    expiryTime = Date.now() + 180 * 86400000;
+  }
+
+  const now = Date.now();
+  const isExpired = now > expiryTime;
+  const daysRemaining = Math.max(0, Math.ceil((expiryTime - now) / (1000 * 60 * 60 * 24)));
+  const formattedExpiryDate = new Date(expiryTime).toLocaleDateString("en-IN", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+
+  return {
+    expiryTimestamp: expiryTime,
+    expiryDate: formattedExpiryDate,
+    expiryStatus: isExpired ? "Expired" : "Active",
+    isExpired,
+    daysRemaining,
+  };
+}
 
 export const coachingService = {
   // 1. Fetch available coaching courses with optional filters
@@ -18,7 +53,7 @@ export const coachingService = {
     let list = [...(store.courses || [])];
     const student = store.student || {};
 
-    // Enrich courses with current student enrollment status & real-time progress
+    // Enrich courses with current student enrollment status, real-time progress & expiry
     list = list.map((course) => {
       const isEnrolled = (student.enrolledCourseIds || []).includes(course.id);
       
@@ -39,8 +74,11 @@ export const coachingService = {
         ? Math.round((completedCount / actualTotal) * 100)
         : 0;
 
+      const expiryInfo = computeSubscriptionExpiry(course);
+
       return {
         ...course,
+        ...expiryInfo,
         isEnrolled,
         completedLectures: isEnrolled ? completedCount : 0,
         progressPercentage: progress,
@@ -149,9 +187,11 @@ export const coachingService = {
     });
 
     const progress = totalLecs > 0 ? Math.round((completedCount / totalLecs) * 100) : 0;
+    const expiryInfo = computeSubscriptionExpiry(course);
 
     return {
       ...course,
+      ...expiryInfo,
       isEnrolled,
       completedLectures: completedCount,
       totalLecturesCount: totalLecs,
@@ -167,9 +207,11 @@ export const coachingService = {
 
     const randomNum = Math.floor(1000 + Math.random() * 9000);
     const studentId = `KITSS${new Date().getFullYear()}${randomNum}`;
+    const generatedPassword = `Kits@${Math.floor(1000 + Math.random() * 9000)}`;
 
     const newStudent = {
       id: studentId,
+      password: generatedPassword,
       name: formData.name?.trim() || "New Student",
       email: formData.email?.trim() || "",
       phone: formData.phone?.trim() || "",
@@ -190,10 +232,19 @@ export const coachingService = {
     store.student = newStudent;
     saveCoachingStore(store);
 
+    // Save in Auth registered users so the student can log in with generated credentials
+    authService.saveRegisteredStudent(newStudent);
+
     return {
       success: true,
       message: "Your student account has been created. You can now continue with your course selection.",
       student: newStudent,
+      credentials: {
+        userId: studentId,
+        password: generatedPassword,
+        name: newStudent.name,
+        email: newStudent.email,
+      },
     };
   },
 
@@ -224,7 +275,76 @@ export const coachingService = {
     };
   },
 
-  // 5. Get Enrolled Courses for Current Student ("My Courses")
+  // 5. Subscribe / Purchase Course Pass
+  async subscribeCourse(courseId, { planName = "12 Months Full Academic Pass", price = 999, transactionId = "" } = {}) {
+    await delay(250);
+    const store = getCoachingStore();
+    const course = (store.courses || []).find((c) => c.id === courseId);
+    if (!course) throw new Error("Course not found");
+
+    store.student = store.student || {};
+    const enrolled = store.student.enrolledCourseIds || [];
+    if (!enrolled.includes(courseId)) {
+      store.student.enrolledCourseIds = [...enrolled, courseId];
+    }
+
+    // Determine validity days based on plan
+    let validityDays = 365;
+    const pLower = (planName || "").toLowerCase();
+    if (pLower.includes("3") || pLower.includes("quarter") || pLower.includes("sprint")) {
+      validityDays = 90;
+    } else if (pLower.includes("6") || pLower.includes("semester")) {
+      validityDays = 180;
+    } else if (pLower.includes("12") || pLower.includes("annual") || pLower.includes("year")) {
+      validityDays = 365;
+    }
+
+    const expiryTimestamp = Date.now() + validityDays * 86400000;
+    const expiryDate = new Date(expiryTimestamp).toLocaleDateString("en-IN", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
+
+    course.expiryTimestamp = expiryTimestamp;
+    course.expiryDate = expiryDate;
+    course.status = "Active";
+
+    store.student.subscriptions = store.student.subscriptions || {};
+    store.student.subscriptions[courseId] = {
+      planName,
+      price,
+      transactionId: transactionId || `TXN-${Date.now()}`,
+      subscribedAt: new Date().toISOString(),
+      expiryTimestamp,
+      expiryDate,
+      validityDays,
+      status: "Active",
+    };
+
+    saveCoachingStore(store);
+
+    return {
+      success: true,
+      courseId,
+      courseTitle: course.title,
+      planName,
+      expiryDate,
+      validityDays,
+      transactionId,
+    };
+  },
+
+  // 6. Renew Course Pass
+  async renewCourse(courseId, planName = "12 Months Full Academic Pass") {
+    return this.subscribeCourse(courseId, {
+      planName,
+      price: 999,
+      transactionId: `RENEW-${Date.now()}`,
+    });
+  },
+
+  // 7. Get Enrolled Courses for Current Student ("My Courses")
   async getMyCourses() {
     await delay(150);
     const store = getCoachingStore();
@@ -249,22 +369,23 @@ export const coachingService = {
         });
 
         const progress = totalLecs > 0 ? Math.round((completedCount / totalLecs) * 100) : 0;
+        const expiryInfo = computeSubscriptionExpiry(course);
 
         return {
           ...course,
+          ...expiryInfo,
           isEnrolled: true,
           totalLecturesCount: totalLecs || course.lecturesCount,
           completedLectures: completedCount,
           totalBooksCount: totalBooks || course.booksCount,
           progressPercentage: progress,
-          expiryStatus: course.expiryDate ? "Active" : "Active",
         };
       });
 
     return enrolledCourses;
   },
 
-  // 6. Update lecture progress (Completed, In Progress, Not Started)
+  // 8. Update lecture progress (Completed, In Progress, Not Started)
   async updateLectureProgress(courseId, lectureId, status = "Completed") {
     await delay(100);
     const store = getCoachingStore();
@@ -319,6 +440,8 @@ export const coachingService = {
       { id: "CBSE", name: "CBSE Board" },
       { id: "Madhya Pradesh Board", name: "MP Board" },
       { id: "ICSE", name: "ICSE Board" },
+      { id: "UP Board", name: "UP Board" },
+      { id: "Bihar Board", name: "Bihar Board" },
       { id: "Foundation", name: "Class 9 & 10" },
       { id: "Senior", name: "Class 11 & 12" },
     ];

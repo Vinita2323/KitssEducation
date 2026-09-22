@@ -8,7 +8,9 @@ import {
   GraduationCap,
   Building2,
   ArrowRight,
-  ArrowLeft
+  ArrowLeft,
+  KeyRound,
+  ShieldCheck
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "../../context/AuthContext";
@@ -182,32 +184,32 @@ export const RegisterPage = () => {
             transition={{ duration: 0.25 }}
             className="w-full max-w-sm sm:max-w-md mx-auto"
           >
-            <div className="bg-white p-5 sm:p-7 rounded-3xl border border-[#E6E8EC] shadow-lg">
+            <div className="bg-white p-5 sm:p-6 rounded-xl border border-[#E6E8EC] shadow-sm">
               {/* Back to Options Button */}
-              <div className="border-b border-[#E6E8EC] pb-3 mb-4">
+              <div className="border-b border-[#E6E8EC] pb-2.5 mb-3.5">
                 <button
                   type="button"
                   onClick={() => setSelectedType(null)}
-                  className="inline-flex items-center gap-2 text-xs sm:text-sm font-semibold text-[#0A1D3F] hover:text-[#FF8A00] transition group cursor-pointer"
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#0A1D3F] hover:text-[#FF8A00] transition group cursor-pointer"
                 >
                   <div className="p-1 rounded-md bg-[#F7F8FA] group-hover:bg-[#FFF7ED] text-[#0A1D3F] group-hover:text-[#FF8A00] transition">
-                    <ArrowLeft className="w-4 h-4" />
+                    <ArrowLeft className="w-3.5 h-3.5" />
                   </div>
                   <span>Back to Options</span>
                 </button>
               </div>
 
               {/* Logo & Title */}
-              <div className="text-center mb-5">
+              <div className="text-center mb-4">
                 <img
                   src="/KitssLogo.png"
                   alt="KITSS EDUCATION Logo"
-                  className="h-12 sm:h-14 w-auto object-contain mx-auto mb-2"
+                  className="h-10 sm:h-11 w-auto object-contain mx-auto mb-1.5"
                 />
-                <h2 className="text-xl sm:text-2xl font-extrabold text-[#0A1D3F] tracking-tight">
+                <h2 className="text-base sm:text-lg font-bold text-[#0A1D3F] tracking-tight">
                   Register as User
                 </h2>
-                <p className="text-xs sm:text-sm text-[#667085] mt-0.5">
+                <p className="text-xs text-[#667085] mt-0.5">
                   Let's get you started with KITSS Education
                 </p>
               </div>
@@ -339,8 +341,18 @@ export const RegisterPage = () => {
                   </div>
                 </div>
 
+                {/* Auto-Generated Credentials Notice */}
+                <div className="p-3 bg-amber-50/80 border border-[#FF8A00]/30 rounded-xl flex items-start gap-2.5 text-left">
+                  <div className="p-1 rounded-md bg-[#FF8A00]/10 text-[#FF8A00] shrink-0 mt-0.5">
+                    <KeyRound className="w-3.5 h-3.5" />
+                  </div>
+                  <div className="text-[11px] text-[#0A1D3F] leading-relaxed">
+                    <span className="font-bold text-[#FF8A00]">Automatic Credentials:</span> A unique <strong>Student User ID</strong> and <strong>Login Password</strong> will be automatically generated upon registration for you to log in.
+                  </div>
+                </div>
+
                 {/* Submit */}
-                <div className="pt-3">
+                <div className="pt-1">
                   <PrimaryButton
                     type="submit"
                     variant="navy"
@@ -349,7 +361,7 @@ export const RegisterPage = () => {
                     loading={loading}
                     className="cursor-pointer"
                   >
-                    Register
+                    Register & Generate Login Credentials
                   </PrimaryButton>
                 </div>
               </form>

@@ -12,13 +12,16 @@ export const ProtectedContentWarning = ({
   useEffect(() => {
     if (!isActive) return;
 
-    // 1. Detect PrintScreen Key
+    // 1. Detect PrintScreen Key and Recording Shortcuts
     const handleKeyDown = (e) => {
       if (
         e.key === "PrintScreen" ||
         e.code === "PrintScreen" ||
-        (e.ctrlKey && e.shiftKey && e.key === "S") || // Windows Snipping shortcut
-        (e.metaKey && e.shiftKey && (e.key === "3" || e.key === "4")) // Mac screenshot
+        (e.altKey && e.key === "PrintScreen") ||
+        (e.ctrlKey && e.shiftKey && (e.key === "S" || e.key === "s")) || // Windows Snipping shortcut
+        (e.metaKey && e.shiftKey && (e.key === "3" || e.key === "4" || e.key === "5")) || // Mac screenshot & recording
+        (e.altKey && (e.key === "r" || e.key === "R") && e.metaKey) || // Windows game bar record
+        (e.ctrlKey && e.key === "p") // Print shortcut
       ) {
         setShowWarning(true);
       }

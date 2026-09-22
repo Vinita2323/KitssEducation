@@ -1,9 +1,8 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { CheckCircle2, Copy, Check, ShieldCheck, ArrowRight, KeyRound } from "lucide-react";
+import { Check, Copy, Eye, EyeOff, ArrowRight } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../context/ToastContext";
-import { PrimaryButton } from "../../components/common/PrimaryButton";
 
 export const RegisterSuccessPage = () => {
   const navigate = useNavigate();
@@ -12,12 +11,14 @@ export const RegisterSuccessPage = () => {
 
   const [copiedUserId, setCopiedUserId] = useState(false);
   const [copiedPassword, setCopiedPassword] = useState(false);
+  const [copiedAll, setCopiedAll] = useState(false);
+  const [showPassword, setShowPassword] = useState(true);
 
   const credentials = lastRegisteredCredentials || {
     userId: user?.id || "KITSS20268492",
     password: "Kits@4892",
     name: user?.name || "Student",
-    email: user?.email || "student@example.com"
+    email: user?.email || "student@example.com",
   };
 
   const copyToClipboard = (text, type) => {
@@ -25,41 +26,59 @@ export const RegisterSuccessPage = () => {
     if (type === "userId") {
       setCopiedUserId(true);
       setTimeout(() => setCopiedUserId(false), 2000);
-    } else {
+      showSuccess("User ID copied");
+    } else if (type === "password") {
       setCopiedPassword(true);
       setTimeout(() => setCopiedPassword(false), 2000);
+      showSuccess("Password copied");
+    } else if (type === "all") {
+      setCopiedAll(true);
+      setTimeout(() => setCopiedAll(false), 2000);
+      showSuccess("Credentials copied");
     }
-    showSuccess(`Copied ${type === "userId" ? "User ID" : "Password"} to clipboard!`);
+  };
+
+  const copyAll = () => {
+    const text = `User ID: ${credentials.userId}\nPassword: ${credentials.password}`;
+    copyToClipboard(text, "all");
+  };
+
+  const handleGoToLogin = () => {
+    navigate("/login", {
+      state: {
+        userId: credentials.userId,
+        password: credentials.password,
+        fromRegistration: true,
+      },
+    });
   };
 
   return (
-    <div className="bg-white p-6 sm:p-8 rounded-3xl border border-[#E6E8EC] shadow-md text-center">
+    <div className="bg-white p-5 sm:p-6 rounded-xl border border-[#E6E8EC] shadow-sm text-center max-w-sm w-full mx-auto space-y-3.5">
       {/* Success Badge */}
-      <div className="w-16 h-16 rounded-full bg-[#ECFDF3] border border-[#17B26A]/30 flex items-center justify-center text-[#17B26A] mx-auto mb-4">
-        <CheckCircle2 className="w-8 h-8" />
+      <div className="w-10 h-10 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-100 flex items-center justify-center mx-auto">
+        <Check className="w-5 h-5 stroke-[2.5]" />
       </div>
 
-      <h2 className="text-xl sm:text-2xl font-extrabold text-[#0A1D3F] tracking-tight">
-        Registration Successful!
-      </h2>
-      <p className="text-xs sm:text-sm text-[#667085] mt-1 max-w-xs mx-auto">
-        Your student account has been created. Please save your auto-generated credentials below.
-      </p>
+      {/* Header */}
+      <div>
+        <h2 className="text-base sm:text-lg font-bold text-[#0A1D3F] leading-tight">
+          Registration Successful
+        </h2>
+        <p className="text-xs text-[#667085] mt-0.5">
+          Welcome, <span className="font-semibold text-[#0A1D3F]">{credentials.name}</span>! Save your login details below.
+        </p>
+      </div>
 
-      {/* Credentials Card */}
-      <div className="my-6 p-4 bg-[#0A1D3F] rounded-2xl text-left text-white relative overflow-hidden space-y-3">
-        <div className="flex items-center gap-1.5 text-[11px] text-[#FF8A00] font-bold uppercase tracking-wider">
-          <KeyRound className="w-3.5 h-3.5" />
-          <span>Your Student Login Credentials</span>
-        </div>
-
-        {/* User ID */}
-        <div className="p-3 bg-white/10 backdrop-blur-xs rounded-xl border border-white/10 flex items-center justify-between">
+      {/* Simple Clean Credentials Card */}
+      <div className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-lg p-3 text-left space-y-2">
+        {/* User ID Row */}
+        <div className="flex items-center justify-between">
           <div>
-            <span className="text-[10px] text-blue-200 block uppercase font-medium">
+            <span className="text-[10px] uppercase font-semibold text-[#667085] tracking-wider block">
               Student User ID
             </span>
-            <span className="text-sm font-mono font-bold text-white tracking-wider">
+            <span className="text-xs font-mono font-bold text-[#0A1D3F]">
               {credentials.userId}
             </span>
           </div>
@@ -67,57 +86,83 @@ export const RegisterSuccessPage = () => {
           <button
             type="button"
             onClick={() => copyToClipboard(credentials.userId, "userId")}
-            className="p-2 rounded-lg bg-white/20 hover:bg-white/30 text-white transition active:scale-95"
+            className="p-1 rounded-md hover:bg-white text-gray-400 hover:text-[#0A1D3F] border border-transparent hover:border-gray-200 transition cursor-pointer"
             title="Copy User ID"
           >
-            {copiedUserId ? <Check className="w-4 h-4 text-[#17B26A]" /> : <Copy className="w-4 h-4" />}
+            {copiedUserId ? (
+              <Check className="w-3.5 h-3.5 text-emerald-600" />
+            ) : (
+              <Copy className="w-3.5 h-3.5" />
+            )}
           </button>
         </div>
 
-        {/* Password */}
-        <div className="p-3 bg-white/10 backdrop-blur-xs rounded-xl border border-white/10 flex items-center justify-between">
+        <div className="border-t border-[#EDF2F7]" />
+
+        {/* Password Row */}
+        <div className="flex items-center justify-between">
           <div>
-            <span className="text-[10px] text-blue-200 block uppercase font-medium">
-              Temporary Password
+            <span className="text-[10px] uppercase font-semibold text-[#667085] tracking-wider block">
+              Password
             </span>
-            <span className="text-sm font-mono font-bold text-[#FF8A00] tracking-wider">
-              {credentials.password}
-            </span>
+            <div className="flex items-center gap-1.5 mt-0.5">
+              <span className="text-xs font-mono font-bold text-[#0A1D3F]">
+                {showPassword ? credentials.password : "••••••••"}
+              </span>
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="text-gray-400 hover:text-gray-600 p-0.5 cursor-pointer"
+                title={showPassword ? "Hide" : "Show"}
+              >
+                {showPassword ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+              </button>
+            </div>
           </div>
 
           <button
             type="button"
             onClick={() => copyToClipboard(credentials.password, "password")}
-            className="p-2 rounded-lg bg-white/20 hover:bg-white/30 text-white transition active:scale-95"
+            className="p-1 rounded-md hover:bg-white text-gray-400 hover:text-[#0A1D3F] border border-transparent hover:border-gray-200 transition cursor-pointer"
             title="Copy Password"
           >
-            {copiedPassword ? <Check className="w-4 h-4 text-[#17B26A]" /> : <Copy className="w-4 h-4" />}
+            {copiedPassword ? (
+              <Check className="w-3.5 h-3.5 text-emerald-600" />
+            ) : (
+              <Copy className="w-3.5 h-3.5" />
+            )}
           </button>
         </div>
-
-        <p className="text-[10px] text-blue-200/80 leading-relaxed pt-1">
-          💡 A confirmation SMS and Email have been simulated to your registered contact.
-        </p>
       </div>
 
-      {/* CTA */}
-      <div className="space-y-2.5">
-        <PrimaryButton
-          variant="orange"
-          size="lg"
-          fullWidth
-          onClick={() => navigate("/home")}
-          icon={ArrowRight}
-        >
-          Proceed to Dashboard
-        </PrimaryButton>
+      {/* Quick Copy Link */}
+      <button
+        type="button"
+        onClick={copyAll}
+        className="text-[11px] font-medium text-[#667085] hover:text-[#0A1D3F] inline-flex items-center gap-1 transition cursor-pointer"
+      >
+        {copiedAll ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
+        <span>{copiedAll ? "Copied to clipboard" : "Copy both User ID & Password"}</span>
+      </button>
 
-        <Link
-          to="/login"
-          className="inline-block text-xs font-bold text-[#0A1D3F] hover:text-[#FF8A00] transition pt-1"
+      {/* Clean Action Buttons */}
+      <div className="space-y-2 pt-1">
+        <button
+          type="button"
+          onClick={handleGoToLogin}
+          className="w-full py-2.5 px-4 rounded-lg bg-[#0A1D3F] hover:bg-[#133C8B] text-white text-xs font-semibold shadow-xs transition active:scale-[0.99] cursor-pointer flex items-center justify-center gap-1.5"
         >
-          Or Go to Login Page
-        </Link>
+          <span>Login to Account</span>
+          <ArrowRight className="w-3.5 h-3.5" />
+        </button>
+
+        <button
+          type="button"
+          onClick={() => navigate("/home")}
+          className="w-full py-2 px-4 rounded-lg bg-white hover:bg-gray-50 border border-[#E2E8F0] text-[#0A1D3F] text-xs font-medium transition cursor-pointer"
+        >
+          Go to Dashboard
+        </button>
       </div>
     </div>
   );

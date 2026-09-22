@@ -10,14 +10,20 @@ import {
   CheckCircle2,
   ArrowRight,
   ShieldCheck,
-  Sparkles
+  Sparkles,
+  Copy,
+  Check,
+  KeyRound,
+  LogIn
 } from "lucide-react";
 import { coachingService } from "../../services/coachingService";
 import { useAuth } from "../../context/AuthContext";
+import { useToast } from "../../context/ToastContext";
 
 export const CourseRegistrationPage = () => {
   const navigate = useNavigate();
   const { register } = useAuth();
+  const { showSuccess } = useToast();
 
   const [formData, setFormData] = useState({
     name: "",
@@ -34,6 +40,9 @@ export const CourseRegistrationPage = () => {
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [createdCredentials, setCreatedCredentials] = useState(null);
+  const [copiedUserId, setCopiedUserId] = useState(false);
+  const [copiedPassword, setCopiedPassword] = useState(false);
 
   const validate = () => {
     const errs = {};
@@ -55,13 +64,29 @@ export const CourseRegistrationPage = () => {
     return Object.keys(errs).length === 0;
   };
 
+  const copyCred = (text, type) => {
+    navigator.clipboard.writeText(text);
+    if (type === "userId") {
+      setCopiedUserId(true);
+      setTimeout(() => setCopiedUserId(false), 2000);
+      showSuccess("Student User ID copied!");
+    } else {
+      setCopiedPassword(true);
+      setTimeout(() => setCopiedPassword(false), 2000);
+      showSuccess("Password copied!");
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validate()) return;
 
     try {
       setSubmitting(true);
-      await coachingService.registerStudent(formData);
+      const res = await coachingService.registerStudent(formData);
+      if (res.credentials) {
+        setCreatedCredentials(res.credentials);
+      }
       setIsSuccess(true);
     } catch (err) {
       console.error("Registration error:", err);
@@ -88,35 +113,102 @@ export const CourseRegistrationPage = () => {
 
       {isSuccess ? (
         /* Success Screen */
-        <div className="bg-white rounded-3xl border border-[#E6E8EC] p-8 sm:p-12 text-center card-shadow space-y-6 animate-in zoom-in-95 duration-200">
-          <div className="w-20 h-20 rounded-full bg-[#17B26A]/10 text-[#17B26A] flex items-center justify-center mx-auto">
-            <CheckCircle2 className="w-10 h-10 stroke-[2.2]" />
+        <div className="bg-white rounded-3xl border border-[#E6E8EC] p-6 sm:p-10 text-center card-shadow space-y-5 animate-in zoom-in-95 duration-200 max-w-lg mx-auto">
+          <div className="w-16 h-16 rounded-full bg-[#17B26A]/10 text-[#17B26A] flex items-center justify-center mx-auto">
+            <CheckCircle2 className="w-8 h-8 stroke-[2.2]" />
           </div>
 
-          <div className="space-y-2">
-            <h2 className="text-2xl font-black text-[#0A1D3F]">
-              Registration Successful
+          <div className="space-y-1.5">
+            <h2 className="text-xl sm:text-2xl font-black text-[#0A1D3F]">
+              Registration Successful!
             </h2>
             <p className="text-xs sm:text-sm text-[#667085] max-w-md mx-auto leading-relaxed">
-              Your student account has been created. You can now continue with your course selection.
+              Your student account has been created. Please save your auto-generated credentials below to log in.
             </p>
           </div>
 
-          <div className="p-4 rounded-xl bg-[#F7F8FA] border border-[#E6E8EC] text-xs text-[#0A1D3F] space-y-1 text-left max-w-sm mx-auto">
+          {/* Generated Login Credentials Box */}
+          {createdCredentials && (
+            <div className="p-4 bg-[#0A1D3F] rounded-2xl text-left text-white space-y-2.5 shadow-sm">
+              <div className="flex items-center gap-1.5 text-[11px] text-[#FF8A00] font-bold uppercase tracking-wider">
+                <KeyRound className="w-3.5 h-3.5" />
+                <span>Your Login Credentials</span>
+              </div>
+
+              {/* User ID */}
+              <div className="p-2.5 bg-white/10 rounded-xl border border-white/10 flex items-center justify-between">
+                <div>
+                  <span className="text-[10px] text-blue-200 block uppercase font-medium">Student User ID</span>
+                  <span className="text-sm font-mono font-bold text-white tracking-wider">
+                    {createdCredentials.userId}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => copyCred(createdCredentials.userId, "userId")}
+                  className="p-1.5 rounded-lg bg-white/15 hover:bg-white/25 text-white transition cursor-pointer"
+                  title="Copy User ID"
+                >
+                  {copiedUserId ? <Check className="w-4 h-4 text-[#17B26A]" /> : <Copy className="w-4 h-4" />}
+                </button>
+              </div>
+
+              {/* Password */}
+              <div className="p-2.5 bg-white/10 rounded-xl border border-white/10 flex items-center justify-between">
+                <div>
+                  <span className="text-[10px] text-blue-200 block uppercase font-medium">Auto-Generated Password</span>
+                  <span className="text-sm font-mono font-bold text-[#FF8A00] tracking-wider">
+                    {createdCredentials.password}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => copyCred(createdCredentials.password, "password")}
+                  className="p-1.5 rounded-lg bg-white/15 hover:bg-white/25 text-white transition cursor-pointer"
+                  title="Copy Password"
+                >
+                  {copiedPassword ? <Check className="w-4 h-4 text-[#17B26A]" /> : <Copy className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Student Details Summary */}
+          <div className="p-3.5 rounded-xl bg-[#F7F8FA] border border-[#E6E8EC] text-xs text-[#0A1D3F] space-y-1 text-left">
             <p><strong>Student Name:</strong> {formData.name}</p>
-            <p><strong>Board:</strong> {formData.board}</p>
-            <p><strong>Class:</strong> {formData.class}</p>
-            <p><strong>Contact:</strong> {formData.email}</p>
+            <p><strong>Board & Class:</strong> {formData.board} • {formData.class}</p>
+            <p><strong>Contact:</strong> {formData.email} | {formData.phone}</p>
           </div>
 
-          <button
-            type="button"
-            onClick={() => navigate("/coaching/select")}
-            className="w-full sm:w-auto min-w-[220px] py-3 px-6 rounded-xl bg-[#0A1D3F] hover:bg-[#133C8B] text-white font-bold text-sm inline-flex items-center justify-center gap-2 shadow-md transition active:scale-95 cursor-pointer"
-          >
-            <span>Continue to Course Selection</span>
-            <ArrowRight className="w-4 h-4" />
-          </button>
+          <div className="flex flex-col sm:flex-row gap-2.5 pt-2">
+            <button
+              type="button"
+              onClick={() => navigate("/coaching/select")}
+              className="flex-1 py-2.5 px-4 rounded-xl bg-[#0A1D3F] hover:bg-[#133C8B] text-white font-bold text-xs inline-flex items-center justify-center gap-2 shadow-md transition active:scale-95 cursor-pointer"
+            >
+              <span>Continue Course Selection</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+
+            {createdCredentials && (
+              <button
+                type="button"
+                onClick={() =>
+                  navigate("/login", {
+                    state: {
+                      userId: createdCredentials.userId,
+                      password: createdCredentials.password,
+                      fromRegistration: true,
+                    },
+                  })
+                }
+                className="py-2.5 px-4 rounded-xl bg-[#FF8A00] hover:bg-[#E67C00] text-white font-bold text-xs inline-flex items-center justify-center gap-1.5 shadow-md transition active:scale-95 cursor-pointer"
+              >
+                <LogIn className="w-3.5 h-3.5" />
+                <span>Login Now</span>
+              </button>
+            )}
+          </div>
         </div>
       ) : (
         /* Registration Form */

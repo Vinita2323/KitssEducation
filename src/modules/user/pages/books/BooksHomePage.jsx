@@ -1,10 +1,9 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import { bookService } from "../../services/bookService";
 import { SearchBar } from "../../components/common/SearchBar";
-import { BoardSelector, ClassSelector, SubjectSelector } from "../../components/books/BoardSelector";
+import { HierarchyDropdowns } from "../../components/books/BoardSelector";
 import { BookCard } from "../../components/books/BookCard";
-import { BookFilterModal } from "../../components/books/BookFilterModal";
 import { SkeletonLoader, EmptyState } from "../../components/common/EmptyState";
 import { X, RotateCcw } from "lucide-react";
 
@@ -15,36 +14,87 @@ export const BooksHomePage = () => {
   const [selectedBoard, setSelectedBoard] = useState(searchParams.get("board") || "All");
   const [selectedClass, setSelectedClass] = useState(searchParams.get("class") || "All");
   const [selectedSubject, setSelectedSubject] = useState(searchParams.get("subject") || "All");
+  const [selectedLanguage, setSelectedLanguage] = useState(searchParams.get("lang") || "All");
   const [selectedSort, setSelectedSort] = useState("featured");
+  const [selectedType, setSelectedType] = useState("all");
+  const [selectedMinPrice, setSelectedMinPrice] = useState("");
+  const [selectedMaxPrice, setSelectedMaxPrice] = useState("");
 
   const [books, setBooks] = useState([]);
   const [boards, setBoards] = useState([]);
-  const [classes, setClasses] = useState([]);
-  const [subjects, setSubjects] = useState([]);
+  const [availableClasses, setAvailableClasses] = useState([]);
+  const [availableSubjects, setAvailableSubjects] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showFilterModal, setShowFilterModal] = useState(false);
 
-  // Load initial metadata
+  // Load static board list once
   useEffect(() => {
-    const loadMetadata = async () => {
+    const loadBoards = async () => {
       try {
-        const [bData, cData, sData] = await Promise.all([
-          bookService.getBoards(),
-          bookService.getClasses(),
-          bookService.getSubjects()
-        ]);
+        const bData = await bookService.getBoards();
         setBoards(bData);
-        setClasses(cData);
-        setSubjects(sData);
       } catch (err) {
-        console.error("Metadata load error:", err);
+        console.error("Error loading boards:", err);
       }
     };
-    loadMetadata();
+    loadBoards();
   }, []);
 
-  // Fetch filtered books
+  // Compute dynamic dependent classes when selectedBoard changes
   useEffect(() => {
+    let isCurrent = true;
+    const updateClasses = async () => {
+      try {
+        const clsList = await bookService.getAvailableClasses(selectedBoard);
+        if (!isCurrent) return;
+        setAvailableClasses(clsList);
+
+        // Auto-reset class if current selection is invalid under the newly selected board
+        if (selectedClass !== "All" && !clsList.includes(String(selectedClass))) {
+          setSelectedClass("All");
+        }
+      } catch (err) {
+        console.error("Error updating dependent classes:", err);
+      }
+    };
+    updateClasses();
+    return () => {
+      isCurrent = false;
+    };
+  }, [selectedBoard]);
+
+  // Compute dynamic dependent subjects when selectedBoard or selectedClass changes
+  useEffect(() => {
+    let isCurrent = true;
+    const updateSubjects = async () => {
+      try {
+        const subList = await bookService.getAvailableSubjects(selectedBoard, selectedClass);
+        if (!isCurrent) return;
+        setAvailableSubjects(subList);
+
+        // Auto-reset subject if current selection is invalid under board + class
+        if (
+          selectedSubject !== "All" &&
+          !subList.some(
+            (s) =>
+              s.id.toLowerCase() === selectedSubject.toLowerCase() ||
+              s.name.toLowerCase() === selectedSubject.toLowerCase()
+          )
+        ) {
+          setSelectedSubject("All");
+        }
+      } catch (err) {
+        console.error("Error updating dependent subjects:", err);
+      }
+    };
+    updateSubjects();
+    return () => {
+      isCurrent = false;
+    };
+  }, [selectedBoard, selectedClass]);
+
+  // Fetch filtered books whenever any filter, search, or sort changes
+  useEffect(() => {
+    let isCurrent = true;
     const fetchBooks = async () => {
       try {
         setLoading(true);
@@ -53,50 +103,86 @@ export const BooksHomePage = () => {
           className: selectedClass,
           subject: selectedSubject,
           query,
-          sort: selectedSort
+          sort: selectedSort,
+          type: selectedType,
+          language: selectedLanguage,
+          minPrice: selectedMinPrice,
+          maxPrice: selectedMaxPrice
         });
+        if (!isCurrent) return;
         setBooks(data);
       } catch (err) {
-        console.error("Books fetch error:", err);
+        console.error("Error fetching books:", err);
       } finally {
-        setLoading(false);
+        if (isCurrent) setLoading(false);
       }
     };
 
     fetchBooks();
-  }, [selectedBoard, selectedClass, selectedSubject, query, selectedSort]);
+    return () => {
+      isCurrent = false;
+    };
+  }, [
+    selectedBoard,
+    selectedClass,
+    selectedSubject,
+    query,
+    selectedSort,
+    selectedType,
+    selectedLanguage,
+    selectedMinPrice,
+    selectedMaxPrice
+  ]);
 
+  // Handlers for Board, Class, Subject, and Language dropdowns
   const handleBoardClick = (boardId) => {
-    setSelectedBoard((prev) => (prev === boardId ? "All" : boardId));
+    setSelectedBoard(boardId);
   };
 
   const handleClassClick = (cls) => {
-    setSelectedClass((prev) => (prev === cls ? "All" : cls));
+    setSelectedClass(cls);
   };
 
   const handleSubjectClick = (subjectId) => {
-    setSelectedSubject((prev) => (prev === subjectId ? "All" : subjectId));
+    setSelectedSubject(subjectId);
   };
 
-  const handleFilterApply = ({ board, className, subject, sort }) => {
-    setSelectedBoard(board);
-    setSelectedClass(className);
-    setSelectedSubject(subject);
-    setSelectedSort(sort);
+  const handleLanguageClick = (lang) => {
+    setSelectedLanguage(lang);
   };
 
   const handleResetFilters = () => {
     setSelectedBoard("All");
     setSelectedClass("All");
     setSelectedSubject("All");
+    setSelectedLanguage("All");
     setSelectedSort("featured");
+    setSelectedType("all");
+    setSelectedMinPrice("");
+    setSelectedMaxPrice("");
     setQuery("");
   };
+
+  // Determine dynamic hierarchy heading
+  const headingContext = useMemo(() => {
+    const parts = [];
+    if (selectedBoard !== "All") parts.push(selectedBoard);
+    if (selectedClass !== "All") parts.push(`Class ${selectedClass}`);
+    if (selectedSubject !== "All") parts.push(selectedSubject);
+    if (selectedLanguage !== "All") parts.push(selectedLanguage === "Hindi" ? "Hindi Medium" : "English Medium");
+
+    if (parts.length === 0) return "All Educational Books";
+    return parts.join(" • ");
+  }, [selectedBoard, selectedClass, selectedSubject, selectedLanguage]);
 
   const hasActiveFilters =
     selectedBoard !== "All" ||
     selectedClass !== "All" ||
     selectedSubject !== "All" ||
+    selectedLanguage !== "All" ||
+    selectedType !== "all" ||
+    selectedMinPrice !== "" ||
+    selectedMaxPrice !== "" ||
     Boolean(query);
 
   return (
@@ -116,81 +202,38 @@ export const BooksHomePage = () => {
           <button
             type="button"
             onClick={handleResetFilters}
-            className="inline-flex items-center gap-1 text-[11px] font-bold text-[#FF8A00] hover:text-[#E67A00] px-2.5 py-1 rounded-lg bg-[#FF8A00]/10 hover:bg-[#FF8A00]/20 transition shrink-0 cursor-pointer"
+            className="inline-flex items-center gap-1 text-[11px] font-bold text-[#FF8A00] hover:text-[#E67A00] px-2.5 py-1.5 rounded-lg bg-[#FF8A00]/10 hover:bg-[#FF8A00]/20 transition cursor-pointer shrink-0"
           >
             <RotateCcw className="w-3 h-3" />
-            <span>Reset</span>
+            <span>Reset All</span>
           </button>
         )}
       </div>
 
-      {/* Compact Search & Filter Bar */}
+      {/* Clean Search Bar without separate filter button */}
       <SearchBar
         value={query}
         onChange={setQuery}
         onClear={() => setQuery("")}
-        onFilterClick={() => setShowFilterModal(true)}
-        placeholder="Search books, chapters, authors..."
+        placeholder="Search books, chapters, topics, authors..."
       />
 
-      {/* Board Selector Strip */}
-      <div className="space-y-1 min-w-0">
-        <div className="flex items-center justify-between">
-          <span className="text-[11px] font-bold text-[#0A1D3F] uppercase tracking-wider">
-            Select Board
-          </span>
-          {selectedBoard !== "All" && (
-            <span className="text-[10px] font-semibold text-[#FF8A00]">
-              Active: {selectedBoard}
-            </span>
-          )}
-        </div>
-        <BoardSelector
-          boards={boards}
-          selectedBoard={selectedBoard}
-          onSelect={handleBoardClick}
-        />
-      </div>
+      {/* 4 Dropdown Filters (Board -> Class -> Subject -> Language) */}
+      <HierarchyDropdowns
+        boards={boards}
+        classes={availableClasses}
+        subjects={availableSubjects}
+        selectedBoard={selectedBoard}
+        selectedClass={selectedClass}
+        selectedSubject={selectedSubject}
+        selectedLanguage={selectedLanguage}
+        onSelectBoard={handleBoardClick}
+        onSelectClass={handleClassClick}
+        onSelectSubject={handleSubjectClick}
+        onSelectLanguage={handleLanguageClick}
+      />
 
-      {/* Class Selector Strip */}
-      <div className="space-y-1 min-w-0">
-        <div className="flex items-center justify-between">
-          <span className="text-[11px] font-bold text-[#0A1D3F] uppercase tracking-wider">
-            Select Class
-          </span>
-          {selectedClass !== "All" && (
-            <span className="text-[10px] font-semibold text-[#FF8A00]">
-              Class {selectedClass}
-            </span>
-          )}
-        </div>
-        <ClassSelector
-          classes={classes}
-          selectedClass={selectedClass}
-          onSelect={handleClassClick}
-        />
-      </div>
-
-      {/* Subject Filter Pills (Compact horizontal scroll) */}
-      <div className="space-y-1 min-w-0">
-        <div className="flex items-center justify-between">
-          <span className="text-[11px] font-bold text-[#0A1D3F] uppercase tracking-wider">
-            Select Subject
-          </span>
-          {selectedSubject !== "All" && (
-            <span className="text-[10px] font-semibold text-[#FF8A00]">
-              {selectedSubject}
-            </span>
-          )}
-        </div>
-        <SubjectSelector
-          subjects={subjects}
-          selectedSubject={selectedSubject}
-          onSelect={handleSubjectClick}
-        />
-      </div>
-
-      {/* Active Filter Chips (if any filter is applied) */}
+      {/* Active Filter Chips */}
       {hasActiveFilters && (
         <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 min-w-0">
           <span className="text-[11px] font-medium text-[#667085] shrink-0">Filters:</span>
@@ -221,6 +264,15 @@ export const BooksHomePage = () => {
               <X className="w-3 h-3" />
             </button>
           )}
+          {selectedLanguage !== "All" && (
+            <button
+              onClick={() => setSelectedLanguage("All")}
+              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-rose-100 text-rose-700 text-[11px] font-semibold shrink-0 cursor-pointer hover:bg-rose-200"
+            >
+              <span>{selectedLanguage === "Hindi" ? "Hindi Medium" : "English Medium"}</span>
+              <X className="w-3 h-3" />
+            </button>
+          )}
           {query && (
             <button
               onClick={() => setQuery("")}
@@ -233,29 +285,40 @@ export const BooksHomePage = () => {
         </div>
       )}
 
-      {/* Books Listing Grid Section */}
+      {/* Dynamic Hierarchy Heading & Book Count */}
       <div className="space-y-2 pt-1 min-w-0">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-sm sm:text-base font-bold text-[#0A1D3F] tracking-tight">
-              {selectedSubject !== "All"
-                ? `${selectedSubject} Books`
-                : selectedBoard !== "All"
-                ? `${selectedBoard} Books`
-                : "All Curriculum Books"}
+        <div className="flex items-center justify-between pb-1 border-b border-[#E6E8EC]/80">
+          <div className="min-w-0">
+            <h2 className="text-sm sm:text-base font-bold text-[#0A1D3F] tracking-tight truncate">
+              {headingContext}
             </h2>
             <p className="text-[11px] text-[#667085]">
-              Showing {books.length} accessible book{books.length === 1 ? "" : "s"}
+              Showing {books.length} book{books.length === 1 ? "" : "s"}
             </p>
+          </div>
+
+          <div className="text-[11px] text-[#667085] shrink-0 font-medium">
+            {selectedSort === "rating"
+              ? "Top Rated"
+              : selectedSort === "price-low"
+              ? "Price: Low to High"
+              : selectedSort === "price-high"
+              ? "Price: High to Low"
+              : "Curated Selection"}
           </div>
         </div>
 
+        {/* Book Grid */}
         {loading ? (
           <SkeletonLoader type="book" count={6} />
         ) : books.length === 0 ? (
           <EmptyState
-            title="No Books Found"
-            description="We could not find any books matching your selected filters or search query."
+            title="No Matching Books Found"
+            description={
+              selectedBoard !== "All" || selectedClass !== "All" || selectedSubject !== "All" || selectedLanguage !== "All"
+                ? `No books found for ${headingContext}. Try clearing a filter or selecting another option.`
+                : "No books match your current search and filter criteria."
+            }
             actionText="Reset Filters"
             onAction={handleResetFilters}
           />
@@ -267,21 +330,6 @@ export const BooksHomePage = () => {
           </div>
         )}
       </div>
-
-      {/* Filter Bottom Sheet Modal */}
-      <BookFilterModal
-        isOpen={showFilterModal}
-        onClose={() => setShowFilterModal(false)}
-        boards={boards}
-        classes={classes}
-        subjects={subjects}
-        selectedBoard={selectedBoard}
-        selectedClass={selectedClass}
-        selectedSubject={selectedSubject}
-        selectedSort={selectedSort}
-        onApply={handleFilterApply}
-        onReset={handleResetFilters}
-      />
     </div>
   );
 };

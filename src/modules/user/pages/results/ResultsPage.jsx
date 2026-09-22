@@ -94,14 +94,6 @@ export const ResultsPage = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  // Switch type from top tabs while in the search flow
-  const handleSwitchResultType = (type) => {
-    setResultType(type);
-    setSelectedBoardId(null);
-    setCurrentBoardConfig(null);
-    setFlowStep("board_selection");
-  };
-
   // 2. Board Selection: User selects a board card
   const handleSelectBoard = (boardId) => {
     setSelectedBoardId(boardId);
@@ -166,29 +158,21 @@ export const ResultsPage = () => {
   };
 
   return (
-    <div className="space-y-3 max-w-3xl w-full mx-auto box-border">
+    <div className={`space-y-2.5 w-full mx-auto box-border transition-all ${
+      flowStep === "result" ? "max-w-2xl" : "max-w-md sm:max-w-lg"
+    }`}>
       {/* 1. Page Header (Hidden on print) */}
-      <div className="no-print space-y-1">
-        <div className="flex items-center justify-between flex-wrap gap-2">
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-base sm:text-lg font-bold text-[#0A1D3F] tracking-tight">
-                Examination Results
-              </h1>
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-teal-50 text-teal-700 border border-teal-200/60">
-                2026 Live
-              </span>
-            </div>
-            <p className="text-xs text-slate-500">
-              Check Board and University examination marksheets online.
-            </p>
-          </div>
+      <div className="no-print">
+        <div className="flex items-center justify-between gap-2">
+          <h1 className="text-base font-bold text-[#0A1D3F] tracking-tight">
+            Examination Results
+          </h1>
 
           {flowStep !== "landing" && (
             <button
               type="button"
               onClick={handleGoBack}
-              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-slate-200/80 bg-white text-xs font-bold text-slate-700 hover:text-[#FF8A00] hover:bg-slate-50 transition active:scale-95 shadow-2xs cursor-pointer"
+              className="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-slate-200 bg-white text-xs font-semibold text-slate-600 hover:text-[#FF8A00] transition active:scale-95 shadow-2xs cursor-pointer"
             >
               <ArrowLeft className="w-3.5 h-3.5 text-[#FF8A00]" />
               <span>Back</span>
@@ -198,60 +182,36 @@ export const ResultsPage = () => {
       </div>
 
       {/* Main Search & Results Flow Area */}
-      <div className="space-y-3">
+      <div className="space-y-2.5">
         {/* STEP 0: LANDING SCREEN */}
         {flowStep === "landing" && (
-          <div className="space-y-2">
-            <ResultTypeSelector
-              selectedType={null}
-              onSelectType={handleSelectResultTypeFromLanding}
-              mode="cards"
-            />
-          </div>
+          <ResultTypeSelector
+            selectedType={null}
+            onSelectType={handleSelectResultTypeFromLanding}
+            mode="cards"
+          />
         )}
 
         {/* STEP 1: BOARD SELECTION */}
         {flowStep === "board_selection" && (
-          <div className="space-y-3">
-            {/* Type Switcher Tabs at top */}
-            <ResultTypeSelector
-              selectedType={resultType}
-              onSelectType={handleSwitchResultType}
-              mode="tabs"
-            />
-
-            {/* Board Selector */}
-            <div className="bg-white rounded-xl border border-slate-200/80 p-3.5 sm:p-5 shadow-xs">
-              <BoardSelector
-                boards={boards}
-                selectedBoardId={selectedBoardId}
-                onSelectBoard={handleSelectBoard}
-                resultType={resultType}
-              />
-            </div>
-          </div>
+          <BoardSelector
+            boards={boards}
+            selectedBoardId={selectedBoardId}
+            onSelectBoard={handleSelectBoard}
+            resultType={resultType}
+          />
         )}
 
         {/* STEP 2: DYNAMIC BOARD FORM */}
         {flowStep === "search_form" && currentBoardConfig && (
-          <div className="space-y-3">
-            {/* Type Switcher Tabs */}
-            <ResultTypeSelector
-              selectedType={resultType}
-              onSelectType={handleSwitchResultType}
-              mode="tabs"
-            />
-
-            {/* Dynamic Form for Selected Board */}
-            <ResultSearchForm
-              boardConfig={currentBoardConfig}
-              resultType={resultType}
-              initialValues={savedFormValues}
-              onSubmit={handleSearchSubmit}
-              loading={false}
-              onChangeBoard={() => setFlowStep("board_selection")}
-            />
-          </div>
+          <ResultSearchForm
+            boardConfig={currentBoardConfig}
+            resultType={resultType}
+            initialValues={savedFormValues}
+            onSubmit={handleSearchSubmit}
+            loading={false}
+            onChangeBoard={() => setFlowStep("board_selection")}
+          />
         )}
 
         {/* STEP 3: LOADING STATE */}

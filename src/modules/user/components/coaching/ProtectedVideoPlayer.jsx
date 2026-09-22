@@ -36,9 +36,57 @@ export const ProtectedVideoPlayer = ({
   const [playbackRate, setPlaybackRate] = useState(1);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showControls, setShowControls] = useState(true);
+  const [isPrivacyShieldActive, setIsPrivacyShieldActive] = useState(false);
 
   // Moving watermark coordinates state
   const [watermarkPos, setWatermarkPos] = useState({ top: "12%", left: "10%" });
+
+  // Anti-Screen Recording: Window Blur & Tab Visibility Guard
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.hidden || document.visibilityState === "hidden") {
+        if (videoRef.current) {
+          videoRef.current.pause();
+          setIsPlaying(false);
+        }
+        setIsPrivacyShieldActive(true);
+      }
+    };
+
+    const handleWindowBlur = () => {
+      // Pause and activate shield when external app or capture tool gets focus
+      if (videoRef.current) {
+        videoRef.current.pause();
+        setIsPlaying(false);
+      }
+      setIsPrivacyShieldActive(true);
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("blur", handleWindowBlur);
+
+    // Screen sharing capture interception
+    let originalGetDisplayMedia = null;
+    if (typeof navigator !== "undefined" && navigator.mediaDevices?.getDisplayMedia) {
+      originalGetDisplayMedia = navigator.mediaDevices.getDisplayMedia;
+      navigator.mediaDevices.getDisplayMedia = async function (...args) {
+        setIsPrivacyShieldActive(true);
+        if (videoRef.current) {
+          videoRef.current.pause();
+          setIsPlaying(false);
+        }
+        throw new Error("Screen sharing is restricted for protected coaching lectures.");
+      };
+    }
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("blur", handleWindowBlur);
+      if (originalGetDisplayMedia && navigator.mediaDevices) {
+        navigator.mediaDevices.getDisplayMedia = originalGetDisplayMedia;
+      }
+    };
+  }, []);
 
   // Periodically change watermark position every 8 seconds across the video canvas
   useEffect(() => {
@@ -227,6 +275,34 @@ export const ProtectedVideoPlayer = ({
             <Lock className="w-3 h-3 text-[#FF8A00]" />
             <span className="font-semibold tracking-wide">KITSS DRM Protected</span>
           </div>
+
+          {/* Privacy Shield Overlay (Screen capture / blur protection) */}
+          {isPrivacyShieldActive && (
+            <div className="absolute inset-0 z-35 bg-black/95 backdrop-blur-xl flex flex-col items-center justify-center p-6 text-center text-white select-none animate-in fade-in duration-150">
+              <div className="w-12 h-12 rounded-2xl bg-[#FF8A00]/20 border border-[#FF8A00]/40 flex items-center justify-center text-[#FF8A00] mb-3">
+                <Lock className="w-6 h-6" />
+              </div>
+              <h4 className="text-base font-black text-white tracking-tight">
+                Protected Video Paused
+              </h4>
+              <p className="text-xs text-white/70 max-w-sm mt-1 leading-relaxed">
+                Video playback is protected against screen recording, capture tools, and background window focus loss.
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsPrivacyShieldActive(false);
+                  if (videoRef.current) {
+                    videoRef.current.play().catch(() => {});
+                    setIsPlaying(true);
+                  }
+                }}
+                className="mt-4 px-4 py-2 rounded-xl bg-[#FF8A00] hover:bg-[#E67C00] text-white font-bold text-xs shadow-md transition active:scale-95 cursor-pointer"
+              >
+                Resume Playback
+              </button>
+            </div>
+          )}
 
           {/* Floating Controls Bar at Bottom */}
           <div className="absolute bottom-0 left-0 right-0 z-30 p-2.5 sm:p-3.5 bg-gradient-to-t from-black/95 via-black/70 to-transparent flex flex-col gap-2 transition-opacity duration-300">

@@ -28,50 +28,50 @@ export const ResultMarksTable = ({ subjects = [] }) => {
   };
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-[#E6E8EC] shadow-2xs">
+    <div className="overflow-hidden rounded-md border border-slate-200 shadow-2xs">
       {/* Scroll indicator banner for mobile */}
-      <div className="block sm:hidden bg-[#F7F8FA] px-3 py-1 text-[10px] text-[#667085] font-semibold border-b border-[#E6E8EC] text-right">
+      <div className="block sm:hidden bg-slate-50 px-2.5 py-1 text-[9px] text-slate-500 font-medium border-b border-slate-200 text-right">
         👉 Swipe horizontally to view full marks table
       </div>
 
       <div className="overflow-x-auto w-full">
-        <table className="w-full text-xs text-left border-collapse min-w-[520px]">
+        <table className="w-full text-[11px] text-left border-collapse min-w-[480px]">
           <thead>
             <tr className="bg-[#0A1D3F] text-white">
-              <th className="p-3 font-bold uppercase tracking-wider text-[10px] sm:text-[11px]">
+              <th className="py-2 px-2.5 font-semibold uppercase tracking-wider text-[10px]">
                 Code
               </th>
-              <th className="p-3 font-bold uppercase tracking-wider text-[10px] sm:text-[11px]">
+              <th className="py-2 px-2.5 font-semibold uppercase tracking-wider text-[10px]">
                 Subject Name
               </th>
               {hasCredits && (
-                <th className="p-3 font-bold uppercase tracking-wider text-[10px] sm:text-[11px] text-center">
+                <th className="py-2 px-2.5 font-semibold uppercase tracking-wider text-[10px] text-center">
                   Credits
                 </th>
               )}
               {hasTheoryPractical && (
                 <>
-                  <th className="p-3 font-bold uppercase tracking-wider text-[10px] sm:text-[11px] text-center">
+                  <th className="py-2 px-2.5 font-semibold uppercase tracking-wider text-[10px] text-center">
                     Theory
                   </th>
-                  <th className="p-3 font-bold uppercase tracking-wider text-[10px] sm:text-[11px] text-center">
+                  <th className="py-2 px-2.5 font-semibold uppercase tracking-wider text-[10px] text-center">
                     Practical
                   </th>
                 </>
               )}
-              <th className="p-3 font-bold uppercase tracking-wider text-[10px] sm:text-[11px] text-center">
+              <th className="py-2 px-2.5 font-semibold uppercase tracking-wider text-[10px] text-center">
                 Max Marks
               </th>
-              <th className="p-3 font-bold uppercase tracking-wider text-[10px] sm:text-[11px] text-center">
+              <th className="py-2 px-2.5 font-semibold uppercase tracking-wider text-[10px] text-center">
                 Marks Obtained
               </th>
-              <th className="p-3 font-bold uppercase tracking-wider text-[10px] sm:text-[11px] text-center">
+              <th className="py-2 px-2.5 font-semibold uppercase tracking-wider text-[10px] text-center">
                 Grade
               </th>
             </tr>
           </thead>
 
-          <tbody className="divide-y divide-[#E6E8EC] bg-white">
+          <tbody className="divide-y divide-slate-100 bg-white">
             {subjects.map((sub, idx) => {
               const max = sub.maxMarks || sub.maxTotal || 100;
               const obtained = sub.obtained !== undefined ? sub.obtained : sub.total;
@@ -81,19 +81,19 @@ export const ResultMarksTable = ({ subjects = [] }) => {
                 <tr
                   key={sub.code || idx}
                   className={`transition-colors ${
-                    isFail ? "bg-red-50/40 hover:bg-red-50/60" : "hover:bg-[#F7F8FA]"
+                    isFail ? "bg-red-50/40 hover:bg-red-50/60" : "hover:bg-slate-50/50"
                   }`}
                 >
                   {/* Code */}
-                  <td className="p-3 font-mono font-bold text-[#667085] text-xs">
+                  <td className="py-1.5 px-2.5 font-mono text-slate-500 text-[10px]">
                     {sub.code || `0${idx + 1}`}
                   </td>
 
                   {/* Subject Name */}
-                  <td className="p-3 font-bold text-[#0A1D3F] text-xs sm:text-sm">
+                  <td className="py-1.5 px-2.5 font-medium text-slate-800 text-[11px]">
                     {sub.name}
                     {isFail && (
-                      <span className="block text-[10px] font-semibold text-red-600">
+                      <span className="block text-[9px] font-medium text-red-600">
                         Compartment / Incomplete
                       </span>
                     )}
@@ -101,7 +101,7 @@ export const ResultMarksTable = ({ subjects = [] }) => {
 
                   {/* Credits (University) */}
                   {hasCredits && (
-                    <td className="p-3 text-center font-mono font-semibold text-[#0A1D3F] text-xs">
+                    <td className="py-1.5 px-2.5 text-center font-mono text-slate-700 text-[11px]">
                       {sub.credits || "-"}
                     </td>
                   )}
@@ -109,31 +109,31 @@ export const ResultMarksTable = ({ subjects = [] }) => {
                   {/* Theory / Practical */}
                   {hasTheoryPractical && (
                     <>
-                      <td className="p-3 text-center font-mono text-xs text-[#475467]">
+                      <td className="py-1.5 px-2.5 text-center font-mono text-[10px] text-slate-600">
                         {sub.theory !== undefined ? `${sub.theory}/${sub.maxTheory || 80}` : "-"}
                       </td>
-                      <td className="p-3 text-center font-mono text-xs text-[#475467]">
+                      <td className="py-1.5 px-2.5 text-center font-mono text-[10px] text-slate-600">
                         {sub.practical !== undefined ? `${sub.practical}/${sub.maxPractical || 20}` : "-"}
                       </td>
                     </>
                   )}
 
                   {/* Max Marks */}
-                  <td className="p-3 text-center font-mono text-xs text-[#667085]">
+                  <td className="py-1.5 px-2.5 text-center font-mono text-[11px] text-slate-500">
                     {max}
                   </td>
 
                   {/* Obtained Marks */}
-                  <td className="p-3 text-center font-mono font-extrabold text-[#0A1D3F] text-xs sm:text-sm">
+                  <td className="py-1.5 px-2.5 text-center font-mono font-semibold text-slate-900 text-[11px]">
                     <span className={isFail ? "text-red-600" : ""}>
                       {obtained}
                     </span>
                   </td>
 
                   {/* Grade */}
-                  <td className="p-3 text-center">
+                  <td className="py-1.5 px-2.5 text-center">
                     <span
-                      className={`inline-block px-2.5 py-0.5 rounded-md font-bold text-[11px] border ${getGradeBadge(
+                      className={`inline-block px-1.5 py-0.2 rounded-sm font-semibold text-[10px] border ${getGradeBadge(
                         sub.grade,
                         isFail
                       )}`}

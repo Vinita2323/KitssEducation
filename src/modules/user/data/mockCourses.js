@@ -1,4 +1,4 @@
-﻿export const mockCourseCategories = [
+export const mockCourseCategories = [
   { id: "CBSE", name: "CBSE", icon: "GraduationCap", color: "from-blue-600 to-indigo-700" },
   { id: "State Board", name: "State Board", icon: "Building2", color: "from-amber-500 to-orange-600" },
   { id: "JEE", name: "JEE", icon: "Trophy", color: "from-emerald-600 to-teal-700" },

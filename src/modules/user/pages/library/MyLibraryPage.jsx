@@ -15,6 +15,7 @@ import { bookService } from "../../services/bookService";
 import { coachingService } from "../../services/coachingService";
 import { useLibrary } from "../../context/LibraryContext";
 import { ProgressBar } from "../../components/common/SectionHeader";
+import { BookCard } from "../../components/books/BookCard";
 import { SkeletonLoader, EmptyState } from "../../components/common/EmptyState";
 
 export const MyLibraryPage = () => {
@@ -188,44 +189,7 @@ export const MyLibraryPage = () => {
             ) : (
               <div className="space-y-2.5">
                 {filteredBooksList.map((book) => (
-                  <div
-                    key={book.id}
-                    className="flex items-center justify-between p-3 bg-white rounded-2xl border border-[#E6E8EC] shadow-2xs hover:border-gray-300 transition-all gap-3"
-                  >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div
-                        className={`w-11 h-14 rounded-lg bg-gradient-to-br ${
-                          book.coverColor || "from-[#0A1D3F] to-[#133C8B]"
-                        } p-1.5 flex flex-col justify-between text-white shrink-0 shadow-xs`}
-                      >
-                        <BookOpen className="w-3.5 h-3.5 text-white/80" />
-                        <span className="text-[8px] font-bold truncate">Cl {book.class}</span>
-                      </div>
-
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2 mb-0.5">
-                          <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-[#17B26A]/10 text-[#17B26A]">
-                            {book.subject || "E-Book"}
-                          </span>
-                          <span className="text-[10px] text-[#667085]">{book.fileSize}</span>
-                        </div>
-                        <h4 className="text-xs sm:text-sm font-bold text-[#0A1D3F] truncate">
-                          {book.title}
-                        </h4>
-                        <p className="text-[11px] text-[#667085] truncate">
-                          {book.subtitle} • {book.pages} Pages
-                        </p>
-                      </div>
-                    </div>
-
-                    <Link
-                      to={`/books/${book.id}/read`}
-                      className="px-3.5 py-1.5 bg-[#0A1D3F] hover:bg-[#133C8B] text-white text-xs font-bold rounded-xl shrink-0 transition active:scale-95 shadow-xs flex items-center gap-1"
-                    >
-                      <BookOpen className="w-3.5 h-3.5" />
-                      <span>Read</span>
-                    </Link>
-                  </div>
+                  <BookCard key={book.id} book={book} layout="library" />
                 ))}
               </div>
             )}

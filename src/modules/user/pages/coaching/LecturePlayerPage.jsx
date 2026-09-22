@@ -117,6 +117,43 @@ export const LecturePlayerPage = () => {
     );
   }
 
+  // Course Subscription Expiry Lock Guard
+  if (course.isExpired) {
+    return (
+      <div className="max-w-lg mx-auto my-12 p-8 text-center bg-white rounded-2xl border border-red-200 card-shadow space-y-4">
+        <div className="w-16 h-16 rounded-2xl bg-red-50 border border-red-200 mx-auto flex items-center justify-center text-red-600">
+          <Lock className="w-8 h-8" />
+        </div>
+        <div className="space-y-1.5">
+          <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider bg-red-100 text-red-700">
+            Subscription Expired
+          </span>
+          <h2 className="text-xl font-black text-[#0A1D3F]">
+            Course Access Expired
+          </h2>
+          <p className="text-xs text-[#667085] leading-relaxed max-w-sm mx-auto">
+            Your subscription to <span className="font-semibold text-[#0A1D3F]">{course.title}</span> expired on {course.expiryDate}. Please renew your subscription pass to continue streaming protected video lectures.
+          </p>
+        </div>
+        <div className="pt-2 flex flex-col sm:flex-row gap-2 justify-center">
+          <button
+            type="button"
+            onClick={() => navigate(`/coaching/${courseId}/subscribe`)}
+            className="px-5 py-2.5 rounded-xl bg-[#FF8A00] hover:bg-[#E67C00] text-white font-bold text-xs shadow-md transition active:scale-95 cursor-pointer"
+          >
+            Renew Course Subscription
+          </button>
+          <Link
+            to={`/coaching/${courseId}/dashboard`}
+            className="px-4 py-2.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-[#0A1D3F] font-semibold text-xs transition"
+          >
+            Back to Dashboard
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-6xl mx-auto space-y-5">
       {/* Top Header Row with Back Button, Course Name, Subject, and Lecture Title */}

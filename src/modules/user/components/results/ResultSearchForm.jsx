@@ -137,37 +137,32 @@ export const ResultSearchForm = ({
   };
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200/80 p-3.5 sm:p-5 shadow-2xs space-y-3.5">
-      {/* Selected Board Header Banner */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-3 border-b border-slate-200/80">
-        <div className="flex items-center gap-2.5 min-w-0">
-          <div className="w-8 h-8 rounded-xl bg-[#0A1D3F] text-[#FF8A00] flex items-center justify-center font-bold text-xs shrink-0">
+    <div className="bg-white rounded-xl border border-slate-200/90 p-3 sm:p-4 shadow-2xs space-y-3">
+      {/* Selected Board Compact Header */}
+      <div className="flex items-center justify-between gap-2 pb-2.5 border-b border-slate-100">
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="px-2 py-0.5 rounded-md bg-[#0A1D3F] text-[#FF8A00] font-black text-xs shrink-0">
             {boardConfig.code || "BD"}
-          </div>
-          <div className="min-w-0">
-            <span className="text-[10px] font-bold text-[#FF8A00] uppercase tracking-wider block">
-              Step 2: Examination Details
-            </span>
-            <h3 className="text-sm font-bold text-[#0A1D3F] truncate">
-              {boardConfig.fullName || boardConfig.name}
-            </h3>
-          </div>
+          </span>
+          <h3 className="text-xs sm:text-sm font-bold text-[#0A1D3F] truncate">
+            {boardConfig.fullName || boardConfig.name}
+          </h3>
         </div>
 
         {onChangeBoard && (
           <button
             type="button"
             onClick={onChangeBoard}
-            className="self-start sm:self-center text-xs font-bold text-slate-700 hover:text-[#FF8A00] border border-slate-200/80 hover:border-[#FF8A00] px-2.5 py-1 rounded-lg transition-colors shrink-0 cursor-pointer"
+            className="text-[11px] font-bold text-slate-600 hover:text-[#FF8A00] border border-slate-200/90 hover:border-[#FF8A00] px-2 py-0.5 rounded-md transition-colors shrink-0 cursor-pointer"
           >
-            Change Board
+            Change
           </button>
         )}
       </div>
 
       {/* Dynamic Form based on Board Configuration */}
-      <form onSubmit={handleSubmit} className="space-y-3.5">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <form onSubmit={handleSubmit} className="space-y-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
           {boardConfig.fields.map((field) => {
             const fieldError = touched[field.id] && errors[field.id];
             const isSpanFull = field.gridSpan === "full";
@@ -177,20 +172,13 @@ export const ResultSearchForm = ({
                 key={field.id}
                 className={isSpanFull ? "sm:col-span-2 space-y-1" : "space-y-1"}
               >
-                <div className="flex items-center justify-between">
-                  <label
-                    htmlFor={field.id}
-                    className="block text-xs font-semibold text-slate-800"
-                  >
-                    {field.label}
-                    {field.required && <span className="text-red-500 ml-0.5">*</span>}
-                  </label>
-                  {field.helperText && !fieldError && (
-                    <span className="text-[10px] text-slate-400 hidden sm:inline">
-                      {field.helperText}
-                    </span>
-                  )}
-                </div>
+                <label
+                  htmlFor={field.id}
+                  className="block text-xs font-semibold text-slate-700"
+                >
+                  {field.label}
+                  {field.required && <span className="text-red-500 ml-0.5">*</span>}
+                </label>
 
                 {/* Field Input Rendering */}
                 {field.type === "select" ? (
@@ -200,10 +188,10 @@ export const ResultSearchForm = ({
                       value={formData[field.id] ?? ""}
                       onChange={(e) => handleChange(field.id, e.target.value)}
                       onBlur={() => handleBlur(field.id)}
-                      className={`w-full px-3 py-2 bg-slate-50/70 border rounded-lg text-xs font-medium text-slate-900 focus:outline-none focus:ring-2 transition-all appearance-none cursor-pointer ${
+                      className={`w-full h-9 px-3 bg-slate-50/70 border rounded-lg text-xs font-medium text-slate-900 focus:outline-none focus:ring-1 focus:bg-white transition-all appearance-none cursor-pointer ${
                         fieldError
-                          ? "border-red-400 focus:ring-red-100 bg-red-50/20"
-                          : "border-slate-200/80 focus:ring-slate-100 focus:border-slate-400"
+                          ? "border-red-400 focus:ring-red-200 bg-red-50/20"
+                          : "border-slate-200/90 focus:ring-slate-200 focus:border-slate-400"
                       }`}
                     >
                       {field.options?.map((opt) => (
@@ -226,10 +214,10 @@ export const ResultSearchForm = ({
                       value={formData[field.id] ?? ""}
                       onChange={(e) => handleChange(field.id, e.target.value)}
                       onBlur={() => handleBlur(field.id)}
-                      className={`w-full px-3 py-2 bg-slate-50/70 border rounded-lg text-xs font-medium text-slate-900 focus:outline-none focus:ring-2 transition-all ${
+                      className={`w-full h-9 px-3 bg-slate-50/70 border rounded-lg text-xs font-medium text-slate-900 focus:outline-none focus:ring-1 focus:bg-white transition-all ${
                         fieldError
-                          ? "border-red-400 focus:ring-red-100 bg-red-50/20"
-                          : "border-slate-200/80 focus:ring-slate-100 focus:border-slate-400"
+                          ? "border-red-400 focus:ring-red-200 bg-red-50/20"
+                          : "border-slate-200/90 focus:ring-slate-200 focus:border-slate-400"
                       }`}
                     />
                   </div>
@@ -242,35 +230,31 @@ export const ResultSearchForm = ({
                       value={formData[field.id] ?? ""}
                       onChange={(e) => handleChange(field.id, e.target.value)}
                       onBlur={() => handleBlur(field.id)}
-                      className={`w-full px-3 py-2 bg-slate-50/70 border rounded-lg text-xs font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 transition-all ${
+                      className={`w-full h-9 px-3 bg-slate-50/70 border rounded-lg text-xs font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:bg-white transition-all ${
                         field.id.toLowerCase().includes("roll") ? "font-mono font-bold" : ""
                       } ${
                         fieldError
-                          ? "border-red-400 focus:ring-red-100 bg-red-50/20"
-                          : "border-slate-200/80 focus:ring-slate-100 focus:border-slate-400"
+                          ? "border-red-400 focus:ring-red-200 bg-red-50/20"
+                          : "border-slate-200/90 focus:ring-slate-200 focus:border-slate-400"
                       }`}
                     />
                   </div>
                 )}
 
                 {/* Validation Error Text */}
-                {fieldError ? (
+                {fieldError && (
                   <div className="flex items-center gap-1 text-[11px] font-medium text-red-600 pt-0.5">
                     <AlertCircle className="w-3 h-3 shrink-0" />
                     <span>{fieldError}</span>
                   </div>
-                ) : field.helperText ? (
-                  <p className="text-[10px] text-slate-400 sm:hidden">
-                    {field.helperText}
-                  </p>
-                ) : null}
+                )}
               </div>
             );
           })}
         </div>
 
         {/* Form Submission CTA */}
-        <div className="pt-3 border-t border-slate-100">
+        <div className="pt-2">
           <PrimaryButton
             type="submit"
             variant="navy"
@@ -279,11 +263,8 @@ export const ResultSearchForm = ({
             loading={loading}
             icon={Search}
           >
-            View Result
+            Check Result
           </PrimaryButton>
-          <p className="text-center text-[10px] text-slate-400 mt-1.5">
-            🔒 Official verification portal • Authenticated marks statement
-          </p>
         </div>
       </form>
     </div>
