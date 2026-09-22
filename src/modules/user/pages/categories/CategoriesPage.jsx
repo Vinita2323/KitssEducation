@@ -22,7 +22,7 @@ export const CategoriesPage = () => {
 
   const filterTabs = [
     { id: "all", label: "All Categories" },
-    { id: "coaching", label: "Online Coaching" },
+    { id: "coaching", label: "Coaching" },
     { id: "results", label: "Exam Results" },
     { id: "books", label: "Digital Books" },
     { id: "colleges", label: "Partner Colleges" }
@@ -31,7 +31,7 @@ export const CategoriesPage = () => {
   const categorySections = [
     {
       id: "coaching",
-      title: "Online Coaching",
+      title: "Coaching",
       description: "Live batches, doubt sessions & test series",
       link: "/coaching",
       iconTheme: "bg-amber-50 text-[#FF8A00] border border-amber-200/60",
@@ -207,7 +207,7 @@ export const CategoriesPage = () => {
             Explore Categories
           </h1>
           <p className="text-xs text-slate-500">
-            Find online coaching batches, exam results, digital books & partner colleges.
+            Find coaching batches, exam results, digital books & partner colleges.
           </p>
         </div>
 

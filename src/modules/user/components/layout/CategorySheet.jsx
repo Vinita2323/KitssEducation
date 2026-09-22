@@ -25,7 +25,7 @@ export const CategorySheet = ({ isOpen, onClose }) => {
 
   const categories = [
     {
-      title: "Online Coaching",
+      title: "Coaching",
       subtitle: "CBSE 9-12, JEE & NEET Live Batches",
       path: "/coaching",
       icon: Video,
