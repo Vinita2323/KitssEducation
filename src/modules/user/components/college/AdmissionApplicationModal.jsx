@@ -192,29 +192,52 @@ export const AdmissionApplicationModal = ({
     }
   };
 
+  // Lock background page scroll when modal is open
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const originalOverflow = document.body.style.overflow;
+    const originalPaddingRight = document.body.style.paddingRight;
+
+    // Compensate for scrollbar disappearance to prevent layout shift
+    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+    if (scrollbarWidth > 0) {
+      document.body.style.paddingRight = `${scrollbarWidth}px`;
+    }
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = originalOverflow;
+      document.body.style.paddingRight = originalPaddingRight;
+    };
+  }, [isOpen]);
+
   const handleModalClose = () => {
     setSubmissionResult(null);
     setStep(1);
     onClose();
   };
 
+  if (!isOpen) return null;
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 overscroll-contain">
       {/* Backdrop */}
       <div
         className="fixed inset-0 bg-[#0A1D3F]/60 backdrop-blur-xs transition-opacity"
         onClick={handleModalClose}
+        onTouchMove={(e) => e.preventDefault()}
       />
 
       {/* Modal Dialog */}
-      <div className="relative bg-white w-full max-w-xl rounded-2xl sm:rounded-3xl shadow-2xl border border-[#E6E8EC] z-10 overflow-hidden flex flex-col max-h-[92vh] animate-in fade-in zoom-in-95 duration-200">
+      <div className="relative bg-white w-full max-w-xl rounded-2xl sm:rounded-3xl shadow-2xl border border-[#E6E8EC] z-10 overflow-hidden flex flex-col max-h-[92vh] animate-in fade-in zoom-in-95 duration-200 overscroll-contain">
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-[#E6E8EC] bg-white sticky top-0 z-10">
+        <div className="flex items-center justify-between px-4 sm:px-5 py-3 sm:py-3.5 border-b border-[#E6E8EC] bg-white sticky top-0 z-10">
           <div>
-            <span className="text-[11px] font-bold uppercase tracking-wider text-[#FF8A00]">
+            <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-[#FF8A00]">
               Partner College Admissions
             </span>
-            <h3 className="text-base sm:text-lg font-bold text-[#0A1D3F] leading-tight">
+            <h3 className="text-sm sm:text-base font-bold text-[#0A1D3F] leading-tight">
               {submissionResult ? "Application Submitted" : "Admission Application & Enquiry"}
             </h3>
           </div>
@@ -228,11 +251,11 @@ export const AdmissionApplicationModal = ({
 
         {/* Multi-step progress bar (if not finished) */}
         {!submissionResult && (
-          <div className="px-5 pt-3 pb-2 bg-[#F7F8FA] border-b border-[#E6E8EC]">
-            <div className="flex items-center justify-between text-xs font-semibold text-[#667085] mb-2">
+          <div className="px-4 sm:px-5 pt-2.5 pb-2 bg-[#F7F8FA] border-b border-[#E6E8EC]">
+            <div className="flex items-center justify-between text-[11px] sm:text-xs font-semibold text-[#667085] mb-1.5 whitespace-nowrap gap-1">
               <span className={step >= 1 ? "text-[#0A1D3F] font-bold" : ""}>1. College</span>
               <span className={step >= 2 ? "text-[#0A1D3F] font-bold" : ""}>2. Course</span>
-              <span className={step >= 3 ? "text-[#0A1D3F] font-bold" : ""}>3. Student Details</span>
+              <span className={step >= 3 ? "text-[#0A1D3F] font-bold" : ""}>3. Details</span>
               <span className={step >= 4 ? "text-[#0A1D3F] font-bold" : ""}>4. Summary</span>
             </div>
             <div className="w-full bg-gray-200 h-1.5 rounded-full overflow-hidden">
@@ -245,7 +268,7 @@ export const AdmissionApplicationModal = ({
         )}
 
         {/* Body Content */}
-        <div className="p-5 overflow-y-auto space-y-4">
+        <div className="p-3.5 sm:p-4 overflow-y-auto space-y-3">
           {submissionResult ? (
             /* SUCCESS CONFIRMATION SCREEN */
             <div className="text-center py-4 space-y-4">
@@ -298,8 +321,8 @@ export const AdmissionApplicationModal = ({
             <>
               {/* STEP 1: SELECT COLLEGE */}
               {step === 1 && (
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2">
+                <div className="space-y-2.5">
+                  <div className="flex items-center gap-1.5">
                     <Building2 className="w-4 h-4 text-[#FF8A00]" />
                     <label className="text-xs font-bold text-[#0A1D3F] uppercase tracking-wider">
                       Step 1: Choose Partner College
@@ -309,11 +332,11 @@ export const AdmissionApplicationModal = ({
                   {loading ? (
                     <div className="space-y-2">
                       {[1, 2, 3].map((i) => (
-                        <div key={i} className="h-16 bg-gray-100 rounded-xl animate-pulse" />
+                        <div key={i} className="h-14 bg-gray-100 rounded-xl animate-pulse" />
                       ))}
                     </div>
                   ) : (
-                    <div className="space-y-2.5 max-h-80 overflow-y-auto pr-1">
+                    <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
                       {colleges.map((col) => {
                         const colId = col._id || col.id;
                         const isSelected = String(selectedCollegeId) === String(colId);
@@ -324,16 +347,16 @@ export const AdmissionApplicationModal = ({
                               setSelectedCollegeId(colId);
                               setSelectedCourseId(""); // reset course selection when college changes
                             }}
-                            className={`flex items-center gap-3 p-3.5 rounded-2xl border cursor-pointer transition-all duration-150 ${
+                            className={`flex items-center gap-2.5 p-2.5 sm:p-3 rounded-xl border cursor-pointer transition-all duration-150 ${
                               isSelected
-                                ? "border-[#FF8A00] bg-orange-50/50 shadow-xs ring-2 ring-[#FF8A00]/20"
-                                : "border-[#E6E8EC] hover:border-gray-300 hover:bg-gray-50"
+                                ? "border-[#FF8A00] bg-orange-50/60 shadow-xs ring-1 ring-[#FF8A00]"
+                                : "border-[#E6E8EC] hover:border-gray-300 hover:bg-gray-50/80"
                             }`}
                           >
                             <img
                               src={col.logo || "https://images.unsplash.com/photo-1592280771190-3e2e4d571952?w=100&auto=format&fit=crop&q=80"}
                               alt={col.name}
-                              className="w-11 h-11 rounded-xl object-cover border border-gray-200 shrink-0"
+                              className="w-10 h-10 rounded-lg object-cover border border-gray-200 shrink-0"
                             />
                             <div className="flex-1 min-w-0">
                               <h4 className="text-xs sm:text-sm font-bold text-[#0A1D3F] truncate">
@@ -348,7 +371,7 @@ export const AdmissionApplicationModal = ({
                               name="partnerCollege"
                               checked={isSelected}
                               onChange={() => {}}
-                              className="accent-[#FF8A00] w-4 h-4 shrink-0"
+                              className="accent-[#FF8A00] w-3.5 h-3.5 shrink-0 cursor-pointer"
                             />
                           </div>
                         );
@@ -360,16 +383,16 @@ export const AdmissionApplicationModal = ({
 
               {/* STEP 2: SELECT COURSE */}
               {step === 2 && (
-                <div className="space-y-3">
+                <div className="space-y-2.5">
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5">
                       <GraduationCap className="w-4 h-4 text-[#FF8A00]" />
                       <label className="text-xs font-bold text-[#0A1D3F] uppercase tracking-wider">
                         Step 2: Choose Course / Program
                       </label>
                     </div>
                     {selectedCollege && (
-                      <span className="text-xs text-[#667085] truncate max-w-[200px]">
+                      <span className="text-[11px] text-[#667085] truncate max-w-[180px]">
                         {selectedCollege.name}
                       </span>
                     )}
@@ -378,17 +401,17 @@ export const AdmissionApplicationModal = ({
                   {loading ? (
                     <div className="space-y-2">
                       {[1, 2, 3].map((i) => (
-                        <div key={i} className="h-16 bg-gray-100 rounded-xl animate-pulse" />
+                        <div key={i} className="h-14 bg-gray-100 rounded-xl animate-pulse" />
                       ))}
                     </div>
                   ) : courses.length === 0 ? (
-                    <div className="p-6 text-center bg-gray-50 rounded-2xl border border-gray-200">
+                    <div className="p-5 text-center bg-gray-50 rounded-xl border border-gray-200">
                       <p className="text-xs text-[#667085]">
                         No active courses currently listed for this college. Please choose another partner college.
                       </p>
                     </div>
                   ) : (
-                    <div className="space-y-2.5 max-h-80 overflow-y-auto pr-1">
+                    <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
                       {courses.map((crs) => {
                         const crsId = crs._id || crs.id;
                         const isSelected = String(selectedCourseId) === String(crsId);
@@ -396,37 +419,49 @@ export const AdmissionApplicationModal = ({
                           <div
                             key={crsId}
                             onClick={() => setSelectedCourseId(crsId)}
-                            className={`p-3.5 rounded-2xl border cursor-pointer transition-all duration-150 ${
+                            className={`p-2.5 sm:p-3 rounded-xl border cursor-pointer transition-all duration-150 ${
                               isSelected
-                                ? "border-[#FF8A00] bg-orange-50/50 shadow-xs ring-2 ring-[#FF8A00]/20"
-                                : "border-[#E6E8EC] hover:border-gray-300 hover:bg-gray-50"
+                                ? "border-[#FF8A00] bg-orange-50/60 shadow-xs ring-1 ring-[#FF8A00]"
+                                : "border-[#E6E8EC] hover:border-gray-300 hover:bg-gray-50/80"
                             }`}
                           >
-                            <div className="flex items-start justify-between gap-2">
+                            <div className="flex items-start justify-between gap-2.5">
                               <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2 flex-wrap mb-1">
-                                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#0A1D3F] text-white">
+                                <div className="flex items-center gap-1.5 flex-wrap mb-1">
+                                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-[#0A1D3F] text-white leading-none">
                                     {crs.degreeType}
                                   </span>
-                                  <span className="text-[11px] text-[#667085]">
+                                  <span className="text-[11px] text-[#667085] leading-none">
                                     {crs.duration}
                                   </span>
-                                  <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                                  <span className="text-gray-300 text-[10px]">•</span>
+                                  <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200 leading-none">
                                     Seats: {crs.availableSeats || 60}
                                   </span>
                                 </div>
-                                <h4 className="text-xs sm:text-sm font-bold text-[#0A1D3F]">
+                                <h4 className="text-xs sm:text-sm font-bold text-[#0A1D3F] leading-snug">
                                   {crs.courseName}
                                 </h4>
-                                <p className="text-[11px] text-[#667085] mt-1 line-clamp-1">
-                                  Eligibility: {crs.eligibility}
-                                </p>
+                                {crs.eligibility && (
+                                  <p className="text-[11px] text-[#667085] mt-0.5 line-clamp-1">
+                                    Eligibility: {crs.eligibility}
+                                  </p>
+                                )}
                               </div>
-                              <div className="text-right shrink-0">
-                                <div className="text-xs sm:text-sm font-extrabold text-[#0A1D3F]">
-                                  ₹{crs.fee ? crs.fee.toLocaleString() : "Contact"}
+                              <div className="text-right shrink-0 flex flex-col items-end justify-between self-stretch">
+                                <div>
+                                  <div className="text-xs sm:text-sm font-extrabold text-[#0A1D3F] leading-tight">
+                                    ₹{crs.fee ? crs.fee.toLocaleString() : "Contact"}
+                                  </div>
+                                  <span className="text-[10px] text-[#667085]">Per Year</span>
                                 </div>
-                                <span className="text-[10px] text-[#667085]">Per Year</span>
+                                <input
+                                  type="radio"
+                                  name="partnerCourse"
+                                  checked={isSelected}
+                                  onChange={() => {}}
+                                  className="accent-[#FF8A00] w-3.5 h-3.5 mt-1 shrink-0 cursor-pointer"
+                                />
                               </div>
                             </div>
                           </div>

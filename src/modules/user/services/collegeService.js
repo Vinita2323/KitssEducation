@@ -22,11 +22,19 @@ export const collegeService = {
     colleges = colleges.map((college) => {
       const cId = String(college._id || college.id);
       const relatedCourses = allCourses.filter(
-        (crs) => String(crs.collegeId) === cId && crs.status === "active"
+        (crs) =>
+          (String(crs.collegeId) === cId ||
+           String(crs.collegeId) === String(college._id) ||
+           String(crs.collegeId) === String(college.id)) &&
+          crs.status === "active"
       );
       return {
         ...college,
-        coursesCount: college.coursesCount || relatedCourses.length,
+        coursesCount: relatedCourses.length || college.coursesCount || 3,
+        popularCourses:
+          relatedCourses.length > 0
+            ? relatedCourses.map((c) => c.courseName).slice(0, 3)
+            : college.popularCourses,
         degreeTypes: Array.from(new Set(relatedCourses.map((c) => c.degreeType).filter(Boolean))),
       };
     });
@@ -106,9 +114,13 @@ export const collegeService = {
       throw new Error("College not found.");
     }
 
+    const cId = String(college._id || college.id);
     const courses = (store.courses || []).filter(
       (crs) =>
-        (String(crs.collegeId) === String(id) || String(crs.collegeId) === String(college._id)) &&
+        (String(crs.collegeId) === String(id) ||
+         String(crs.collegeId) === cId ||
+         String(crs.collegeId) === String(college._id) ||
+         String(crs.collegeId) === String(college.id)) &&
         crs.status === "active"
     );
 

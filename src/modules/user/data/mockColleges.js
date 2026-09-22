@@ -438,9 +438,160 @@ export const INITIAL_COLLEGES = [
 ];
 
 export const INITIAL_COURSES = [
-  // Apex Institute
+  // 1. Delhi University (col-delhi-univ)
+  {
+    _id: "crs-du-cs",
+    id: "crs-du-cs",
+    courseName: "B.Sc (Honours) Computer Science",
+    degreeType: "Undergraduate",
+    duration: "3 Years",
+    eligibility: "10+2 with Mathematics (Minimum 60% aggregate)",
+    fee: 48000,
+    description: "Rigorous computing science curriculum covering Algorithms, Data Structures, Machine Learning, and Software Engineering.",
+    availableSeats: 120,
+    admissionStatus: "Open",
+    status: "active",
+    collegeId: "col-delhi-univ",
+    createdAt: "2026-09-16T11:57:04.228Z",
+    updatedAt: "2026-09-16T11:57:04.228Z"
+  },
+  {
+    _id: "crs-du-bcom",
+    id: "crs-du-bcom",
+    courseName: "Bachelor of Commerce - B.Com (Honours)",
+    degreeType: "Undergraduate",
+    duration: "3 Years",
+    eligibility: "10+2 with Mathematics or Accountancy (Minimum 55%)",
+    fee: 42000,
+    description: "Premier commerce program with focus on Financial Markets, Corporate Taxation, Investment Banking, and Business Law.",
+    availableSeats: 180,
+    admissionStatus: "Open",
+    status: "active",
+    collegeId: "col-delhi-univ",
+    createdAt: "2026-09-16T11:57:04.228Z",
+    updatedAt: "2026-09-16T11:57:04.228Z"
+  },
+  {
+    _id: "crs-du-eco",
+    id: "crs-du-eco",
+    courseName: "B.A. (Honours) Economics & Data Science",
+    degreeType: "Undergraduate",
+    duration: "3 Years",
+    eligibility: "10+2 in any stream with Mathematics (Minimum 60%)",
+    fee: 38000,
+    description: "Interdisciplinary economics, econometrics, statistical modeling, public policy analysis, and macro-economics.",
+    availableSeats: 90,
+    admissionStatus: "Open",
+    status: "active",
+    collegeId: "col-delhi-univ",
+    createdAt: "2026-09-16T11:57:04.228Z",
+    updatedAt: "2026-09-16T11:57:04.228Z"
+  },
+
+  // 2. Lovely Professional University (col-lpu-punjab)
+  {
+    _id: "crs-lpu-cse",
+    id: "crs-lpu-cse",
+    courseName: "B.Tech Computer Science (AI & Cloud Engineering)",
+    degreeType: "Undergraduate",
+    duration: "4 Years",
+    eligibility: "10+2 with Physics, Mathematics & English (Min 60%)",
+    fee: 160000,
+    description: "Industry-certified tech program in collaboration with Google Cloud & Microsoft Azure with full-stack capstone labs.",
+    availableSeats: 240,
+    admissionStatus: "Open",
+    status: "active",
+    collegeId: "col-lpu-punjab",
+    createdAt: "2026-09-16T11:57:04.228Z",
+    updatedAt: "2026-09-16T11:57:04.228Z"
+  },
+  {
+    _id: "crs-lpu-mba",
+    id: "crs-lpu-mba",
+    courseName: "MBA in International Business & Corporate Strategy",
+    degreeType: "Postgraduate",
+    duration: "2 Years",
+    eligibility: "Bachelor's degree in any discipline with minimum 50% marks",
+    fee: 190000,
+    description: "Global business curriculum featuring international study tours, live corporate consultancy, and multi-market trade simulations.",
+    availableSeats: 120,
+    admissionStatus: "Open",
+    status: "active",
+    collegeId: "col-lpu-punjab",
+    createdAt: "2026-09-16T11:57:04.228Z",
+    updatedAt: "2026-09-16T11:57:04.228Z"
+  },
+  {
+    _id: "crs-lpu-bdes",
+    id: "crs-lpu-bdes",
+    courseName: "Bachelor of Design (B.Des - User Experience & Interactive Media)",
+    degreeType: "Undergraduate",
+    duration: "4 Years",
+    eligibility: "10+2 in any discipline with creative aptitude",
+    fee: 140000,
+    description: "Comprehensive product design, UI/UX design research, AR/VR spatial interfaces, and design studio apprenticeships.",
+    availableSeats: 60,
+    admissionStatus: "Open",
+    status: "active",
+    collegeId: "col-lpu-punjab",
+    createdAt: "2026-09-16T11:57:04.228Z",
+    updatedAt: "2026-09-16T11:57:04.228Z"
+  },
+
+  // 3. Manipal University (col-manipal-univ)
+  {
+    _id: "crs-manipal-mecha",
+    id: "crs-manipal-mecha",
+    courseName: "B.Tech Mechatronics & Autonomous Systems",
+    degreeType: "Undergraduate",
+    duration: "4 Years",
+    eligibility: "10+2 with Physics, Mathematics & Chemistry (Min 60%)",
+    fee: 175000,
+    description: "Advanced multidisciplinary engineering integrating robotics, micro-controllers, IoT sensors, and autonomous vehicles.",
+    availableSeats: 90,
+    admissionStatus: "Open",
+    status: "active",
+    collegeId: "col-manipal-univ",
+    createdAt: "2026-09-16T11:57:04.228Z",
+    updatedAt: "2026-09-16T11:57:04.228Z"
+  },
+  {
+    _id: "crs-manipal-bba",
+    id: "crs-manipal-bba",
+    courseName: "Bachelor of Business Administration (BBA - Global Finance)",
+    degreeType: "Undergraduate",
+    duration: "3 Years",
+    eligibility: "10+2 in any stream with minimum 50% aggregate",
+    fee: 120000,
+    description: "International corporate finance, investment valuation, portfolio management, and global financial market modeling.",
+    availableSeats: 120,
+    admissionStatus: "Open",
+    status: "active",
+    collegeId: "col-manipal-univ",
+    createdAt: "2026-09-16T11:57:04.228Z",
+    updatedAt: "2026-09-16T11:57:04.228Z"
+  },
+  {
+    _id: "crs-manipal-mtech",
+    id: "crs-manipal-mtech",
+    courseName: "M.Tech Data Science & Artificial Intelligence",
+    degreeType: "Postgraduate",
+    duration: "2 Years",
+    eligibility: "B.Tech / B.E. in relevant discipline with 55% aggregate",
+    fee: 155000,
+    description: "Postgraduate research program in Natural Language Processing, Computer Vision, Deep Learning, and Distributed Computing.",
+    availableSeats: 45,
+    admissionStatus: "Open",
+    status: "active",
+    collegeId: "col-manipal-univ",
+    createdAt: "2026-09-16T11:57:04.228Z",
+    updatedAt: "2026-09-16T11:57:04.228Z"
+  },
+
+  // 4. Apex Institute of Technology & Management (6aaa8410e0afe8274e53582c)
   {
     _id: "6aaa8410e0afe8274e53582d",
+    id: "6aaa8410e0afe8274e53582d",
     courseName: "B.Tech Computer Science & Engineering (AI & ML)",
     degreeType: "Undergraduate",
     duration: "4 Years",
@@ -456,6 +607,7 @@ export const INITIAL_COURSES = [
   },
   {
     _id: "6aaa8410e0afe8274e53582e",
+    id: "6aaa8410e0afe8274e53582e",
     courseName: "Bachelor of Business Administration (BBA - Digital Marketing)",
     degreeType: "Undergraduate",
     duration: "3 Years",
@@ -471,6 +623,7 @@ export const INITIAL_COURSES = [
   },
   {
     _id: "6aaa8410e0afe8274e53582f",
+    id: "6aaa8410e0afe8274e53582f",
     courseName: "Master of Computer Applications (MCA)",
     degreeType: "Postgraduate",
     duration: "2 Years",
@@ -485,9 +638,10 @@ export const INITIAL_COURSES = [
     updatedAt: "2026-09-16T11:57:04.234Z"
   },
 
-  // St. Xavier College
+  // 5. St. Xavier College of Health & Allied Sciences (6aaa8410e0afe8274e535831)
   {
     _id: "6aaa8410e0afe8274e535832",
+    id: "6aaa8410e0afe8274e535832",
     courseName: "Bachelor of Pharmacy (B.Pharm)",
     degreeType: "Undergraduate",
     duration: "4 Years",
@@ -503,6 +657,7 @@ export const INITIAL_COURSES = [
   },
   {
     _id: "6aaa8410e0afe8274e535833",
+    id: "6aaa8410e0afe8274e535833",
     courseName: "B.Sc Nursing",
     degreeType: "Undergraduate",
     duration: "4 Years",
@@ -516,10 +671,27 @@ export const INITIAL_COURSES = [
     createdAt: "2026-09-16T11:57:04.247Z",
     updatedAt: "2026-09-16T11:57:04.247Z"
   },
+  {
+    _id: "crs-stx-dmlt",
+    id: "crs-stx-dmlt",
+    courseName: "Diploma in Medical Laboratory Technology (DMLT)",
+    degreeType: "Diploma",
+    duration: "2 Years",
+    eligibility: "10+2 in Science stream with minimum 45% marks",
+    fee: 65000,
+    description: "Hands-on clinical diagnostic training in hematology, pathology, clinical microbiology, and diagnostic equipment.",
+    availableSeats: 40,
+    admissionStatus: "Open",
+    status: "active",
+    collegeId: "6aaa8410e0afe8274e535831",
+    createdAt: "2026-09-16T11:57:04.247Z",
+    updatedAt: "2026-09-16T11:57:04.247Z"
+  },
 
-  // Bangalore Global Business Academy
+  // 6. Bangalore Global Business Academy (6aaa8410e0afe8274e535835)
   {
     _id: "6aaa8410e0afe8274e535836",
+    id: "6aaa8410e0afe8274e535836",
     courseName: "Bachelor of Computer Applications (BCA - Cloud & Cyber)",
     degreeType: "Undergraduate",
     duration: "3 Years",
@@ -533,10 +705,43 @@ export const INITIAL_COURSES = [
     createdAt: "2026-09-16T11:57:04.253Z",
     updatedAt: "2026-09-16T11:57:04.253Z"
   },
+  {
+    _id: "crs-bgba-bcom",
+    id: "crs-bgba-bcom",
+    courseName: "B.Com Honours in FinTech & Digital Banking",
+    degreeType: "Undergraduate",
+    duration: "3 Years",
+    eligibility: "10+2 with Commerce or Mathematics (Minimum 50%)",
+    fee: 95000,
+    description: "Digital payment architectures, blockchain in banking, algorithmic trading, and modern venture financial modeling.",
+    availableSeats: 80,
+    admissionStatus: "Open",
+    status: "active",
+    collegeId: "6aaa8410e0afe8274e535835",
+    createdAt: "2026-09-16T11:57:04.253Z",
+    updatedAt: "2026-09-16T11:57:04.253Z"
+  },
+  {
+    _id: "crs-bgba-mba",
+    id: "crs-bgba-mba",
+    courseName: "Executive MBA in AI & Technology Strategy",
+    degreeType: "Postgraduate",
+    duration: "2 Years",
+    eligibility: "Graduation with 50% aggregate + corporate work experience",
+    fee: 180000,
+    description: "Advanced leadership development covering Generative AI in business, enterprise agility, M&A strategy, and corporate incubation.",
+    availableSeats: 60,
+    admissionStatus: "Open",
+    status: "active",
+    collegeId: "6aaa8410e0afe8274e535835",
+    createdAt: "2026-09-16T11:57:04.253Z",
+    updatedAt: "2026-09-16T11:57:04.253Z"
+  },
 
-  // Sunrise Law
+  // 7. Sunrise National Law & Arts College (6aaa8410e0afe8274e535839)
   {
     _id: "6aaa8410e0afe8274e53583a",
+    id: "6aaa8410e0afe8274e53583a",
     courseName: "B.A. LL.B. (Honours) 5-Year Integrated",
     degreeType: "Undergraduate",
     duration: "5 Years",
@@ -549,6 +754,288 @@ export const INITIAL_COURSES = [
     collegeId: "6aaa8410e0afe8274e535839",
     createdAt: "2026-09-16T11:57:04.262Z",
     updatedAt: "2026-09-16T11:57:04.262Z"
+  },
+  {
+    _id: "crs-sun-llb",
+    id: "crs-sun-llb",
+    courseName: "Bachelor of Laws (LL.B.) 3-Year Professional",
+    degreeType: "Undergraduate",
+    duration: "3 Years",
+    eligibility: "Graduation in any discipline with minimum 45% marks",
+    fee: 85000,
+    description: "BCI-recognized 3-year law degree focusing on civil advocacy, constitutional litigation, arbitration, and court practice.",
+    availableSeats: 90,
+    admissionStatus: "Open",
+    status: "active",
+    collegeId: "6aaa8410e0afe8274e535839",
+    createdAt: "2026-09-16T11:57:04.262Z",
+    updatedAt: "2026-09-16T11:57:04.262Z"
+  },
+  {
+    _id: "crs-sun-llm",
+    id: "crs-sun-llm",
+    courseName: "Master of Laws (LL.M.) in Corporate & Cyber Law",
+    degreeType: "Postgraduate",
+    duration: "1 Year",
+    eligibility: "LL.B. degree from recognized university with 50% marks",
+    fee: 95000,
+    description: "Specialized Master's program in international dispute resolution, data privacy regulations, and cross-border commercial contracts.",
+    availableSeats: 40,
+    admissionStatus: "Open",
+    status: "active",
+    collegeId: "6aaa8410e0afe8274e535839",
+    createdAt: "2026-09-16T11:57:04.262Z",
+    updatedAt: "2026-09-16T11:57:04.262Z"
+  },
+
+  // 8. Delhi Public Heritage School (col-delhi-public-school)
+  {
+    _id: "crs-dphs-sci",
+    id: "crs-dphs-sci",
+    courseName: "Senior Secondary Science (PCM / PCB with AI Elective)",
+    degreeType: "Senior Secondary",
+    duration: "2 Years",
+    eligibility: "Class 10 Board exam passed with minimum 65% aggregate",
+    fee: 75000,
+    description: "Comprehensive CBSE-affiliated curriculum with advanced laboratories, Olympiad mentorship, and JEE/NEET foundational coaching.",
+    availableSeats: 100,
+    admissionStatus: "Open",
+    status: "active",
+    collegeId: "col-delhi-public-school",
+    createdAt: "2026-09-18T10:00:00.000Z",
+    updatedAt: "2026-09-18T10:00:00.000Z"
+  },
+  {
+    _id: "crs-dphs-comm",
+    id: "crs-dphs-comm",
+    courseName: "Senior Secondary Commerce with Informatics Practices",
+    degreeType: "Senior Secondary",
+    duration: "2 Years",
+    eligibility: "Class 10 Board exam passed with minimum 55% marks",
+    fee: 65000,
+    description: "Rigorous commerce education incorporating financial accountancy, economics, entrepreneurship, and Python programming.",
+    availableSeats: 80,
+    admissionStatus: "Open",
+    status: "active",
+    collegeId: "col-delhi-public-school",
+    createdAt: "2026-09-18T10:00:00.000Z",
+    updatedAt: "2026-09-18T10:00:00.000Z"
+  },
+  {
+    _id: "crs-dphs-arts",
+    id: "crs-dphs-arts",
+    courseName: "Senior Secondary Humanities & Liberal Arts",
+    degreeType: "Senior Secondary",
+    duration: "2 Years",
+    eligibility: "Class 10 Board exam passed with minimum 50% marks",
+    fee: 60000,
+    description: "Multidisciplinary social sciences, political science, history, psychology, and public policy foundational studies.",
+    availableSeats: 60,
+    admissionStatus: "Open",
+    status: "active",
+    collegeId: "col-delhi-public-school",
+    createdAt: "2026-09-18T10:00:00.000Z",
+    updatedAt: "2026-09-18T10:00:00.000Z"
+  },
+
+  // 9. Avadh Institute of Medical & Allied Health Sciences (col-lucknow-medical)
+  {
+    _id: "crs-avadh-nursing",
+    id: "crs-avadh-nursing",
+    courseName: "Bachelor of Science in Nursing (B.Sc Nursing)",
+    degreeType: "Undergraduate",
+    duration: "4 Years",
+    eligibility: "10+2 with Physics, Chemistry, Biology & English (Min 50%)",
+    fee: 110000,
+    description: "Extensive clinical bed-side training in 600-bed hospital covering emergency care, surgical ICU, and pediatric healthcare.",
+    availableSeats: 80,
+    admissionStatus: "Open",
+    status: "active",
+    collegeId: "col-lucknow-medical",
+    createdAt: "2026-09-18T10:00:00.000Z",
+    updatedAt: "2026-09-18T10:00:00.000Z"
+  },
+  {
+    _id: "crs-avadh-pharm",
+    id: "crs-avadh-pharm",
+    courseName: "Bachelor of Pharmacy (B.Pharm)",
+    degreeType: "Undergraduate",
+    duration: "4 Years",
+    eligibility: "10+2 with PCB or PCM with minimum 50% aggregate",
+    fee: 115000,
+    description: "Pharmacy Council approved curriculum covering therapeutic pharmacology, biopharmaceutics, and clinical trials.",
+    availableSeats: 60,
+    admissionStatus: "Open",
+    status: "active",
+    collegeId: "col-lucknow-medical",
+    createdAt: "2026-09-18T10:00:00.000Z",
+    updatedAt: "2026-09-18T10:00:00.000Z"
+  },
+  {
+    _id: "crs-avadh-bpt",
+    id: "crs-avadh-bpt",
+    courseName: "Bachelor of Physiotherapy (BPT)",
+    degreeType: "Undergraduate",
+    duration: "4.5 Years",
+    eligibility: "10+2 in Science stream with Biology (Minimum 50%)",
+    fee: 98000,
+    description: "Orthopedic, neurological, and sports rehabilitation with dedicated clinical rotations and outpatient therapy centers.",
+    availableSeats: 50,
+    admissionStatus: "Open",
+    status: "active",
+    collegeId: "col-lucknow-medical",
+    createdAt: "2026-09-18T10:00:00.000Z",
+    updatedAt: "2026-09-18T10:00:00.000Z"
+  },
+
+  // 10. Mumbai Metropolitan Institute of Technology & AI (col-mumbai-metro)
+  {
+    _id: "crs-mumbai-ai",
+    id: "crs-mumbai-ai",
+    courseName: "B.Tech Artificial Intelligence & Machine Learning",
+    degreeType: "Undergraduate",
+    duration: "4 Years",
+    eligibility: "10+2 with Physics, Mathematics & Chemistry (Min 60%)",
+    fee: 155000,
+    description: "Full-stack AI curriculum with NVIDIA GPU accelerated compute labs, deep neural networks, and generative AI capstones.",
+    availableSeats: 120,
+    admissionStatus: "Open",
+    status: "active",
+    collegeId: "col-mumbai-metro",
+    createdAt: "2026-09-18T10:00:00.000Z",
+    updatedAt: "2026-09-18T10:00:00.000Z"
+  },
+  {
+    _id: "crs-mumbai-bca",
+    id: "crs-mumbai-bca",
+    courseName: "Bachelor of Computer Applications (BCA Cloud & DevOps)",
+    degreeType: "Undergraduate",
+    duration: "3 Years",
+    eligibility: "10+2 with Mathematics/Computer Science (Min 50%)",
+    fee: 92000,
+    description: "Industry-aligned software engineering focusing on Kubernetes, microservices, cloud security, and CI/CD pipelines.",
+    availableSeats: 90,
+    admissionStatus: "Open",
+    status: "active",
+    collegeId: "col-mumbai-metro",
+    createdAt: "2026-09-18T10:00:00.000Z",
+    updatedAt: "2026-09-18T10:00:00.000Z"
+  },
+  {
+    _id: "crs-mumbai-data",
+    id: "crs-mumbai-data",
+    courseName: "B.Sc Data Analytics & Financial Engineering",
+    degreeType: "Undergraduate",
+    duration: "3 Years",
+    eligibility: "10+2 in Science or Commerce with Mathematics (Min 55%)",
+    fee: 88000,
+    description: "Quantitative financial modeling, high-frequency trading basics, data warehousing, and business intelligence dashboards.",
+    availableSeats: 60,
+    admissionStatus: "Open",
+    status: "active",
+    collegeId: "col-mumbai-metro",
+    createdAt: "2026-09-18T10:00:00.000Z",
+    updatedAt: "2026-09-18T10:00:00.000Z"
+  },
+
+  // 11. Punjab Institute of Engineering & Robotics (col-ludhiana-eng)
+  {
+    _id: "crs-pier-mech",
+    id: "crs-pier-mech",
+    courseName: "B.Tech Mechanical Engineering with Mechatronics Specialization",
+    degreeType: "Undergraduate",
+    duration: "4 Years",
+    eligibility: "10+2 with PCM (Physics, Chemistry, Maths) Min 55%",
+    fee: 125000,
+    description: "Hands-on engineering in CNC automation, pneumatic systems, CAD/CAM product development, and robotic welding.",
+    availableSeats: 90,
+    admissionStatus: "Open",
+    status: "active",
+    collegeId: "col-ludhiana-eng",
+    createdAt: "2026-09-18T10:00:00.000Z",
+    updatedAt: "2026-09-18T10:00:00.000Z"
+  },
+  {
+    _id: "crs-pier-elec",
+    id: "crs-pier-elec",
+    courseName: "B.Tech Electrical & Electronics Engineering",
+    degreeType: "Undergraduate",
+    duration: "4 Years",
+    eligibility: "10+2 with PCM (Minimum 55% aggregate)",
+    fee: 120000,
+    description: "Power electronics, renewable energy grids, embedded microprocessors, and smart electric vehicle power trains.",
+    availableSeats: 90,
+    admissionStatus: "Open",
+    status: "active",
+    collegeId: "col-ludhiana-eng",
+    createdAt: "2026-09-18T10:00:00.000Z",
+    updatedAt: "2026-09-18T10:00:00.000Z"
+  },
+  {
+    _id: "crs-pier-dip",
+    id: "crs-pier-dip",
+    courseName: "Diploma in Industrial Automation & Robotics",
+    degreeType: "Diploma",
+    duration: "3 Years",
+    eligibility: "10th Standard passed with Science & Mathematics (Min 50%)",
+    fee: 55000,
+    description: "Vocational technical diploma in PLC programming, industrial SCADA setups, mechanical maintenance, and sensor calibration.",
+    availableSeats: 60,
+    admissionStatus: "Open",
+    status: "active",
+    collegeId: "col-ludhiana-eng",
+    createdAt: "2026-09-18T10:00:00.000Z",
+    updatedAt: "2026-09-18T10:00:00.000Z"
+  },
+
+  // 12. Kota National Institute of Science & Technology (col-kota-tech)
+  {
+    _id: "crs-kota-cse",
+    id: "crs-kota-cse",
+    courseName: "B.Tech Computer Science & Systems Engineering",
+    degreeType: "Undergraduate",
+    duration: "4 Years",
+    eligibility: "10+2 with Physics, Mathematics & Chemistry (Min 60%)",
+    fee: 135000,
+    description: "Advanced engineering focused on computer architecture, distributed databases, cyber systems, and competitive coding.",
+    availableSeats: 120,
+    admissionStatus: "Open",
+    status: "active",
+    collegeId: "col-kota-tech",
+    createdAt: "2026-09-18T10:00:00.000Z",
+    updatedAt: "2026-09-18T10:00:00.000Z"
+  },
+  {
+    _id: "crs-kota-phy",
+    id: "crs-kota-phy",
+    courseName: "B.Sc (Honours) Applied Physics & Photonics",
+    degreeType: "Undergraduate",
+    duration: "3 Years",
+    eligibility: "10+2 with Physics and Mathematics (Minimum 55%)",
+    fee: 68000,
+    description: "Experimental optics, laser technology, semiconductor physics, quantum concepts, and modern material spectroscopy.",
+    availableSeats: 60,
+    admissionStatus: "Open",
+    status: "active",
+    collegeId: "col-kota-tech",
+    createdAt: "2026-09-18T10:00:00.000Z",
+    updatedAt: "2026-09-18T10:00:00.000Z"
+  },
+  {
+    _id: "crs-kota-math",
+    id: "crs-kota-math",
+    courseName: "M.Sc Applied Mathematics & Scientific Computing",
+    degreeType: "Postgraduate",
+    duration: "2 Years",
+    eligibility: "B.Sc in Mathematics or relevant discipline (Minimum 55%)",
+    fee: 72000,
+    description: "Numerical analysis, differential equations, cryptographic math, high-performance scientific simulations, and data modeling.",
+    availableSeats: 40,
+    admissionStatus: "Open",
+    status: "active",
+    collegeId: "col-kota-tech",
+    createdAt: "2026-09-18T10:00:00.000Z",
+    updatedAt: "2026-09-18T10:00:00.000Z"
   }
 ];
 
@@ -583,56 +1070,50 @@ export const INITIAL_APPLICATIONS = [
   }
 ];
 
-const STORAGE_KEY = "kits_education_static_store_v2";
+const STORAGE_KEY = "kits_education_static_store_v3";
 
 export function getLocalStore() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (parsed && Array.isArray(parsed.colleges) && parsed.colleges.length >= 7) {
+      if (parsed && Array.isArray(parsed.colleges)) {
         let needsSave = false;
+
+        if (!Array.isArray(parsed.courses)) {
+          parsed.courses = [...INITIAL_COURSES];
+          needsSave = true;
+        }
+
+        // Add any newly added colleges from INITIAL_COLLEGES if not present
+        INITIAL_COLLEGES.forEach((initCol) => {
+          const exists = parsed.colleges.some(
+            (c) => String(c._id || c.id) === String(initCol._id || initCol.id)
+          );
+          if (!exists) {
+            parsed.colleges.push(initCol);
+            needsSave = true;
+          }
+        });
+
+        // Ensure every course from INITIAL_COURSES is in parsed.courses
+        INITIAL_COURSES.forEach((initCrs) => {
+          const exists = parsed.courses.some(
+            (c) => String(c._id || c.id) === String(initCrs._id || initCrs.id)
+          );
+          if (!exists) {
+            parsed.courses.push(initCrs);
+            needsSave = true;
+          }
+        });
 
         // Ensure every college has a district
         parsed.colleges.forEach((c) => {
           if (!c.district) {
-            const match = INITIAL_COLLEGES.find((init) => String(init.id || init._id) === String(c.id || c._id));
-            if (match && match.district) {
-              c.district = match.district;
-              needsSave = true;
-            } else if (c.city === "New Delhi") {
-              c.district = "New Delhi";
-              needsSave = true;
-            } else if (c.city === "Noida") {
-              c.district = "Gautam Buddha Nagar";
-              needsSave = true;
-            } else if (c.city === "Bangalore") {
-              c.district = "Bengaluru Urban";
-              needsSave = true;
-            } else if (c.city === "Phagwara") {
-              c.district = "Kapurthala";
-              needsSave = true;
-            } else if (c.city === "Pune") {
-              c.district = "Pune";
-              needsSave = true;
-            } else if (c.city === "Jaipur") {
-              c.district = "Jaipur";
-              needsSave = true;
-            } else if (c.city === "Manipal") {
-              c.district = "Udupi";
-              needsSave = true;
-            } else {
-              c.district = c.city || c.state;
-              needsSave = true;
-            }
-          }
-        });
-
-        // Add any newly added colleges from INITIAL_COLLEGES if not present
-        INITIAL_COLLEGES.forEach((initCol) => {
-          const exists = parsed.colleges.some((c) => String(c._id || c.id) === String(initCol._id || initCol.id));
-          if (!exists) {
-            parsed.colleges.push(initCol);
+            const match = INITIAL_COLLEGES.find(
+              (init) => String(init.id || init._id) === String(c.id || c._id)
+            );
+            c.district = match?.district || c.city || c.state || "Central";
             needsSave = true;
           }
         });

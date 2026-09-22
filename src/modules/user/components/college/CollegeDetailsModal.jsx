@@ -16,6 +16,25 @@ import {
 } from "lucide-react";
 
 export const CollegeDetailsModal = ({ college, isOpen, onClose }) => {
+  // Prevent background page scrolling when modal is open
+  React.useEffect(() => {
+    if (!isOpen) return;
+
+    const originalOverflow = document.body.style.overflow;
+    const originalPaddingRight = document.body.style.paddingRight;
+
+    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+    if (scrollbarWidth > 0) {
+      document.body.style.paddingRight = `${scrollbarWidth}px`;
+    }
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = originalOverflow;
+      document.body.style.paddingRight = originalPaddingRight;
+    };
+  }, [isOpen]);
+
   if (!isOpen || !college) return null;
 
   // Resolve official website of the college
