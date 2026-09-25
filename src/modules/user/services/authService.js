@@ -231,6 +231,7 @@ export const authService = {
       email: credentials.email,
       phone: credentials.phone,
       dob: credentials.dob || "2009-01-01",
+      state: credentials.state || formData.state || "Delhi",
       board: credentials.board || "CBSE",
       class: credentials.class || "Class 10",
       avatar:

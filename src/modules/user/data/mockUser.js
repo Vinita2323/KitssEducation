@@ -30,6 +30,7 @@ export const generateStudentCredentials = (formData) => {
     email: formData.email,
     phone: formData.phone,
     dob: formData.dob,
+    state: formData.state || "Delhi",
     board: formData.board || "CBSE",
     class: formData.class || "Class 10",
     createdDate: new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })

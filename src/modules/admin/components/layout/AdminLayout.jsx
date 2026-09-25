@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
+  GraduationCap,
   Building2,
   FileText,
   BookOpen,
@@ -19,9 +20,11 @@ export const AdminLayout = () => {
 
   const navItems = [
     { label: "Dashboard", path: "/admin", icon: LayoutDashboard, exact: true },
-    { label: "Digital Books", path: "/admin/books", icon: BookOpen },
-    { label: "Partner Colleges", path: "/admin/colleges", icon: Building2 },
+    { label: "Universities", path: "/admin/universities", icon: GraduationCap },
+    { label: "Colleges / Institutes", path: "/admin/colleges", icon: Building2 },
+    { label: "Franchise Requests", path: "/admin/franchise-requests", icon: ShieldCheck },
     { label: "Admission Applications", path: "/admin/applications", icon: FileText },
+    { label: "Digital Books", path: "/admin/books", icon: BookOpen },
   ];
 
   const isActive = (item) => {

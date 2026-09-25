@@ -1,19 +1,18 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import {
-  Building2,
   GraduationCap,
+  Building2,
   FileText,
   Clock,
   CheckCircle2,
   AlertCircle,
   Plus,
   ArrowRight,
-  TrendingUp,
+  ShieldCheck,
   User
 } from "lucide-react";
 import { adminService } from "../services/adminService";
-import { PrimaryButton } from "../../user/components/common/PrimaryButton";
 
 export const AdminDashboardPage = () => {
   const [stats, setStats] = useState(null);
@@ -50,36 +49,40 @@ export const AdminDashboardPage = () => {
 
   const statCards = [
     {
-      label: "Partner Colleges",
+      label: "Approved Universities",
+      value: stats?.totalUniversities || 0,
+      sub: `${stats?.activeUniversities || 0} active providers`,
+      icon: GraduationCap,
+      color: "text-[#0A1D3F]",
+      bg: "bg-blue-50",
+      link: "/admin/universities",
+    },
+    {
+      label: "Colleges & Institutes",
       value: stats?.totalColleges || 0,
       sub: `${stats?.activeColleges || 0} active institutions`,
       icon: Building2,
-      color: "text-[#0A1D3F]",
-      bg: "bg-blue-50",
-    },
-    {
-      label: "Available Courses",
-      value: stats?.totalCourses || 0,
-      sub: `${stats?.activeCourses || 0} active programs`,
-      icon: GraduationCap,
       color: "text-[#FF8A00]",
       bg: "bg-orange-50",
+      link: "/admin/colleges",
     },
     {
-      label: "Total Applications",
+      label: "Franchise Requests",
+      value: stats?.totalFranchiseRegistrations || 0,
+      sub: `${stats?.franchiseStatusCounts?.Pending || 0} pending review`,
+      icon: ShieldCheck,
+      color: "text-amber-600",
+      bg: "bg-amber-50",
+      link: "/admin/franchise-requests",
+    },
+    {
+      label: "Student Admissions",
       value: stats?.totalApplications || 0,
-      sub: "Student enquiries",
+      sub: `${stats?.applicationStatusCounts?.New || 0} new enquiries`,
       icon: FileText,
       color: "text-emerald-600",
       bg: "bg-emerald-50",
-    },
-    {
-      label: "New Enquiries",
-      value: stats?.statusCounts?.New || 0,
-      sub: "Awaiting counselor action",
-      icon: Clock,
-      color: "text-amber-600",
-      bg: "bg-amber-50",
+      link: "/admin/applications",
     },
   ];
 
@@ -89,20 +92,27 @@ export const AdminDashboardPage = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-xl sm:text-2xl font-extrabold text-[#0A1D3F] tracking-tight">
-            Franchise Admission Overview
+            Franchise & Campus Management Overview
           </h1>
           <p className="text-xs sm:text-sm text-[#667085] mt-0.5">
-            Manage partner universities, course catalog, and incoming student applications.
+            Manage accredited universities, colleges, franchise registration requests, and student admissions.
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2 flex-wrap">
           <Link
-            to="/admin/colleges"
-            className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#0A1D3F] hover:bg-[#133C8B] text-white text-xs font-bold transition shadow-xs"
+            to="/admin/universities"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white border border-[#E6E8EC] hover:bg-gray-50 text-[#0A1D3F] text-xs font-bold transition shadow-2xs"
           >
-            <Plus className="w-4 h-4" />
-            <span>Add Partner College</span>
+            <GraduationCap className="w-4 h-4 text-[#0A1D3F]" />
+            <span>Manage Universities</span>
+          </Link>
+          <Link
+            to="/admin/franchise-requests"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#0A1D3F] hover:bg-[#133C8B] text-white text-xs font-bold transition shadow-xs"
+          >
+            <ShieldCheck className="w-4 h-4 text-[#FF8A00]" />
+            <span>Review Franchises ({stats?.franchiseStatusCounts?.Pending || 0})</span>
           </Link>
         </div>
       </div>
@@ -112,9 +122,10 @@ export const AdminDashboardPage = () => {
         {statCards.map((card) => {
           const Icon = card.icon;
           return (
-            <div
+            <Link
+              to={card.link}
               key={card.label}
-              className="bg-white p-4 sm:p-5 rounded-2xl border border-[#E6E8EC] shadow-2xs space-y-3"
+              className="bg-white p-4 sm:p-5 rounded-2xl border border-[#E6E8EC] shadow-2xs hover:shadow-md transition-all space-y-3 block"
             >
               <div className="flex items-center justify-between">
                 <span className="text-xs font-semibold text-[#667085]">{card.label}</span>
@@ -126,51 +137,71 @@ export const AdminDashboardPage = () => {
                 <div className="text-2xl font-black text-[#0A1D3F] tracking-tight">
                   {card.value}
                 </div>
-                <div className="text-[11px] text-[#667085] mt-0.5 font-medium">
-                  {card.sub}
+                <div className="text-[11px] text-[#667085] mt-0.5 font-medium flex items-center justify-between">
+                  <span>{card.sub}</span>
+                  <ArrowRight className="w-3 h-3 text-gray-400" />
                 </div>
               </div>
-            </div>
+            </Link>
           );
         })}
       </div>
 
-      {/* Application Status Breakdown */}
+      {/* Franchise Requests Breakdown */}
       <div className="bg-white p-5 rounded-2xl border border-[#E6E8EC] shadow-2xs space-y-4">
-        <h3 className="text-sm font-bold text-[#0A1D3F] uppercase tracking-wider">
-          Application Funnel Status
-        </h3>
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-bold text-[#0A1D3F] uppercase tracking-wider">
+            Franchise Application Pipeline
+          </h3>
+          <Link
+            to="/admin/franchise-requests"
+            className="text-xs font-bold text-[#FF8A00] hover:underline flex items-center gap-1"
+          >
+            <span>Open Franchise Suite</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </Link>
+        </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {[
-            { label: "New", count: stats?.statusCounts?.New || 0, color: "border-blue-200 bg-blue-50/50 text-blue-700" },
-            { label: "Contacted", count: stats?.statusCounts?.Contacted || 0, color: "border-amber-200 bg-amber-50/50 text-amber-700" },
-            { label: "In Process", count: stats?.statusCounts?.["In Process"] || 0, color: "border-purple-200 bg-purple-50/50 text-purple-700" },
-            { label: "Approved", count: stats?.statusCounts?.Approved || 0, color: "border-emerald-200 bg-emerald-50/50 text-emerald-700" },
-            { label: "Rejected", count: stats?.statusCounts?.Rejected || 0, color: "border-rose-200 bg-rose-50/50 text-rose-700" },
+            {
+              label: "Pending Review",
+              count: stats?.franchiseStatusCounts?.Pending || 0,
+              color: "border-amber-200 bg-amber-50/60 text-amber-800",
+            },
+            {
+              label: "Approved Franchises",
+              count: stats?.franchiseStatusCounts?.Approved || 0,
+              color: "border-emerald-200 bg-emerald-50/60 text-emerald-800",
+            },
+            {
+              label: "Rejected Applications",
+              count: stats?.franchiseStatusCounts?.Rejected || 0,
+              color: "border-rose-200 bg-rose-50/60 text-rose-800",
+            },
           ].map((s) => (
-            <div key={s.label} className={`p-3 rounded-xl border ${s.color} text-center`}>
-              <div className="text-lg font-black">{s.count}</div>
+            <div key={s.label} className={`p-3.5 rounded-xl border ${s.color} text-center`}>
+              <div className="text-xl font-black">{s.count}</div>
               <div className="text-xs font-semibold mt-0.5">{s.label}</div>
             </div>
           ))}
         </div>
       </div>
 
-      {/* Recent Applications Section */}
+      {/* Recent Franchise Registrations Section */}
       <div className="bg-white rounded-2xl border border-[#E6E8EC] shadow-2xs overflow-hidden">
         <div className="p-4 sm:p-5 border-b border-[#E6E8EC] flex items-center justify-between">
           <div>
             <h3 className="text-sm sm:text-base font-bold text-[#0A1D3F]">
-              Recent Admission Applications
+              Recent Franchise Registrations
             </h3>
             <p className="text-xs text-[#667085] mt-0.5">
-              Latest applications received from students.
+              Latest applications received under university-college hierarchy.
             </p>
           </div>
 
           <Link
-            to="/admin/applications"
+            to="/admin/franchise-requests"
             className="inline-flex items-center gap-1 text-xs font-bold text-[#FF8A00] hover:text-[#E67C00] transition"
           >
             <span>View All</span>
@@ -178,60 +209,58 @@ export const AdminDashboardPage = () => {
           </Link>
         </div>
 
-        {stats?.recentApplications && stats.recentApplications.length > 0 ? (
+        {stats?.recentFranchiseRegistrations && stats.recentFranchiseRegistrations.length > 0 ? (
           <div className="divide-y divide-[#F0F2F5] overflow-x-auto">
-            {stats.recentApplications.map((app) => (
+            {stats.recentFranchiseRegistrations.map((fran) => (
               <div
-                key={app.applicationId || app._id}
+                key={fran.applicationId || fran._id}
                 className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-gray-50/60 transition text-xs"
               >
                 <div className="flex items-start gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-orange-50 text-[#FF8A00] flex items-center justify-center shrink-0 mt-0.5 font-bold">
-                    <User className="w-4 h-4" />
+                  <div className="w-9 h-9 rounded-xl bg-amber-50 text-[#FF8A00] flex items-center justify-center shrink-0 mt-0.5 font-bold">
+                    <ShieldCheck className="w-4 h-4" />
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="font-extrabold text-[#0A1D3F]">
-                        {app.studentDetails?.fullName}
+                      <span className="font-mono font-bold text-[#0A1D3F]">
+                        {fran.applicationId}
                       </span>
-                      <span className="font-mono text-[10px] text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">
-                        {app.applicationId}
+                      <span className="font-semibold text-[#0A1D3F]">
+                        • {fran.contactPerson}
                       </span>
                     </div>
-                    <p className="text-[#667085] mt-0.5">
-                      {app.courseId?.courseName || "Course"} • {app.collegeId?.name || "College"}
-                    </p>
+                    <div className="text-[11px] text-[#64748B] mt-0.5">
+                      {fran.collegeId?.name} (under {fran.universityId?.name})
+                    </div>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3 sm:self-center self-end">
+                <div className="flex items-center gap-3 self-end sm:self-auto">
                   <span
-                    className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
-                      app.status === "New"
-                        ? "bg-blue-100 text-blue-800"
-                        : app.status === "Contacted"
-                        ? "bg-amber-100 text-amber-800"
-                        : app.status === "Approved"
-                        ? "bg-emerald-100 text-emerald-800"
-                        : "bg-gray-100 text-gray-800"
+                    className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold ${
+                      fran.status === "Approved"
+                        ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                        : fran.status === "Rejected"
+                        ? "bg-rose-50 text-rose-700 border border-rose-200"
+                        : "bg-amber-50 text-amber-700 border border-amber-200"
                     }`}
                   >
-                    {app.status}
+                    {fran.status}
                   </span>
 
                   <Link
-                    to="/admin/applications"
-                    className="text-xs font-bold text-[#0A1D3F] hover:text-[#FF8A00] bg-gray-100 hover:bg-gray-200 px-3 py-1.5 rounded-lg transition"
+                    to="/admin/franchise-requests"
+                    className="p-1 text-gray-400 hover:text-[#0A1D3F] transition"
                   >
-                    Manage
+                    <ArrowRight className="w-4 h-4" />
                   </Link>
                 </div>
               </div>
             ))}
           </div>
         ) : (
-          <div className="p-8 text-center text-xs text-[#667085]">
-            No applications submitted yet. Once a student applies for a college, it will appear here.
+          <div className="p-8 text-center text-xs text-gray-400">
+            No franchise applications recorded yet.
           </div>
         )}
       </div>

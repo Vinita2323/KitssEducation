@@ -10,7 +10,8 @@ import {
   ArrowRight,
   ArrowLeft,
   KeyRound,
-  ShieldCheck
+  ShieldCheck,
+  MapPin
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "../../context/AuthContext";
@@ -18,12 +19,21 @@ import { useToast } from "../../context/ToastContext";
 import { PrimaryButton } from "../../components/common/PrimaryButton";
 import { CollegeFranchiseForm } from "../../components/auth/CollegeFranchiseForm";
 
+const INDIAN_STATES = [
+  "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh",
+  "Delhi", "Goa", "Gujarat", "Haryana", "Himachal Pradesh", "Jharkhand",
+  "Karnataka", "Kerala", "Madhya Pradesh", "Maharashtra", "Manipur",
+  "Meghalaya", "Mizoram", "Nagaland", "Odisha", "Punjab", "Rajasthan",
+  "Sikkim", "Tamil Nadu", "Telangana", "Tripura", "Uttar Pradesh",
+  "Uttarakhand", "West Bengal", "Other / Outside India"
+];
+
 export const RegisterPage = () => {
   const navigate = useNavigate();
   const { register } = useAuth();
   const { showSuccess, showError } = useToast();
 
-  // Screen state: null = Selection, 'user' = User Form, 'franchise' = College Franchise Form
+  // Screen state: null = Selection, 'user' = User Form, 'franchise' = Franchise Registration Form
   const [selectedType, setSelectedType] = useState(null);
 
   // User form data & state
@@ -32,6 +42,7 @@ export const RegisterPage = () => {
     phone: "",
     email: "",
     dob: "",
+    state: "",
     board: "CBSE",
     class: "Class 10"
   });
@@ -57,6 +68,10 @@ export const RegisterPage = () => {
     }
     if (!formData.email.trim() || !formData.email.includes("@")) {
       setErrorMessage("Please enter a valid Email Address.");
+      return;
+    }
+    if (!formData.state) {
+      setErrorMessage("Please select your State.");
       return;
     }
 
@@ -105,7 +120,7 @@ export const RegisterPage = () => {
 
             {/* Compact Role Selection Cards Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-xl mx-auto mb-3.5">
-              {/* Option 1 — Register as User */}
+              {/* Option 1 — User Registration */}
               <div
                 onClick={() => setSelectedType("user")}
                 className="group bg-white p-3.5 sm:p-4 rounded-2xl border border-[#E2E8F0] hover:border-[#0A1D3F] shadow-xs hover:shadow-md transition-all duration-200 cursor-pointer flex flex-col justify-between text-left active:scale-[0.99]"
@@ -116,11 +131,11 @@ export const RegisterPage = () => {
                       <GraduationCap className="w-4 h-4" />
                     </div>
                     <h2 className="text-sm sm:text-base font-bold text-[#0A1D3F] leading-tight">
-                      Register as User
+                      User Registration
                     </h2>
                   </div>
                   <p className="text-[11px] sm:text-xs text-[#64748B] leading-relaxed mb-3">
-                    Create your account to explore colleges, courses and other services.
+                    Create student account to explore colleges, video courses and digital learning materials.
                   </p>
                 </div>
 
@@ -133,7 +148,7 @@ export const RegisterPage = () => {
                 </button>
               </div>
 
-              {/* Option 2 — College Franchise */}
+              {/* Option 2 — Franchise Registration */}
               <div
                 onClick={() => setSelectedType("franchise")}
                 className="group bg-white p-3.5 sm:p-4 rounded-2xl border border-[#E2E8F0] hover:border-[#FF8A00] shadow-xs hover:shadow-md transition-all duration-200 cursor-pointer flex flex-col justify-between text-left active:scale-[0.99]"
@@ -144,11 +159,11 @@ export const RegisterPage = () => {
                       <Building2 className="w-4 h-4" />
                     </div>
                     <h2 className="text-sm sm:text-base font-bold text-[#0A1D3F] group-hover:text-[#FF8A00] transition-colors leading-tight">
-                      College Franchise
+                      Franchise Registration
                     </h2>
                   </div>
                   <p className="text-[11px] sm:text-xs text-[#64748B] leading-relaxed mb-3">
-                    Join our network as a college franchise partner and grow your reach.
+                    Apply for an institutional franchise under an approved University & College partner.
                   </p>
                 </div>
 
@@ -299,8 +314,36 @@ export const RegisterPage = () => {
                       name="dob"
                       value={formData.dob}
                       onChange={handleChange}
-                      className="w-full pl-10 pr-4 py-2.5 bg-[#F7F8FA] border border-[#E6E8EC] rounded-xl text-xs sm:text-sm text-[#0A1D3F] focus:outline-none focus:ring-2 focus:ring-[#0A1D3F]/20 focus:border-[#0A1D3F] transition"
+                      className="w-full pl-10 pr-4 py-2.5 bg-[#F7F8FA] border border-[#E6E8EC] rounded-xl text-xs sm:text-sm text-[#0A1D3F] focus:outline-none focus:ring-2 focus:ring-[#0A1D3F]/20 focus:border-[#0A1D3F] transition cursor-pointer"
                     />
+                  </div>
+                </div>
+
+                {/* State Selection */}
+                <div>
+                  <label className="block text-xs font-bold text-[#0A1D3F] mb-1">
+                    State
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
+                      <MapPin className="w-4 h-4" />
+                    </div>
+                    <select
+                      name="state"
+                      value={formData.state}
+                      onChange={handleChange}
+                      className="w-full pl-10 pr-4 py-2.5 bg-[#F7F8FA] border border-[#E6E8EC] rounded-xl text-xs sm:text-sm text-[#0A1D3F] focus:outline-none focus:ring-2 focus:ring-[#0A1D3F]/20 focus:border-[#0A1D3F] transition cursor-pointer"
+                      required
+                    >
+                      <option value="" disabled>
+                        Select your State
+                      </option>
+                      {INDIAN_STATES.map((st) => (
+                        <option key={st} value={st}>
+                          {st}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                 </div>
 
@@ -378,7 +421,7 @@ export const RegisterPage = () => {
         )}
 
         {/* ========================================================
-            STATE 3: COLLEGE FRANCHISE APPLICATION FORM
+            STATE 3: FRANCHISE APPLICATION FORM
            ======================================================== */}
         {selectedType === "franchise" && (
           <motion.div

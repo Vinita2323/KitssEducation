@@ -10,6 +10,59 @@ export const STATE_DISTRICT_MAP = {
   "Rajasthan": ["Jaipur", "Kota", "Jodhpur", "Udaipur"],
 };
 
+export const INITIAL_UNIVERSITIES = [
+  {
+    _id: "univ-du",
+    id: "univ-du",
+    name: "Delhi University",
+    shortName: "DU",
+    logo: "https://images.unsplash.com/photo-1592280771190-3e2e4d571952?w=160&auto=format&fit=crop&q=80",
+    status: "active",
+    createdAt: "2026-09-16T11:57:04.222Z",
+    updatedAt: "2026-09-16T11:57:04.222Z",
+  },
+  {
+    _id: "univ-lpu",
+    id: "univ-lpu",
+    name: "Lovely Professional University",
+    shortName: "LPU",
+    logo: "https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=160&auto=format&fit=crop&q=80",
+    status: "active",
+    createdAt: "2026-09-16T11:57:04.225Z",
+    updatedAt: "2026-09-16T11:57:04.225Z",
+  },
+  {
+    _id: "univ-mahe",
+    id: "univ-mahe",
+    name: "Manipal Academy of Higher Education",
+    shortName: "MAHE",
+    logo: "https://images.unsplash.com/photo-1546410531-bb4caa6b424d?w=160&auto=format&fit=crop&q=80",
+    status: "active",
+    createdAt: "2026-09-16T11:57:04.227Z",
+    updatedAt: "2026-09-16T11:57:04.227Z",
+  },
+  {
+    _id: "univ-cu",
+    id: "univ-cu",
+    name: "Chandigarh University",
+    shortName: "CU",
+    logo: "https://images.unsplash.com/photo-1562774053-701939374585?w=160&auto=format&fit=crop&q=80",
+    status: "active",
+    createdAt: "2026-09-16T11:57:04.230Z",
+    updatedAt: "2026-09-16T11:57:04.230Z",
+  },
+  {
+    _id: "univ-amity",
+    id: "univ-amity",
+    name: "Amity University",
+    shortName: "AU",
+    logo: "https://images.unsplash.com/photo-1541339907198-e08756dedf3f?w=160&auto=format&fit=crop&q=80",
+    status: "active",
+    createdAt: "2026-09-16T11:57:04.235Z",
+    updatedAt: "2026-09-16T11:57:04.235Z",
+  },
+];
+
 export const INITIAL_COLLEGES = [
   {
     _id: "col-delhi-univ",
@@ -1070,7 +1123,81 @@ export const INITIAL_APPLICATIONS = [
   }
 ];
 
-const STORAGE_KEY = "kits_education_static_store_v3";
+export const INITIAL_FRANCHISE_REGISTRATIONS = [
+  {
+    _id: "fran-2026-001",
+    id: "fran-2026-001",
+    applicationId: "FRAN-2026-91823",
+    universityId: "univ-du",
+    collegeId: "col-delhi-univ",
+    contactPerson: "Dr. Rajeshwar Sharma",
+    email: "r.sharma@regionalcollege.edu.in",
+    mobile: "+91 98765 12345",
+    address: "Plot 42, Institutional Complex, Knowledge Area",
+    city: "New Delhi",
+    state: "Delhi",
+    pincode: "110025",
+    status: "Pending",
+    rejectionReason: "",
+    adminNotes: [],
+    createdAt: "2026-09-24T10:15:00.000Z",
+    updatedAt: "2026-09-24T10:15:00.000Z",
+  },
+  {
+    _id: "fran-2026-002",
+    id: "fran-2026-002",
+    applicationId: "FRAN-2026-44910",
+    universityId: "univ-lpu",
+    collegeId: "col-lpu-punjab",
+    contactPerson: "Prof. Sunita Verma",
+    email: "sunita.verma@punjabskills.org",
+    mobile: "+91 98123 45678",
+    address: "Highway Campus, GT Road Bye-pass",
+    city: "Phagwara",
+    state: "Punjab",
+    pincode: "144401",
+    status: "Approved",
+    rejectionReason: "",
+    adminNotes: [
+      {
+        _id: "note-1",
+        note: "Document verification completed. Affiliation agreement MOU issued.",
+        author: "Super Admin",
+        createdAt: "2026-09-24T14:30:00.000Z",
+      },
+    ],
+    createdAt: "2026-09-23T09:00:00.000Z",
+    updatedAt: "2026-09-24T14:30:00.000Z",
+  },
+  {
+    _id: "fran-2026-003",
+    id: "fran-2026-003",
+    applicationId: "FRAN-2026-12098",
+    universityId: "univ-mahe",
+    collegeId: "col-manipal-univ",
+    contactPerson: "Vikramaditya Rao",
+    email: "vikram@techhubindia.in",
+    mobile: "+91 94455 66778",
+    address: "12 Industrial Layout, Near Tech Park",
+    city: "Bengaluru",
+    state: "Karnataka",
+    pincode: "560068",
+    status: "Rejected",
+    rejectionReason: "Incomplete regulatory accreditation documentation provided.",
+    adminNotes: [
+      {
+        _id: "note-2",
+        note: "Rejected due to missing state higher education clearance certificate.",
+        author: "Super Admin",
+        createdAt: "2026-09-24T16:00:00.000Z",
+      },
+    ],
+    createdAt: "2026-09-22T11:45:00.000Z",
+    updatedAt: "2026-09-24T16:00:00.000Z",
+  },
+];
+
+const STORAGE_KEY = "kits_education_static_store_v5";
 
 export function getLocalStore() {
   try {
@@ -1080,10 +1207,31 @@ export function getLocalStore() {
       if (parsed && Array.isArray(parsed.colleges)) {
         let needsSave = false;
 
+        if (!Array.isArray(parsed.universities) || parsed.universities.length === 0) {
+          parsed.universities = [...INITIAL_UNIVERSITIES];
+          needsSave = true;
+        }
+
         if (!Array.isArray(parsed.courses)) {
           parsed.courses = [...INITIAL_COURSES];
           needsSave = true;
         }
+
+        if (!Array.isArray(parsed.franchiseRegistrations) || parsed.franchiseRegistrations.length === 0) {
+          parsed.franchiseRegistrations = [...INITIAL_FRANCHISE_REGISTRATIONS];
+          needsSave = true;
+        }
+
+        // Add any newly added universities from INITIAL_UNIVERSITIES if not present
+        INITIAL_UNIVERSITIES.forEach((initUni) => {
+          const exists = parsed.universities.some(
+            (u) => String(u._id || u.id) === String(initUni._id || initUni.id)
+          );
+          if (!exists) {
+            parsed.universities.push(initUni);
+            needsSave = true;
+          }
+        });
 
         // Add any newly added colleges from INITIAL_COLLEGES if not present
         INITIAL_COLLEGES.forEach((initCol) => {
@@ -1096,19 +1244,23 @@ export function getLocalStore() {
           }
         });
 
-        // Ensure every course from INITIAL_COURSES is in parsed.courses
-        INITIAL_COURSES.forEach((initCrs) => {
-          const exists = parsed.courses.some(
-            (c) => String(c._id || c.id) === String(initCrs._id || initCrs.id)
-          );
-          if (!exists) {
-            parsed.courses.push(initCrs);
+        // Ensure every college has a universityId and district
+        parsed.colleges.forEach((c) => {
+          if (!c.universityId) {
+            if (c.name?.toLowerCase().includes("delhi") || c.state === "Delhi") {
+              c.universityId = "univ-du";
+            } else if (c.name?.toLowerCase().includes("lovely") || c.name?.toLowerCase().includes("lpu") || c.state === "Punjab") {
+              c.universityId = "univ-lpu";
+            } else if (c.name?.toLowerCase().includes("manipal") || c.state === "Karnataka") {
+              c.universityId = "univ-mahe";
+            } else if (c.name?.toLowerCase().includes("apex") || c.state === "Uttar Pradesh") {
+              c.universityId = "univ-amity";
+            } else {
+              c.universityId = "univ-cu";
+            }
             needsSave = true;
           }
-        });
 
-        // Ensure every college has a district
-        parsed.colleges.forEach((c) => {
           if (!c.district) {
             const match = INITIAL_COLLEGES.find(
               (init) => String(init.id || init._id) === String(c.id || c._id)
@@ -1128,10 +1280,25 @@ export function getLocalStore() {
     console.warn("Could not load from localStorage, using defaults", e);
   }
 
+  // Ensure default INITIAL_COLLEGES have universityId
+  const initialColleges = INITIAL_COLLEGES.map((c) => {
+    let uniId = c.universityId;
+    if (!uniId) {
+      if (c.name?.toLowerCase().includes("delhi") || c.state === "Delhi") uniId = "univ-du";
+      else if (c.name?.toLowerCase().includes("lovely") || c.name?.toLowerCase().includes("lpu") || c.state === "Punjab") uniId = "univ-lpu";
+      else if (c.name?.toLowerCase().includes("manipal") || c.state === "Karnataka") uniId = "univ-mahe";
+      else if (c.name?.toLowerCase().includes("apex") || c.state === "Uttar Pradesh") uniId = "univ-amity";
+      else uniId = "univ-cu";
+    }
+    return { ...c, universityId: uniId, code: c.code || `COL-${Math.floor(100 + Math.random() * 900)}` };
+  });
+
   const initial = {
-    colleges: INITIAL_COLLEGES,
+    universities: INITIAL_UNIVERSITIES,
+    colleges: initialColleges,
     courses: INITIAL_COURSES,
     applications: INITIAL_APPLICATIONS,
+    franchiseRegistrations: INITIAL_FRANCHISE_REGISTRATIONS,
   };
   saveLocalStore(initial);
   return initial;

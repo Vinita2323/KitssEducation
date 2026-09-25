@@ -4,8 +4,8 @@ const delay = (ms = 100) => new Promise((resolve) => setTimeout(resolve, ms));
 
 function hydrateApplications(applications, colleges, courses) {
   return (applications || []).map((app) => {
-    const colId = typeof app.collegeId === "object" ? app.collegeId?._id : app.collegeId;
-    const crsId = typeof app.courseId === "object" ? app.courseId?._id : app.courseId;
+    const colId = typeof app.collegeId === "object" ? app.collegeId?._id || app.collegeId?.id : app.collegeId;
+    const crsId = typeof app.courseId === "object" ? app.courseId?._id || app.courseId?.id : app.courseId;
 
     const matchedCol = colleges.find(
       (c) => String(c._id) === String(colId) || String(c.id) === String(colId)
@@ -22,57 +22,241 @@ function hydrateApplications(applications, colleges, courses) {
   });
 }
 
+function hydrateFranchises(franchises, universities, colleges) {
+  return (franchises || []).map((f) => {
+    const uId = typeof f.universityId === "object" ? f.universityId?._id || f.universityId?.id : f.universityId;
+    const cId = typeof f.collegeId === "object" ? f.collegeId?._id || f.collegeId?.id : f.collegeId;
+
+    const matchedUni = (universities || []).find(
+      (u) => String(u._id) === String(uId) || String(u.id) === String(uId)
+    );
+    const matchedCol = (colleges || []).find(
+      (c) => String(c._id) === String(cId) || String(c.id) === String(cId)
+    );
+
+    return {
+      ...f,
+      universityId: matchedUni || { name: "University", shortName: "" },
+      collegeId: matchedCol || { name: "College / Institute", city: "", state: "" },
+    };
+  });
+}
+
 export const adminService = {
-  // Stats
+  // ========================================================
+  // DASHBOARD STATS
+  // ========================================================
   async getDashboardStats() {
     await delay(120);
     const store = getLocalStore();
+    const universities = store.universities || [];
     const colleges = store.colleges || [];
     const courses = store.courses || [];
     const applications = store.applications || [];
+    const franchiseRegistrations = store.franchiseRegistrations || [];
 
+    const activeUniversities = universities.filter((u) => u.status === "active").length;
     const activeColleges = colleges.filter((c) => c.status === "active").length;
     const activeCourses = courses.filter((c) => c.status === "active").length;
 
-    const statusCounts = {
+    const applicationStatusCounts = {
       New: 0,
       Contacted: 0,
       "In Process": 0,
       Approved: 0,
       Rejected: 0,
     };
-
     applications.forEach((app) => {
-      if (statusCounts[app.status] !== undefined) {
-        statusCounts[app.status]++;
+      if (applicationStatusCounts[app.status] !== undefined) {
+        applicationStatusCounts[app.status]++;
       }
     });
 
-    const hydrated = hydrateApplications(applications, colleges, courses);
+    const franchiseStatusCounts = {
+      Pending: 0,
+      Approved: 0,
+      Rejected: 0,
+    };
+    franchiseRegistrations.forEach((fran) => {
+      if (franchiseStatusCounts[fran.status] !== undefined) {
+        franchiseStatusCounts[fran.status]++;
+      }
+    });
+
+    const hydratedApps = hydrateApplications(applications, colleges, courses);
+    const hydratedFrans = hydrateFranchises(franchiseRegistrations, universities, colleges);
 
     return {
+      totalUniversities: universities.length,
+      activeUniversities,
       totalColleges: colleges.length,
       activeColleges,
       totalCourses: courses.length,
       activeCourses,
       totalApplications: applications.length,
-      statusCounts,
-      recentApplications: hydrated.slice(0, 5),
+      applicationStatusCounts,
+      totalFranchiseRegistrations: franchiseRegistrations.length,
+      franchiseStatusCounts,
+      recentApplications: hydratedApps.slice(0, 5),
+      recentFranchiseRegistrations: hydratedFrans.slice(0, 5),
     };
   },
 
-  // Colleges
-  async getColleges() {
+  // ========================================================
+  // UNIVERSITIES (Admin Management)
+  // ========================================================
+  async getUniversities({ status, search } = {}) {
     await delay(100);
     const store = getLocalStore();
+    let universities = store.universities || [];
     const colleges = store.colleges || [];
+
+    if (status && status !== "All") {
+      universities = universities.filter((u) => u.status === status);
+    }
+
+    if (search && search.trim() !== "") {
+      const q = search.trim().toLowerCase();
+      universities = universities.filter(
+        (u) =>
+          u.name?.toLowerCase().includes(q) ||
+          u.shortName?.toLowerCase().includes(q)
+      );
+    }
+
+    return universities.map((uni) => {
+      const uId = String(uni._id || uni.id);
+      const related = colleges.filter(
+        (c) => String(c.universityId?._id || c.universityId) === uId
+      );
+      return {
+        ...uni,
+        totalColleges: related.length,
+        activeColleges: related.filter((c) => c.status === "active").length,
+      };
+    });
+  },
+
+  async createUniversity(uniData) {
+    await delay(150);
+    const store = getLocalStore();
+    const newUni = {
+      _id: "univ_" + Date.now().toString(36) + Math.random().toString(36).substring(2, 6),
+      id: "univ_" + Date.now().toString(36),
+      status: "active",
+      logo: "https://images.unsplash.com/photo-1592280771190-3e2e4d571952?w=160&auto=format&fit=crop&q=80",
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      ...uniData,
+    };
+
+    store.universities = [newUni, ...(store.universities || [])];
+    saveLocalStore(store);
+    return newUni;
+  },
+
+  async updateUniversity(id, updates) {
+    await delay(150);
+    const store = getLocalStore();
+    const index = (store.universities || []).findIndex(
+      (u) => String(u._id) === String(id) || String(u.id) === String(id)
+    );
+    if (index === -1) throw new Error("University not found");
+
+    const updated = {
+      ...store.universities[index],
+      ...updates,
+      updatedAt: new Date().toISOString(),
+    };
+    store.universities[index] = updated;
+    saveLocalStore(store);
+    return updated;
+  },
+
+  async toggleUniversityStatus(id) {
+    await delay(100);
+    const store = getLocalStore();
+    const index = (store.universities || []).findIndex(
+      (u) => String(u._id) === String(id) || String(u.id) === String(id)
+    );
+    if (index === -1) throw new Error("University not found");
+
+    const current = store.universities[index];
+    current.status = current.status === "active" ? "inactive" : "active";
+    current.updatedAt = new Date().toISOString();
+    store.universities[index] = current;
+    saveLocalStore(store);
+    return current;
+  },
+
+  async deleteUniversity(id) {
+    await delay(150);
+    const store = getLocalStore();
+    
+    // Check dependent colleges
+    const dependentColleges = (store.colleges || []).filter(
+      (c) => String(c.universityId?._id || c.universityId) === String(id)
+    );
+    if (dependentColleges.length > 0) {
+      throw new Error(`Cannot delete university because it has ${dependentColleges.length} associated college(s).`);
+    }
+
+    // Check dependent franchise registrations
+    const dependentFranchises = (store.franchiseRegistrations || []).filter(
+      (f) => String(f.universityId?._id || f.universityId) === String(id)
+    );
+    if (dependentFranchises.length > 0) {
+      throw new Error(`Cannot delete university because it has ${dependentFranchises.length} franchise request(s).`);
+    }
+
+    store.universities = (store.universities || []).filter(
+      (u) => String(u._id) !== String(id) && String(u.id) !== String(id)
+    );
+    saveLocalStore(store);
+    return true;
+  },
+
+  // ========================================================
+  // COLLEGES (Admin Management)
+  // ========================================================
+  async getColleges(filter = {}) {
+    await delay(100);
+    const store = getLocalStore();
+    let colleges = store.colleges || [];
     const courses = store.courses || [];
+    const universities = store.universities || [];
+
+    if (filter.universityId && filter.universityId !== "All") {
+      colleges = colleges.filter(
+        (c) => String(c.universityId?._id || c.universityId) === String(filter.universityId)
+      );
+    }
+
+    if (filter.status && filter.status !== "All") {
+      colleges = colleges.filter((c) => c.status === filter.status);
+    }
+
+    if (filter.search && filter.search.trim() !== "") {
+      const q = filter.search.trim().toLowerCase();
+      colleges = colleges.filter(
+        (c) =>
+          c.name?.toLowerCase().includes(q) ||
+          c.city?.toLowerCase().includes(q) ||
+          c.code?.toLowerCase().includes(q)
+      );
+    }
 
     return colleges.map((col) => {
       const cId = String(col._id || col.id);
       const related = courses.filter((crs) => String(crs.collegeId) === cId);
+      const uId = col.universityId?._id || col.universityId;
+      const university = universities.find(
+        (u) => String(u._id) === String(uId) || String(u.id) === String(uId)
+      );
+
       return {
         ...col,
+        universityId: university || col.universityId,
         totalCourses: related.length,
         activeCourses: related.filter((crs) => crs.status === "active").length,
       };
@@ -84,6 +268,7 @@ export const adminService = {
     const store = getLocalStore();
     const newCollege = {
       _id: "col_" + Date.now().toString(36) + Math.random().toString(36).substring(2, 6),
+      id: "col_" + Date.now().toString(36),
       status: "active",
       facilities: [],
       contactInformation: {},
@@ -100,68 +285,72 @@ export const adminService = {
   async updateCollege(id, updates) {
     await delay(150);
     const store = getLocalStore();
-    const idx = (store.colleges || []).findIndex(
+    const index = (store.colleges || []).findIndex(
       (c) => String(c._id) === String(id) || String(c.id) === String(id)
     );
+    if (index === -1) throw new Error("College not found");
 
-    if (idx === -1) throw new Error("College not found");
-
-    store.colleges[idx] = {
-      ...store.colleges[idx],
+    const updated = {
+      ...store.colleges[index],
       ...updates,
       updatedAt: new Date().toISOString(),
     };
-
+    store.colleges[index] = updated;
     saveLocalStore(store);
-    return store.colleges[idx];
+    return updated;
   },
 
   async toggleCollegeStatus(id) {
     await delay(100);
     const store = getLocalStore();
-    const idx = (store.colleges || []).findIndex(
+    const index = (store.colleges || []).findIndex(
       (c) => String(c._id) === String(id) || String(c.id) === String(id)
     );
+    if (index === -1) throw new Error("College not found");
 
-    if (idx === -1) throw new Error("College not found");
-
-    const currentStatus = store.colleges[idx].status;
-    store.colleges[idx].status = currentStatus === "active" ? "inactive" : "active";
-    store.colleges[idx].updatedAt = new Date().toISOString();
-
+    const current = store.colleges[index];
+    current.status = current.status === "active" ? "inactive" : "active";
+    current.updatedAt = new Date().toISOString();
+    store.colleges[index] = current;
     saveLocalStore(store);
-    return store.colleges[idx];
+    return current;
   },
 
   async deleteCollege(id) {
     await delay(150);
     const store = getLocalStore();
+
+    // Check dependent franchise registrations
+    const dependentFranchises = (store.franchiseRegistrations || []).filter(
+      (f) => String(f.collegeId?._id || f.collegeId) === String(id)
+    );
+    if (dependentFranchises.length > 0) {
+      throw new Error(`Cannot delete college because it has ${dependentFranchises.length} franchise application record(s).`);
+    }
+
     store.colleges = (store.colleges || []).filter(
       (c) => String(c._id) !== String(id) && String(c.id) !== String(id)
     );
-    // Also remove courses associated with this college
-    store.courses = (store.courses || []).filter((crs) => String(crs.collegeId) !== String(id));
-
+    store.courses = (store.courses || []).filter(
+      (crs) => String(crs.collegeId) !== String(id)
+    );
     saveLocalStore(store);
     return true;
   },
 
-  // Courses
-  async getCourses(collegeId) {
+  // ========================================================
+  // COURSES
+  // ========================================================
+  async getCollegeCourses(collegeId) {
     await delay(100);
     const store = getLocalStore();
-    const college = (store.colleges || []).find(
-      (c) => String(c._id) === String(collegeId) || String(c.id) === String(collegeId)
-    );
     const courses = (store.courses || []).filter(
       (crs) => String(crs.collegeId) === String(collegeId)
     );
-
-    return {
-      college: college ? { id: college._id || college.id, name: college.name } : null,
-      count: courses.length,
-      courses,
-    };
+    const college = (store.colleges || []).find(
+      (c) => String(c._id) === String(collegeId) || String(c.id) === String(collegeId)
+    );
+    return { college, courses };
   },
 
   async createCourse(collegeId, courseData) {
@@ -176,7 +365,6 @@ export const adminService = {
       updatedAt: new Date().toISOString(),
       ...courseData,
     };
-
     store.courses = [newCourse, ...(store.courses || [])];
     saveLocalStore(store);
     return newCourse;
@@ -185,150 +373,193 @@ export const adminService = {
   async updateCourse(id, updates) {
     await delay(150);
     const store = getLocalStore();
-    const idx = (store.courses || []).findIndex(
-      (crs) => String(crs._id) === String(id) || String(crs.id) === String(id)
+    const index = (store.courses || []).findIndex(
+      (c) => String(c._id) === String(id) || String(c.id) === String(id)
     );
+    if (index === -1) throw new Error("Course not found");
 
-    if (idx === -1) throw new Error("Course not found");
-
-    store.courses[idx] = {
-      ...store.courses[idx],
+    const updated = {
+      ...store.courses[index],
       ...updates,
       updatedAt: new Date().toISOString(),
     };
-
+    store.courses[index] = updated;
     saveLocalStore(store);
-    return store.courses[idx];
+    return updated;
   },
 
   async toggleCourseStatus(id) {
     await delay(100);
     const store = getLocalStore();
-    const idx = (store.courses || []).findIndex(
-      (crs) => String(crs._id) === String(id) || String(crs.id) === String(id)
+    const index = (store.courses || []).findIndex(
+      (c) => String(c._id) === String(id) || String(c.id) === String(id)
     );
+    if (index === -1) throw new Error("Course not found");
 
-    if (idx === -1) throw new Error("Course not found");
-
-    const currentStatus = store.courses[idx].status;
-    store.courses[idx].status = currentStatus === "active" ? "inactive" : "active";
-    store.courses[idx].updatedAt = new Date().toISOString();
-
+    const current = store.courses[index];
+    current.status = current.status === "active" ? "inactive" : "active";
+    current.updatedAt = new Date().toISOString();
+    store.courses[index] = current;
     saveLocalStore(store);
-    return store.courses[idx];
+    return current;
   },
 
   async deleteCourse(id) {
-    await delay(150);
+    await delay(100);
     const store = getLocalStore();
     store.courses = (store.courses || []).filter(
-      (crs) => String(crs._id) !== String(id) && String(crs.id) !== String(id)
+      (c) => String(c._id) !== String(id) && String(c.id) !== String(id)
     );
     saveLocalStore(store);
     return true;
   },
 
-  // Applications
-  async getApplications({ status = "All", collegeId = "", search = "" } = {}) {
+  // ========================================================
+  // ADMISSION APPLICATIONS
+  // ========================================================
+  async getApplications({ status = "All", collegeId = "All", search = "" } = {}) {
     await delay(120);
     const store = getLocalStore();
     const colleges = store.colleges || [];
     const courses = store.courses || [];
-    let apps = hydrateApplications(store.applications || [], colleges, courses);
+    let applications = store.applications || [];
 
     if (status && status !== "All") {
-      apps = apps.filter((a) => a.status?.toLowerCase() === status.toLowerCase());
-    }
-
-    if (collegeId) {
-      apps = apps.filter(
-        (a) =>
-          String(a.collegeId?._id) === String(collegeId) ||
-          String(a.collegeId?.id) === String(collegeId) ||
-          String(a.collegeId) === String(collegeId)
+      applications = applications.filter(
+        (a) => a.status?.toLowerCase() === status.toLowerCase()
       );
     }
+
+    if (collegeId && collegeId !== "All") {
+      applications = applications.filter(
+        (a) =>
+          String(a.collegeId?._id || a.collegeId) === String(collegeId)
+      );
+    }
+
+    const hydrated = hydrateApplications(applications, colleges, courses);
 
     if (search && search.trim() !== "") {
       const q = search.trim().toLowerCase();
-      apps = apps.filter(
-        (app) =>
-          app.applicationId?.toLowerCase().includes(q) ||
-          app.studentDetails?.fullName?.toLowerCase().includes(q) ||
-          app.studentDetails?.email?.toLowerCase().includes(q) ||
-          app.studentDetails?.mobileNumber?.includes(q) ||
-          app.collegeId?.name?.toLowerCase().includes(q) ||
-          app.courseId?.courseName?.toLowerCase().includes(q)
+      return hydrated.filter(
+        (a) =>
+          a.applicationId?.toLowerCase().includes(q) ||
+          a.studentDetails?.fullName?.toLowerCase().includes(q) ||
+          a.studentDetails?.email?.toLowerCase().includes(q) ||
+          a.studentDetails?.mobileNumber?.includes(q) ||
+          a.collegeId?.name?.toLowerCase().includes(q)
       );
     }
 
-    return apps;
+    return hydrated;
   },
 
-  async getApplicationById(id) {
-    await delay(100);
-    const store = getLocalStore();
-    const colleges = store.colleges || [];
-    const courses = store.courses || [];
-    const apps = hydrateApplications(store.applications || [], colleges, courses);
-
-    const found = apps.find(
-      (a) => String(a._id) === String(id) || a.applicationId === id
-    );
-
-    if (!found) throw new Error("Application not found");
-    return found;
-  },
-
-  async updateApplicationStatus(id, status, note = "", author = "Admin") {
+  async updateApplicationStatus(id, status, note = null, author = "Admin") {
     await delay(150);
     const store = getLocalStore();
-    const idx = (store.applications || []).findIndex(
+    const index = (store.applications || []).findIndex(
       (a) => String(a._id) === String(id) || a.applicationId === id
     );
+    if (index === -1) throw new Error("Application not found");
 
-    if (idx === -1) throw new Error("Application not found");
+    const app = store.applications[index];
+    app.status = status;
+    app.updatedAt = new Date().toISOString();
 
-    store.applications[idx].status = status;
-    store.applications[idx].updatedAt = new Date().toISOString();
-
-    if (note && note.trim()) {
-      store.applications[idx].adminNotes = store.applications[idx].adminNotes || [];
-      store.applications[idx].adminNotes.push({
+    if (note) {
+      app.adminNotes = app.adminNotes || [];
+      app.adminNotes.push({
         _id: "note_" + Date.now().toString(36),
-        note: note.trim(),
-        author: author || "Admin",
+        note,
+        author,
         createdAt: new Date().toISOString(),
       });
     }
 
+    store.applications[index] = app;
     saveLocalStore(store);
-    const colleges = store.colleges || [];
-    const courses = store.courses || [];
-    return hydrateApplications([store.applications[idx]], colleges, courses)[0];
+    return app;
   },
 
-  async addAdminNote(id, note, author = "Admin") {
-    await delay(150);
+  // ========================================================
+  // FRANCHISE REGISTRATIONS (Admin Approvals & Management)
+  // ========================================================
+  async getFranchiseRegistrations({ status = "All", search = "", universityId, collegeId } = {}) {
+    await delay(120);
     const store = getLocalStore();
-    const idx = (store.applications || []).findIndex(
-      (a) => String(a._id) === String(id) || a.applicationId === id
-    );
-
-    if (idx === -1) throw new Error("Application not found");
-
-    store.applications[idx].adminNotes = store.applications[idx].adminNotes || [];
-    store.applications[idx].adminNotes.push({
-      _id: "note_" + Date.now().toString(36),
-      note: note.trim(),
-      author: author || "Admin",
-      createdAt: new Date().toISOString(),
-    });
-    store.applications[idx].updatedAt = new Date().toISOString();
-
-    saveLocalStore(store);
+    const universities = store.universities || [];
     const colleges = store.colleges || [];
-    const courses = store.courses || [];
-    return hydrateApplications([store.applications[idx]], colleges, courses)[0];
+    let franchises = store.franchiseRegistrations || [];
+
+    if (status && status !== "All") {
+      franchises = franchises.filter(
+        (f) => f.status?.toLowerCase() === status.toLowerCase()
+      );
+    }
+
+    if (universityId && universityId !== "All") {
+      franchises = franchises.filter(
+        (f) =>
+          String(f.universityId?._id || f.universityId) === String(universityId)
+      );
+    }
+
+    if (collegeId && collegeId !== "All") {
+      franchises = franchises.filter(
+        (f) =>
+          String(f.collegeId?._id || f.collegeId) === String(collegeId)
+      );
+    }
+
+    const hydrated = hydrateFranchises(franchises, universities, colleges);
+
+    if (search && search.trim() !== "") {
+      const q = search.trim().toLowerCase();
+      return hydrated.filter(
+        (f) =>
+          f.contactPerson?.toLowerCase().includes(q) ||
+          f.email?.toLowerCase().includes(q) ||
+          f.mobile?.includes(q) ||
+          f.city?.toLowerCase().includes(q) ||
+          f.applicationId?.toLowerCase().includes(q) ||
+          f.universityId?.name?.toLowerCase().includes(q) ||
+          f.collegeId?.name?.toLowerCase().includes(q)
+      );
+    }
+
+    return hydrated;
+  },
+
+  async updateFranchiseStatus(id, status, rejectionReason = "", note = null, author = "Super Admin") {
+    await delay(180);
+    const store = getLocalStore();
+    const index = (store.franchiseRegistrations || []).findIndex(
+      (f) => String(f._id) === String(id) || String(f.id) === String(id) || f.applicationId === id
+    );
+    if (index === -1) throw new Error("Franchise registration not found");
+
+    const franchise = store.franchiseRegistrations[index];
+    franchise.status = status;
+    if (rejectionReason !== undefined) {
+      franchise.rejectionReason = rejectionReason;
+    }
+    franchise.updatedAt = new Date().toISOString();
+
+    if (note) {
+      franchise.adminNotes = franchise.adminNotes || [];
+      franchise.adminNotes.push({
+        _id: "note_" + Date.now().toString(36),
+        note,
+        author,
+        createdAt: new Date().toISOString(),
+      });
+    }
+
+    store.franchiseRegistrations[index] = franchise;
+    saveLocalStore(store);
+
+    const universities = store.universities || [];
+    const colleges = store.colleges || [];
+    return hydrateFranchises([franchise], universities, colleges)[0];
   },
 };

@@ -158,29 +158,107 @@ export const collegeService = {
     };
   },
 
-  // Submit College Franchise Application
-  async submitFranchiseApplication(franchiseData) {
+  // Fetch approved active universities for Franchise Registration dropdown
+  async getUniversities({ status = "active", search = "" } = {}) {
+    await delay(120);
+    const store = getLocalStore();
+    let universities = store.universities || [];
+
+    if (status && status !== "All") {
+      universities = universities.filter((u) => u.status === status);
+    }
+
+    if (search && search.trim() !== "") {
+      const q = search.trim().toLowerCase();
+      universities = universities.filter(
+        (u) =>
+          u.name?.toLowerCase().includes(q) ||
+          u.shortName?.toLowerCase().includes(q)
+      );
+    }
+
+    return universities;
+  },
+
+  // Fetch colleges/institutes dynamically for selected university
+  async getCollegesByUniversity(universityId, { status = "active", search = "" } = {}) {
+    await delay(150);
+    const store = getLocalStore();
+    let colleges = (store.colleges || []).filter(
+      (c) =>
+        String(c.universityId?._id || c.universityId) === String(universityId)
+    );
+
+    if (status && status !== "All") {
+      colleges = colleges.filter((c) => c.status === status);
+    }
+
+    if (search && search.trim() !== "") {
+      const q = search.trim().toLowerCase();
+      colleges = colleges.filter(
+        (c) =>
+          c.name?.toLowerCase().includes(q) ||
+          c.city?.toLowerCase().includes(q) ||
+          c.code?.toLowerCase().includes(q)
+      );
+    }
+
+    return colleges;
+  },
+
+  // Submit Franchise Registration (University -> College hierarchy, status = Pending)
+  async submitFranchiseRegistration(franchiseData) {
     await delay(300);
     const store = getLocalStore();
 
+    const randomSuffix = Math.floor(10000 + Math.random() * 90000);
+    const applicationId = `FRAN-2026-${randomSuffix}`;
+
     const newFranchise = {
       _id: "fran_" + Date.now().toString(36) + Math.random().toString(36).substring(2, 6),
-      applicationId: "FRAN-2026-" + Math.floor(10000 + Math.random() * 90000),
-      ...franchiseData,
-      status: "Under Review",
-      submissionDate: new Date().toISOString(),
+      id: "fran_" + Date.now().toString(36),
+      applicationId,
+      universityId: franchiseData.universityId,
+      collegeId: franchiseData.collegeId,
+      institutionName: (franchiseData.institutionName || "").trim(),
+      institutionType: (franchiseData.institutionType || "College").trim(),
+      yearEstablished: (franchiseData.yearEstablished || "").trim(),
+      website: (franchiseData.website || "").trim(),
+      institutionLogo: franchiseData.institutionLogo || "",
+      recognitionAffiliation: (franchiseData.recognitionAffiliation || "").trim(),
+      affiliationNumber: (franchiseData.affiliationNumber || "").trim(),
+      programsOffered: Array.isArray(franchiseData.programsOffered) ? franchiseData.programsOffered : [],
+      contactPerson: (franchiseData.contactPerson || franchiseData.fullName || "").trim(),
+      designation: (franchiseData.designation || "Director").trim(),
+      email: (franchiseData.email || "").trim(),
+      mobile: (franchiseData.mobile || franchiseData.phone || "").trim(),
+      alternateMobile: (franchiseData.alternateMobile || "").trim(),
+      address: (franchiseData.address || "").trim(),
+      city: (franchiseData.city || "").trim(),
+      state: (franchiseData.state || "").trim(),
+      pincode: (franchiseData.pincode || "").trim(),
+      googleMapsLocation: (franchiseData.googleMapsLocation || "").trim(),
+      documents: franchiseData.documents || {},
+      status: "Pending",
+      rejectionReason: "",
+      adminNotes: [],
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
 
-    store.franchiseApplications = [newFranchise, ...(store.franchiseApplications || [])];
+    store.franchiseRegistrations = [newFranchise, ...(store.franchiseRegistrations || [])];
     saveLocalStore(store);
 
     return {
       success: true,
-      message: "Franchise application submitted successfully!",
+      message: "Franchise application submitted successfully and is Pending Admin review.",
       applicationId: newFranchise.applicationId,
-      application: newFranchise,
+      registration: newFranchise,
     };
+  },
+
+  // Backward compatible alias
+  async submitFranchiseApplication(franchiseData) {
+    return this.submitFranchiseRegistration(franchiseData);
   },
 };

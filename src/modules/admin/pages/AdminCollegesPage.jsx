@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import {
   Building2,
   Plus,
@@ -11,20 +11,35 @@ import {
   GraduationCap,
   MapPin,
   X,
-  ExternalLink
+  ExternalLink,
+  ChevronRight,
+  Filter
 } from "lucide-react";
 import { adminService } from "../services/adminService";
 import { useToast } from "../../user/context/ToastContext";
 import { PrimaryButton, SecondaryButton } from "../../user/components/common/PrimaryButton";
 
+const INDIAN_STATES = [
+  "Delhi", "Punjab", "Karnataka", "Uttar Pradesh", "Maharashtra", "Rajasthan",
+  "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh",
+  "Goa", "Gujarat", "Haryana", "Himachal Pradesh", "Jharkhand", "Kerala",
+  "Madhya Pradesh", "Manipur", "Meghalaya", "Mizoram", "Nagaland", "Odisha",
+  "Sikkim", "Tamil Nadu", "Telangana", "Tripura", "Uttarakhand", "West Bengal"
+];
+
 export const AdminCollegesPage = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialUniParam = searchParams.get("universityId") || "All";
+
   const { showSuccess, showError } = useToast();
   const [colleges, setColleges] = useState([]);
+  const [universities, setUniversities] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Search & Filter
+  // Search & Filters
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
+  const [selectedUniFilter, setSelectedUniFilter] = useState(initialUniParam);
 
   // Modal State for Create / Edit
   const [modalOpen, setModalOpen] = useState(false);
@@ -34,16 +49,18 @@ export const AdminCollegesPage = () => {
   // Form State
   const initialForm = {
     name: "",
+    code: "",
+    universityId: "",
     logo: "https://images.unsplash.com/photo-1592280771190-3e2e4d571952?w=160&auto=format&fit=crop&q=80",
     banner: "https://images.unsplash.com/photo-1541339907198-e08756dedf3f?w=1200&auto=format&fit=crop&q=80",
     description: "",
     address: "",
-    city: "",
-    district: "",
-    state: "",
+    city: "New Delhi",
+    district: "New Delhi",
+    state: "Delhi",
     country: "India",
-    location: "",
-    collegeType: "Private University",
+    location: "New Delhi, Delhi",
+    collegeType: "Constituent College",
     status: "active",
     about: "",
     facilities: "High-Tech Labs, Central Digital Library, AC Hostels, Sports Complex, Wi-Fi Smart Classrooms",
@@ -57,11 +74,24 @@ export const AdminCollegesPage = () => {
 
   const [formData, setFormData] = useState(initialForm);
 
+  const fetchUniversities = async () => {
+    try {
+      const data = await adminService.getUniversities();
+      setUniversities(data || []);
+    } catch (err) {
+      console.error("Failed to load universities", err);
+    }
+  };
+
   const fetchColleges = async () => {
     try {
       setLoading(true);
-      const data = await adminService.getColleges();
-      setColleges(data);
+      const data = await adminService.getColleges({
+        universityId: selectedUniFilter,
+        status: statusFilter,
+        search,
+      });
+      setColleges(data || []);
     } catch (err) {
       showError("Failed to load colleges");
     } finally {
@@ -70,95 +100,109 @@ export const AdminCollegesPage = () => {
   };
 
   useEffect(() => {
-    fetchColleges();
+    fetchUniversities();
   }, []);
+
+  useEffect(() => {
+    fetchColleges();
+  }, [selectedUniFilter, statusFilter]);
+
+  const handleSearchSubmit = (e) => {
+    e.preventDefault();
+    fetchColleges();
+  };
+
+  const handleUniFilterChange = (uniId) => {
+    setSelectedUniFilter(uniId);
+    if (uniId === "All") {
+      searchParams.delete("universityId");
+    } else {
+      searchParams.set("universityId", uniId);
+    }
+    setSearchParams(searchParams);
+  };
 
   const handleOpenCreate = () => {
     setEditingCollege(null);
-    setFormData(initialForm);
+    const defaultUniId =
+      selectedUniFilter !== "All"
+        ? selectedUniFilter
+        : universities[0]?._id || universities[0]?.id || "";
+
+    setFormData({
+      ...initialForm,
+      universityId: defaultUniId,
+    });
     setModalOpen(true);
   };
 
   const handleOpenEdit = (college) => {
     setEditingCollege(college);
+    const uId =
+      typeof college.universityId === "object"
+        ? college.universityId?._id || college.universityId?.id
+        : college.universityId;
+
     setFormData({
       name: college.name || "",
+      code: college.code || "",
+      universityId: uId || "",
       logo: college.logo || "",
       banner: college.banner || "",
       description: college.description || "",
       address: college.address || "",
       city: college.city || "",
       district: college.district || college.city || "",
-      state: college.state || "",
+      state: college.state || "Delhi",
       country: college.country || "India",
       location: college.location || "",
-      collegeType: college.collegeType || "Private University",
+      collegeType: college.collegeType || "Constituent College",
       status: college.status || "active",
       about: college.about || college.description || "",
-      facilities: Array.isArray(college.facilities) ? college.facilities.join(", ") : college.facilities || "",
+      facilities: Array.isArray(college.facilities)
+        ? college.facilities.join(", ")
+        : college.facilities || "",
       admissionInformation: college.admissionInformation || "",
       contactInformation: {
-        phone: college.contactInformation?.phone || "",
-        email: college.contactInformation?.email || "",
-        website: college.contactInformation?.website || "",
+        phone: college.contactInformation?.phone || "+91 98110 00000",
+        email: college.contactInformation?.email || "admissions@college.edu.in",
+        website: college.contactInformation?.website || "https://college.edu.in",
       },
     });
     setModalOpen(true);
   };
 
-  const handleToggleStatus = async (college) => {
-    try {
-      const cId = college._id || college.id;
-      const updated = await adminService.toggleCollegeStatus(cId);
-      showSuccess(`College status updated to ${updated.status}`);
-      setColleges((prev) =>
-        prev.map((c) => (String(c._id || c.id) === String(cId) ? { ...c, status: updated.status } : c))
-      );
-    } catch (err) {
-      showError(err.message || "Failed to toggle status");
-    }
-  };
-
-  const handleDelete = async (college) => {
-    const cId = college._id || college.id;
-    if (!window.confirm(`Are you sure you want to delete ${college.name}? All associated courses will be removed.`)) {
-      return;
-    }
-    try {
-      await adminService.deleteCollege(cId);
-      showSuccess("College deleted successfully");
-      setColleges((prev) => prev.filter((c) => String(c._id || c.id) !== String(cId)));
-    } catch (err) {
-      showError(err.message || "Failed to delete college");
-    }
-  };
-
-  const handleFormSubmit = async (e) => {
+  const handleSave = async (e) => {
     e.preventDefault();
     if (!formData.name.trim()) {
-      showError("College Name is required");
+      showError("Please enter college name");
       return;
     }
-    if (!formData.city.trim()) {
-      showError("City is required");
+    if (!formData.universityId) {
+      showError("Please select parent University");
       return;
     }
 
     try {
       setSaving(true);
+      const payload = {
+        ...formData,
+        facilities: formData.facilities
+          ? formData.facilities.split(",").map((s) => s.trim()).filter(Boolean)
+          : [],
+      };
+
       if (editingCollege) {
         const cId = editingCollege._id || editingCollege.id;
-        const updated = await adminService.updateCollege(cId, formData);
+        await adminService.updateCollege(cId, payload);
         showSuccess("College updated successfully");
-        setColleges((prev) =>
-          prev.map((c) => (String(c._id || c.id) === String(cId) ? { ...c, ...updated } : c))
-        );
       } else {
-        const created = await adminService.createCollege(formData);
-        showSuccess("Partner College created successfully");
-        setColleges((prev) => [created, ...prev]);
+        await adminService.createCollege(payload);
+        showSuccess("College added successfully");
       }
+
       setModalOpen(false);
+      fetchColleges();
     } catch (err) {
       showError(err.message || "Failed to save college");
     } finally {
@@ -166,230 +210,381 @@ export const AdminCollegesPage = () => {
     }
   };
 
-  // Filtered list
-  const filteredColleges = colleges.filter((c) => {
-    const matchesSearch =
-      search.trim() === "" ||
-      c.name?.toLowerCase().includes(search.toLowerCase()) ||
-      c.city?.toLowerCase().includes(search.toLowerCase());
-    const matchesStatus = statusFilter === "All" || c.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
+  const handleToggleStatus = async (college) => {
+    const cId = college._id || college.id;
+    try {
+      await adminService.toggleCollegeStatus(cId);
+      showSuccess(
+        `College status updated to ${
+          college.status === "active" ? "Inactive" : "Active"
+        }`
+      );
+      fetchColleges();
+    } catch (err) {
+      showError("Failed to update status");
+    }
+  };
+
+  const handleDelete = async (college) => {
+    const cId = college._id || college.id;
+    if (
+      !window.confirm(
+        `Are you sure you want to delete "${college.name}" and all its courses?`
+      )
+    ) {
+      return;
+    }
+
+    try {
+      await adminService.deleteCollege(cId);
+      showSuccess("College deleted successfully");
+      fetchColleges();
+    } catch (err) {
+      showError(err.message || "Failed to delete college");
+    }
+  };
 
   return (
     <div className="space-y-6">
-      {/* Page Title & Action */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      {/* Header Banner */}
+      <div className="bg-white rounded-2xl border border-[#E6E8EC] p-5 sm:p-6 shadow-2xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl sm:text-2xl font-extrabold text-[#0A1D3F] tracking-tight">
-            Partner Colleges Management
-          </h1>
-          <p className="text-xs sm:text-sm text-[#667085] mt-0.5">
-            Add, update, activate/deactivate, and manage affiliated franchise colleges.
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg bg-[#0A1D3F]/10 text-[#0A1D3F] flex items-center justify-center font-bold">
+              <Building2 className="w-4 h-4" />
+            </div>
+            <h1 className="text-xl sm:text-2xl font-bold text-[#0A1D3F]">
+              College & Institute Management
+            </h1>
+          </div>
+          <p className="text-xs sm:text-sm text-[#667085] mt-1">
+            Manage authorized colleges and institutes under accredited partner universities.
           </p>
         </div>
 
-        <PrimaryButton variant="navy" size="sm" onClick={handleOpenCreate} icon={Plus}>
-          Add Partner College
+        <PrimaryButton
+          onClick={handleOpenCreate}
+          variant="navy"
+          size="md"
+          icon={Plus}
+          className="shrink-0 cursor-pointer"
+        >
+          Add College / Institute
         </PrimaryButton>
       </div>
 
-      {/* Search and Status Filters */}
-      <div className="bg-white p-4 rounded-2xl border border-[#E6E8EC] shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3">
-        <div className="relative w-full sm:w-80">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#667085]" />
+      {/* Filter & Search Bar */}
+      <div className="bg-white rounded-2xl border border-[#E6E8EC] p-4 shadow-2xs flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
+        {/* Search */}
+        <form onSubmit={handleSearchSubmit} className="relative flex-1 max-w-md">
+          <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             type="text"
+            placeholder="Search colleges by name, code, or city..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by college name or city..."
-            className="w-full pl-10 pr-4 py-2 rounded-xl border border-[#E6E8EC] text-xs focus:outline-none focus:border-[#FF8A00] bg-[#F7F8FA]"
+            className="w-full pl-9 pr-4 py-2 text-xs sm:text-sm bg-[#F7F8FA] border border-[#E6E8EC] rounded-xl focus:outline-none focus:border-[#0A1D3F] transition"
           />
-        </div>
+        </form>
 
-        <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
-          <span className="text-xs text-[#667085] font-semibold">Status:</span>
-          {["All", "active", "inactive"].map((st) => (
-            <button
-              key={st}
-              onClick={() => setStatusFilter(st)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold capitalize transition ${
-                statusFilter === st
-                  ? "bg-[#0A1D3F] text-white"
-                  : "bg-[#F7F8FA] text-[#667085] hover:bg-gray-200"
-              }`}
+        <div className="flex flex-wrap items-center gap-2">
+          {/* University Dropdown Filter */}
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs font-bold text-[#64748B] hidden sm:inline">
+              University:
+            </span>
+            <select
+              value={selectedUniFilter}
+              onChange={(e) => handleUniFilterChange(e.target.value)}
+              className="px-3 py-2 bg-[#F7F8FA] border border-[#E6E8EC] rounded-xl text-xs text-[#0A1D3F] font-semibold focus:outline-none focus:border-[#0A1D3F]"
             >
-              {st}
-            </button>
-          ))}
+              <option value="All">All Universities</option>
+              {universities.map((uni) => (
+                <option key={uni._id || uni.id} value={uni._id || uni.id}>
+                  {uni.shortName} - {uni.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Status Filter */}
+          <div className="flex items-center gap-1 p-1 bg-[#F7F8FA] rounded-xl border border-[#E6E8EC]">
+            {["All", "active", "inactive"].map((st) => (
+              <button
+                key={st}
+                onClick={() => setStatusFilter(st)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold capitalize transition cursor-pointer ${
+                  statusFilter === st
+                    ? "bg-[#0A1D3F] text-white shadow-xs"
+                    : "text-[#667085] hover:text-[#0A1D3F]"
+                }`}
+              >
+                {st === "All" ? "All Status" : st}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
-      {/* Colleges Table / Cards */}
+      {/* Colleges Grid */}
       {loading ? (
-        <div className="space-y-3">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="h-20 bg-white rounded-2xl border border-[#E6E8EC] animate-pulse" />
-          ))}
+        <div className="bg-white rounded-2xl border border-[#E6E8EC] p-12 text-center text-gray-400 text-sm">
+          Loading colleges...
         </div>
-      ) : filteredColleges.length === 0 ? (
-        <div className="p-10 text-center bg-white rounded-2xl border border-[#E6E8EC]">
-          <Building2 className="w-10 h-10 text-gray-400 mx-auto mb-2" />
-          <h3 className="text-sm font-bold text-[#0A1D3F]">No Colleges Found</h3>
-          <p className="text-xs text-[#667085] mt-1">
-            Try adjusting your search query or add a new partner college.
+      ) : colleges.length === 0 ? (
+        <div className="bg-white rounded-2xl border border-[#E6E8EC] p-12 text-center space-y-3">
+          <div className="w-12 h-12 rounded-full bg-gray-100 text-gray-400 flex items-center justify-center mx-auto">
+            <Building2 className="w-6 h-6" />
+          </div>
+          <h3 className="text-base font-bold text-[#0A1D3F]">No Colleges Found</h3>
+          <p className="text-xs text-[#667085] max-w-sm mx-auto">
+            No colleges match the selected university or status filters.
           </p>
+          <button
+            onClick={handleOpenCreate}
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#0A1D3F] text-white text-xs font-semibold shadow-xs hover:bg-[#133C8B] transition cursor-pointer"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Add New College</span>
+          </button>
         </div>
       ) : (
-        <div className="bg-white rounded-2xl border border-[#E6E8EC] shadow-2xs overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-[#F7F8FA] text-[#667085] font-bold uppercase tracking-wider border-b border-[#E6E8EC]">
-                <tr>
-                  <th className="py-3.5 px-4">College</th>
-                  <th className="py-3.5 px-4">Type & Location</th>
-                  <th className="py-3.5 px-4">Courses</th>
-                  <th className="py-3.5 px-4">Status</th>
-                  <th className="py-3.5 px-4 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#F0F2F5]">
-                {filteredColleges.map((col) => {
-                  const colId = col._id || col.id;
-                  const isActive = col.status === "active";
-                  return (
-                    <tr key={colId} className="hover:bg-gray-50/70 transition">
-                      <td className="py-3.5 px-4">
-                        <div className="flex items-center gap-3">
-                          <img
-                            src={col.logo || "https://images.unsplash.com/photo-1592280771190-3e2e4d571952?w=100&auto=format&fit=crop&q=80"}
-                            alt={col.name}
-                            className="w-10 h-10 rounded-xl object-cover border border-gray-200 shrink-0"
-                          />
-                          <div>
-                            <div className="font-extrabold text-[#0A1D3F] text-sm">
-                              {col.name}
-                            </div>
-                            <span className="text-[11px] text-[#667085] line-clamp-1">
-                              {col.address || col.city}
-                            </span>
-                          </div>
-                        </div>
-                      </td>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {colleges.map((college) => {
+            const cId = college._id || college.id;
+            const uniName =
+              college.universityId?.name || "Independent University";
+            const uniShort = college.universityId?.shortName || "";
 
-                      <td className="py-3.5 px-4">
-                        <div className="font-semibold text-[#0A1D3F]">{col.collegeType}</div>
-                        <div className="text-[11px] text-[#667085] flex items-center gap-1 mt-0.5">
-                          <MapPin className="w-3 h-3 text-[#FF8A00]" />
-                          <span>{col.district ? `${col.district}, ${col.state}` : col.location || col.city}</span>
-                        </div>
-                      </td>
+            return (
+              <div
+                key={cId}
+                className="bg-white rounded-2xl border border-[#E6E8EC] p-4 sm:p-5 shadow-2xs hover:shadow-md transition-all flex flex-col justify-between space-y-3.5"
+              >
+                <div>
+                  {/* Top: University Badge & Status */}
+                  <div className="flex items-center justify-between gap-2 mb-2">
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#0A1D3F]/10 text-[#0A1D3F] text-[10px] font-bold uppercase tracking-wider truncate max-w-[65%]">
+                      <GraduationCap className="w-3 h-3 shrink-0" />
+                      <span className="truncate">{uniShort || uniName}</span>
+                    </span>
 
-                      <td className="py-3.5 px-4">
-                        <Link
-                          to={`/admin/colleges/${colId}/courses`}
-                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-orange-50 text-[#FF8A00] font-bold hover:bg-orange-100 transition"
-                        >
-                          <GraduationCap className="w-3.5 h-3.5" />
-                          <span>{col.totalCourses || 0} Courses</span>
-                        </Link>
-                      </td>
+                    <button
+                      onClick={() => handleToggleStatus(college)}
+                      title={`Click to ${
+                        college.status === "active" ? "deactivate" : "activate"
+                      }`}
+                      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold capitalize transition cursor-pointer ${
+                        college.status === "active"
+                          ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                          : "bg-gray-100 text-gray-500 border border-gray-200"
+                      }`}
+                    >
+                      {college.status === "active" ? (
+                        <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                      ) : (
+                        <XCircle className="w-3 h-3 text-gray-400" />
+                      )}
+                      <span>{college.status}</span>
+                    </button>
+                  </div>
 
-                      <td className="py-3.5 px-4">
-                        <button
-                          onClick={() => handleToggleStatus(col)}
-                          className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full font-bold text-[11px] cursor-pointer transition ${
-                            isActive
-                              ? "bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100"
-                              : "bg-gray-100 text-gray-600 border border-gray-200 hover:bg-gray-200"
-                          }`}
-                        >
-                          {isActive ? <CheckCircle2 className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
-                          <span className="capitalize">{col.status}</span>
-                        </button>
-                      </td>
+                  {/* College Name & Code */}
+                  <div className="flex items-start gap-3">
+                    <img
+                      src={college.logo}
+                      alt={college.name}
+                      className="w-10 h-10 rounded-xl object-cover border border-[#E6E8EC] shrink-0"
+                    />
+                    <div className="min-w-0">
+                      <h3 className="text-sm font-bold text-[#0A1D3F] leading-tight">
+                        {college.name}
+                      </h3>
+                      <div className="text-[11px] text-[#64748B] flex items-center gap-1 mt-0.5">
+                        <MapPin className="w-3 h-3 shrink-0 text-gray-400" />
+                        <span>
+                          {college.city}, {college.state}
+                        </span>
+                        {college.code && (
+                          <span className="font-mono text-[10px] text-gray-400">
+                            • {college.code}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
 
-                      <td className="py-3.5 px-4 text-right">
-                        <div className="flex items-center justify-end gap-1.5">
-                          <a
-                            href={col.contactInformation?.website || col.website || `https://www.google.com/search?q=${encodeURIComponent(col.name + " official website")}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            title="Visit Official Website"
-                            className="p-1.5 rounded-lg text-gray-500 hover:text-[#0A1D3F] hover:bg-gray-100 transition"
-                          >
-                            <ExternalLink className="w-4 h-4" />
-                          </a>
+                  {/* Mini Stats Grid */}
+                  <div className="grid grid-cols-2 gap-2 mt-3 p-2 bg-[#F8FAFC] rounded-xl border border-[#E2E8F0] text-center text-xs">
+                    <div>
+                      <span className="text-[9px] text-[#64748B] block font-medium uppercase">
+                        Courses
+                      </span>
+                      <span className="font-bold text-xs text-[#0A1D3F]">
+                        {college.totalCourses || 0} Listed
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-[9px] text-[#64748B] block font-medium uppercase">
+                        Affiliation
+                      </span>
+                      <span className="font-bold text-xs text-emerald-600 truncate block">
+                        {college.collegeType || "Constituent"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
 
-                          <Link
-                            to={`/admin/colleges/${colId}/courses`}
-                            className="px-2.5 py-1.5 rounded-lg text-xs font-bold text-[#0A1D3F] hover:bg-gray-100 transition"
-                          >
-                            Courses
-                          </Link>
+                {/* Bottom Actions */}
+                <div className="flex items-center justify-between pt-2.5 border-t border-[#EDF2F7]">
+                  <Link
+                    to={`/admin/colleges/${cId}/courses`}
+                    className="inline-flex items-center gap-1 text-xs font-semibold text-[#0A1D3F] hover:text-[#FF8A00] transition"
+                  >
+                    <span>Manage Courses</span>
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </Link>
 
-                          <button
-                            onClick={() => handleOpenEdit(col)}
-                            className="p-1.5 rounded-lg text-gray-500 hover:text-[#FF8A00] hover:bg-orange-50 transition"
-                            title="Edit College"
-                          >
-                            <Edit2 className="w-4 h-4" />
-                          </button>
-
-                          <button
-                            onClick={() => handleDelete(col)}
-                            className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition"
-                            title="Delete College"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => handleOpenEdit(college)}
+                      className="p-1.5 rounded-lg text-gray-500 hover:text-[#0A1D3F] hover:bg-gray-100 transition cursor-pointer"
+                      title="Edit College"
+                    >
+                      <Edit2 className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(college)}
+                      className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition cursor-pointer"
+                      title="Delete College"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
 
-      {/* CREATE / EDIT MODAL */}
+      {/* ========================================================
+          CREATE / EDIT COLLEGE MODAL
+         ======================================================== */}
       {modalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4">
-          <div
-            className="fixed inset-0 bg-[#0A1D3F]/60 backdrop-blur-xs"
-            onClick={() => setModalOpen(false)}
-          />
-          <div className="relative bg-white w-full max-w-2xl rounded-2xl sm:rounded-3xl shadow-2xl border border-[#E6E8EC] z-10 overflow-hidden flex flex-col max-h-[92vh] animate-in fade-in zoom-in-95 duration-200">
-            {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-[#E6E8EC] bg-white sticky top-0 z-10">
-              <h3 className="text-base font-bold text-[#0A1D3F]">
-                {editingCollege ? "Edit Partner College" : "Add New Partner College"}
-              </h3>
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl border border-[#E6E8EC] shadow-2xl max-w-xl w-full p-5 sm:p-6 space-y-4 animate-in zoom-in-95 duration-150 text-left max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-3 border-b border-[#E6E8EC]">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-[#0A1D3F]/10 text-[#0A1D3F] flex items-center justify-center font-bold">
+                  <Building2 className="w-4 h-4" />
+                </div>
+                <h2 className="text-base sm:text-lg font-bold text-[#0A1D3F]">
+                  {editingCollege ? "Edit College / Institute" : "Add New College / Institute"}
+                </h2>
+              </div>
               <button
+                type="button"
                 onClick={() => setModalOpen(false)}
-                className="p-1.5 rounded-xl text-gray-400 hover:text-gray-700 hover:bg-gray-100"
+                className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition cursor-pointer"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4" />
               </button>
             </div>
 
-            {/* Form Body */}
-            <form onSubmit={handleFormSubmit} className="p-6 overflow-y-auto space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <form onSubmit={handleSave} className="space-y-3.5">
+              {/* Parent University Selection */}
+              <div>
+                <label className="block text-xs font-bold text-[#0A1D3F] mb-1">
+                  Parent University / Franchise Provider <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={formData.universityId}
+                  onChange={(e) =>
+                    setFormData({ ...formData, universityId: e.target.value })
+                  }
+                  className="w-full px-3 py-2 bg-[#F7F8FA] border border-[#E6E8EC] rounded-xl text-xs sm:text-sm text-[#0A1D3F] font-semibold focus:outline-none focus:border-[#0A1D3F]"
+                  required
+                >
+                  <option value="" disabled>Select parent university</option>
+                  {universities.map((uni) => (
+                    <option key={uni._id || uni.id} value={uni._id || uni.id}>
+                      {uni.name} ({uni.shortName})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* College Name & Code */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div className="sm:col-span-2">
                   <label className="block text-xs font-bold text-[#0A1D3F] mb-1">
-                    College Name *
+                    College / Institute Name <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
-                    required
                     value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    placeholder="e.g. Apex Institute of Technology & Management"
-                    className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-[#E6E8EC] focus:border-[#FF8A00] focus:outline-none"
+                    onChange={(e) =>
+                      setFormData({ ...formData, name: e.target.value })
+                    }
+                    placeholder="e.g. Miranda House / School of Engineering"
+                    className="w-full px-3 py-2 bg-[#F7F8FA] border border-[#E6E8EC] rounded-xl text-xs sm:text-sm text-[#0A1D3F] focus:outline-none focus:border-[#0A1D3F]"
+                    required
                   />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-[#0A1D3F] mb-1">
+                    Code / Reg ID
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.code}
+                    onChange={(e) =>
+                      setFormData({ ...formData, code: e.target.value.toUpperCase() })
+                    }
+                    placeholder="e.g. DU-MH-101"
+                    className="w-full px-3 py-2 bg-[#F7F8FA] border border-[#E6E8EC] rounded-xl text-xs sm:text-sm text-[#0A1D3F] uppercase font-mono focus:outline-none focus:border-[#0A1D3F]"
+                  />
+                </div>
+              </div>
+
+              {/* City, State, Type */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-[#0A1D3F] mb-1">
+                    City <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.city}
+                    onChange={(e) =>
+                      setFormData({ ...formData, city: e.target.value })
+                    }
+                    placeholder="e.g. New Delhi"
+                    className="w-full px-3 py-2 bg-[#F7F8FA] border border-[#E6E8EC] rounded-xl text-xs sm:text-sm text-[#0A1D3F] focus:outline-none focus:border-[#0A1D3F]"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-[#0A1D3F] mb-1">
+                    State <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    value={formData.state}
+                    onChange={(e) =>
+                      setFormData({ ...formData, state: e.target.value })
+                    }
+                    className="w-full px-3 py-2 bg-[#F7F8FA] border border-[#E6E8EC] rounded-xl text-xs text-[#0A1D3F] focus:outline-none focus:border-[#0A1D3F]"
+                    required
+                  >
+                    {INDIAN_STATES.map((st) => (
+                      <option key={st} value={st}>
+                        {st}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 <div>
@@ -398,202 +593,87 @@ export const AdminCollegesPage = () => {
                   </label>
                   <select
                     value={formData.collegeType}
-                    onChange={(e) => setFormData({ ...formData, collegeType: e.target.value })}
-                    className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-[#E6E8EC] focus:border-[#FF8A00] focus:outline-none"
+                    onChange={(e) =>
+                      setFormData({ ...formData, collegeType: e.target.value })
+                    }
+                    className="w-full px-3 py-2 bg-[#F7F8FA] border border-[#E6E8EC] rounded-xl text-xs text-[#0A1D3F] focus:outline-none focus:border-[#0A1D3F]"
                   >
-                    <option value="Private University">Private University</option>
+                    <option value="Constituent College">Constituent College</option>
+                    <option value="Affiliated College">Affiliated College</option>
                     <option value="Autonomous College">Autonomous College</option>
-                    <option value="Deemed University">Deemed University</option>
-                    <option value="State University Campus">State University Campus</option>
-                    <option value="Franchise Study Center">Franchise Study Center</option>
+                    <option value="Faculty / School">Faculty / School</option>
+                    <option value="Institute">Institute</option>
                   </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-[#0A1D3F] mb-1">
-                    Status
-                  </label>
-                  <select
-                    value={formData.status}
-                    onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                    className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-[#E6E8EC] focus:border-[#FF8A00] focus:outline-none"
-                  >
-                    <option value="active">Active (Visible to Students)</option>
-                    <option value="inactive">Inactive (Hidden)</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-[#0A1D3F] mb-1">
-                    City *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.city}
-                    onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                    placeholder="e.g. Noida, Pune, Bangalore"
-                    className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-[#E6E8EC] focus:border-[#FF8A00] focus:outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-[#0A1D3F] mb-1">
-                    District
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.district}
-                    onChange={(e) => setFormData({ ...formData, district: e.target.value })}
-                    placeholder="e.g. Gautam Buddha Nagar, Pune, Jaipur"
-                    className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-[#E6E8EC] focus:border-[#FF8A00] focus:outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-[#0A1D3F] mb-1">
-                    State
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.state}
-                    onChange={(e) => setFormData({ ...formData, state: e.target.value })}
-                    placeholder="e.g. Uttar Pradesh, Maharashtra"
-                    className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-[#E6E8EC] focus:border-[#FF8A00] focus:outline-none"
-                  />
-                </div>
-
-                <div className="sm:col-span-2">
-                  <label className="block text-xs font-bold text-[#0A1D3F] mb-1">
-                    Campus Address
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.address}
-                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                    placeholder="Full street / sector address"
-                    className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-[#E6E8EC] focus:border-[#FF8A00] focus:outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-[#0A1D3F] mb-1">
-                    Logo Image URL
-                  </label>
-                  <input
-                    type="url"
-                    value={formData.logo}
-                    onChange={(e) => setFormData({ ...formData, logo: e.target.value })}
-                    className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-[#E6E8EC] focus:border-[#FF8A00] focus:outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-[#0A1D3F] mb-1">
-                    Banner Cover URL
-                  </label>
-                  <input
-                    type="url"
-                    value={formData.banner}
-                    onChange={(e) => setFormData({ ...formData, banner: e.target.value })}
-                    className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-[#E6E8EC] focus:border-[#FF8A00] focus:outline-none"
-                  />
-                </div>
-
-                <div className="sm:col-span-2">
-                  <label className="block text-xs font-bold text-[#0A1D3F] mb-1">
-                    Short Description (For Cards)
-                  </label>
-                  <textarea
-                    rows={2}
-                    value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    placeholder="Short 2-sentence summary of the college..."
-                    className="w-full text-xs px-3.5 py-2 rounded-xl border border-[#E6E8EC] focus:border-[#FF8A00] focus:outline-none resize-none"
-                  />
-                </div>
-
-                <div className="sm:col-span-2">
-                  <label className="block text-xs font-bold text-[#0A1D3F] mb-1">
-                    About College (Detailed Overview)
-                  </label>
-                  <textarea
-                    rows={3}
-                    value={formData.about}
-                    onChange={(e) => setFormData({ ...formData, about: e.target.value })}
-                    placeholder="Detailed history, accreditation, ranking, and placement statistics..."
-                    className="w-full text-xs px-3.5 py-2 rounded-xl border border-[#E6E8EC] focus:border-[#FF8A00] focus:outline-none resize-none"
-                  />
-                </div>
-
-                <div className="sm:col-span-2">
-                  <label className="block text-xs font-bold text-[#0A1D3F] mb-1">
-                    Campus Facilities (Comma separated)
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.facilities}
-                    onChange={(e) => setFormData({ ...formData, facilities: e.target.value })}
-                    placeholder="e.g. AI Computing Labs, Hostels, Olympic Sports Complex, Digital Library"
-                    className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-[#E6E8EC] focus:border-[#FF8A00] focus:outline-none"
-                  />
-                </div>
-
-                <div className="sm:col-span-2">
-                  <label className="block text-xs font-bold text-[#0A1D3F] mb-1">
-                    Admission Information & Guidelines
-                  </label>
-                  <textarea
-                    rows={2}
-                    value={formData.admissionInformation}
-                    onChange={(e) => setFormData({ ...formData, admissionInformation: e.target.value })}
-                    placeholder="Eligibility criteria, admission dates, scholarship policies..."
-                    className="w-full text-xs px-3.5 py-2 rounded-xl border border-[#E6E8EC] focus:border-[#FF8A00] focus:outline-none resize-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-[#0A1D3F] mb-1">
-                    Contact Phone
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.contactInformation.phone}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        contactInformation: { ...formData.contactInformation, phone: e.target.value },
-                      })
-                    }
-                    className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-[#E6E8EC] focus:border-[#FF8A00] focus:outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-[#0A1D3F] mb-1">
-                    Contact Email
-                  </label>
-                  <input
-                    type="email"
-                    value={formData.contactInformation.email}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        contactInformation: { ...formData.contactInformation, email: e.target.value },
-                      })
-                    }
-                    className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-[#E6E8EC] focus:border-[#FF8A00] focus:outline-none"
-                  />
                 </div>
               </div>
 
-              {/* Action Buttons */}
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-[#E6E8EC]">
-                <SecondaryButton size="sm" onClick={() => setModalOpen(false)}>
+              {/* Address */}
+              <div>
+                <label className="block text-xs font-bold text-[#0A1D3F] mb-1">
+                  Campus Address
+                </label>
+                <input
+                  type="text"
+                  value={formData.address}
+                  onChange={(e) =>
+                    setFormData({ ...formData, address: e.target.value })
+                  }
+                  placeholder="e.g. University Enclave, North Campus"
+                  className="w-full px-3 py-2 bg-[#F7F8FA] border border-[#E6E8EC] rounded-xl text-xs sm:text-sm text-[#0A1D3F] focus:outline-none focus:border-[#0A1D3F]"
+                />
+              </div>
+
+              {/* Description */}
+              <div>
+                <label className="block text-xs font-bold text-[#0A1D3F] mb-1">
+                  Brief Overview
+                </label>
+                <textarea
+                  rows={2}
+                  value={formData.description}
+                  onChange={(e) =>
+                    setFormData({ ...formData, description: e.target.value })
+                  }
+                  placeholder="Overview of academic excellence, NIRF rating, specializations..."
+                  className="w-full px-3 py-2 bg-[#F7F8FA] border border-[#E6E8EC] rounded-xl text-xs text-[#0A1D3F] focus:outline-none focus:border-[#0A1D3F]"
+                />
+              </div>
+
+              {/* Status */}
+              <div>
+                <label className="block text-xs font-bold text-[#0A1D3F] mb-1">
+                  Status
+                </label>
+                <select
+                  value={formData.status}
+                  onChange={(e) =>
+                    setFormData({ ...formData, status: e.target.value })
+                  }
+                  className="w-full px-3 py-2 bg-[#F7F8FA] border border-[#E6E8EC] rounded-xl text-xs sm:text-sm text-[#0A1D3F] focus:outline-none focus:border-[#0A1D3F]"
+                >
+                  <option value="active">Active (Visible in Franchise Selection)</option>
+                  <option value="inactive">Inactive (Hidden)</option>
+                </select>
+              </div>
+
+              {/* Modal Actions */}
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#EDF2F7]">
+                <SecondaryButton
+                  type="button"
+                  onClick={() => setModalOpen(false)}
+                  size="md"
+                  className="cursor-pointer"
+                >
                   Cancel
                 </SecondaryButton>
-                <PrimaryButton variant="orange" size="sm" type="submit" loading={saving}>
-                  {editingCollege ? "Save Changes" : "Create College"}
+                <PrimaryButton
+                  type="submit"
+                  variant="navy"
+                  size="md"
+                  loading={saving}
+                  className="cursor-pointer"
+                >
+                  {editingCollege ? "Update College" : "Create College"}
                 </PrimaryButton>
               </div>
             </form>
