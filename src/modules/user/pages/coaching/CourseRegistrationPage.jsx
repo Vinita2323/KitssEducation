@@ -19,6 +19,7 @@ import {
 import { coachingService } from "../../services/coachingService";
 import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../context/ToastContext";
+import { SearchableSelect } from "../../components/common/SearchableSelect";
 
 export const CourseRegistrationPage = () => {
   const navigate = useNavigate();
@@ -293,15 +294,13 @@ export const CourseRegistrationPage = () => {
               <label className="block text-xs font-bold text-[#0A1D3F] uppercase tracking-wider">
                 Gender
               </label>
-              <select
+              <SearchableSelect
+                options={["Male", "Female", "Other"]}
                 value={formData.gender}
-                onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
-                className="w-full px-3.5 py-2.5 rounded-xl bg-[#F7F8FA] border border-[#E6E8EC] text-xs sm:text-sm text-[#0A1D3F] focus:outline-none focus:border-[#FF8A00] transition"
-              >
-                <option value="Male">Male</option>
-                <option value="Female">Female</option>
-                <option value="Other">Other</option>
-              </select>
+                onChange={(val) => setFormData({ ...formData, gender: val })}
+                searchable={false}
+                placeholder="Select Gender"
+              />
             </div>
           </div>
 
@@ -311,18 +310,20 @@ export const CourseRegistrationPage = () => {
               <label className="block text-xs font-bold text-[#0A1D3F] uppercase tracking-wider">
                 State
               </label>
-              <select
+              <SearchableSelect
+                options={[
+                  "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh",
+                  "Delhi", "Goa", "Gujarat", "Haryana", "Himachal Pradesh", "Jharkhand",
+                  "Karnataka", "Kerala", "Madhya Pradesh", "Maharashtra", "Manipur",
+                  "Meghalaya", "Mizoram", "Nagaland", "Odisha", "Punjab", "Rajasthan",
+                  "Sikkim", "Tamil Nadu", "Telangana", "Tripura", "Uttar Pradesh",
+                  "Uttarakhand", "West Bengal"
+                ]}
                 value={formData.state}
-                onChange={(e) => setFormData({ ...formData, state: e.target.value })}
-                className="w-full px-3.5 py-2.5 rounded-xl bg-[#F7F8FA] border border-[#E6E8EC] text-xs sm:text-sm text-[#0A1D3F] focus:outline-none focus:border-[#FF8A00] transition"
-              >
-                <option value="Madhya Pradesh">Madhya Pradesh</option>
-                <option value="Delhi">Delhi</option>
-                <option value="Uttar Pradesh">Uttar Pradesh</option>
-                <option value="Rajasthan">Rajasthan</option>
-                <option value="Maharashtra">Maharashtra</option>
-                <option value="Bihar">Bihar</option>
-              </select>
+                onChange={(val) => setFormData({ ...formData, state: val })}
+                placeholder="Select State"
+                searchPlaceholder="Search State..."
+              />
             </div>
 
             <div className="space-y-1.5">
@@ -349,32 +350,31 @@ export const CourseRegistrationPage = () => {
               <label className="block text-xs font-bold text-[#0A1D3F] uppercase tracking-wider">
                 Education Board
               </label>
-              <select
+              <SearchableSelect
+                options={[
+                  { value: "CBSE", label: "CBSE (Central Board)" },
+                  { value: "Madhya Pradesh Board", label: "Madhya Pradesh Board (MPBSE)" },
+                  { value: "Uttar Pradesh Board", label: "UP Board" },
+                  { value: "ICSE", label: "ICSE / ISC" }
+                ]}
                 value={formData.board}
-                onChange={(e) => setFormData({ ...formData, board: e.target.value })}
-                className="w-full px-3.5 py-2.5 rounded-xl bg-[#F7F8FA] border border-[#E6E8EC] text-xs sm:text-sm text-[#0A1D3F] focus:outline-none focus:border-[#FF8A00] transition"
-              >
-                <option value="CBSE">CBSE (Central Board)</option>
-                <option value="Madhya Pradesh Board">Madhya Pradesh Board (MPBSE)</option>
-                <option value="Uttar Pradesh Board">UP Board</option>
-                <option value="ICSE">ICSE</option>
-              </select>
+                onChange={(val) => setFormData({ ...formData, board: val })}
+                placeholder="Select Board"
+                searchPlaceholder="Search Board..."
+              />
             </div>
 
             <div className="space-y-1.5">
               <label className="block text-xs font-bold text-[#0A1D3F] uppercase tracking-wider">
                 Class / Grade
               </label>
-              <select
+              <SearchableSelect
+                options={["Class 9", "Class 10", "Class 11", "Class 12"]}
                 value={formData.class}
-                onChange={(e) => setFormData({ ...formData, class: e.target.value })}
-                className="w-full px-3.5 py-2.5 rounded-xl bg-[#F7F8FA] border border-[#E6E8EC] text-xs sm:text-sm text-[#0A1D3F] focus:outline-none focus:border-[#FF8A00] transition"
-              >
-                <option value="Class 9">Class 9</option>
-                <option value="Class 10">Class 10</option>
-                <option value="Class 11">Class 11</option>
-                <option value="Class 12">Class 12</option>
-              </select>
+                onChange={(val) => setFormData({ ...formData, class: val })}
+                placeholder="Select Class"
+                searchable={false}
+              />
             </div>
           </div>
 

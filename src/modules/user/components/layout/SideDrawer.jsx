@@ -18,6 +18,7 @@ import {
   Sparkles,
   GraduationCap,
   Shield,
+  UserPlus,
   Info
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
@@ -35,6 +36,7 @@ export const SideDrawer = ({ isOpen, onClose }) => {
     { label: "Home", path: "/home", icon: Home },
     { label: "About Us", path: "/about", icon: Info },
     { label: "Partner Colleges", path: "/colleges", icon: GraduationCap },
+    { label: "Registration", path: "/register", icon: UserPlus },
     { label: "Digital Books", path: "/books", icon: BookOpen },
     { label: "Online Coaching", path: "/coaching", icon: Video },
     { label: "My Subscriptions", path: "/subscriptions", icon: ShieldCheck },

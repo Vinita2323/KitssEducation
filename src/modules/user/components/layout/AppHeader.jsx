@@ -12,6 +12,7 @@ export const AppHeader = ({ unreadCount = 2 }) => {
     { name: "Home", path: "/home" },
     { name: "Categories", path: "/categories" },
     { name: "Colleges", path: "/colleges" },
+    { name: "Registration", path: "/register" },
     { name: "Books", path: "/books" },
     { name: "Online Coaching", path: "/coaching" },
     { name: "Results", path: "/results" },

@@ -1,7 +1,7 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Home, Layers, GraduationCap, ShieldCheck, Info } from "lucide-react";
+import { Home, Layers, GraduationCap, ShieldCheck, UserPlus, Info } from "lucide-react";
 
 export const BottomNavigation = () => {
   const location = useLocation();
@@ -11,7 +11,8 @@ export const BottomNavigation = () => {
     { label: "Categories", path: "/categories", icon: Layers },
     { label: "Colleges", path: "/colleges", icon: GraduationCap },
     { label: "Courses", path: "/subscriptions", icon: ShieldCheck },
-    { label: "About", path: "/about", icon: Info }
+    { label: "About", path: "/about", icon: Info },
+    { label: "Registration", path: "/register", icon: UserPlus }
   ];
 
   return (
@@ -32,7 +33,7 @@ export const BottomNavigation = () => {
             <Link
               key={item.label}
               to={item.path}
-              className="relative flex flex-col items-center justify-center py-1.5 px-3 rounded-2xl touch-target cursor-pointer transition-colors"
+              className="relative flex flex-col items-center justify-center py-1.5 px-1.5 sm:px-2.5 rounded-2xl touch-target cursor-pointer transition-colors"
             >
               <motion.div
                 whileTap={{ scale: 0.88 }}
@@ -42,7 +43,7 @@ export const BottomNavigation = () => {
                 {isActive && (
                   <motion.div
                     layoutId="bottomNavActivePill"
-                    className="absolute inset-0 -top-1 -bottom-1 -left-2.5 -right-2.5 bg-orange-50 border border-orange-200/70 rounded-2xl -z-10 shadow-2xs"
+                    className="absolute inset-0 -top-1 -bottom-1 -left-1.5 -right-1.5 sm:-left-2 sm:-right-2 bg-orange-50 border border-orange-200/70 rounded-2xl -z-10 shadow-2xs"
                     transition={{ type: "spring", stiffness: 380, damping: 30 }}
                   />
                 )}
