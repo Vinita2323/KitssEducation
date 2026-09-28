@@ -1,18 +1,14 @@
 import React, { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Video,
   FileCheck,
   BookOpen,
   GraduationCap,
+  Building2,
   Search,
   ChevronRight,
-  Sparkles,
-  Calculator,
-  CheckCircle2,
-  FileText,
-  Atom,
   X
 } from "lucide-react";
 
@@ -21,193 +17,118 @@ export const CategoriesPage = () => {
   const [selectedTab, setSelectedTab] = useState("all");
 
   const filterTabs = [
-    { id: "all", label: "All Categories" },
+    { id: "all", label: "All Tabs" },
     { id: "coaching", label: "Coaching" },
+    { id: "franchise", label: "Institutes & Franchise" },
     { id: "results", label: "Exam Results" },
     { id: "books", label: "Digital Books" },
     { id: "colleges", label: "Partner Colleges" }
   ];
 
-  const categorySections = [
+  // Primary Category Tabs
+  const categoryTabs = [
     {
       id: "coaching",
       title: "Coaching",
-      description: "Live batches, doubt sessions & test series",
-      link: "/coaching",
-      iconTheme: "bg-amber-50 text-[#FF8A00] border border-amber-200/60",
+      subtitle: "Live batches, JEE, NEET & CBSE 9th-12th interactive classes",
+      path: "/coaching",
       icon: Video,
-      items: [
-        {
-          label: "CBSE Classes (9th–12th)",
-          sub: "Live syllabus coverage & doubt classes",
-          path: "/coaching?category=CBSE",
-          icon: BookOpen
-        },
-        {
-          label: "JEE Main & Advanced",
-          sub: "Engineering entrance prep & top mentors",
-          path: "/coaching?category=JEE",
-          icon: Calculator
-        },
-        {
-          label: "NEET Medical Entrance",
-          sub: "Physics, Chemistry & Biology batches",
-          path: "/coaching?category=NEET",
-          icon: Sparkles
-        },
-        {
-          label: "All India Test Series",
-          sub: "Real-time rank analysis & mock tests",
-          path: "/coaching",
-          icon: FileCheck
-        }
-      ]
+      badge: null,
+      themeColor: "text-[#FF8A00]",
+      iconBg: "bg-gradient-to-br from-orange-500 to-amber-500 text-white shadow-orange-200/80 shadow-md",
+      cardBg: "hover:border-[#FF8A00]/40 hover:bg-orange-50/20",
+      tags: ["CBSE 9-12", "JEE Entrance", "NEET Medical", "Test Series"]
+    },
+    {
+      id: "franchise",
+      title: "Institutes & Franchise Network",
+      subtitle: "Approved institutes with active University franchise tie-ups & verified seats",
+      path: "/institutes",
+      icon: Building2,
+      badge: "VERIFIED TIE-UPS",
+      badgeColor: "bg-blue-700 text-white",
+      themeColor: "text-blue-700",
+      iconBg: "bg-gradient-to-br from-blue-700 to-indigo-800 text-white shadow-blue-200/80 shadow-md",
+      cardBg: "hover:border-blue-700/40 hover:bg-blue-50/20",
+      tags: ["Amity Univ", "Delhi Univ", "MAHE Manipal", "LPU Punjab", "CU"]
     },
     {
       id: "results",
       title: "Examination Results",
-      description: "Official marksheets & board credentials",
-      link: "/results",
-      iconTheme: "bg-teal-50 text-teal-600 border border-teal-200/60",
+      subtitle: "Official board marksheets, roll number verification & scorecards",
+      path: "/results",
       icon: FileCheck,
-      items: [
-        {
-          label: "CBSE Board (10th & 12th)",
-          sub: "Official roll number marksheet search",
-          path: "/results",
-          icon: CheckCircle2
-        },
-        {
-          label: "ICSE & ISC Examinations",
-          sub: "Subject-wise scorecards & certificates",
-          path: "/results",
-          icon: FileText
-        },
-        {
-          label: "State Boards of India",
-          sub: "UP, MP, Bihar & State board results",
-          path: "/results",
-          icon: FileCheck
-        },
-        {
-          label: "University Semester Results",
-          sub: "Degree marksheets & transcript verification",
-          path: "/results",
-          icon: GraduationCap
-        }
-      ]
+      badge: "2026 LIVE",
+      badgeColor: "bg-teal-600 text-white",
+      themeColor: "text-teal-600",
+      iconBg: "bg-gradient-to-br from-teal-500 to-emerald-600 text-white shadow-teal-200/80 shadow-md",
+      cardBg: "hover:border-teal-500/40 hover:bg-teal-50/20",
+      tags: ["CBSE Board", "ICSE & ISC", "State Boards", "University"]
     },
     {
       id: "books",
       title: "Digital Books & Library",
-      description: "NCERT & curriculum textbooks in smart reader",
-      link: "/books",
-      iconTheme: "bg-blue-50 text-blue-600 border border-blue-200/60",
+      subtitle: "NCERT curriculum books, chapter solutions & smart PDF reader",
+      path: "/books",
       icon: BookOpen,
-      items: [
-        {
-          label: "NCERT Textbooks & Solutions",
-          sub: "Complete solutions for classes 6 to 12",
-          path: "/books?board=NCERT",
-          icon: BookOpen
-        },
-        {
-          label: "CBSE Reference Guides",
-          sub: "Exemplars & chapter-wise revision notes",
-          path: "/books?board=CBSE",
-          icon: FileText
-        },
-        {
-          label: "ICSE Prescribed Books",
-          sub: "Comprehensive syllabus digital library",
-          path: "/books?board=ICSE",
-          icon: BookOpen
-        },
-        {
-          label: "Solved Question Banks",
-          sub: "Previous year questions & practice sets",
-          path: "/books",
-          icon: Sparkles
-        }
-      ]
+      badge: "E-LIBRARY",
+      badgeColor: "bg-blue-600 text-white",
+      themeColor: "text-blue-600",
+      iconBg: "bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-blue-200/80 shadow-md",
+      cardBg: "hover:border-blue-500/40 hover:bg-blue-50/20",
+      tags: ["NCERT Books", "Classes 6-12", "Solved Papers", "Revision Notes"]
     },
     {
       id: "colleges",
       title: "Partner Colleges & Admissions",
-      description: "Accredited campuses, fees & verified seats",
-      link: "/colleges",
-      iconTheme: "bg-slate-100 text-[#0A1D3F] border border-slate-300/80",
+      subtitle: "Accredited universities, direct counselling & verified campus seats",
+      path: "/colleges",
       icon: GraduationCap,
-      items: [
-        {
-          label: "Engineering Institutes (B.Tech)",
-          sub: "NAAC accredited colleges & placement records",
-          path: "/colleges?category=Engineering",
-          icon: Atom
-        },
-        {
-          label: "Medical & Health Sciences",
-          sub: "MBBS, BDS, Pharmacy & Nursing colleges",
-          path: "/colleges?category=Medical",
-          icon: Sparkles
-        },
-        {
-          label: "Management (MBA & BBA)",
-          sub: "Corporate tie-ups & business schools",
-          path: "/colleges?category=Management",
-          icon: GraduationCap
-        },
-        {
-          label: "Direct Admissions & Guidance",
-          sub: "Seat counselling, cutoffs & fee booking",
-          path: "/colleges",
-          icon: ChevronRight
-        }
-      ]
+      badge: "ADMISSIONS",
+      badgeColor: "bg-[#0A1D3F] text-white",
+      themeColor: "text-[#0A1D3F]",
+      iconBg: "bg-gradient-to-br from-slate-800 to-[#0A1D3F] text-white shadow-slate-300/80 shadow-md",
+      cardBg: "hover:border-[#0A1D3F]/40 hover:bg-slate-50/60",
+      tags: ["Engineering", "Medical & Health", "Management MBA", "Direct Seat"]
     }
   ];
 
-  // Filter sections by tab & search query
-  const filteredSections = useMemo(() => {
-    let list = categorySections;
+  // Filter categories by tab & search query
+  const filteredTabs = useMemo(() => {
+    let list = categoryTabs;
 
     if (selectedTab !== "all") {
-      list = list.filter((sec) => sec.id === selectedTab);
+      list = list.filter((cat) => cat.id === selectedTab);
     }
 
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
-      list = list
-        .map((sec) => ({
-          ...sec,
-          items: sec.items.filter(
-            (item) =>
-              item.label.toLowerCase().includes(q) ||
-              item.sub.toLowerCase().includes(q) ||
-              sec.title.toLowerCase().includes(q)
-          )
-        }))
-        .filter((sec) => sec.items.length > 0);
+      list = list.filter(
+        (cat) =>
+          cat.title.toLowerCase().includes(q) ||
+          cat.subtitle.toLowerCase().includes(q) ||
+          cat.tags.some((t) => t.toLowerCase().includes(q))
+      );
     }
 
     return list;
-  }, [categorySections, selectedTab, searchQuery]);
+  }, [categoryTabs, selectedTab, searchQuery]);
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.2 }}
-      className="space-y-3.5 max-w-4xl mx-auto pb-8"
+      className="space-y-4 max-w-4xl mx-auto pb-8"
     >
-      {/* Clean Header & Search Area */}
-      <div className="space-y-2.5">
+      {/* Header & Search Bar */}
+      <div className="space-y-3">
         <div>
-          <h1 className="text-lg sm:text-xl font-bold text-[#0A1D3F] tracking-tight">
+          <h1 className="text-lg sm:text-xl font-black text-[#0A1D3F] tracking-tight">
             Explore Categories
           </h1>
           <p className="text-xs text-slate-500">
-            Find coaching batches, exam results, digital books & partner colleges.
+            Select a category tab to access courses, franchise institutes, books & exam results.
           </p>
         </div>
 
@@ -218,13 +139,13 @@ export const CategoriesPage = () => {
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search programs, boards, exams or colleges..."
+            placeholder="Search categories (e.g. Coaching, Institutes, Results, Books, Colleges)..."
             className="w-full h-10 pl-10 pr-9 rounded-xl bg-white border border-slate-200/90 text-xs sm:text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[#FF8A00] focus:ring-1 focus:ring-orange-100 transition shadow-2xs"
           />
           {searchQuery && (
             <button
               onClick={() => setSearchQuery("")}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5 cursor-pointer"
               aria-label="Clear search"
             >
               <X className="w-3.5 h-3.5" />
@@ -232,7 +153,7 @@ export const CategoriesPage = () => {
           )}
         </div>
 
-        {/* Clean Filter Tabs */}
+        {/* Horizontal Category Navigation Tabs */}
         <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 -mx-1 px-1">
           {filterTabs.map((tab) => {
             const active = selectedTab === tab.id;
@@ -240,7 +161,7 @@ export const CategoriesPage = () => {
               <button
                 key={tab.id}
                 onClick={() => setSelectedTab(tab.id)}
-                className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${
+                className={`shrink-0 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
                   active
                     ? "bg-[#0A1D3F] text-white shadow-2xs"
                     : "bg-white text-slate-600 border border-slate-200/80 hover:bg-slate-50 hover:text-slate-900"
@@ -253,89 +174,87 @@ export const CategoriesPage = () => {
         </div>
       </div>
 
-      {/* Category Sections - Clean Grouped iOS/Linear Style */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 pt-0.5">
-        {filteredSections.map((section, secIdx) => {
-          const SectionIcon = section.icon;
+      {/* Category Tabs Grid - Only Tabs */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-0.5">
+        <AnimatePresence mode="popLayout">
+          {filteredTabs.map((cat, idx) => {
+            const Icon = cat.icon;
 
-          return (
-            <motion.div
-              key={section.id}
-              initial={{ opacity: 0, y: 6 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: secIdx * 0.03 }}
-              className="bg-white rounded-2xl border border-slate-200/80 shadow-2xs overflow-hidden flex flex-col hover:border-slate-300 transition-colors"
-            >
-              {/* Clean Section Header */}
-              <div className="px-4 py-3 bg-slate-50/60 border-b border-slate-100 flex items-center justify-between">
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <div
-                    className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${section.iconTheme}`}
-                  >
-                    <SectionIcon className="w-4 h-4 stroke-[2.2]" />
-                  </div>
-                  <div className="min-w-0">
-                    <h2 className="text-xs sm:text-sm font-bold text-[#FF8A00] truncate">
-                      {section.title}
-                    </h2>
-                    <p className="text-[11px] text-slate-400 truncate">
-                      {section.description}
-                    </p>
-                  </div>
-                </div>
-
+            return (
+              <motion.div
+                key={cat.id}
+                layout
+                initial={{ opacity: 0, scale: 0.96 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.96 }}
+                transition={{ duration: 0.15, delay: idx * 0.02 }}
+              >
                 <Link
-                  to={section.link}
-                  className="text-xs font-bold text-[#FF8A00] hover:text-[#E67A00] flex items-center gap-0.5 group shrink-0 ml-2"
+                  to={cat.path}
+                  className={`group relative flex items-center justify-between p-3.5 sm:p-4 rounded-2xl bg-white border border-slate-200/80 shadow-2xs transition-all duration-200 ${cat.cardBg} cursor-pointer block`}
                 >
-                  <span>View All</span>
-                  <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
-                </Link>
-              </div>
-
-              {/* Clean List Items (Hairline divided, NO nested box clutter, NO truncation) */}
-              <div className="divide-y divide-slate-100 flex-1">
-                {section.items.map((item) => {
-                  const ItemIcon = item.icon;
-                  return (
-                    <Link
-                      key={item.label}
-                      to={item.path}
-                      className="flex items-center justify-between px-4 py-2.5 hover:bg-slate-50/80 active:bg-slate-100/60 transition-colors group"
+                  <div className="flex items-start gap-3 min-w-0 pr-2">
+                    {/* Category Tab Icon */}
+                    <div
+                      className={`w-11 h-11 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center shrink-0 ${cat.iconBg} group-hover:scale-105 transition-transform duration-200`}
                     >
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div className="w-7 h-7 rounded-lg bg-slate-100/80 text-slate-500 flex items-center justify-center shrink-0 group-hover:bg-orange-50 group-hover:text-[#FF8A00] transition-colors">
-                          <ItemIcon className="w-3.5 h-3.5" />
-                        </div>
-                        <div className="min-w-0 pr-2">
-                          <div className="text-xs font-semibold text-slate-800 group-hover:text-[#FF8A00] transition-colors leading-tight">
-                            {item.label}
-                          </div>
-                          <div className="text-[11px] text-slate-400 leading-tight mt-0.5">
-                            {item.sub}
-                          </div>
-                        </div>
-                      </div>
-                      <ChevronRight className="w-3.5 h-3.5 text-slate-300 group-hover:text-[#0A1D3F] group-hover:translate-x-0.5 transition-all shrink-0" />
-                    </Link>
-                  );
-                })}
-              </div>
-            </motion.div>
-          );
-        })}
+                      <Icon className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2.2]" />
+                    </div>
 
-        {filteredSections.length === 0 && (
+                    {/* Category Info */}
+                    <div className="min-w-0 space-y-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h2 className="text-xs sm:text-sm font-bold text-[#0A1D3F] group-hover:text-[#FF8A00] transition-colors leading-tight truncate">
+                          {cat.title}
+                        </h2>
+                        {cat.badge && (
+                          <span
+                            className={`text-[9px] font-black px-1.5 py-0.5 rounded-md tracking-wider ${cat.badgeColor}`}
+                          >
+                            {cat.badge}
+                          </span>
+                        )}
+                      </div>
+
+                      <p className="text-[11px] text-slate-500 leading-snug line-clamp-2">
+                        {cat.subtitle}
+                      </p>
+
+                      {/* Quick Tag Badges */}
+                      <div className="flex items-center gap-1 flex-wrap pt-0.5">
+                        {cat.tags.slice(0, 3).map((tag) => (
+                          <span
+                            key={tag}
+                            className="text-[10px] font-semibold text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded-md"
+                          >
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Right Action Chevron */}
+                  <div className="w-8 h-8 rounded-xl bg-slate-50 text-slate-400 group-hover:bg-[#FF8A00] group-hover:text-white flex items-center justify-center shrink-0 transition-all duration-200 group-hover:translate-x-0.5 shadow-2xs">
+                    <ChevronRight className="w-4 h-4 stroke-[2.5]" />
+                  </div>
+                </Link>
+              </motion.div>
+            );
+          })}
+        </AnimatePresence>
+
+        {filteredTabs.length === 0 && (
           <div className="col-span-full text-center py-10 bg-white rounded-2xl border border-slate-200/80">
             <p className="text-xs sm:text-sm font-semibold text-slate-600">
-              No categories found matching "{searchQuery}"
+              No category tabs found matching "{searchQuery}"
             </p>
             <button
               onClick={() => {
                 setSearchQuery("");
                 setSelectedTab("all");
               }}
-              className="mt-2 text-xs font-bold text-[#FF8A00] hover:underline"
+              className="mt-2 text-xs font-bold text-[#FF8A00] hover:underline cursor-pointer"
             >
               Reset Filters
             </button>
@@ -345,5 +264,7 @@ export const CategoriesPage = () => {
     </motion.div>
   );
 };
+
+
 
 

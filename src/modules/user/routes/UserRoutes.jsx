@@ -16,6 +16,7 @@ import { HomeDashboardPage } from "../pages/dashboard/HomeDashboardPage";
 import { AboutPage } from "../pages/about/AboutPage";
 import { CategoriesPage } from "../pages/categories/CategoriesPage";
 import { CollegesListingPage } from "../pages/college/CollegesListingPage";
+import { InstitutesListingPage } from "../pages/institutes/InstitutesListingPage";
 import { BooksHomePage } from "../pages/books/BooksHomePage";
 import { BookDetailsPage } from "../pages/books/BookDetailsPage";
 import { BookCheckoutPage } from "../pages/books/BookCheckoutPage";
@@ -64,6 +65,10 @@ export const UserRoutes = () => {
         <Route path="/about" element={<AboutPage />} />
         <Route path="/categories" element={<CategoriesPage />} />
         
+        {/* Partner Institutes & Franchises (Dedicated Institutes Page) */}
+        <Route path="/institutes" element={<InstitutesListingPage />} />
+        <Route path="/institutes/:id" element={<Navigate to="/institutes" replace />} />
+
         {/* Partner Colleges & Admissions */}
         <Route path="/colleges" element={<CollegesListingPage />} />
         <Route path="/colleges/:id" element={<Navigate to="/colleges" replace />} />

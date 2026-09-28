@@ -11,10 +11,11 @@ export const AppHeader = ({ unreadCount = 2 }) => {
   const navLinks = [
     { name: "Home", path: "/home" },
     { name: "Categories", path: "/categories" },
+    { name: "Institutes", path: "/institutes" },
     { name: "Colleges", path: "/colleges" },
     { name: "Registration", path: "/register" },
     { name: "Books", path: "/books" },
-    { name: "Online Coaching", path: "/coaching" },
+    { name: "Coaching", path: "/coaching" },
     { name: "Results", path: "/results" },
     { name: "My Orders", path: "/orders" },
   ];

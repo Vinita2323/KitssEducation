@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 import {
   GraduationCap,
   Building2,
@@ -16,8 +16,18 @@ import { StudyRegistrationForm } from "../../components/auth/StudyRegistrationFo
 import { TeacherProfessorForm } from "../../components/auth/TeacherProfessorForm";
 
 export const RegisterPage = () => {
+  const [searchParams] = useSearchParams();
+  const initialType = searchParams.get("type");
+  
   // Screen state: null = Selection, 'franchise', 'tuition', 'study', 'teacher'
-  const [selectedType, setSelectedType] = useState(null);
+  const [selectedType, setSelectedType] = useState(initialType || null);
+
+  useEffect(() => {
+    const t = searchParams.get("type");
+    if (t) {
+      setSelectedType(t);
+    }
+  }, [searchParams]);
 
   const registrationOptions = [
     {

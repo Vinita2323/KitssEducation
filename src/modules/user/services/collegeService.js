@@ -102,6 +102,119 @@ export const collegeService = {
     return colleges;
   },
 
+  // Fetch active partner institutes & franchise colleges (excluding root universities)
+  async getInstitutes({
+    search = "",
+    city = "All",
+    state = "All",
+    district = "All",
+    degree = "All",
+    universityId = "All",
+  } = {}) {
+    await delay(100);
+    const store = getLocalStore();
+    const allCourses = store.courses || [];
+    const allUniversities = store.universities || [];
+
+    // Filter out root universities (keep institutes, colleges, academies, schools)
+    let institutes = (store.colleges || []).filter(
+      (c) => c.status === "active" && c.collegeType !== "University" && c.category !== "University"
+    );
+
+    // Map university details to each institute
+    institutes = institutes.map((inst) => {
+      const cId = String(inst._id || inst.id);
+      const relatedCourses = allCourses.filter(
+        (crs) =>
+          (String(crs.collegeId) === cId ||
+           String(crs.collegeId) === String(inst._id) ||
+           String(crs.collegeId) === String(inst.id)) &&
+          crs.status === "active"
+      );
+
+      // Determine parent university
+      let parentUni = allUniversities.find(
+        (u) => String(u._id || u.id) === String(inst.universityId)
+      );
+
+      if (!parentUni) {
+        if (inst.name?.toLowerCase().includes("amity") || inst.name?.toLowerCase().includes("apex") || inst.state === "Uttar Pradesh") {
+          parentUni = allUniversities.find((u) => u.shortName === "AU") || { name: "Amity University (AU)", shortName: "AU", id: "univ-amity" };
+        } else if (inst.name?.toLowerCase().includes("manipal") || inst.name?.toLowerCase().includes("xavier") || inst.state === "Karnataka") {
+          parentUni = allUniversities.find((u) => u.shortName === "MAHE") || { name: "Manipal Academy of Higher Education", shortName: "MAHE", id: "univ-mahe" };
+        } else if (inst.name?.toLowerCase().includes("punjab") || inst.state === "Punjab") {
+          parentUni = allUniversities.find((u) => u.shortName === "LPU") || { name: "Lovely Professional University", shortName: "LPU", id: "univ-lpu" };
+        } else if (inst.name?.toLowerCase().includes("mumbai") || inst.name?.toLowerCase().includes("kota")) {
+          parentUni = allUniversities.find((u) => u.shortName === "CU") || { name: "Chandigarh University", shortName: "CU", id: "univ-cu" };
+        } else {
+          parentUni = allUniversities.find((u) => u.shortName === "DU") || { name: "Delhi University", shortName: "DU", id: "univ-du" };
+        }
+      }
+
+      return {
+        ...inst,
+        universityId: inst.universityId || parentUni?.id || parentUni?._id || "univ-du",
+        parentUniversityName: parentUni?.name || "Delhi University",
+        parentUniversityShort: parentUni?.shortName || "DU",
+        coursesCount: relatedCourses.length || inst.coursesCount || 3,
+        popularCourses:
+          relatedCourses.length > 0
+            ? relatedCourses.map((c) => c.courseName).slice(0, 3)
+            : inst.popularCourses,
+        degreeTypes: Array.from(new Set(relatedCourses.map((c) => c.degreeType).filter(Boolean))),
+      };
+    });
+
+    // University tie-up filter
+    if (universityId && universityId !== "All") {
+      institutes = institutes.filter(
+        (inst) =>
+          String(inst.universityId) === String(universityId) ||
+          inst.parentUniversityShort?.toLowerCase() === universityId.toLowerCase()
+      );
+    }
+
+    // Search filter
+    if (search && search.trim() !== "") {
+      const q = search.trim().toLowerCase();
+      institutes = institutes.filter(
+        (c) =>
+          c.name?.toLowerCase().includes(q) ||
+          c.parentUniversityName?.toLowerCase().includes(q) ||
+          c.district?.toLowerCase().includes(q) ||
+          c.city?.toLowerCase().includes(q) ||
+          c.state?.toLowerCase().includes(q) ||
+          c.location?.toLowerCase().includes(q) ||
+          c.description?.toLowerCase().includes(q) ||
+          c.popularCourses?.some((crs) => crs.toLowerCase().includes(q))
+      );
+    }
+
+    // State filter
+    if (state && state !== "All") {
+      institutes = institutes.filter(
+        (c) => (c.state || "").toLowerCase() === state.toLowerCase()
+      );
+    }
+
+    // District filter
+    if (district && district !== "All") {
+      institutes = institutes.filter(
+        (c) =>
+          (c.district || c.city || "").toLowerCase() === district.toLowerCase()
+      );
+    }
+
+    // Degree filter
+    if (degree && degree !== "All") {
+      institutes = institutes.filter((c) =>
+        c.degreeTypes?.some((d) => d.toLowerCase() === degree.toLowerCase())
+      );
+    }
+
+    return institutes;
+  },
+
   // Fetch single active college by ID (with active courses)
   async getCollegeById(id) {
     await delay(120);

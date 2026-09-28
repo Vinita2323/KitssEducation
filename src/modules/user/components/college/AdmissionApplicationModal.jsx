@@ -116,7 +116,25 @@ export const AdmissionApplicationModal = ({
     fetchCourses();
   }, [selectedCollegeId]);
 
-  if (!isOpen) return null;
+  // Lock background page scroll when modal is open
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const originalOverflow = document.body.style.overflow;
+    const originalPaddingRight = document.body.style.paddingRight;
+
+    // Compensate for scrollbar disappearance to prevent layout shift
+    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+    if (scrollbarWidth > 0) {
+      document.body.style.paddingRight = `${scrollbarWidth}px`;
+    }
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = originalOverflow;
+      document.body.style.paddingRight = originalPaddingRight;
+    };
+  }, [isOpen]);
 
   const selectedCollege = colleges.find(
     (c) => String(c._id || c.id) === String(selectedCollegeId)
@@ -191,26 +209,6 @@ export const AdmissionApplicationModal = ({
       setTimeout(() => setCopied(false), 2000);
     }
   };
-
-  // Lock background page scroll when modal is open
-  useEffect(() => {
-    if (!isOpen) return;
-
-    const originalOverflow = document.body.style.overflow;
-    const originalPaddingRight = document.body.style.paddingRight;
-
-    // Compensate for scrollbar disappearance to prevent layout shift
-    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
-    if (scrollbarWidth > 0) {
-      document.body.style.paddingRight = `${scrollbarWidth}px`;
-    }
-    document.body.style.overflow = "hidden";
-
-    return () => {
-      document.body.style.overflow = originalOverflow;
-      document.body.style.paddingRight = originalPaddingRight;
-    };
-  }, [isOpen]);
 
   const handleModalClose = () => {
     setSubmissionResult(null);
