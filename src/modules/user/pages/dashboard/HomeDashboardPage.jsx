@@ -2,7 +2,7 @@ import React from "react";
 import { motion } from "framer-motion";
 import { HeroBannerCarousel } from "../../components/dashboard/HeroBannerCarousel";
 import { ServicesSection } from "../../components/dashboard/ServicesSection";
-import { HomeCollegeSection } from "../../components/college/HomeCollegeSection";
+import { HomeAboutSection } from "../../components/dashboard/HomeAboutSection";
 
 export const HomeDashboardPage = () => {
   return (
@@ -19,8 +19,8 @@ export const HomeDashboardPage = () => {
         {/* 2. Redesigned Services & Features (Our Services, Why Choose Us, Statistics) */}
         <ServicesSection />
 
-        {/* 3. Partner Colleges Section */}
-        <HomeCollegeSection />
+        {/* 3. About Us — opens the full about page */}
+        <HomeAboutSection />
       </div>
     </motion.div>
   );

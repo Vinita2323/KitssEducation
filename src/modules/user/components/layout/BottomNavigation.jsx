@@ -1,7 +1,7 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Home, Layers, GraduationCap, ShieldCheck, UserPlus, Info } from "lucide-react";
+import { Home, Layers, GraduationCap, ShieldCheck, FileCheck, UserPlus } from "lucide-react";
 
 export const BottomNavigation = () => {
   const location = useLocation();
@@ -11,7 +11,7 @@ export const BottomNavigation = () => {
     { label: "Categories", path: "/categories", icon: Layers },
     { label: "Colleges", path: "/colleges", icon: GraduationCap },
     { label: "Courses", path: "/subscriptions", icon: ShieldCheck },
-    { label: "About", path: "/about", icon: Info },
+    { label: "Result", path: "/results", icon: FileCheck },
     { label: "Registration", path: "/register", icon: UserPlus }
   ];
 

@@ -11,6 +11,7 @@ export const INITIAL_COACHING_COURSES = [
     class: "Class 10",
     state: "Delhi",
     courseType: "Comprehensive",
+    language: "English",
     subjects: ["Physics", "Chemistry", "Biology"],
     teacher: "Dr. Alok Verma & Dr. Neha Gupta",
     teacherRole: "Senior CBSE Science Mentors (14+ Yrs Exp)",
@@ -275,6 +276,7 @@ export const INITIAL_COACHING_COURSES = [
     class: "Class 12",
     state: "Delhi",
     courseType: "Comprehensive",
+    language: "English",
     subjects: ["Physics", "Mathematics"],
     teacher: "Prof. Rajesh Malhotra & Dr. S. Raman",
     teacherRole: "IIT Alumni & Senior Educationists (18+ Yrs Exp)",
@@ -384,6 +386,7 @@ export const INITIAL_COACHING_COURSES = [
     class: "Class 10",
     state: "Madhya Pradesh",
     courseType: "Comprehensive",
+    language: "Hindi",
     subjects: ["Science", "Mathematics"],
     teacher: "Er. Manoj Tiwari & Smt. Vandana Sharma",
     teacherRole: "Senior MP Board Master Teachers (15+ Yrs Exp)",
@@ -483,6 +486,7 @@ export const INITIAL_COACHING_COURSES = [
     class: "Class 9",
     state: "Delhi",
     courseType: "Foundation",
+    language: "English",
     subjects: ["Physics", "Chemistry", "Biology", "Mathematics"],
     teacher: "Team KITSS Master Educators",
     teacherRole: "Subject Matter Specialists",
@@ -552,6 +556,7 @@ export const INITIAL_COACHING_COURSES = [
     class: "Class 11",
     state: "Uttar Pradesh",
     courseType: "Competitive",
+    language: "English",
     subjects: ["Biology", "Chemistry"],
     teacher: "Dr. Pratibha Saxena & Dr. R. K. Mishra",
     teacherRole: "Senior Medical Entrance Specialists",
@@ -693,6 +698,10 @@ export function getCoachingStore() {
             }
             if (!c.subscriptionPlans && initialMatch.subscriptionPlans) {
               c.subscriptionPlans = initialMatch.subscriptionPlans;
+              needsUpdate = true;
+            }
+            if (!c.language && initialMatch.language) {
+              c.language = initialMatch.language;
               needsUpdate = true;
             }
           }

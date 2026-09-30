@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import {
-  SlidersHorizontal,
-  Filter,
   CheckCircle2,
   ArrowRight,
   BookOpen,
@@ -22,9 +20,29 @@ export const CourseSelectorPage = () => {
 
   const [selectedBoard, setSelectedBoard] = useState("All");
   const [selectedState, setSelectedState] = useState("All");
-  const [selectedClass, setSelectedClass] = useState("All");
   const [selectedSubject, setSelectedSubject] = useState("All");
   const [selectedType, setSelectedType] = useState("All");
+  const [selectedLanguage, setSelectedLanguage] = useState("All");
+
+  const boardsByState = {
+    Delhi: ["CBSE", "ICSE"],
+    "Madhya Pradesh": ["Madhya Pradesh Board", "CBSE", "ICSE"],
+    "Uttar Pradesh": ["Uttar Pradesh Board", "CBSE", "ICSE"],
+    Maharashtra: ["Maharashtra State Board", "CBSE", "ICSE"],
+  };
+
+  const boardOptions =
+    selectedState === "All"
+      ? [...new Set(Object.values(boardsByState).flat())]
+      : boardsByState[selectedState] || [];
+
+  const handleStateChange = (state) => {
+    setSelectedState(state);
+    const nextBoards = state === "All" ? Object.values(boardsByState).flat() : boardsByState[state] || [];
+    if (selectedBoard !== "All" && !nextBoards.includes(selectedBoard)) {
+      setSelectedBoard("All");
+    }
+  };
 
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -38,12 +56,14 @@ export const CourseSelectorPage = () => {
     const fetchCourses = async () => {
       try {
         setLoading(true);
+        const isClassFilter = selectedType.startsWith("Class ");
         const data = await coachingService.getCourses({
           board: selectedBoard,
           state: selectedState,
-          classGrade: selectedClass,
+          classGrade: isClassFilter ? selectedType : "All",
           subject: selectedSubject,
-          courseType: selectedType,
+          courseType: isClassFilter ? "All" : selectedType,
+          language: selectedLanguage,
         });
         setCourses(data);
       } catch (err) {
@@ -53,7 +73,7 @@ export const CourseSelectorPage = () => {
       }
     };
     fetchCourses();
-  }, [selectedBoard, selectedState, selectedClass, selectedSubject, selectedType]);
+  }, [selectedBoard, selectedState, selectedSubject, selectedType, selectedLanguage]);
 
   const handleJoinClick = (course) => {
     setSelectedCourseForJoin(course);
@@ -76,45 +96,23 @@ export const CourseSelectorPage = () => {
 
   return (
     <div className="max-w-7xl mx-auto space-y-6 sm:space-y-8">
-      {/* Header */}
-      <div className="bg-white rounded-3xl border border-[#E6E8EC] p-6 sm:p-8 card-shadow space-y-2 text-center sm:text-left">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#FF8A00]/10 text-[#FF8A00] font-bold text-xs uppercase tracking-wider">
-          <SlidersHorizontal className="w-3.5 h-3.5" />
-          <span>Course Selection Hub</span>
-        </div>
-        <h1 className="text-2xl sm:text-3xl font-black text-[#0A1D3F] tracking-tight">
-          Select Your Course
-        </h1>
-        <p className="text-xs sm:text-sm text-[#667085] max-w-xl">
-          Choose your education board, home state, academic class, and subjects to find tailored online coaching programs.
-        </p>
-      </div>
+      <Link
+        to="/coaching/course-cbse-10-sci"
+        className="block -mt-3 sm:-mt-5 -mx-3 sm:-mx-6 lg:-mx-8 overflow-hidden"
+      >
+        <img
+          src="/banners/results-banner-coaching.jpg"
+          alt="Live batches 2026. Crack CBSE, JEE and NEET with expert mentors."
+          className="block w-full h-auto"
+        />
+      </Link>
+      <h1 className="text-xl sm:text-2xl font-black text-[#0A1D3F] tracking-tight">
+        Select Your Course
+      </h1>
 
       {/* Filter Matrix Controls */}
-      <div className="bg-white rounded-2xl border border-[#E6E8EC] p-5 sm:p-6 card-shadow space-y-4">
-        <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#0A1D3F]">
-          <Filter className="w-4 h-4 text-[#FF8A00]" />
-          <span>Filter Criteria</span>
-        </div>
-
+      <div className="bg-white rounded-2xl border border-[#E6E8EC] p-5 sm:p-6 card-shadow">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
-          {/* Board Filter */}
-          <div className="space-y-1">
-            <label className="text-[11px] font-bold uppercase text-[#667085]">
-              Board
-            </label>
-            <select
-              value={selectedBoard}
-              onChange={(e) => setSelectedBoard(e.target.value)}
-              className="w-full px-3 py-2 rounded-xl bg-[#F7F8FA] border border-[#E6E8EC] text-xs font-semibold text-[#0A1D3F] focus:outline-none focus:border-[#FF8A00]"
-            >
-              <option value="All">All Boards</option>
-              <option value="CBSE">CBSE</option>
-              <option value="Madhya Pradesh Board">Madhya Pradesh Board</option>
-              <option value="ICSE">ICSE</option>
-            </select>
-          </div>
-
           {/* State Filter */}
           <div className="space-y-1">
             <label className="text-[11px] font-bold uppercase text-[#667085]">
@@ -122,7 +120,7 @@ export const CourseSelectorPage = () => {
             </label>
             <select
               value={selectedState}
-              onChange={(e) => setSelectedState(e.target.value)}
+              onChange={(e) => handleStateChange(e.target.value)}
               className="w-full px-3 py-2 rounded-xl bg-[#F7F8FA] border border-[#E6E8EC] text-xs font-semibold text-[#0A1D3F] focus:outline-none focus:border-[#FF8A00]"
             >
               <option value="All">All States</option>
@@ -133,21 +131,47 @@ export const CourseSelectorPage = () => {
             </select>
           </div>
 
-          {/* Class Filter */}
+          {/* Board Filter — options follow the selected state */}
           <div className="space-y-1">
             <label className="text-[11px] font-bold uppercase text-[#667085]">
-              Class
+              Board
             </label>
             <select
-              value={selectedClass}
-              onChange={(e) => setSelectedClass(e.target.value)}
+              value={selectedBoard}
+              onChange={(e) => setSelectedBoard(e.target.value)}
               className="w-full px-3 py-2 rounded-xl bg-[#F7F8FA] border border-[#E6E8EC] text-xs font-semibold text-[#0A1D3F] focus:outline-none focus:border-[#FF8A00]"
             >
-              <option value="All">All Classes</option>
-              <option value="Class 9">Class 9</option>
-              <option value="Class 10">Class 10</option>
-              <option value="Class 11">Class 11</option>
-              <option value="Class 12">Class 12</option>
+              <option value="All">All Boards</option>
+              {boardOptions.map((board) => (
+                <option key={board} value={board}>
+                  {board}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Course Type — replaces the class field */}
+          <div className="space-y-1">
+            <label className="text-[11px] font-bold uppercase text-[#667085]">
+              Course Type
+            </label>
+            <select
+              value={selectedType}
+              onChange={(e) => setSelectedType(e.target.value)}
+              className="w-full px-3 py-2 rounded-xl bg-[#F7F8FA] border border-[#E6E8EC] text-xs font-semibold text-[#0A1D3F] focus:outline-none focus:border-[#FF8A00]"
+            >
+              <option value="All">All Course Types</option>
+              <optgroup label="Classes">
+                <option value="Class 9">Class 9</option>
+                <option value="Class 10">Class 10</option>
+                <option value="Class 11">Class 11</option>
+                <option value="Class 12">Class 12</option>
+              </optgroup>
+              <optgroup label="Types">
+                <option value="Comprehensive">Comprehensive</option>
+                <option value="Foundation">Foundation</option>
+                <option value="Competitive">Competitive (NEET/JEE)</option>
+              </optgroup>
             </select>
           </div>
 
@@ -170,20 +194,19 @@ export const CourseSelectorPage = () => {
             </select>
           </div>
 
-          {/* Course Type Filter */}
+          {/* Language — replaces the old course type field */}
           <div className="space-y-1">
             <label className="text-[11px] font-bold uppercase text-[#667085]">
-              Course Type
+              Language
             </label>
             <select
-              value={selectedType}
-              onChange={(e) => setSelectedType(e.target.value)}
+              value={selectedLanguage}
+              onChange={(e) => setSelectedLanguage(e.target.value)}
               className="w-full px-3 py-2 rounded-xl bg-[#F7F8FA] border border-[#E6E8EC] text-xs font-semibold text-[#0A1D3F] focus:outline-none focus:border-[#FF8A00]"
             >
-              <option value="All">All Types</option>
-              <option value="Comprehensive">Comprehensive</option>
-              <option value="Foundation">Foundation</option>
-              <option value="Competitive">Competitive (NEET/JEE)</option>
+              <option value="All">All Languages</option>
+              <option value="English">English</option>
+              <option value="Hindi">Hindi</option>
             </select>
           </div>
         </div>
@@ -198,9 +221,9 @@ export const CourseSelectorPage = () => {
             onClick={() => {
               setSelectedBoard("All");
               setSelectedState("All");
-              setSelectedClass("All");
               setSelectedSubject("All");
               setSelectedType("All");
+              setSelectedLanguage("All");
             }}
             className="text-[#133C8B] hover:text-[#FF8A00] font-semibold transition cursor-pointer"
           >

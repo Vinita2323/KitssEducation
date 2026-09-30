@@ -9,6 +9,7 @@ import { ResultLoading } from "../../components/results/ResultLoading";
 import { ResultNotFound } from "../../components/results/ResultNotFound";
 import { ResultMarksheet, ResultCard } from "../../components/results/ResultMarksheet";
 import { SkeletonLoader, EmptyState } from "../../components/common/EmptyState";
+import { ResultAdBanner } from "../../components/results/ResultAdBanner";
 
 export const ResultsPage = () => {
   const { showError, showSuccess } = useToast();
@@ -181,6 +182,12 @@ export const ResultsPage = () => {
         </div>
       </div>
 
+      <ResultAdBanner
+        src="/banners/results-banner-coaching.jpg"
+        alt="Live batches 2026. Crack CBSE, JEE and NEET with expert mentors."
+        to="/coaching"
+      />
+
       {/* Main Search & Results Flow Area */}
       <div className="space-y-2.5">
         {/* STEP 0: LANDING SCREEN */}
@@ -243,6 +250,12 @@ export const ResultsPage = () => {
           </div>
         )}
       </div>
+
+      <ResultAdBanner
+        src="/banners/results-banner-books.jpg"
+        alt="Study material 2026. Board books, notes and NCERT guides."
+        to="/books"
+      />
     </div>
   );
 };

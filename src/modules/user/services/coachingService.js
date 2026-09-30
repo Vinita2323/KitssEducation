@@ -46,6 +46,7 @@ export const coachingService = {
     classGrade = "All",
     subject = "All",
     courseType = "All",
+    language = "All",
     query = "",
   } = {}) {
     await delay(120);
@@ -123,6 +124,13 @@ export const coachingService = {
     // Filter by Course Type
     if (courseType && courseType !== "All") {
       list = list.filter((c) => c.courseType?.toLowerCase() === courseType.toLowerCase());
+    }
+
+    // Filter by Language
+    if (language && language !== "All") {
+      list = list.filter(
+        (c) => (c.language || "English").toLowerCase() === language.toLowerCase()
+      );
     }
 
     // Query Search
