@@ -224,16 +224,27 @@ export const authService = {
     // Generate credentials (unique User ID and secure Password)
     const credentials = generateStudentCredentials(formData);
 
+    const courseName = formData.applyCourseName || formData.class || credentials.class || "";
+    const district = formData.district || "";
     const newUser = {
       id: credentials.userId,
       password: credentials.password,
       name: credentials.name,
       email: credentials.email,
       phone: credentials.phone,
-      dob: credentials.dob || "2009-01-01",
-      state: credentials.state || formData.state || "Delhi",
-      board: credentials.board || "CBSE",
-      class: credentials.class || "Class 10",
+      dob: formData.dob || credentials.dob || "",
+      state: formData.state || credentials.state || "",
+      district,
+      city: formData.city || district || "",
+      address: formData.address || "",
+      pincode: formData.pincode || "",
+      board: formData.board || courseName,
+      class: courseName,
+      applyCourseName: courseName,
+      applyInstituteName: formData.applyInstituteName || "",
+      fatherName: formData.fatherName || "",
+      motherName: formData.motherName || "",
+      whatsappNo: formData.whatsappNo || "",
       avatar:
         "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
       joinDate: credentials.createdDate,

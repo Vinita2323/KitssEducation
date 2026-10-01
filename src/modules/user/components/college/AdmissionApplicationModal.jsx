@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   X,
   CheckCircle2,
@@ -19,6 +19,49 @@ import { collegeService } from "../../services/collegeService";
 import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../context/ToastContext";
 import { PrimaryButton, SecondaryButton } from "../common/PrimaryButton";
+
+const QUALIFICATION_OPTIONS = [
+  "10th Standard / Matriculation",
+  "12th Standard / Intermediate",
+  "Diploma",
+  "Bachelor's Degree",
+  "Master's Degree",
+];
+
+const toDateInputValue = (value) => {
+  if (!value) return "";
+  const text = String(value).trim();
+  if (/^\d{4}-\d{2}-\d{2}/.test(text)) return text.slice(0, 10);
+  const match = text.match(/^(\d{2})[-/](\d{2})[-/](\d{4})$/);
+  if (match) return `${match[3]}-${match[2]}-${match[1]}`;
+  return "";
+};
+
+const qualificationFromRegistration = (profile) => {
+  if (!profile) return "";
+  if (QUALIFICATION_OPTIONS.includes(profile.educationalQualification)) {
+    return profile.educationalQualification;
+  }
+  const source = `${profile.applyCourseName || ""} ${profile.class || ""} ${profile.board || ""}`.toLowerCase();
+  if (!source.trim()) return "";
+  if (/master|m\.tech|m\.sc|mba|postgraduate/.test(source)) return "Master's Degree";
+  if (/diploma/.test(source)) return "Diploma";
+  if (/bachelor|b\.a|b\.sc|b\.com|bca|b\.tech|undergraduate/.test(source)) return "Bachelor's Degree";
+  if (/class\s*1[12]|12th|11th|intermediate/.test(source)) return "12th Standard / Intermediate";
+  if (/class\s*10|10th|matric|secondary/.test(source)) return "10th Standard / Matriculation";
+  return "";
+};
+
+const detailsFromRegistration = (profile) => ({
+  fullName: profile?.name || "",
+  mobileNumber: profile?.phone || profile?.callingNo || "",
+  email: profile?.email || "",
+  dob: toDateInputValue(profile?.dob),
+  city: profile?.city || profile?.district || "",
+  educationalQualification: qualificationFromRegistration(profile),
+  passingYear: profile?.passingYear || "",
+  additionalInfo: "",
+});
 
 export const AdmissionApplicationModal = ({
   isOpen,
@@ -42,43 +85,41 @@ export const AdmissionApplicationModal = ({
   const [selectedCollegeId, setSelectedCollegeId] = useState(preselectedCollegeId);
   const [selectedCourseId, setSelectedCourseId] = useState(preselectedCourseId);
 
-  const [studentDetails, setStudentDetails] = useState({
-    fullName: "",
-    mobileNumber: "",
-    email: "",
-    dob: "",
-    city: "",
-    educationalQualification: "12th Standard / Intermediate",
-    passingYear: "2025",
-    additionalInfo: "",
-  });
+  const [studentDetails, setStudentDetails] = useState(() => detailsFromRegistration(user));
+  const filledProfileKey = useRef("");
 
   // Success result
   const [submissionResult, setSubmissionResult] = useState(null);
   const [copied, setCopied] = useState(false);
 
+  // A college or course already chosen on the listing is locked in.
+  // Adjust during render so the college picker never flashes on screen.
+  const minStep =
+    preselectedCollegeId && preselectedCourseId ? 3 : preselectedCollegeId ? 2 : 1;
+
+  if (isOpen && !submissionResult && step < minStep) {
+    setStep(minStep);
+  }
+  if (isOpen && preselectedCollegeId && selectedCollegeId !== preselectedCollegeId) {
+    setSelectedCollegeId(preselectedCollegeId);
+    setSelectedCourseId(preselectedCourseId || "");
+  }
+
   // Initialize data and pre-fill user profile
   useEffect(() => {
-    if (!isOpen) return;
-
-    // Reset steps if opening fresh
-    if (!submissionResult) {
-      setStep(preselectedCollegeId && preselectedCourseId ? 3 : preselectedCollegeId ? 2 : 1);
+    if (!isOpen) {
+      filledProfileKey.current = "";
+      return;
     }
 
     if (preselectedCollegeId) setSelectedCollegeId(preselectedCollegeId);
     if (preselectedCourseId) setSelectedCourseId(preselectedCourseId);
 
-    // Pre-fill user profile
-    if (user) {
-      setStudentDetails((prev) => ({
-        ...prev,
-        fullName: prev.fullName || user.name || "",
-        mobileNumber: prev.mobileNumber || user.phone || "",
-        email: prev.email || user.email || "",
-        dob: prev.dob || user.dob || "2008-05-14",
-        city: prev.city || user.city || "New Delhi",
-      }));
+    // Fill personal details from the student registration profile once per open.
+    const profileKey = user?.id || user?.email || "";
+    if (profileKey && filledProfileKey.current !== profileKey) {
+      filledProfileKey.current = profileKey;
+      setStudentDetails(detailsFromRegistration(user));
     }
 
     // Fetch colleges
@@ -178,7 +219,7 @@ export const AdmissionApplicationModal = ({
   };
 
   const handlePrevStep = () => {
-    if (step > 1) setStep(step - 1);
+    if (step > minStep) setStep(step - 1);
   };
 
   const handleSubmitApplication = async () => {
@@ -554,11 +595,12 @@ export const AdmissionApplicationModal = ({
                         onChange={(e) => handleInputChange("educationalQualification", e.target.value)}
                         className="w-full text-xs sm:text-sm px-3.5 py-2.5 rounded-xl border border-[#E6E8EC] focus:border-[#FF8A00] focus:outline-none bg-white"
                       >
-                        <option value="10th Standard / Matriculation">10th Standard / Matriculation</option>
-                        <option value="12th Standard / Intermediate">12th Standard / Intermediate</option>
-                        <option value="Diploma">Diploma</option>
-                        <option value="Bachelor's Degree">Bachelor's Degree</option>
-                        <option value="Master's Degree">Master's Degree</option>
+                        <option value="">Select qualification</option>
+                        {QUALIFICATION_OPTIONS.map((option) => (
+                          <option key={option} value={option}>
+                            {option}
+                          </option>
+                        ))}
                       </select>
                     </div>
 
@@ -656,7 +698,7 @@ export const AdmissionApplicationModal = ({
 
               {/* Navigation Actions */}
               <div className="flex items-center justify-between pt-3 border-t border-[#E6E8EC] gap-3">
-                {step > 1 ? (
+                {step > minStep ? (
                   <SecondaryButton size="sm" onClick={handlePrevStep} icon={ArrowLeft}>
                     Back
                   </SecondaryButton>

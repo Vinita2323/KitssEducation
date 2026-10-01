@@ -12,7 +12,8 @@ export const SearchableSelect = ({
   icon: Icon,
   disabled = false,
   error = "",
-  className = ""
+  className = "",
+  compact = false
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -70,8 +71,10 @@ export const SearchableSelect = ({
     if (containerRef.current) {
       const rect = containerRef.current.getBoundingClientRect();
       const viewportHeight = window.innerHeight;
-      const spaceBelow = viewportHeight - rect.bottom - 8;
-      const spaceAbove = rect.top - 8;
+      const topBar = 64;
+      const bottomBar = window.innerWidth < 768 ? 76 : 12;
+      const spaceBelow = viewportHeight - rect.bottom - bottomBar;
+      const spaceAbove = rect.top - topBar;
 
       // If space below is tighter than 230px and space above is larger, open upwards
       const shouldOpenUpwards = spaceBelow < 230 && spaceAbove > spaceBelow;
@@ -125,7 +128,7 @@ export const SearchableSelect = ({
             handleToggle();
           }
         }}
-        className={`w-full px-3 py-2 bg-slate-50/80 hover:bg-slate-50 border rounded-lg text-xs cursor-pointer transition-all duration-150 flex items-center justify-between gap-2 select-none ${
+        className={`w-full ${compact ? "h-8 px-2.5 rounded-md" : "px-3 py-2 rounded-lg"} bg-[#F7F8FA] hover:bg-slate-50 border text-xs cursor-pointer transition-all duration-150 flex items-center justify-between gap-2 select-none ${
           isOpen
             ? "border-[#FF8A00] ring-1.5 ring-orange-200/60 bg-white shadow-2xs"
             : error
@@ -203,20 +206,27 @@ export const SearchableSelect = ({
               className="overflow-y-auto p-1 space-y-0.5 overscroll-contain"
             >
               {filteredOptions.length > 0 ? (
-                filteredOptions.map((opt) => {
+                filteredOptions.map((opt, index) => {
                   const isSelected = opt.value === value;
+                  const showGroup = opt.group && opt.group !== filteredOptions[index - 1]?.group;
                   return (
-                    <div
-                      key={String(opt.value)}
-                      onClick={() => handleSelect(opt.value)}
-                      className={`px-2.5 py-1.5 rounded-md text-xs font-medium cursor-pointer transition-all flex items-center justify-between gap-2 ${
-                        isSelected
-                          ? "bg-orange-50 text-[#FF8A00] font-bold"
-                          : "text-[#0A1D3F] hover:bg-slate-50 hover:text-[#0A1D3F]"
-                      }`}
-                    >
-                      <span className="truncate">{opt.label}</span>
-                      {isSelected && <Check className="w-3 h-3 text-[#FF8A00] shrink-0 stroke-[2.5]" />}
+                    <div key={String(opt.value)}>
+                      {showGroup && (
+                        <p className="px-2.5 pt-1.5 pb-0.5 text-[10px] font-bold uppercase tracking-wide text-[#667085]">
+                          {opt.group}
+                        </p>
+                      )}
+                      <div
+                        onClick={() => handleSelect(opt.value)}
+                        className={`px-2.5 py-1.5 rounded-md text-xs font-medium cursor-pointer transition-all flex items-center justify-between gap-2 ${
+                          isSelected
+                            ? "bg-orange-50 text-[#FF8A00] font-bold"
+                            : "text-[#0A1D3F] hover:bg-slate-50 hover:text-[#0A1D3F]"
+                        }`}
+                      >
+                        <span className="truncate">{opt.label}</span>
+                        {isSelected && <Check className="w-3 h-3 text-[#FF8A00] shrink-0 stroke-[2.5]" />}
+                      </div>
                     </div>
                   );
                 })

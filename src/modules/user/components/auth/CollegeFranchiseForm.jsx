@@ -496,8 +496,8 @@ export const CollegeFranchiseForm = ({ onBack }) => {
   // ========================================================
   if (successData) {
     return (
-      <div className="bg-white p-5 sm:p-7 rounded-2xl border border-[#E2E8F0] shadow-md max-w-xl mx-auto text-center space-y-5 animate-in zoom-in-95 duration-200">
-        <div className="w-14 h-14 rounded-2xl bg-amber-500/10 text-amber-600 border border-amber-500/20 flex items-center justify-center mx-auto shadow-2xs">
+      <div className="bg-white p-5 sm:p-7 rounded-md border border-[#E2E8F0] shadow-md max-w-xl mx-auto text-center space-y-5 animate-in zoom-in-95 duration-200">
+        <div className="w-14 h-14 rounded-md bg-amber-500/10 text-amber-600 border border-amber-500/20 flex items-center justify-center mx-auto shadow-2xs">
           <ShieldCheck className="w-7 h-7 stroke-[2.2]" />
         </div>
 
@@ -514,7 +514,7 @@ export const CollegeFranchiseForm = ({ onBack }) => {
         </div>
 
         {/* Application Reference ID Box */}
-        <div className="p-4 bg-[#0A1D3F] rounded-xl text-white text-left space-y-1.5 shadow-sm">
+        <div className="p-4 bg-[#0A1D3F] rounded-md text-white text-left space-y-1.5 shadow-sm">
           <div className="text-[10px] uppercase font-bold text-[#FF8A00] tracking-wider">
             Application Reference ID
           </div>
@@ -543,7 +543,7 @@ export const CollegeFranchiseForm = ({ onBack }) => {
         </div>
 
         {/* Hierarchy Placement Summary */}
-        <div className="p-4 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] text-left text-xs space-y-2.5">
+        <div className="p-4 rounded-md bg-[#F8FAFC] border border-[#E2E8F0] text-left text-xs space-y-2.5">
           <div className="text-[10px] uppercase font-bold text-[#64748B] tracking-wider">
             Institutional Hierarchy Mapping
           </div>
@@ -577,7 +577,7 @@ export const CollegeFranchiseForm = ({ onBack }) => {
         </div>
 
         {/* Verification Timeline */}
-        <div className="p-3.5 rounded-xl bg-blue-50/70 border border-blue-100 text-left text-xs text-[#1E3A8A] space-y-1.5">
+        <div className="p-3.5 rounded-md bg-blue-50/70 border border-blue-100 text-left text-xs text-[#1E3A8A] space-y-1.5">
           <div className="flex items-center gap-1.5 font-bold text-xs text-[#0A1D3F]">
             <Info className="w-3.5 h-3.5 text-[#FF8A00]" />
             <span>Next Steps for Approval</span>
@@ -598,13 +598,13 @@ export const CollegeFranchiseForm = ({ onBack }) => {
           <button
             type="button"
             onClick={onBack}
-            className="w-full sm:w-auto py-2.5 px-5 rounded-xl bg-[#0A1D3F] hover:bg-[#133C8B] text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition cursor-pointer shadow-xs"
+            className="w-full sm:w-auto py-2.5 px-5 rounded-md bg-[#0A1D3F] hover:bg-[#133C8B] text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition cursor-pointer shadow-xs"
           >
             <span>Back to Registration</span>
           </button>
           <a
             href="/"
-            className="w-full sm:w-auto py-2.5 px-5 text-xs font-semibold text-[#0A1D3F] hover:bg-gray-100 rounded-xl transition border border-[#E2E8F0] text-center"
+            className="w-full sm:w-auto py-2.5 px-5 text-xs font-semibold text-[#0A1D3F] hover:bg-gray-100 rounded-md transition border border-[#E2E8F0] text-center"
           >
             Return to Homepage
           </a>
@@ -617,7 +617,7 @@ export const CollegeFranchiseForm = ({ onBack }) => {
   // VIEW: 5-STEP FORM + REVIEW SCREEN
   // ========================================================
   return (
-    <div className="bg-white p-4 sm:p-6 lg:p-7 rounded-2xl border border-[#E2E8F0] shadow-md max-w-2xl sm:max-w-3xl mx-auto text-left transition-all">
+    <div className="bg-white p-4 sm:p-6 lg:p-7 rounded-md border border-[#E2E8F0] shadow-md max-w-2xl sm:max-w-3xl mx-auto text-left transition-all">
       {/* Top Header Navigation */}
       <div className="flex items-center justify-between border-b border-[#E2E8F0] pb-3.5 mb-4">
         <button
@@ -631,7 +631,7 @@ export const CollegeFranchiseForm = ({ onBack }) => {
           <span>{currentStep === 1 ? "Back to Registration Options" : "Back to Previous Step"}</span>
         </button>
 
-        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#FFF7ED] border border-[#FF8A00]/20 text-[#FF8A00] text-[11px] font-bold">
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[#FFF7ED] border border-[#FF8A00]/20 text-[#FF8A00] text-[11px] font-bold">
           <ShieldCheck className="w-3.5 h-3.5" />
           Verified Franchise Network
         </span>
@@ -718,7 +718,7 @@ export const CollegeFranchiseForm = ({ onBack }) => {
 
       {/* Global Form Error Message if any */}
       {errors.submit && (
-        <div className="mb-4 p-3 rounded-xl bg-red-50 border border-red-200 text-xs text-[#D92D20] font-medium flex items-start gap-2">
+        <div className="mb-4 p-3 rounded-md bg-red-50 border border-red-200 text-xs text-[#D92D20] font-medium flex items-start gap-2">
           <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-red-500" />
           <div>{errors.submit}</div>
         </div>
@@ -736,7 +736,7 @@ export const CollegeFranchiseForm = ({ onBack }) => {
           transition={{ duration: 0.2 }}
           className="space-y-4"
         >
-          <div className="p-3.5 bg-[#F8FAFC] rounded-xl border border-[#E2E8F0] flex items-center gap-2 text-xs text-[#0A1D3F] font-bold uppercase tracking-wider">
+          <div className="p-3.5 bg-[#F8FAFC] rounded-md border border-[#E2E8F0] flex items-center gap-2 text-xs text-[#0A1D3F] font-bold uppercase tracking-wider">
             <Building2 className="w-4 h-4 text-[#FF8A00]" />
             <span>Step 1: Institution Details</span>
           </div>
@@ -758,7 +758,7 @@ export const CollegeFranchiseForm = ({ onBack }) => {
                   placeholder="e.g. Apex Institute of Technology & Management"
                   className={`w-full pl-9 pr-3 py-2.5 text-xs bg-white border ${
                     errors.institutionName ? "border-red-400 bg-red-50/20" : "border-[#CBD5E1]"
-                  } rounded-xl text-[#0A1D3F] focus:outline-none focus:border-[#FF8A00] focus:ring-2 focus:ring-[#FF8A00]/15 transition`}
+                  } rounded-md text-[#0A1D3F] focus:outline-none focus:border-[#FF8A00] focus:ring-2 focus:ring-[#FF8A00]/15 transition`}
                 />
               </div>
               {errors.institutionName && (
@@ -776,7 +776,7 @@ export const CollegeFranchiseForm = ({ onBack }) => {
                   <select
                     value={formData.institutionType}
                     onChange={(e) => handleInputChange("institutionType", e.target.value)}
-                    className="w-full px-3 py-2.5 text-xs bg-white border border-[#CBD5E1] rounded-xl text-[#0A1D3F] focus:outline-none focus:border-[#FF8A00] focus:ring-2 focus:ring-[#FF8A00]/15 transition cursor-pointer appearance-none"
+                    className="w-full px-3 py-2.5 text-xs bg-white border border-[#CBD5E1] rounded-md text-[#0A1D3F] focus:outline-none focus:border-[#FF8A00] focus:ring-2 focus:ring-[#FF8A00]/15 transition cursor-pointer appearance-none"
                   >
                     {INSTITUTION_TYPES.map((type) => (
                       <option key={type} value={type}>
@@ -805,7 +805,7 @@ export const CollegeFranchiseForm = ({ onBack }) => {
                     max="2026"
                     className={`w-full pl-9 pr-3 py-2.5 text-xs bg-white border ${
                       errors.yearEstablished ? "border-red-400 bg-red-50/20" : "border-[#CBD5E1]"
-                    } rounded-xl text-[#0A1D3F] focus:outline-none focus:border-[#FF8A00] focus:ring-2 focus:ring-[#FF8A00]/15 transition`}
+                    } rounded-md text-[#0A1D3F] focus:outline-none focus:border-[#FF8A00] focus:ring-2 focus:ring-[#FF8A00]/15 transition`}
                   />
                 </div>
                 {errors.yearEstablished && (
@@ -828,7 +828,7 @@ export const CollegeFranchiseForm = ({ onBack }) => {
                   value={formData.website}
                   onChange={(e) => handleInputChange("website", e.target.value)}
                   placeholder="https://institution.edu.in"
-                  className="w-full pl-9 pr-3 py-2.5 text-xs bg-white border border-[#CBD5E1] rounded-xl text-[#0A1D3F] focus:outline-none focus:border-[#FF8A00] focus:ring-2 focus:ring-[#FF8A00]/15 transition"
+                  className="w-full pl-9 pr-3 py-2.5 text-xs bg-white border border-[#CBD5E1] rounded-md text-[#0A1D3F] focus:outline-none focus:border-[#FF8A00] focus:ring-2 focus:ring-[#FF8A00]/15 transition"
                 />
               </div>
             </div>
@@ -839,7 +839,7 @@ export const CollegeFranchiseForm = ({ onBack }) => {
                 Institution Logo <span className="text-[#64748B] font-normal">(Optional — PNG/JPG up to 3MB)</span>
               </label>
               {formData.institutionLogo ? (
-                <div className="flex items-center justify-between p-3 rounded-xl bg-[#F8FAFC] border border-[#CBD5E1]">
+                <div className="flex items-center justify-between p-3 rounded-md bg-[#F8FAFC] border border-[#CBD5E1]">
                   <div className="flex items-center gap-3">
                     <img
                       src={formData.institutionLogo.preview}
@@ -865,7 +865,7 @@ export const CollegeFranchiseForm = ({ onBack }) => {
                   </button>
                 </div>
               ) : (
-                <label className="border-2 border-dashed border-[#CBD5E1] hover:border-[#FF8A00] rounded-xl p-3.5 flex flex-col items-center justify-center gap-1.5 bg-[#F8FAFC] hover:bg-[#FFF7ED]/30 cursor-pointer transition">
+                <label className="border-2 border-dashed border-[#CBD5E1] hover:border-[#FF8A00] rounded-md p-3.5 flex flex-col items-center justify-center gap-1.5 bg-[#F8FAFC] hover:bg-[#FFF7ED]/30 cursor-pointer transition">
                   <UploadCloud className="w-6 h-6 text-[#64748B]" />
                   <span className="text-xs font-semibold text-[#0A1D3F]">
                     Click or drag & drop institution logo
@@ -889,14 +889,14 @@ export const CollegeFranchiseForm = ({ onBack }) => {
             <button
               type="button"
               onClick={handleBackStep}
-              className="py-2.5 px-4 rounded-xl text-xs font-semibold text-[#64748B] hover:text-[#0A1D3F] hover:bg-[#F8FAFC] transition cursor-pointer"
+              className="py-2.5 px-4 rounded-md text-xs font-semibold text-[#64748B] hover:text-[#0A1D3F] hover:bg-[#F8FAFC] transition cursor-pointer"
             >
               Cancel
             </button>
             <button
               type="button"
               onClick={handleContinue}
-              className="py-2.5 px-5 rounded-xl bg-[#0A1D3F] hover:bg-[#133C8B] text-white text-xs font-semibold flex items-center gap-1.5 shadow-xs transition cursor-pointer"
+              className="py-2.5 px-5 rounded-md bg-[#0A1D3F] hover:bg-[#133C8B] text-white text-xs font-semibold flex items-center gap-1.5 shadow-xs transition cursor-pointer"
             >
               <span>Continue to Affiliation</span>
               <ArrowRight className="w-3.5 h-3.5" />
@@ -917,7 +917,7 @@ export const CollegeFranchiseForm = ({ onBack }) => {
           transition={{ duration: 0.2 }}
           className="space-y-4"
         >
-          <div className="p-3.5 bg-[#F8FAFC] rounded-xl border border-[#E2E8F0] flex items-center gap-2 text-xs text-[#0A1D3F] font-bold uppercase tracking-wider">
+          <div className="p-3.5 bg-[#F8FAFC] rounded-md border border-[#E2E8F0] flex items-center gap-2 text-xs text-[#0A1D3F] font-bold uppercase tracking-wider">
             <GraduationCap className="w-4 h-4 text-[#FF8A00]" />
             <span>Step 2: University Affiliation & Programs Offered</span>
           </div>
@@ -930,7 +930,7 @@ export const CollegeFranchiseForm = ({ onBack }) => {
               </label>
 
               {loadingUniversities ? (
-                <div className="flex items-center gap-2 p-2.5 rounded-xl bg-[#F8FAFC] border border-[#CBD5E1] text-xs text-[#64748B]">
+                <div className="flex items-center gap-2 p-2.5 rounded-md bg-[#F8FAFC] border border-[#CBD5E1] text-xs text-[#64748B]">
                   <Loader2 className="w-4 h-4 animate-spin text-[#FF8A00]" />
                   <span>Loading approved Universities...</span>
                 </div>
@@ -938,7 +938,7 @@ export const CollegeFranchiseForm = ({ onBack }) => {
                 <div className="relative">
                   <div
                     onClick={() => setUniDropdownOpen(!uniDropdownOpen)}
-                    className={`w-full p-2.5 rounded-xl bg-white border ${
+                    className={`w-full p-2.5 rounded-md bg-white border ${
                       errors.university ? "border-red-400 bg-red-50/20" : "border-[#CBD5E1]"
                     } flex items-center justify-between cursor-pointer hover:border-[#FF8A00] transition`}
                   >
@@ -968,7 +968,7 @@ export const CollegeFranchiseForm = ({ onBack }) => {
                   </div>
 
                   {uniDropdownOpen && (
-                    <div className="absolute z-30 left-0 right-0 top-full mt-1 bg-white rounded-xl border border-[#CBD5E1] shadow-xl p-2 space-y-1.5 max-h-56 overflow-y-auto">
+                    <div className="absolute z-30 left-0 right-0 top-full mt-1 bg-white rounded-md border border-[#CBD5E1] shadow-xl p-2 space-y-1.5 max-h-56 overflow-y-auto">
                       <div className="relative">
                         <Search className="w-3.5 h-3.5 text-[#64748B] absolute left-2.5 top-1/2 -translate-y-1/2" />
                         <input
@@ -1037,12 +1037,12 @@ export const CollegeFranchiseForm = ({ onBack }) => {
               </label>
 
               {!selectedUniversity ? (
-                <div className="p-3 rounded-xl bg-gray-50 border border-dashed border-[#CBD5E1] text-xs text-[#64748B] flex items-center gap-2">
+                <div className="p-3 rounded-md bg-gray-50 border border-dashed border-[#CBD5E1] text-xs text-[#64748B] flex items-center gap-2">
                   <Lock className="w-4 h-4 text-gray-400 shrink-0" />
                   <span>Please select a University / Franchise Provider above first to view authorized colleges.</span>
                 </div>
               ) : loadingColleges ? (
-                <div className="flex items-center gap-2 p-2.5 rounded-xl bg-[#F8FAFC] border border-[#CBD5E1] text-xs text-[#64748B]">
+                <div className="flex items-center gap-2 p-2.5 rounded-md bg-[#F8FAFC] border border-[#CBD5E1] text-xs text-[#64748B]">
                   <Loader2 className="w-4 h-4 animate-spin text-[#FF8A00]" />
                   <span>Loading affiliated colleges for {selectedUniversity.shortName}...</span>
                 </div>
@@ -1050,7 +1050,7 @@ export const CollegeFranchiseForm = ({ onBack }) => {
                 <div className="relative">
                   <div
                     onClick={() => setColDropdownOpen(!colDropdownOpen)}
-                    className={`w-full p-2.5 rounded-xl bg-white border ${
+                    className={`w-full p-2.5 rounded-md bg-white border ${
                       errors.college ? "border-red-400 bg-red-50/20" : "border-[#CBD5E1]"
                     } flex items-center justify-between cursor-pointer hover:border-[#FF8A00] transition`}
                   >
@@ -1073,7 +1073,7 @@ export const CollegeFranchiseForm = ({ onBack }) => {
                   </div>
 
                   {colDropdownOpen && (
-                    <div className="absolute z-20 left-0 right-0 top-full mt-1 bg-white rounded-xl border border-[#CBD5E1] shadow-xl p-2 space-y-1.5 max-h-56 overflow-y-auto">
+                    <div className="absolute z-20 left-0 right-0 top-full mt-1 bg-white rounded-md border border-[#CBD5E1] shadow-xl p-2 space-y-1.5 max-h-56 overflow-y-auto">
                       <div className="relative">
                         <Search className="w-3.5 h-3.5 text-[#64748B] absolute left-2.5 top-1/2 -translate-y-1/2" />
                         <input
@@ -1145,7 +1145,7 @@ export const CollegeFranchiseForm = ({ onBack }) => {
               </div>
 
               {/* Programs Pill Selector */}
-              <div className="p-3 bg-[#F8FAFC] border border-[#CBD5E1] rounded-xl space-y-2.5">
+              <div className="p-3 bg-[#F8FAFC] border border-[#CBD5E1] rounded-md space-y-2.5">
                 <div className="flex flex-wrap gap-1.5">
                   {/* Standard predefined course pills */}
                   {DEFAULT_PROGRAM_OPTIONS.map((prog) => {
@@ -1224,13 +1224,13 @@ export const CollegeFranchiseForm = ({ onBack }) => {
                           }
                         }}
                         placeholder="e.g. Hotel Management, Aviation & Logistics, Data Science..."
-                        className="flex-1 px-3 py-2 text-xs bg-white border border-[#CBD5E1] rounded-xl text-[#0A1D3F] focus:outline-none focus:border-[#FF8A00] focus:ring-2 focus:ring-[#FF8A00]/15"
+                        className="flex-1 px-3 py-2 text-xs bg-white border border-[#CBD5E1] rounded-md text-[#0A1D3F] focus:outline-none focus:border-[#FF8A00] focus:ring-2 focus:ring-[#FF8A00]/15"
                       />
                       <button
                         type="button"
                         onClick={handleAddCustomCourse}
                         disabled={!customCourseInput.trim()}
-                        className="py-2 px-3.5 rounded-xl bg-[#0A1D3F] hover:bg-[#133C8B] disabled:opacity-50 text-white text-xs font-semibold shrink-0 transition cursor-pointer flex items-center gap-1"
+                        className="py-2 px-3.5 rounded-md bg-[#0A1D3F] hover:bg-[#133C8B] disabled:opacity-50 text-white text-xs font-semibold shrink-0 transition cursor-pointer flex items-center gap-1"
                       >
                         <Plus className="w-3.5 h-3.5" />
                         <span>Add</span>
@@ -1261,14 +1261,14 @@ export const CollegeFranchiseForm = ({ onBack }) => {
             <button
               type="button"
               onClick={handleBackStep}
-              className="py-2.5 px-4 rounded-xl text-xs font-semibold text-[#64748B] hover:text-[#0A1D3F] hover:bg-[#F8FAFC] transition cursor-pointer"
+              className="py-2.5 px-4 rounded-md text-xs font-semibold text-[#64748B] hover:text-[#0A1D3F] hover:bg-[#F8FAFC] transition cursor-pointer"
             >
               Back
             </button>
             <button
               type="button"
               onClick={handleContinue}
-              className="py-2.5 px-5 rounded-xl bg-[#0A1D3F] hover:bg-[#133C8B] text-white text-xs font-semibold flex items-center gap-1.5 shadow-xs transition cursor-pointer"
+              className="py-2.5 px-5 rounded-md bg-[#0A1D3F] hover:bg-[#133C8B] text-white text-xs font-semibold flex items-center gap-1.5 shadow-xs transition cursor-pointer"
             >
               <span>Continue to Contact</span>
               <ArrowRight className="w-3.5 h-3.5" />
@@ -1289,7 +1289,7 @@ export const CollegeFranchiseForm = ({ onBack }) => {
           transition={{ duration: 0.2 }}
           className="space-y-4"
         >
-          <div className="p-3.5 bg-[#F8FAFC] rounded-xl border border-[#E2E8F0] flex items-center gap-2 text-xs text-[#0A1D3F] font-bold uppercase tracking-wider">
+          <div className="p-3.5 bg-[#F8FAFC] rounded-md border border-[#E2E8F0] flex items-center gap-2 text-xs text-[#0A1D3F] font-bold uppercase tracking-wider">
             <UserCheck className="w-4 h-4 text-[#FF8A00]" />
             <span>Step 3: Authorized Representative Details</span>
           </div>
@@ -1312,7 +1312,7 @@ export const CollegeFranchiseForm = ({ onBack }) => {
                     placeholder="e.g. Dr. Rajesh Sharma"
                     className={`w-full pl-9 pr-3 py-2.5 text-xs bg-white border ${
                       errors.contactPerson ? "border-red-400 bg-red-50/20" : "border-[#CBD5E1]"
-                    } rounded-xl text-[#0A1D3F] focus:outline-none focus:border-[#FF8A00] focus:ring-2 focus:ring-[#FF8A00]/15 transition`}
+                    } rounded-md text-[#0A1D3F] focus:outline-none focus:border-[#FF8A00] focus:ring-2 focus:ring-[#FF8A00]/15 transition`}
                   />
                 </div>
                 {errors.contactPerson && (
@@ -1328,7 +1328,7 @@ export const CollegeFranchiseForm = ({ onBack }) => {
                   <select
                     value={formData.designation}
                     onChange={(e) => handleInputChange("designation", e.target.value)}
-                    className="w-full px-3 py-2.5 text-xs bg-white border border-[#CBD5E1] rounded-xl text-[#0A1D3F] focus:outline-none focus:border-[#FF8A00] focus:ring-2 focus:ring-[#FF8A00]/15 transition cursor-pointer appearance-none"
+                    className="w-full px-3 py-2.5 text-xs bg-white border border-[#CBD5E1] rounded-md text-[#0A1D3F] focus:outline-none focus:border-[#FF8A00] focus:ring-2 focus:ring-[#FF8A00]/15 transition cursor-pointer appearance-none"
                   >
                     {DESIGNATIONS.map((desig) => (
                       <option key={desig} value={desig}>
@@ -1357,7 +1357,7 @@ export const CollegeFranchiseForm = ({ onBack }) => {
                   placeholder="director@institution.edu.in"
                   className={`w-full pl-9 pr-3 py-2.5 text-xs bg-white border ${
                     errors.email ? "border-red-400 bg-red-50/20" : "border-[#CBD5E1]"
-                  } rounded-xl text-[#0A1D3F] focus:outline-none focus:border-[#FF8A00] focus:ring-2 focus:ring-[#FF8A00]/15 transition`}
+                  } rounded-md text-[#0A1D3F] focus:outline-none focus:border-[#FF8A00] focus:ring-2 focus:ring-[#FF8A00]/15 transition`}
                 />
               </div>
               {errors.email && (
@@ -1383,7 +1383,7 @@ export const CollegeFranchiseForm = ({ onBack }) => {
                     maxLength={14}
                     className={`w-full pl-9 pr-3 py-2.5 text-xs bg-white border ${
                       errors.mobile ? "border-red-400 bg-red-50/20" : "border-[#CBD5E1]"
-                    } rounded-xl text-[#0A1D3F] focus:outline-none focus:border-[#FF8A00] focus:ring-2 focus:ring-[#FF8A00]/15 transition`}
+                    } rounded-md text-[#0A1D3F] focus:outline-none focus:border-[#FF8A00] focus:ring-2 focus:ring-[#FF8A00]/15 transition`}
                   />
                 </div>
                 {errors.mobile && (
@@ -1404,7 +1404,7 @@ export const CollegeFranchiseForm = ({ onBack }) => {
                     value={formData.alternateMobile}
                     onChange={(e) => handleInputChange("alternateMobile", e.target.value)}
                     placeholder="Landline or mobile"
-                    className="w-full pl-9 pr-3 py-2.5 text-xs bg-white border border-[#CBD5E1] rounded-xl text-[#0A1D3F] focus:outline-none focus:border-[#FF8A00] focus:ring-2 focus:ring-[#FF8A00]/15 transition"
+                    className="w-full pl-9 pr-3 py-2.5 text-xs bg-white border border-[#CBD5E1] rounded-md text-[#0A1D3F] focus:outline-none focus:border-[#FF8A00] focus:ring-2 focus:ring-[#FF8A00]/15 transition"
                   />
                 </div>
               </div>
@@ -1416,14 +1416,14 @@ export const CollegeFranchiseForm = ({ onBack }) => {
             <button
               type="button"
               onClick={handleBackStep}
-              className="py-2.5 px-4 rounded-xl text-xs font-semibold text-[#64748B] hover:text-[#0A1D3F] hover:bg-[#F8FAFC] transition cursor-pointer"
+              className="py-2.5 px-4 rounded-md text-xs font-semibold text-[#64748B] hover:text-[#0A1D3F] hover:bg-[#F8FAFC] transition cursor-pointer"
             >
               Back
             </button>
             <button
               type="button"
               onClick={handleContinue}
-              className="py-2.5 px-5 rounded-xl bg-[#0A1D3F] hover:bg-[#133C8B] text-white text-xs font-semibold flex items-center gap-1.5 shadow-xs transition cursor-pointer"
+              className="py-2.5 px-5 rounded-md bg-[#0A1D3F] hover:bg-[#133C8B] text-white text-xs font-semibold flex items-center gap-1.5 shadow-xs transition cursor-pointer"
             >
               <span>Continue to Campus Location</span>
               <ArrowRight className="w-3.5 h-3.5" />
@@ -1444,7 +1444,7 @@ export const CollegeFranchiseForm = ({ onBack }) => {
           transition={{ duration: 0.2 }}
           className="space-y-4"
         >
-          <div className="p-3.5 bg-[#F8FAFC] rounded-xl border border-[#E2E8F0] flex items-center gap-2 text-xs text-[#0A1D3F] font-bold uppercase tracking-wider">
+          <div className="p-3.5 bg-[#F8FAFC] rounded-md border border-[#E2E8F0] flex items-center gap-2 text-xs text-[#0A1D3F] font-bold uppercase tracking-wider">
             <MapPin className="w-4 h-4 text-[#FF8A00]" />
             <span>Step 4: Campus Location & Physical Address</span>
           </div>
@@ -1463,7 +1463,7 @@ export const CollegeFranchiseForm = ({ onBack }) => {
                   placeholder="Building Name, Sector / Area, Road, Landmark..."
                   className={`w-full p-2.5 text-xs bg-white border ${
                     errors.address ? "border-red-400 bg-red-50/20" : "border-[#CBD5E1]"
-                  } rounded-xl text-[#0A1D3F] focus:outline-none focus:border-[#FF8A00] focus:ring-2 focus:ring-[#FF8A00]/15 transition`}
+                  } rounded-md text-[#0A1D3F] focus:outline-none focus:border-[#FF8A00] focus:ring-2 focus:ring-[#FF8A00]/15 transition`}
                 />
               </div>
               {errors.address && (
@@ -1484,7 +1484,7 @@ export const CollegeFranchiseForm = ({ onBack }) => {
                   placeholder="e.g. Pune"
                   className={`w-full px-3 py-2.5 text-xs bg-white border ${
                     errors.city ? "border-red-400 bg-red-50/20" : "border-[#CBD5E1]"
-                  } rounded-xl text-[#0A1D3F] focus:outline-none focus:border-[#FF8A00] focus:ring-2 focus:ring-[#FF8A00]/15 transition`}
+                  } rounded-md text-[#0A1D3F] focus:outline-none focus:border-[#FF8A00] focus:ring-2 focus:ring-[#FF8A00]/15 transition`}
                 />
                 {errors.city && (
                   <p className="text-[11px] text-red-500 mt-1 font-medium">{errors.city}</p>
@@ -1499,7 +1499,7 @@ export const CollegeFranchiseForm = ({ onBack }) => {
                   <select
                     value={formData.state}
                     onChange={(e) => handleInputChange("state", e.target.value)}
-                    className="w-full px-3 py-2.5 text-xs bg-white border border-[#CBD5E1] rounded-xl text-[#0A1D3F] focus:outline-none focus:border-[#FF8A00] focus:ring-2 focus:ring-[#FF8A00]/15 transition cursor-pointer appearance-none"
+                    className="w-full px-3 py-2.5 text-xs bg-white border border-[#CBD5E1] rounded-md text-[#0A1D3F] focus:outline-none focus:border-[#FF8A00] focus:ring-2 focus:ring-[#FF8A00]/15 transition cursor-pointer appearance-none"
                   >
                     {INDIAN_STATES.map((st) => (
                       <option key={st} value={st}>
@@ -1523,7 +1523,7 @@ export const CollegeFranchiseForm = ({ onBack }) => {
                   maxLength={6}
                   className={`w-full px-3 py-2.5 text-xs bg-white border ${
                     errors.pincode ? "border-red-400 bg-red-50/20" : "border-[#CBD5E1]"
-                  } rounded-xl text-[#0A1D3F] focus:outline-none focus:border-[#FF8A00] focus:ring-2 focus:ring-[#FF8A00]/15 transition`}
+                  } rounded-md text-[#0A1D3F] focus:outline-none focus:border-[#FF8A00] focus:ring-2 focus:ring-[#FF8A00]/15 transition`}
                 />
                 {errors.pincode && (
                   <p className="text-[11px] text-red-500 mt-1 font-medium">{errors.pincode}</p>
@@ -1547,7 +1547,7 @@ export const CollegeFranchiseForm = ({ onBack }) => {
                   value={formData.googleMapsLocation}
                   onChange={(e) => handleInputChange("googleMapsLocation", e.target.value)}
                   placeholder="e.g. https://maps.google.com/?q=... or campus coordinates"
-                  className="w-full pl-9 pr-3 py-2.5 text-xs bg-white border border-[#CBD5E1] rounded-xl text-[#0A1D3F] focus:outline-none focus:border-[#FF8A00] focus:ring-2 focus:ring-[#FF8A00]/15 transition"
+                  className="w-full pl-9 pr-3 py-2.5 text-xs bg-white border border-[#CBD5E1] rounded-md text-[#0A1D3F] focus:outline-none focus:border-[#FF8A00] focus:ring-2 focus:ring-[#FF8A00]/15 transition"
                 />
               </div>
             </div>
@@ -1558,14 +1558,14 @@ export const CollegeFranchiseForm = ({ onBack }) => {
             <button
               type="button"
               onClick={handleBackStep}
-              className="py-2.5 px-4 rounded-xl text-xs font-semibold text-[#64748B] hover:text-[#0A1D3F] hover:bg-[#F8FAFC] transition cursor-pointer"
+              className="py-2.5 px-4 rounded-md text-xs font-semibold text-[#64748B] hover:text-[#0A1D3F] hover:bg-[#F8FAFC] transition cursor-pointer"
             >
               Back
             </button>
             <button
               type="button"
               onClick={handleContinue}
-              className="py-2.5 px-5 rounded-xl bg-[#0A1D3F] hover:bg-[#133C8B] text-white text-xs font-semibold flex items-center gap-1.5 shadow-xs transition cursor-pointer"
+              className="py-2.5 px-5 rounded-md bg-[#0A1D3F] hover:bg-[#133C8B] text-white text-xs font-semibold flex items-center gap-1.5 shadow-xs transition cursor-pointer"
             >
               <span>Continue to Documents</span>
               <ArrowRight className="w-3.5 h-3.5" />
@@ -1586,14 +1586,14 @@ export const CollegeFranchiseForm = ({ onBack }) => {
           transition={{ duration: 0.2 }}
           className="space-y-4"
         >
-          <div className="p-3.5 bg-[#F8FAFC] rounded-xl border border-[#E2E8F0] flex items-center gap-2 text-xs text-[#0A1D3F] font-bold uppercase tracking-wider">
+          <div className="p-3.5 bg-[#F8FAFC] rounded-md border border-[#E2E8F0] flex items-center gap-2 text-xs text-[#0A1D3F] font-bold uppercase tracking-wider">
             <FileText className="w-4 h-4 text-[#FF8A00]" />
             <span>Step 5: Institutional Documents & Verification</span>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {/* Doc 1: Registration Certificate */}
-            <div className="p-3.5 rounded-xl border border-[#CBD5E1] bg-[#F8FAFC] space-y-2">
+            <div className="p-3.5 rounded-md border border-[#CBD5E1] bg-[#F8FAFC] space-y-2">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-[#0A1D3F]">
                   Institution Registration Certificate
@@ -1632,7 +1632,7 @@ export const CollegeFranchiseForm = ({ onBack }) => {
             </div>
 
             {/* Doc 2: Affiliation / Recognition Certificate */}
-            <div className="p-3.5 rounded-xl border border-[#CBD5E1] bg-[#F8FAFC] space-y-2">
+            <div className="p-3.5 rounded-md border border-[#CBD5E1] bg-[#F8FAFC] space-y-2">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-[#0A1D3F]">
                   Affiliation / Recognition Certificate
@@ -1671,7 +1671,7 @@ export const CollegeFranchiseForm = ({ onBack }) => {
             </div>
 
             {/* Doc 3: Authorization Letter */}
-            <div className="p-3.5 rounded-xl border border-[#CBD5E1] bg-[#F8FAFC] space-y-2">
+            <div className="p-3.5 rounded-md border border-[#CBD5E1] bg-[#F8FAFC] space-y-2">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-[#0A1D3F]">
                   Authorization Letter
@@ -1710,7 +1710,7 @@ export const CollegeFranchiseForm = ({ onBack }) => {
             </div>
 
             {/* Doc 4: PAN / GST Certificate */}
-            <div className="p-3.5 rounded-xl border border-[#CBD5E1] bg-[#F8FAFC] space-y-2">
+            <div className="p-3.5 rounded-md border border-[#CBD5E1] bg-[#F8FAFC] space-y-2">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-[#0A1D3F]">
                   PAN / GST Certificate
@@ -1754,14 +1754,14 @@ export const CollegeFranchiseForm = ({ onBack }) => {
             <button
               type="button"
               onClick={handleBackStep}
-              className="py-2.5 px-4 rounded-xl text-xs font-semibold text-[#64748B] hover:text-[#0A1D3F] hover:bg-[#F8FAFC] transition cursor-pointer"
+              className="py-2.5 px-4 rounded-md text-xs font-semibold text-[#64748B] hover:text-[#0A1D3F] hover:bg-[#F8FAFC] transition cursor-pointer"
             >
               Back
             </button>
             <button
               type="button"
               onClick={handleContinue}
-              className="py-2.5 px-5 rounded-xl bg-[#0A1D3F] hover:bg-[#133C8B] text-white text-xs font-semibold flex items-center gap-1.5 shadow-xs transition cursor-pointer"
+              className="py-2.5 px-5 rounded-md bg-[#0A1D3F] hover:bg-[#133C8B] text-white text-xs font-semibold flex items-center gap-1.5 shadow-xs transition cursor-pointer"
             >
               <span>Review Application</span>
               <ArrowRight className="w-3.5 h-3.5" />
@@ -1782,7 +1782,7 @@ export const CollegeFranchiseForm = ({ onBack }) => {
           transition={{ duration: 0.2 }}
           className="space-y-4"
         >
-          <div className="p-3.5 bg-gradient-to-r from-[#0A1D3F] to-[#133C8B] text-white rounded-xl flex items-center justify-between">
+          <div className="p-3.5 bg-gradient-to-r from-[#0A1D3F] to-[#133C8B] text-white rounded-md flex items-center justify-between">
             <div className="flex items-center gap-2">
               <ShieldCheck className="w-4 h-4 text-[#FF8A00]" />
               <span className="text-xs font-bold uppercase tracking-wider">
@@ -1796,7 +1796,7 @@ export const CollegeFranchiseForm = ({ onBack }) => {
 
           <div className="space-y-3 text-xs">
             {/* Section 1: Institution Details */}
-            <div className="p-3.5 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] space-y-2">
+            <div className="p-3.5 rounded-md bg-[#F8FAFC] border border-[#E2E8F0] space-y-2">
               <div className="flex items-center justify-between pb-1 border-b border-[#E2E8F0]">
                 <div className="flex items-center gap-1.5 font-bold text-[#0A1D3F]">
                   <Building2 className="w-3.5 h-3.5 text-[#FF8A00]" />
@@ -1836,7 +1836,7 @@ export const CollegeFranchiseForm = ({ onBack }) => {
             </div>
 
             {/* Section 2: Affiliation & Hierarchy */}
-            <div className="p-3.5 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] space-y-2">
+            <div className="p-3.5 rounded-md bg-[#F8FAFC] border border-[#E2E8F0] space-y-2">
               <div className="flex items-center justify-between pb-1 border-b border-[#E2E8F0]">
                 <div className="flex items-center gap-1.5 font-bold text-[#0A1D3F]">
                   <GraduationCap className="w-3.5 h-3.5 text-[#FF8A00]" />
@@ -1878,7 +1878,7 @@ export const CollegeFranchiseForm = ({ onBack }) => {
             </div>
 
             {/* Section 3: Authorized Contact */}
-            <div className="p-3.5 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] space-y-2">
+            <div className="p-3.5 rounded-md bg-[#F8FAFC] border border-[#E2E8F0] space-y-2">
               <div className="flex items-center justify-between pb-1 border-b border-[#E2E8F0]">
                 <div className="flex items-center gap-1.5 font-bold text-[#0A1D3F]">
                   <UserCheck className="w-3.5 h-3.5 text-[#FF8A00]" />
@@ -1916,7 +1916,7 @@ export const CollegeFranchiseForm = ({ onBack }) => {
             </div>
 
             {/* Section 4: Campus Location */}
-            <div className="p-3.5 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] space-y-2">
+            <div className="p-3.5 rounded-md bg-[#F8FAFC] border border-[#E2E8F0] space-y-2">
               <div className="flex items-center justify-between pb-1 border-b border-[#E2E8F0]">
                 <div className="flex items-center gap-1.5 font-bold text-[#0A1D3F]">
                   <MapPin className="w-3.5 h-3.5 text-[#FF8A00]" />
@@ -1943,7 +1943,7 @@ export const CollegeFranchiseForm = ({ onBack }) => {
             </div>
 
             {/* Section 5: Documents */}
-            <div className="p-3.5 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] space-y-2">
+            <div className="p-3.5 rounded-md bg-[#F8FAFC] border border-[#E2E8F0] space-y-2">
               <div className="flex items-center justify-between pb-1 border-b border-[#E2E8F0]">
                 <div className="flex items-center gap-1.5 font-bold text-[#0A1D3F]">
                   <FileText className="w-3.5 h-3.5 text-[#FF8A00]" />
@@ -1988,7 +1988,7 @@ export const CollegeFranchiseForm = ({ onBack }) => {
           </div>
 
           {/* Terms & Agreement Checkbox */}
-          <div className="p-3 rounded-xl bg-[#FFF7ED] border border-[#FF8A00]/20 space-y-1">
+          <div className="p-3 rounded-md bg-[#FFF7ED] border border-[#FF8A00]/20 space-y-1">
             <label className="flex items-start gap-2 cursor-pointer">
               <input
                 type="checkbox"
@@ -2019,7 +2019,7 @@ export const CollegeFranchiseForm = ({ onBack }) => {
             <button
               type="button"
               onClick={handleBackStep}
-              className="w-full sm:w-auto py-2.5 px-4 rounded-xl text-xs font-semibold text-[#64748B] hover:text-[#0A1D3F] hover:bg-[#F8FAFC] transition cursor-pointer text-center"
+              className="w-full sm:w-auto py-2.5 px-4 rounded-md text-xs font-semibold text-[#64748B] hover:text-[#0A1D3F] hover:bg-[#F8FAFC] transition cursor-pointer text-center"
             >
               Back to Documents
             </button>
@@ -2027,7 +2027,7 @@ export const CollegeFranchiseForm = ({ onBack }) => {
               type="button"
               disabled={submitting}
               onClick={handleSubmitApplication}
-              className="w-full sm:w-auto py-3 px-6 rounded-xl bg-[#FF8A00] hover:bg-[#E67C00] text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-2 shadow-md hover:shadow-lg active:scale-[0.99] transition cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+              className="w-full sm:w-auto py-3 px-6 rounded-md bg-[#FF8A00] hover:bg-[#E67C00] text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-2 shadow-md hover:shadow-lg active:scale-[0.99] transition cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
             >
               {submitting ? (
                 <>

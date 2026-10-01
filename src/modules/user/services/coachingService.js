@@ -88,7 +88,10 @@ export const coachingService = {
 
     // Filter by Board
     if (board && board !== "All") {
-      list = list.filter((c) => c.board?.toLowerCase() === board.toLowerCase());
+      list = list.filter((c) => {
+        const courseBoard = (c.board || "All").toLowerCase();
+        return courseBoard === "all" || courseBoard === board.toLowerCase();
+      });
     }
 
     // Filter by Category / Board fallback
@@ -102,7 +105,10 @@ export const coachingService = {
 
     // Filter by State
     if (state && state !== "All") {
-      list = list.filter((c) => c.state?.toLowerCase() === state.toLowerCase());
+      list = list.filter((c) => {
+        const courseState = (c.state || "All").toLowerCase();
+        return courseState === "all" || courseState === state.toLowerCase();
+      });
     }
 
     // Filter by Class
@@ -123,7 +129,11 @@ export const coachingService = {
 
     // Filter by Course Type
     if (courseType && courseType !== "All") {
-      list = list.filter((c) => c.courseType?.toLowerCase() === courseType.toLowerCase());
+      const selectedCourse = courseType.toLowerCase();
+      list = list.filter((c) => {
+        const names = [c.courseType, c.program, c.title].filter(Boolean).map((value) => value.toLowerCase());
+        return names.some((name) => name === selectedCourse);
+      });
     }
 
     // Filter by Language

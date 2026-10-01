@@ -654,6 +654,50 @@ export const INITIAL_COACHING_COURSES = [
   }
 ];
 
+const DEGREE_PROGRAMS = [
+  ["MBA", "Postgraduate", "Management", "Business strategy, finance, and leadership for management careers."],
+  ["M.Tech", "Postgraduate", "Engineering", "Advanced engineering and technology specialization."],
+  ["B.Tech", "Undergraduate", "Engineering", "Four-year engineering program across core technology branches."],
+  ["BBA", "Undergraduate", "Management", "Undergraduate business administration and management foundation."],
+  ["BCA", "Undergraduate", "Computer Applications", "Computer applications, programming, and software fundamentals."],
+  ["MCA", "Postgraduate", "Computer Applications", "Postgraduate computer applications and software engineering."],
+  ["B.Com", "Undergraduate", "Commerce", "Commerce, accounting, and business studies."],
+  ["B.Sc", "Undergraduate", "Science", "Science degree across physics, chemistry, mathematics, and life sciences."],
+  ["B.A.", "Undergraduate", "Arts", "Arts and humanities degree programs."],
+  ["B.Pharm", "Undergraduate", "Pharmacy", "Pharmacy degree covering pharmaceutical sciences."],
+  ["B.Sc Nursing", "Undergraduate", "Nursing", "Nursing and patient-care degree program."],
+  ["LL.B.", "Undergraduate", "Law", "Professional law degree."],
+  ["LL.M.", "Postgraduate", "Law", "Postgraduate specialization in law."],
+  ["M.Sc", "Postgraduate", "Science", "Postgraduate science and research program."],
+  ["B.Des", "Undergraduate", "Design", "Design degree covering visual and product design."],
+  ["Diploma", "Diploma", "Technical", "Diploma programs in technical and professional skills."],
+];
+
+INITIAL_COACHING_COURSES.push(
+  ...DEGREE_PROGRAMS.map(([title, level, subject, description]) => ({
+    id: `course-${title.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`,
+    title,
+    subtitle: `${level} ${title} program`,
+    description,
+    board: "All",
+    class: level,
+    state: "All",
+    courseType: title,
+    program: title,
+    language: "English",
+    subjects: [subject],
+    teacher: "KITSS Faculty",
+    lecturesCount: 24,
+    booksCount: 6,
+    duration: level === "Postgraduate" ? "2 Years" : "3 Years",
+    status: "Active",
+    rating: 4.8,
+    reviewCount: 120,
+    thumbnail: "https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=600&auto=format&fit=crop&q=80",
+    subjectsData: [],
+  }))
+);
+
 export const INITIAL_STUDENT_PROFILE = {
   id: "KITSS20261084",
   name: "Rohan Sharma",
@@ -714,6 +758,12 @@ export function getCoachingStore() {
               }
             });
           });
+        });
+        INITIAL_COACHING_COURSES.forEach((init) => {
+          if (!parsed.courses.some((c) => c.id === init.id)) {
+            parsed.courses.push(init);
+            needsUpdate = true;
+          }
         });
         if (needsUpdate) {
           saveCoachingStore(parsed);

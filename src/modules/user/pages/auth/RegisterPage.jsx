@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useSearchParams, useOutletContext } from "react-router-dom";
 import {
   GraduationCap,
   Building2,
@@ -21,6 +21,12 @@ export const RegisterPage = () => {
   
   // Screen state: null = Selection, 'franchise', 'tuition', 'study', 'teacher'
   const [selectedType, setSelectedType] = useState(initialType || null);
+  const { setHidePageBack } = useOutletContext();
+
+  useEffect(() => {
+    setHidePageBack(Boolean(selectedType));
+    return () => setHidePageBack(false);
+  }, [selectedType, setHidePageBack]);
 
   useEffect(() => {
     const t = searchParams.get("type");

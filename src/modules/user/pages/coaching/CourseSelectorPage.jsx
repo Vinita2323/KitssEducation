@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import React, { useState, useEffect, useMemo } from "react";
+import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import {
   CheckCircle2,
   ArrowRight,
@@ -11,18 +11,75 @@ import {
   Check
 } from "lucide-react";
 import { coachingService } from "../../services/coachingService";
+import { getCoachingStore } from "../../data/mockCoachingData";
 import { CourseCard } from "../../components/coaching/CourseCard";
+import { SearchableSelect } from "../../components/common/SearchableSelect";
 import { useToast } from "../../context/ToastContext";
+
+const COURSE_PREFS_KEY = "kits_course_selector_prefs";
+
+const courseMatchesType = (course, selectedType) => {
+  if (!selectedType || selectedType === "All") return true;
+  if (selectedType.startsWith("Class ")) {
+    const grade = selectedType.toLowerCase().replace(/\s+/g, "");
+    return (course.class || "").toLowerCase().replace(/\s+/g, "") === grade;
+  }
+  const selected = selectedType.toLowerCase();
+  return [course.courseType, course.program, course.title]
+    .filter(Boolean)
+    .some((name) => name.toLowerCase() === selected);
+};
+
+const subjectsForSelection = ({ selectedType, selectedBoard, selectedState, selectedLanguage }) => {
+  const names = new Set();
+  (getCoachingStore().courses || []).forEach((course) => {
+    if (!courseMatchesType(course, selectedType)) return;
+    if (selectedBoard && selectedBoard !== "All") {
+      const board = (course.board || "All").toLowerCase();
+      if (board !== "all" && board !== selectedBoard.toLowerCase()) return;
+    }
+    if (selectedState && selectedState !== "All") {
+      const state = (course.state || "All").toLowerCase();
+      if (state !== "all" && state !== selectedState.toLowerCase()) return;
+    }
+    if (selectedLanguage && selectedLanguage !== "All") {
+      if ((course.language || "English").toLowerCase() !== selectedLanguage.toLowerCase()) return;
+    }
+    (course.subjects || []).forEach((subject) => {
+      if (subject) names.add(subject);
+    });
+  });
+  return [...names].sort((a, b) => a.localeCompare(b));
+};
+
+const readSavedCoursePrefs = () => {
+  try {
+    const raw = localStorage.getItem(COURSE_PREFS_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed?.saved) return null;
+    if (["Comprehensive", "Foundation", "Competitive"].includes(parsed.type)) {
+      parsed.type = "All";
+    }
+    return parsed;
+  } catch {
+    return null;
+  }
+};
 
 export const CourseSelectorPage = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { showSuccess } = useToast();
+  const savedPrefs = readSavedCoursePrefs();
+  const openSelector = searchParams.get("choose") === "1";
 
-  const [selectedBoard, setSelectedBoard] = useState("All");
-  const [selectedState, setSelectedState] = useState("All");
-  const [selectedSubject, setSelectedSubject] = useState("All");
-  const [selectedType, setSelectedType] = useState("All");
-  const [selectedLanguage, setSelectedLanguage] = useState("All");
+  const [filtersSaved] = useState(() => !openSelector && Boolean(savedPrefs));
+  const [selectedBoard, setSelectedBoard] = useState(savedPrefs?.board || "All");
+  const [selectedState, setSelectedState] = useState(savedPrefs?.state || "All");
+  const [selectedSubject, setSelectedSubject] = useState(savedPrefs?.subject || "All");
+  const [selectedType, setSelectedType] = useState(savedPrefs?.type || "All");
+  const [selectedLanguage, setSelectedLanguage] = useState(savedPrefs?.language || "All");
 
   const boardsByState = {
     Delhi: ["CBSE", "ICSE"],
@@ -44,6 +101,23 @@ export const CourseSelectorPage = () => {
     }
   };
 
+  const subjectOptions = useMemo(
+    () =>
+      subjectsForSelection({
+        selectedType,
+        selectedBoard,
+        selectedState,
+        selectedLanguage,
+      }),
+    [selectedType, selectedBoard, selectedState, selectedLanguage]
+  );
+
+  useEffect(() => {
+    if (selectedSubject !== "All" && !subjectOptions.includes(selectedSubject)) {
+      setSelectedSubject("All");
+    }
+  }, [selectedSubject, subjectOptions]);
+
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -51,6 +125,28 @@ export const CourseSelectorPage = () => {
   const [selectedCourseForJoin, setSelectedCourseForJoin] = useState(null);
   const [joining, setJoining] = useState(false);
   const [joinSuccess, setJoinSuccess] = useState(false);
+
+  useEffect(() => {
+    if (filtersSaved) return;
+    const hasChoice = [selectedBoard, selectedState, selectedSubject, selectedType, selectedLanguage].some(
+      (value) => value && value !== "All"
+    );
+    if (!hasChoice) {
+      localStorage.removeItem(COURSE_PREFS_KEY);
+      return;
+    }
+    localStorage.setItem(
+      COURSE_PREFS_KEY,
+      JSON.stringify({
+        saved: true,
+        board: selectedBoard,
+        state: selectedState,
+        subject: selectedSubject,
+        type: selectedType,
+        language: selectedLanguage,
+      })
+    );
+  }, [filtersSaved, selectedBoard, selectedState, selectedSubject, selectedType, selectedLanguage]);
 
   useEffect(() => {
     const fetchCourses = async () => {
@@ -95,7 +191,7 @@ export const CourseSelectorPage = () => {
   };
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6 sm:space-y-8">
+    <div className="max-w-7xl mx-auto space-y-3">
       <Link
         to="/coaching/course-cbse-10-sci"
         className="block -mt-3 sm:-mt-5 -mx-3 sm:-mx-6 lg:-mx-8 overflow-hidden"
@@ -110,9 +206,10 @@ export const CourseSelectorPage = () => {
         Select Your Course
       </h1>
 
-      {/* Filter Matrix Controls */}
-      <div className="bg-white rounded-2xl border border-[#E6E8EC] p-5 sm:p-6 card-shadow">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
+      {/* Filter Matrix Controls — shown only until the student saves a choice */}
+      {!filtersSaved && (
+      <div className="bg-white rounded-md border border-[#E6E8EC] p-3 card-shadow">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2">
           {/* State Filter */}
           <div className="space-y-1">
             <label className="text-[11px] font-bold uppercase text-[#667085]">
@@ -121,7 +218,7 @@ export const CourseSelectorPage = () => {
             <select
               value={selectedState}
               onChange={(e) => handleStateChange(e.target.value)}
-              className="w-full px-3 py-2 rounded-xl bg-[#F7F8FA] border border-[#E6E8EC] text-xs font-semibold text-[#0A1D3F] focus:outline-none focus:border-[#FF8A00]"
+              className="w-full h-8 px-2.5 rounded-md bg-[#F7F8FA] border border-[#E6E8EC] text-xs font-semibold text-[#0A1D3F] focus:outline-none focus:border-[#FF8A00]"
             >
               <option value="All">All States</option>
               <option value="Delhi">Delhi</option>
@@ -139,7 +236,7 @@ export const CourseSelectorPage = () => {
             <select
               value={selectedBoard}
               onChange={(e) => setSelectedBoard(e.target.value)}
-              className="w-full px-3 py-2 rounded-xl bg-[#F7F8FA] border border-[#E6E8EC] text-xs font-semibold text-[#0A1D3F] focus:outline-none focus:border-[#FF8A00]"
+              className="w-full h-8 px-2.5 rounded-md bg-[#F7F8FA] border border-[#E6E8EC] text-xs font-semibold text-[#0A1D3F] focus:outline-none focus:border-[#FF8A00]"
             >
               <option value="All">All Boards</option>
               {boardOptions.map((board) => (
@@ -155,24 +252,37 @@ export const CourseSelectorPage = () => {
             <label className="text-[11px] font-bold uppercase text-[#667085]">
               Course Type
             </label>
-            <select
+            <SearchableSelect
+              compact
+              searchable
               value={selectedType}
-              onChange={(e) => setSelectedType(e.target.value)}
-              className="w-full px-3 py-2 rounded-xl bg-[#F7F8FA] border border-[#E6E8EC] text-xs font-semibold text-[#0A1D3F] focus:outline-none focus:border-[#FF8A00]"
-            >
-              <option value="All">All Course Types</option>
-              <optgroup label="Classes">
-                <option value="Class 9">Class 9</option>
-                <option value="Class 10">Class 10</option>
-                <option value="Class 11">Class 11</option>
-                <option value="Class 12">Class 12</option>
-              </optgroup>
-              <optgroup label="Types">
-                <option value="Comprehensive">Comprehensive</option>
-                <option value="Foundation">Foundation</option>
-                <option value="Competitive">Competitive (NEET/JEE)</option>
-              </optgroup>
-            </select>
+              onChange={setSelectedType}
+              placeholder="All Courses"
+              searchPlaceholder="Search course"
+              options={[
+                { value: "All", label: "All Courses" },
+                { value: "Class 9", label: "Class 9", group: "Classes" },
+                { value: "Class 10", label: "Class 10", group: "Classes" },
+                { value: "Class 11", label: "Class 11", group: "Classes" },
+                { value: "Class 12", label: "Class 12", group: "Classes" },
+                { value: "MBA", label: "MBA", group: "Courses" },
+                { value: "M.Tech", label: "M.Tech", group: "Courses" },
+                { value: "B.Tech", label: "B.Tech", group: "Courses" },
+                { value: "BBA", label: "BBA", group: "Courses" },
+                { value: "BCA", label: "BCA", group: "Courses" },
+                { value: "MCA", label: "MCA", group: "Courses" },
+                { value: "B.Com", label: "B.Com", group: "Courses" },
+                { value: "B.Sc", label: "B.Sc", group: "Courses" },
+                { value: "B.A.", label: "B.A.", group: "Courses" },
+                { value: "B.Pharm", label: "B.Pharm", group: "Courses" },
+                { value: "B.Sc Nursing", label: "B.Sc Nursing", group: "Courses" },
+                { value: "LL.B.", label: "LL.B.", group: "Courses" },
+                { value: "LL.M.", label: "LL.M.", group: "Courses" },
+                { value: "M.Sc", label: "M.Sc", group: "Courses" },
+                { value: "B.Des", label: "B.Des", group: "Courses" },
+                { value: "Diploma", label: "Diploma", group: "Courses" },
+              ]}
+            />
           </div>
 
           {/* Subject Filter */}
@@ -183,14 +293,14 @@ export const CourseSelectorPage = () => {
             <select
               value={selectedSubject}
               onChange={(e) => setSelectedSubject(e.target.value)}
-              className="w-full px-3 py-2 rounded-xl bg-[#F7F8FA] border border-[#E6E8EC] text-xs font-semibold text-[#0A1D3F] focus:outline-none focus:border-[#FF8A00]"
+              className="w-full h-8 px-2.5 rounded-md bg-[#F7F8FA] border border-[#E6E8EC] text-xs font-semibold text-[#0A1D3F] focus:outline-none focus:border-[#FF8A00]"
             >
               <option value="All">All Subjects</option>
-              <option value="Physics">Physics</option>
-              <option value="Chemistry">Chemistry</option>
-              <option value="Biology">Biology</option>
-              <option value="Mathematics">Mathematics</option>
-              <option value="Science">Science</option>
+              {subjectOptions.map((subject) => (
+                <option key={subject} value={subject}>
+                  {subject}
+                </option>
+              ))}
             </select>
           </div>
 
@@ -202,7 +312,7 @@ export const CourseSelectorPage = () => {
             <select
               value={selectedLanguage}
               onChange={(e) => setSelectedLanguage(e.target.value)}
-              className="w-full px-3 py-2 rounded-xl bg-[#F7F8FA] border border-[#E6E8EC] text-xs font-semibold text-[#0A1D3F] focus:outline-none focus:border-[#FF8A00]"
+              className="w-full h-8 px-2.5 rounded-md bg-[#F7F8FA] border border-[#E6E8EC] text-xs font-semibold text-[#0A1D3F] focus:outline-none focus:border-[#FF8A00]"
             >
               <option value="All">All Languages</option>
               <option value="English">English</option>
@@ -212,7 +322,7 @@ export const CourseSelectorPage = () => {
         </div>
 
         {/* Reset Filter Action */}
-        <div className="flex items-center justify-between pt-2 border-t border-[#E6E8EC]/60 text-xs">
+        <div className="flex items-center justify-between pt-2 mt-2 border-t border-[#E6E8EC]/60 text-[11px]">
           <span className="text-[#667085]">
             Showing <strong>{courses.length}</strong> matching courses
           </span>
@@ -231,6 +341,13 @@ export const CourseSelectorPage = () => {
           </button>
         </div>
       </div>
+      )}
+
+      {filtersSaved && (
+        <p className="text-[11px] text-[#667085]">
+          Showing <strong className="text-[#0A1D3F]">{courses.length}</strong> courses for your saved selection
+        </p>
+      )}
 
       {/* Matching Courses Grid */}
       <div className="space-y-4">

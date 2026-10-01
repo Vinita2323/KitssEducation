@@ -103,10 +103,11 @@ export const StudyRegistrationForm = ({ onBack }) => {
     whatsappNo: "",
     callingNo: "",
 
-    // 3. Address & 4. State, District, Pin code
+    // 3. Address & 4. State, District, City, Pin code
     address: "",
     state: "Madhya Pradesh",
     district: "Bhopal",
+    city: "",
     pincode: "",
 
     // 10. Apply Course name & 11. Apply Institute name
@@ -211,6 +212,7 @@ export const StudyRegistrationForm = ({ onBack }) => {
       if (!formData.address.trim()) errs.address = "Address is required";
       if (!formData.state) errs.state = "State is required";
       if (!formData.district.trim()) errs.district = "District is required";
+      if (!formData.city.trim()) errs.city = "City is required";
       if (!formData.pincode.trim() || formData.pincode.length < 6) {
         errs.pincode = "Valid 6-digit PIN code required";
       }
@@ -261,6 +263,15 @@ export const StudyRegistrationForm = ({ onBack }) => {
         email: formData.email,
         dob: formData.dob,
         state: formData.state,
+        district: formData.district,
+        city: formData.city,
+        address: formData.address,
+        pincode: formData.pincode,
+        fatherName: formData.fatherName,
+        motherName: formData.motherName,
+        whatsappNo: formData.whatsappNo,
+        applyCourseName: formData.applyCourseName,
+        applyInstituteName: formData.applyInstituteName,
         board: formData.applyCourseName,
         class: formData.applyCourseName
       });
@@ -333,9 +344,9 @@ export const StudyRegistrationForm = ({ onBack }) => {
   };
 
   return (
-    <div className="w-full max-w-2xl mx-auto space-y-3">
+    <div className="w-full max-w-2xl mx-auto bg-white rounded-lg border border-slate-200/90 shadow-2xs overflow-hidden">
       {/* Top Banner - Compact */}
-      <div className="bg-white rounded-lg border border-slate-200/90 p-3 sm:p-3.5 shadow-2xs flex items-center justify-between">
+      <div className="p-3 sm:p-3.5 border-b border-slate-200/80 flex items-center justify-between">
         <div className="flex items-center gap-2.5">
           <button
             type="button"
@@ -367,7 +378,7 @@ export const StudyRegistrationForm = ({ onBack }) => {
 
       {/* Stepper - Compact */}
       {!isSuccess && (
-        <div className="bg-white rounded-lg border border-slate-200/90 p-2 sm:p-2.5 shadow-2xs">
+        <div className="px-3 sm:px-3.5 py-2 sm:py-2.5 border-b border-slate-200/80">
           <div className="flex items-center justify-between relative">
             <div className="absolute top-1/2 left-6 right-6 -translate-y-1/2 h-0.5 bg-slate-100 -z-0" />
             
@@ -413,7 +424,7 @@ export const StudyRegistrationForm = ({ onBack }) => {
       )}
 
       {/* Main Form Body */}
-      <div className="bg-white rounded-lg border border-slate-200/90 p-3.5 sm:p-5 shadow-2xs">
+      <div className="p-3.5 sm:p-5">
         {isSuccess ? (
           <motion.div initial={{ opacity: 0, scale: 0.99 }} animate={{ opacity: 1, scale: 1 }} className="text-center space-y-3.5 py-1">
             <div className="w-12 h-12 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto ring-4 ring-emerald-50">
@@ -747,8 +758,8 @@ export const StudyRegistrationForm = ({ onBack }) => {
                     {errors.address && <p className="text-[11px] text-red-500 mt-0.5 font-medium">{errors.address}</p>}
                   </div>
 
-                  {/* 4. State, District, Pin code */}
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                  {/* 4. State, District, City, Pin code */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                     <div>
                       <label className="block text-xs font-bold text-[#0A1D3F] mb-1">
                         4. State *
@@ -776,6 +787,22 @@ export const StudyRegistrationForm = ({ onBack }) => {
                         required
                       />
                       {errors.district && <p className="text-[11px] text-red-500 mt-0.5 font-medium">{errors.district}</p>}
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-[#0A1D3F] mb-1">
+                        4. City *
+                      </label>
+                      <input
+                        type="text"
+                        name="city"
+                        placeholder="e.g. Bhopal"
+                        value={formData.city}
+                        onChange={handleChange}
+                        className="w-full px-3 py-2 bg-slate-50/70 border border-slate-200 rounded-lg text-xs sm:text-sm text-[#0A1D3F] focus:outline-none focus:border-[#FF8A00] focus:bg-white transition"
+                        required
+                      />
+                      {errors.city && <p className="text-[11px] text-red-500 mt-0.5 font-medium">{errors.city}</p>}
                     </div>
 
                     <div>
