@@ -106,7 +106,9 @@ export const ResultCard = ({ item, onView }) => {
 export const ResultMarksheet = ({ result, onBack, onNewSearch }) => {
   if (!result) return null;
 
-  const isUniversity = result.type === "university" || !!result.universityName || !!result.course;
+  const isUniversity =
+    result.type === "university" ||
+    (!!result.universityName && result.type !== "institute" && result.type !== "school");
   const institution = result.schoolName || result.universityName || "Affiliated Educational Institution";
   const boardTitle = result.boardName || result.board;
 

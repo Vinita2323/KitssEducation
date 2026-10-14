@@ -91,17 +91,79 @@ function getRealisticAdmitCardId(boardId, cleanRoll) {
  */
 function generateDynamicResult(searchParams, cleanRoll) {
   const isUniversity = searchParams.type === "university";
-  const boardId = searchParams.boardId || (isUniversity ? "STATE_TECH_UNIV" : "CBSE");
-  const boardName = searchParams.boardName || (isUniversity ? "State Technological University" : "Central Board of Secondary Education");
+  const isInstitute = searchParams.type === "institute";
+  const boardId =
+    searchParams.boardId ||
+    (isInstitute ? "APEX_INSTITUTE" : isUniversity ? "STATE_TECH_UNIV" : "CBSE");
+  const boardName =
+    searchParams.boardName ||
+    (isInstitute
+      ? "Apex Institute of Technology & Management"
+      : isUniversity
+      ? "State Technological University"
+      : "Central Board of Secondary Education");
 
   const studentName = searchParams.studentName || getDeterministicItem(INDIAN_STUDENT_NAMES, cleanRoll);
   const motherName = searchParams.motherName || getDeterministicItem(MOTHER_NAMES, cleanRoll);
   const fatherName = searchParams.fatherName || getDeterministicItem(FATHER_NAMES, cleanRoll);
   const admitCardId = getRealisticAdmitCardId(boardId, cleanRoll);
 
+  if (isInstitute) {
+    const classGrade = searchParams.classGrade || "Class 10";
+    const instituteName =
+      searchParams.schoolName || boardName || "KITSS Franchise Institute";
+    const isClassCourse = String(classGrade).toLowerCase().startsWith("class");
+    return {
+      id: `res-inst-${cleanRoll}`,
+      type: "institute",
+      board: boardId,
+      boardName: boardName,
+      schoolName: instituteName,
+      schoolCode: boardId.replace(/_/g, "-").slice(0, 12),
+      centerCode: "FR-01",
+      exam: isClassCourse
+        ? `${classGrade} Annual Examination 2026 — Franchise Partner`
+        : `${classGrade} Term Examination 2026 — Franchise Partner`,
+      examLevel: classGrade,
+      course: classGrade,
+      year: "2026",
+      session: "2025-2026",
+      studentName: studentName,
+      motherName: motherName,
+      fatherName: fatherName,
+      rollNumber: cleanRoll,
+      admitCardId: admitCardId,
+      dob: searchParams.dob || "2009-08-15",
+      subjects: isClassCourse
+        ? [
+            { code: "ENG", name: "English", maxMarks: 100, obtained: 88, grade: "A1" },
+            { code: "HIN", name: "Hindi", maxMarks: 100, obtained: 86, grade: "A2" },
+            { code: "MAT", name: "Mathematics", maxMarks: 100, obtained: 94, grade: "A1" },
+            { code: "SCI", name: "Science", maxMarks: 100, obtained: 91, grade: "A1" },
+            { code: "SST", name: "Social Science", maxMarks: 100, obtained: 89, grade: "A2" }
+          ]
+        : [
+            { code: "P1", name: "Core Paper I", maxMarks: 100, obtained: 90, grade: "A1" },
+            { code: "P2", name: "Core Paper II", maxMarks: 100, obtained: 87, grade: "A2" },
+            { code: "P3", name: "Elective / Specialization", maxMarks: 100, obtained: 92, grade: "A1" },
+            { code: "P4", name: "Practical / Project", maxMarks: 100, obtained: 95, grade: "A1" }
+          ],
+      maxTotalMarks: isClassCourse ? 500 : 400,
+      totalMarks: isClassCourse ? 448 : 364,
+      obtainedMarks: isClassCourse ? 448 : 364,
+      percentage: isClassCourse ? 89.6 : 91.0,
+      grade: "A1",
+      status: "PASS",
+      statusDetail: "PASS — FRANCHISE INSTITUTE RESULT",
+      issueDate: "20 May 2026",
+      verificationStatus: "Verified by KITSS Franchise Partner",
+      qrCodeString: `KITSS-FRANCHISE-${boardId}-${cleanRoll}`
+    };
+  }
+
   if (isUniversity) {
     const univName = searchParams.boardName || "State Technological University";
-    const instName = "Faculty of Engineering & Technology";
+    const instName = searchParams.schoolName || "Faculty of Engineering & Technology";
     return {
       id: `res-gen-${cleanRoll}`,
       type: "university",
@@ -144,25 +206,25 @@ function generateDynamicResult(searchParams, cleanRoll) {
     };
   }
 
-  // School / Board Result
-  let schoolName = "Model Senior Secondary School";
-  let schoolCode = "85201";
+  // School / Board Result — prefer values entered on the search form
+  let schoolName = searchParams.schoolName || "Model Senior Secondary School";
+  let schoolCode = searchParams.schoolCode || "85201";
   let centerCode = "1104";
   let boardDisplayName = boardName;
 
   if (boardId === "STATE_BOARD") {
     const state = searchParams.stateName || "State";
-    schoolName = `${state} Model Higher Secondary School`;
+    if (!searchParams.schoolName) schoolName = `${state} Model Higher Secondary School`;
     boardDisplayName = `${state} State Board of Secondary & Higher Secondary Education`;
-    schoolCode = "MH-11.02.001";
+    if (!searchParams.schoolCode) schoolCode = "MH-11.02.001";
     centerCode = "PUN-042";
   } else if (boardId === "CBSE") {
-    schoolName = "Delhi Public School, R.K. Puram, New Delhi";
-    schoolCode = "85201";
+    if (!searchParams.schoolName) schoolName = "Delhi Public School, R.K. Puram, New Delhi";
+    if (!searchParams.schoolCode) schoolCode = "85201";
     centerCode = "1104";
   } else if (boardId === "ICSE") {
-    schoolName = "The Heritage Academy, Kolkata";
-    schoolCode = "WB084";
+    if (!searchParams.schoolName) schoolName = "The Heritage Academy, Kolkata";
+    if (!searchParams.schoolCode) schoolCode = "WB084";
     centerCode = "WB-102";
   }
 

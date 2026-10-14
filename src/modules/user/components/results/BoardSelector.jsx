@@ -1,5 +1,10 @@
 import React from "react";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, Building2 } from "lucide-react";
+import {
+  SearchableSelect,
+  isCustomSelectValue,
+  getCustomSelectLabel,
+} from "../common/SearchableSelect";
 
 export const BoardSelector = ({
   boards = [],
@@ -7,8 +12,62 @@ export const BoardSelector = ({
   onSelectBoard,
   resultType = "school"
 }) => {
-  const isSchool = resultType === "school";
-  const title = isSchool ? "Select Board" : "Select University";
+  const titleByType = {
+    school: "Select Board",
+    university: "Select University",
+    institute: "Select Institute / School",
+  };
+  const title = titleByType[resultType] || "Select Option";
+  const useDropdown = resultType === "institute";
+
+  if (useDropdown) {
+    const listedBoards = boards.filter((board) => board.id !== "OTHER_INSTITUTE");
+    const instituteOptions = listedBoards.map((board) => ({
+      value: board.id,
+      label: board.name,
+    }));
+
+    return (
+      <div className="bg-white rounded-lg border border-slate-200/90 p-3 sm:p-4 shadow-2xs space-y-3 overflow-visible">
+        <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+          <h2 className="text-xs sm:text-sm font-bold text-[#0A1D3F]">
+            {title}
+          </h2>
+          <span className="text-[10px] font-semibold text-slate-400">
+            {listedBoards.length}+ Franchise Partners
+          </span>
+        </div>
+
+        <div className="space-y-1.5 relative z-20">
+          <label className="block text-xs font-semibold text-slate-700">
+            Institute / School <span className="text-red-500">*</span>
+          </label>
+          <SearchableSelect
+            options={instituteOptions}
+            value={selectedBoardId || ""}
+            onChange={(value) => {
+              if (!value) return;
+              if (isCustomSelectValue(value)) {
+                const customName = getCustomSelectLabel(value);
+                onSelectBoard("OTHER_INSTITUTE", { schoolName: customName });
+                return;
+              }
+              onSelectBoard(value);
+            }}
+            placeholder="Choose or type your institute / school"
+            searchPlaceholder="Search or type institute name"
+            searchable
+            allowCustom
+            forceOpenDirection="down"
+            icon={Building2}
+          />
+          <p className="text-[10px] text-slate-400 pt-0.5">
+            Select from the list, or type your institute name if it is not listed.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-2">

@@ -1,5 +1,5 @@
 import React from "react";
-import { GraduationCap, Building2, ChevronRight } from "lucide-react";
+import { GraduationCap, Building2, School, ChevronRight } from "lucide-react";
 
 export const ResultTypeSelector = ({
   selectedType,
@@ -10,27 +10,30 @@ export const ResultTypeSelector = ({
     {
       id: "school",
       title: "Board Result",
-      subtitle: "Class 10th & 12th (CBSE, ICSE & State Boards)",
+      subtitle: "10th & 12th Examination",
       icon: GraduationCap,
-      badge: "School",
       iconStyle: "bg-teal-50 text-teal-600 border-teal-200/70",
-      badgeStyle: "bg-teal-50 text-teal-700",
     },
     {
       id: "university",
       title: "University Result",
-      subtitle: "Degrees, Semesters & College Marksheets",
+      subtitle: "Colleges & Degrees",
       icon: Building2,
-      badge: "Colleges",
       iconStyle: "bg-orange-50 text-[#FF8A00] border-orange-200/70",
-      badgeStyle: "bg-orange-50 text-orange-700",
+    },
+    {
+      id: "institute",
+      title: "Institute Class / School",
+      subtitle: "Franchise Institutes & Classes",
+      icon: School,
+      iconStyle: "bg-blue-50 text-[#133C8B] border-blue-200/70",
     }
   ];
 
   if (mode === "tabs") {
     return (
       <div className="w-full">
-        <div className="grid grid-cols-2 gap-1 p-0.5 bg-slate-100 rounded-lg">
+        <div className="grid grid-cols-3 gap-1 p-0.5 bg-slate-100 rounded-lg">
           {options.map((opt) => {
             const isSelected = selectedType === opt.id;
             const Icon = opt.icon;
@@ -39,14 +42,14 @@ export const ResultTypeSelector = ({
                 key={opt.id}
                 type="button"
                 onClick={() => onSelectType(opt.id)}
-                className={`flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-md text-xs font-bold transition-all cursor-pointer ${
+                className={`flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-md text-[11px] sm:text-xs font-bold transition-all cursor-pointer ${
                   isSelected
                     ? "bg-[#0A1D3F] text-white shadow-2xs"
                     : "text-slate-600 hover:text-slate-900 hover:bg-white/60"
                 }`}
               >
-                <Icon className={`w-3.5 h-3.5 ${isSelected ? "text-[#FF8A00]" : "text-slate-500"}`} />
-                <span>{opt.title}</span>
+                <Icon className={`w-3.5 h-3.5 shrink-0 ${isSelected ? "text-[#FF8A00]" : "text-slate-500"}`} />
+                <span className="truncate">{opt.title}</span>
               </button>
             );
           })}
@@ -55,10 +58,9 @@ export const ResultTypeSelector = ({
     );
   }
 
-  // Compact Landing Cards View
   return (
     <div className="space-y-1.5">
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full">
+      <div className="grid grid-cols-1 gap-2 w-full">
         {options.map((opt) => {
           const Icon = opt.icon;
           return (
@@ -77,7 +79,7 @@ export const ResultTypeSelector = ({
                     {opt.title}
                   </h3>
                   <p className="text-[10px] text-slate-400 truncate">
-                    {opt.id === "school" ? "10th & 12th Examination" : "Colleges & Degrees"}
+                    {opt.subtitle}
                   </p>
                 </div>
               </div>
@@ -90,4 +92,3 @@ export const ResultTypeSelector = ({
     </div>
   );
 };
-

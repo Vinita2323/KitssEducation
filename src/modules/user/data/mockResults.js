@@ -317,6 +317,84 @@ export const mockResults = [
     issueDate: "24 May 2026",
     verificationStatus: "Verified & Digitally Signed",
     qrCodeString: "KITSS-VERIFIED-CBSE-1024503-AMIT-KUMAR-COMPARTMENT"
+  },
+
+  // Franchise Institute — Apex Class 10
+  {
+    id: "res-inst-apx-2401",
+    type: "institute",
+    board: "APEX_INSTITUTE",
+    boardName: "Apex Institute of Technology & Management",
+    schoolName: "Apex Institute of Technology & Management",
+    schoolCode: "APEX-FR-01",
+    centerCode: "FR-01",
+    exam: "Class 10 Annual Examination 2026 — Franchise Partner",
+    examLevel: "Class 10",
+    course: "Class 10",
+    year: "2026",
+    session: "2025-2026",
+    studentName: "ROHAN SHARMA",
+    motherName: "SUNITA SHARMA",
+    fatherName: "RAJESH SHARMA",
+    rollNumber: "INST-APX-2401",
+    admitCardId: "APEX-2026-X-2401",
+    dob: "2009-08-15",
+    subjects: [
+      { code: "ENG", name: "English", maxMarks: 100, obtained: 92, grade: "A1" },
+      { code: "HIN", name: "Hindi", maxMarks: 100, obtained: 88, grade: "A2" },
+      { code: "MAT", name: "Mathematics", maxMarks: 100, obtained: 95, grade: "A1" },
+      { code: "SCI", name: "Science", maxMarks: 100, obtained: 91, grade: "A1" },
+      { code: "SST", name: "Social Science", maxMarks: 100, obtained: 90, grade: "A1" }
+    ],
+    maxTotalMarks: 500,
+    totalMarks: 456,
+    obtainedMarks: 456,
+    percentage: 91.2,
+    grade: "A1",
+    status: "PASS",
+    statusDetail: "PASS — FRANCHISE INSTITUTE RESULT",
+    issueDate: "20 May 2026",
+    verificationStatus: "Verified by KITSS Franchise Partner",
+    qrCodeString: "KITSS-FRANCHISE-APEX-INST-APX-2401"
+  },
+
+  // Franchise School — Delhi Public Heritage School
+  {
+    id: "res-inst-dphs-1012",
+    type: "institute",
+    board: "DELHI_HERITAGE_SCHOOL",
+    boardName: "Delhi Public Heritage School (Franchise)",
+    schoolName: "Delhi Public Heritage School",
+    schoolCode: "DPHS-FR-02",
+    centerCode: "FR-02",
+    exam: "Class 10 Annual Examination 2026 — Franchise Partner",
+    examLevel: "Class 10",
+    course: "Class 10",
+    year: "2026",
+    session: "2025-2026",
+    studentName: "PRIYA VERMA",
+    motherName: "ANITA VERMA",
+    fatherName: "SUNIL VERMA",
+    rollNumber: "INST-DPHS-1012",
+    admitCardId: "DPHS-2026-X-1012",
+    dob: "2009-11-20",
+    subjects: [
+      { code: "ENG", name: "English", maxMarks: 100, obtained: 89, grade: "A2" },
+      { code: "HIN", name: "Hindi", maxMarks: 100, obtained: 86, grade: "A2" },
+      { code: "MAT", name: "Mathematics", maxMarks: 100, obtained: 90, grade: "A1" },
+      { code: "SCI", name: "Science", maxMarks: 100, obtained: 88, grade: "A2" },
+      { code: "SST", name: "Social Science", maxMarks: 100, obtained: 89, grade: "A2" }
+    ],
+    maxTotalMarks: 500,
+    totalMarks: 442,
+    obtainedMarks: 442,
+    percentage: 88.4,
+    grade: "A2",
+    status: "PASS",
+    statusDetail: "PASS — FRANCHISE SCHOOL RESULT",
+    issueDate: "18 May 2026",
+    verificationStatus: "Verified by KITSS Franchise Partner",
+    qrCodeString: "KITSS-FRANCHISE-DPHS-INST-DPHS-1012"
   }
 ];
 

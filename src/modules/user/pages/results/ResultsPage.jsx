@@ -26,7 +26,7 @@ export const ResultsPage = () => {
   const [flowStep, setFlowStep] = useState("landing");
 
   // Selection & Form State (Preserved across back/forward navigation)
-  const [resultType, setResultType] = useState("school"); // 'school' | 'university'
+  const [resultType, setResultType] = useState("school"); // 'school' | 'university' | 'institute'
   const [boards, setBoards] = useState([]);
   const [selectedBoardId, setSelectedBoardId] = useState(null);
   const [currentBoardConfig, setCurrentBoardConfig] = useState(null);
@@ -95,9 +95,17 @@ export const ResultsPage = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  // 2. Board Selection: User selects a board card
-  const handleSelectBoard = (boardId) => {
+  // 2. Board Selection: User selects a board / institute (optional extras for typed names)
+  const handleSelectBoard = (boardId, extras = {}) => {
     setSelectedBoardId(boardId);
+    if (extras.schoolName) {
+      setSavedFormValues((prev) => ({
+        ...prev,
+        schoolName: extras.schoolName,
+      }));
+    } else {
+      setSavedFormValues({});
+    }
     setFlowStep("search_form");
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
