@@ -3,14 +3,8 @@ import { useParams, useNavigate, useLocation, Link } from "react-router-dom";
 import {
   ArrowLeft,
   CheckCircle2,
-  Video,
   Play,
   Lock,
-  Clock,
-  ChevronRight,
-  BookOpen,
-  Sparkles,
-  ShieldAlert,
   List
 } from "lucide-react";
 import { coachingService } from "../../services/coachingService";
@@ -28,7 +22,6 @@ export const LecturePlayerPage = () => {
   const [currentSubject, setCurrentSubject] = useState(location.state?.subjectName || "");
   const [student, setStudent] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [showPlaylistDrawer, setShowPlaylistDrawer] = useState(false);
 
   useEffect(() => {
     const loadLectureData = async () => {
@@ -154,11 +147,83 @@ export const LecturePlayerPage = () => {
     );
   }
 
+  const renderPlaylistItems = (variant = "light") => {
+    const isDark = variant === "dark";
+    return (
+      <div className="space-y-3">
+        {(course.subjectsData || []).map((subj, sIdx) => (
+          <div key={sIdx} className="space-y-1.5">
+            <div
+              className={`flex items-center gap-2 text-xs font-bold ${
+                isDark ? "text-white/90" : "text-[#0A1D3F]"
+              }`}
+            >
+              <div
+                className="w-2 h-2 rounded-full shrink-0"
+                style={{ backgroundColor: subj.color || "#FF8A00" }}
+              />
+              <span>{subj.subjectName}</span>
+            </div>
+
+            <div className="space-y-1">
+              {(subj.lectures || []).map((lec) => {
+                const isSelected = currentLecture.id === lec.id;
+                return (
+                  <button
+                    key={lec.id}
+                    type="button"
+                    disabled={lec.isLocked}
+                    onClick={() => {
+                      if (!lec.isLocked) {
+                        handleLectureSelect(lec, subj.subjectName);
+                      }
+                    }}
+                    className={`w-full p-2.5 rounded-xl border text-xs flex items-center justify-between gap-2 transition text-left ${
+                      isSelected
+                        ? isDark
+                          ? "bg-[#FF8A00] text-white border-[#FF8A00]"
+                          : "bg-[#0A1D3F] text-white border-[#0A1D3F]"
+                        : lec.isLocked
+                        ? isDark
+                          ? "bg-white/5 border-white/10 opacity-50 cursor-not-allowed text-white/50"
+                          : "bg-[#F7F8FA] border-[#E6E8EC] opacity-60 cursor-not-allowed text-[#667085]"
+                        : isDark
+                        ? "bg-white/5 border-white/10 hover:bg-white/10 text-white/90"
+                        : "bg-white border-[#E6E8EC] hover:bg-[#F7F8FA] text-[#0A1D3F]"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      {lec.isLocked ? (
+                        <Lock className="w-3.5 h-3.5 shrink-0 opacity-70" />
+                      ) : lec.isCompleted ? (
+                        <CheckCircle2 className="w-3.5 h-3.5 shrink-0 text-[#17B26A]" />
+                      ) : (
+                        <Play
+                          className={`w-3.5 h-3.5 shrink-0 ${
+                            isSelected ? "fill-current" : "opacity-60"
+                          }`}
+                        />
+                      )}
+                      <span className="truncate font-medium">{lec.title}</span>
+                    </div>
+                    <span className="text-[10px] opacity-70 shrink-0 font-mono">
+                      {lec.duration}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
   return (
-    <div className="max-w-6xl mx-auto space-y-5">
-      {/* Top Header Row with Back Button, Course Name, Subject, and Lecture Title */}
+    <div className="max-w-6xl mx-auto space-y-4 sm:space-y-5">
+      {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-[#E6E8EC]">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 min-w-0">
           <Link
             to={`/coaching/${courseId}/dashboard`}
             className="p-2 rounded-xl bg-white border border-[#E6E8EC] hover:bg-[#F7F8FA] text-[#0A1D3F] transition card-shadow shrink-0"
@@ -167,11 +232,11 @@ export const LecturePlayerPage = () => {
             <ArrowLeft className="w-5 h-5" />
           </Link>
 
-          <div>
+          <div className="min-w-0">
             <div className="flex items-center gap-2 text-xs text-[#667085]">
-              <span className="font-bold text-[#0A1D3F]">{course.title}</span>
+              <span className="font-bold text-[#0A1D3F] truncate">{course.title}</span>
               <span>•</span>
-              <span className="font-semibold text-[#FF8A00]">{currentSubject}</span>
+              <span className="font-semibold text-[#FF8A00] shrink-0">{currentSubject}</span>
             </div>
             <h1 className="text-base sm:text-xl font-black text-[#0A1D3F] truncate max-w-xl">
               {currentLecture.title}
@@ -179,7 +244,6 @@ export const LecturePlayerPage = () => {
           </div>
         </div>
 
-        {/* Action: Mark Complete / Toggle completion */}
         <div className="flex items-center gap-2 self-end sm:self-center">
           <button
             type="button"
@@ -196,10 +260,12 @@ export const LecturePlayerPage = () => {
         </div>
       </div>
 
-      {/* Main Grid: Protected Video Player + Playlist Sidebar */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-        {/* Left: Protected Video Player */}
-        <div className="lg:col-span-2 space-y-4">
+      {/*
+        Mobile / portrait: video → class list (fills space) → notes
+        Desktop: video+notes | playlist sidebar
+      */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6 items-start">
+        <div className="lg:col-span-2 space-y-4 order-1">
           <ProtectedVideoPlayer
             lecture={currentLecture}
             courseTitle={course.title}
@@ -208,11 +274,12 @@ export const LecturePlayerPage = () => {
             studentId={student?.id || "KITSS20261084"}
             isCompleted={currentLecture.isCompleted}
             onLectureComplete={handleToggleCompletion}
+            portraitPlaylist={renderPlaylistItems("dark")}
           />
 
-          {/* Lecture Notes & Teacher Details Box */}
-          <div className="bg-white rounded-2xl border border-[#E6E8EC] p-5 card-shadow space-y-3">
-            <div className="flex items-center justify-between">
+          {/* Notes — desktop under video; on mobile after class list */}
+          <div className="hidden lg:block bg-white rounded-2xl border border-[#E6E8EC] p-5 card-shadow space-y-3">
+            <div className="flex items-center justify-between gap-2">
               <div>
                 <span className="text-[10px] font-bold uppercase tracking-wider text-[#FF8A00]">
                   Lesson Concept Overview
@@ -221,99 +288,51 @@ export const LecturePlayerPage = () => {
                   {currentLecture.title}
                 </h3>
               </div>
-              <span className="text-xs font-semibold text-[#667085] bg-[#F7F8FA] px-2.5 py-1 rounded-full border border-[#E6E8EC]">
+              <span className="text-xs font-semibold text-[#667085] bg-[#F7F8FA] px-2.5 py-1 rounded-full border border-[#E6E8EC] shrink-0">
                 Duration: {currentLecture.duration}
               </span>
             </div>
-
             <p className="text-xs sm:text-sm text-[#667085] leading-relaxed">
               {currentLecture.summary ||
                 "In this class, we analyze fundamental laws, step-by-step mathematical reasoning, and high-yield board examination questions."}
             </p>
-
             <div className="pt-3 border-t border-[#E6E8EC] flex items-center justify-between text-xs text-[#0A1D3F]">
               <span className="font-semibold text-[#667085]">
                 Instructor: <strong>{currentLecture.teacher || course.teacher}</strong>
               </span>
-              <span className="text-[#17B26A] font-bold">
-                Protected Classroom Mode
-              </span>
+              <span className="text-[#17B26A] font-bold">Protected Classroom Mode</span>
             </div>
           </div>
         </div>
 
-        {/* Right: Course Lectures Playlist */}
-        <div className="lg:col-span-1 bg-white rounded-2xl border border-[#E6E8EC] p-4 card-shadow space-y-3">
+        {/* Class list — directly under video on phone (portrait), sidebar on desktop */}
+        <div className="order-2 lg:order-none lg:col-span-1 bg-white rounded-2xl border border-[#E6E8EC] p-4 card-shadow space-y-3">
           <div className="flex items-center justify-between pb-2 border-b border-[#E6E8EC]">
             <h3 className="font-black text-sm text-[#0A1D3F] flex items-center gap-1.5">
               <List className="w-4 h-4 text-[#FF8A00]" />
-              <span>Course Playlist</span>
+              <span>Class list</span>
             </h3>
             <span className="text-[11px] font-bold text-[#667085]">
               {course.lecturesCount} Lessons
             </span>
           </div>
-
-          {/* Subject-wise lecture playlist items */}
-          <div className="space-y-4 max-h-[580px] overflow-y-auto pr-1">
-            {(course.subjectsData || []).map((subj, sIdx) => (
-              <div key={sIdx} className="space-y-2">
-                <div className="flex items-center gap-2 text-xs font-bold text-[#0A1D3F]">
-                  <div
-                    className="w-2 h-2 rounded-full"
-                    style={{ backgroundColor: subj.color || "#FF8A00" }}
-                  />
-                  <span>{subj.subjectName}</span>
-                </div>
-
-                <div className="space-y-1.5">
-                  {(subj.lectures || []).map((lec) => {
-                    const isSelected = currentLecture.id === lec.id;
-                    return (
-                      <div
-                        key={lec.id}
-                        onClick={() => {
-                          if (!lec.isLocked) {
-                            handleLectureSelect(lec, subj.subjectName);
-                          }
-                        }}
-                        className={`p-2.5 rounded-xl border text-xs flex items-center justify-between gap-2 transition cursor-pointer ${
-                          isSelected
-                            ? "bg-[#0A1D3F] text-white border-[#0A1D3F]"
-                            : lec.isLocked
-                            ? "bg-[#F7F8FA] border-[#E6E8EC] opacity-60 cursor-not-allowed text-[#667085]"
-                            : "bg-white border-[#E6E8EC] hover:bg-[#F7F8FA] text-[#0A1D3F]"
-                        }`}
-                      >
-                        <div className="flex items-center gap-2 min-w-0">
-                          {lec.isLocked ? (
-                            <Lock className="w-3.5 h-3.5 shrink-0 text-[#667085]" />
-                          ) : lec.isCompleted ? (
-                            <CheckCircle2
-                              className={`w-3.5 h-3.5 shrink-0 ${
-                                isSelected ? "text-[#17B26A]" : "text-[#17B26A]"
-                              }`}
-                            />
-                          ) : (
-                            <Play
-                              className={`w-3.5 h-3.5 shrink-0 ${
-                                isSelected ? "text-[#FF8A00] fill-current" : "text-[#667085]"
-                              }`}
-                            />
-                          )}
-                          <span className="truncate font-medium">{lec.title}</span>
-                        </div>
-
-                        <span className="text-[10px] opacity-70 shrink-0 font-mono">
-                          {lec.duration}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            ))}
+          <div className="space-y-1 max-h-[min(58vh,520px)] lg:max-h-[580px] overflow-y-auto pr-1">
+            {renderPlaylistItems("light")}
           </div>
+        </div>
+
+        {/* Notes on mobile after class list */}
+        <div className="order-3 lg:hidden bg-white rounded-2xl border border-[#E6E8EC] p-4 card-shadow space-y-3">
+          <div>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-[#FF8A00]">
+              Lesson Concept Overview
+            </span>
+            <h3 className="font-black text-sm text-[#0A1D3F]">{currentLecture.title}</h3>
+          </div>
+          <p className="text-xs text-[#667085] leading-relaxed">
+            {currentLecture.summary ||
+              "In this class, we analyze fundamental laws, step-by-step mathematical reasoning, and high-yield board examination questions."}
+          </p>
         </div>
       </div>
     </div>

@@ -1,5 +1,5 @@
 import React from "react";
-import { ShieldCheck, QrCode, Award, CheckCircle2, UserCheck } from "lucide-react";
+import { ShieldCheck, QrCode, UserCheck } from "lucide-react";
 import { ResultMarksTable } from "./ResultMarksTable";
 import { ResultSummary } from "./ResultSummary";
 import { ResultActions } from "./ResultActions";
@@ -50,6 +50,14 @@ const formatCleanAdmitId = (id) => {
     }
   }
   return clean;
+};
+
+/** Local dummy passport photo (always available for screen + print/PDF). */
+const DUMMY_STUDENT_PHOTO = "/dummy-student-photo.jpg";
+
+const getStudentPhotoUrl = (result) => {
+  if (result?.studentPhoto) return result.studentPhoto;
+  return DUMMY_STUDENT_PHOTO;
 };
 
 /**
@@ -122,7 +130,10 @@ export const ResultMarksheet = ({ result, onBack, onNewSearch }) => {
       />
 
       {/* Official Marksheet Document Container */}
-      <div className="bg-white rounded-md border border-slate-200/90 p-3 sm:p-5 shadow-2xs relative overflow-hidden print:border-none print:shadow-none print:p-0 w-full box-border">
+      <div
+        id="printable-marksheet"
+        className="printable-marksheet bg-white rounded-md border border-slate-200/90 p-3 sm:p-5 shadow-2xs relative overflow-hidden print:border-none print:shadow-none print:p-0 w-full box-border"
+      >
         {/* Subtle Watermark in Center */}
         <div className="absolute inset-0 flex items-center justify-center opacity-[0.02] pointer-events-none select-none">
           <img
@@ -154,6 +165,13 @@ export const ResultMarksheet = ({ result, onBack, onNewSearch }) => {
             {result.exam}
           </p>
 
+          {institution && (
+            <p className="text-[11px] sm:text-xs font-semibold text-slate-800 uppercase mt-1 px-2 leading-snug">
+              {isUniversity ? "Institution" : "School"}:{" "}
+              <span className="font-bold">{institution}</span>
+            </p>
+          )}
+
           <div className="flex items-center justify-center gap-1.5 mt-0.5 text-[10px] text-slate-500">
             <span className="font-medium text-slate-700">
               Session {result.year || result.session || "2026"}
@@ -166,9 +184,8 @@ export const ResultMarksheet = ({ result, onBack, onNewSearch }) => {
           </div>
         </div>
 
-        {/* 2. Candidate Particulars (Compact Minimalist Table) */}
+        {/* 2. Candidate Particulars + Student Photo (right) */}
         <div className="rounded-md border border-slate-200 overflow-hidden bg-white mb-3 shadow-2xs">
-          {/* Section Sub-Header */}
           <div className="bg-slate-50/80 px-3 py-1.5 border-b border-slate-200 flex items-center justify-between">
             <div className="flex items-center gap-1.5">
               <UserCheck className="w-3.5 h-3.5 text-slate-600" />
@@ -182,93 +199,112 @@ export const ResultMarksheet = ({ result, onBack, onNewSearch }) => {
             </span>
           </div>
 
-          {/* 2-Column Key-Value Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-slate-100 text-[11px]">
-            {/* Left Column */}
-            <div className="divide-y divide-slate-100">
-              <div className="px-3 py-1.5 flex items-center">
-                <span className="text-slate-500 w-28 shrink-0 font-normal">Roll Number</span>
-                <span className="font-mono font-semibold text-slate-900">{result.rollNumber}</span>
-              </div>
+          <div className="particulars-body flex flex-col sm:flex-row">
+            <div className="flex-1 min-w-0">
+              <div className="particulars-grid grid grid-cols-1 sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-slate-100 text-[11px]">
+                <div className="divide-y divide-slate-100">
+                  <div className="px-3 py-1.5 flex items-center">
+                    <span className="text-slate-500 w-28 shrink-0 font-normal">Roll Number</span>
+                    <span className="font-mono font-semibold text-slate-900">{result.rollNumber}</span>
+                  </div>
 
-              <div className="px-3 py-1.5 flex items-center">
-                <span className="text-slate-500 w-28 shrink-0 font-normal">Candidate Name</span>
-                <span className="font-semibold text-slate-900 uppercase truncate">
-                  {getCleanStudentName(result.studentName, result.rollNumber)}
-                </span>
-              </div>
+                  <div className="px-3 py-1.5 flex items-center">
+                    <span className="text-slate-500 w-28 shrink-0 font-normal">Candidate Name</span>
+                    <span className="font-semibold text-slate-900 uppercase break-words">
+                      {getCleanStudentName(result.studentName, result.rollNumber)}
+                    </span>
+                  </div>
 
-              {result.motherName && (
-                <div className="px-3 py-1.5 flex items-center">
-                  <span className="text-slate-500 w-28 shrink-0 font-normal">Mother's Name</span>
-                  <span className="font-normal text-slate-700 uppercase truncate">
-                    {result.motherName}
-                  </span>
+                  {result.motherName && (
+                    <div className="px-3 py-1.5 flex items-center">
+                      <span className="text-slate-500 w-28 shrink-0 font-normal">Mother&apos;s Name</span>
+                      <span className="font-normal text-slate-700 uppercase break-words">
+                        {result.motherName}
+                      </span>
+                    </div>
+                  )}
+
+                  {result.fatherName && (
+                    <div className="px-3 py-1.5 flex items-center">
+                      <span className="text-slate-500 w-28 shrink-0 font-normal">Father&apos;s Name</span>
+                      <span className="font-normal text-slate-700 uppercase break-words">
+                        {result.fatherName}
+                      </span>
+                    </div>
+                  )}
                 </div>
-              )}
 
-              {result.fatherName && (
-                <div className="px-3 py-1.5 flex items-center">
-                  <span className="text-slate-500 w-28 shrink-0 font-normal">Father's Name</span>
-                  <span className="font-normal text-slate-700 uppercase truncate">
-                    {result.fatherName}
-                  </span>
+                <div className="divide-y divide-slate-100">
+                  <div className="px-3 py-1.5 flex items-center">
+                    <span className="text-slate-500 w-28 shrink-0 font-normal">
+                      {isUniversity ? "Enrollment No" : "Registration No"}
+                    </span>
+                    <span className="font-mono font-medium text-slate-800 break-all">
+                      {result.enrollmentNumber || formatCleanAdmitId(result.admitCardId)}
+                    </span>
+                  </div>
+
+                  {result.dob && (
+                    <div className="px-3 py-1.5 flex items-center">
+                      <span className="text-slate-500 w-28 shrink-0 font-normal">Date of Birth</span>
+                      <span className="font-normal text-slate-700">
+                        {formatDob(result.dob)}
+                      </span>
+                    </div>
+                  )}
+
+                  {isUniversity && (result.course || result.semester) ? (
+                    <div className="px-3 py-1.5 flex items-center">
+                      <span className="text-slate-500 w-28 shrink-0 font-normal">Course / Sem</span>
+                      <span className="font-normal text-slate-700 break-words">
+                        {[result.course, result.semester].filter(Boolean).join(" • ")}
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="px-3 py-1.5 flex items-center">
+                      <span className="text-slate-500 w-28 shrink-0 font-normal">Center Code</span>
+                      <span className="font-mono font-normal text-slate-700">
+                        {[result.centerCode, result.schoolCode].filter(Boolean).join(" / ") || "GEN-01"}
+                      </span>
+                    </div>
+                  )}
+
+                  <div className="px-3 py-1.5 flex items-center">
+                    <span className="text-slate-500 w-28 shrink-0 font-normal">Result Session</span>
+                    <span className="font-normal text-slate-700">
+                      {result.year || result.session || "2026"}
+                    </span>
+                  </div>
                 </div>
-              )}
+              </div>
             </div>
 
-            {/* Right Column */}
-            <div className="divide-y divide-slate-100">
-              <div className="px-3 py-1.5 flex items-center">
-                <span className="text-slate-500 w-28 shrink-0 font-normal">
-                  {isUniversity ? "Enrollment No" : "Registration No"}
-                </span>
-                <span className="font-mono font-medium text-slate-800 truncate">
-                  {result.enrollmentNumber || formatCleanAdmitId(result.admitCardId)}
-                </span>
+            {/* Student photograph — right side (screen + print) */}
+            <div className="particulars-photo shrink-0 border-t sm:border-t-0 sm:border-l border-slate-200 bg-slate-50/50 p-2.5 sm:p-3 flex flex-col items-center justify-center gap-1 print:border-l">
+              <div className="w-[72px] h-[90px] sm:w-[80px] sm:h-[100px] rounded-sm border-2 border-slate-300 bg-white overflow-hidden shadow-xs print:w-[85px] print:h-[105px]">
+                <img
+                  src={getStudentPhotoUrl(result)}
+                  alt={getCleanStudentName(result.studentName, result.rollNumber)}
+                  className="w-full h-full object-cover object-top"
+                  onError={(e) => {
+                    e.currentTarget.onerror = null;
+                    e.currentTarget.src = "/dummy-student-photo.svg";
+                  }}
+                />
               </div>
-
-              {result.dob && (
-                <div className="px-3 py-1.5 flex items-center">
-                  <span className="text-slate-500 w-28 shrink-0 font-normal">Date of Birth</span>
-                  <span className="font-normal text-slate-700">
-                    {formatDob(result.dob)}
-                  </span>
-                </div>
-              )}
-
-              {isUniversity && (result.course || result.semester) ? (
-                <div className="px-3 py-1.5 flex items-center">
-                  <span className="text-slate-500 w-28 shrink-0 font-normal">Course / Sem</span>
-                  <span className="font-normal text-slate-700 truncate">
-                    {[result.course, result.semester].filter(Boolean).join(" • ")}
-                  </span>
-                </div>
-              ) : (
-                <div className="px-3 py-1.5 flex items-center">
-                  <span className="text-slate-500 w-28 shrink-0 font-normal">Center Code</span>
-                  <span className="font-mono font-normal text-slate-700">
-                    {[result.centerCode, result.schoolCode].filter(Boolean).join(" / ") || "GEN-01"}
-                  </span>
-                </div>
-              )}
-
-              <div className="px-3 py-1.5 flex items-center">
-                <span className="text-slate-500 w-28 shrink-0 font-normal">Result Session</span>
-                <span className="font-normal text-slate-700">
-                  {result.year || result.session || "2026"}
-                </span>
-              </div>
+              <span className="text-[8px] font-semibold text-slate-500 uppercase tracking-wider">
+                Passport Photo
+              </span>
             </div>
           </div>
 
-          {/* School / Institution Row */}
+          {/* Full-width school / institution row — always visible on screen & print */}
           {institution && (
-            <div className="px-3 py-1.5 bg-slate-50/40 border-t border-slate-100 flex items-center text-[11px]">
-              <span className="text-slate-500 w-28 shrink-0 font-normal">
-                {isUniversity ? "Institution" : "School"}
+            <div className="px-3 py-2 bg-slate-50 border-t border-slate-200 flex items-start gap-2 text-[11px] sm:text-xs">
+              <span className="text-slate-500 w-28 shrink-0 font-semibold uppercase tracking-wide pt-0.5">
+                {isUniversity ? "Institution" : "School Name"}
               </span>
-              <span className="font-medium text-slate-800 uppercase truncate">
+              <span className="font-bold text-slate-900 uppercase leading-snug break-words flex-1">
                 {institution}
               </span>
             </div>

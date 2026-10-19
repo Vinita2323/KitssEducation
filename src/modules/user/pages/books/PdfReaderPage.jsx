@@ -285,7 +285,7 @@ export const PdfReaderPage = () => {
                 fullWidth
                 icon={ShoppingBag}
               >
-                Buy Now for ₹{book.price}
+                Pay Now for ₹{book.price}
               </PrimaryButton>
             </Link>
 

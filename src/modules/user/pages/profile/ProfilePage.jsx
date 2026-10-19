@@ -1,26 +1,23 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
-  User,
   Mail,
   Phone,
   Calendar,
   GraduationCap,
-  Shield,
   KeyRound,
   ShoppingBag,
   Video,
-  HelpCircle,
   LogOut,
   ChevronRight,
   Flame,
   Coins,
   BookOpen,
-  Award,
   Edit3
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../context/ToastContext";
+import { useLibrary } from "../../context/LibraryContext";
 import { Modal } from "../../components/common/Modal";
 import { PrimaryButton, SecondaryButton } from "../../components/common/PrimaryButton";
 
@@ -28,6 +25,8 @@ export const ProfilePage = () => {
   const { user, updateProfile, logout } = useAuth();
   const navigate = useNavigate();
   const { showSuccess, showError } = useToast();
+  const { purchasedBookIds } = useLibrary();
+  const purchasedCount = purchasedBookIds?.length || 0;
 
   const [showEditModal, setShowEditModal] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
@@ -162,7 +161,7 @@ export const ProfilePage = () => {
           <div className="p-2 bg-[#F7F8FA] rounded-xl text-center">
             <div className="flex items-center justify-center gap-1 text-[#17B26A] font-bold text-xs sm:text-sm">
               <BookOpen className="w-3.5 h-3.5" />
-              <span>{user.readBooks}</span>
+              <span>{purchasedCount || user.readBooks || 0}</span>
             </div>
             <span className="text-[9px] text-[#667085] block mt-0.5 truncate">Books</span>
           </div>
@@ -246,6 +245,31 @@ export const ProfilePage = () => {
                     </span>
                   </div>
                   <p className="text-[10px] text-[#667085]">Explore & enroll in coaching courses</p>
+                </div>
+              </div>
+              <ChevronRight className="w-3.5 h-3.5 text-[#FF8A00] group-hover:translate-x-0.5 transition-all" />
+            </Link>
+
+            <Link
+              to="/my-books"
+              className="w-full flex items-center justify-between p-2.5 bg-[#FFF7ED] hover:bg-[#FFEDD5] rounded-xl border border-[#FF8A00]/30 text-left transition block group cursor-pointer shadow-2xs"
+            >
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-[#FF8A00]/15 flex items-center justify-center text-[#FF8A00] shrink-0">
+                  <BookOpen className="w-4 h-4" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-1.5">
+                    <h4 className="text-xs font-bold text-[#0A1D3F] group-hover:text-[#FF8A00] transition">
+                      My Books
+                    </h4>
+                    {purchasedCount > 0 && (
+                      <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-[#17B26A] text-white">
+                        {purchasedCount}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-[10px] text-[#667085]">View your purchased books</p>
                 </div>
               </div>
               <ChevronRight className="w-3.5 h-3.5 text-[#FF8A00] group-hover:translate-x-0.5 transition-all" />

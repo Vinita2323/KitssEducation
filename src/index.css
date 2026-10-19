@@ -113,13 +113,21 @@ body {
   transform: translateY(-2px);
 }
 
-/* Print Styles for Marksheet/Results */
+/* Print Styles for Marksheet/Results — match on-screen UI */
 @media print {
+  @page {
+    size: A4;
+    margin: 12mm;
+  }
+
   body {
     background: #ffffff !important;
     padding: 0 !important;
     margin: 0 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
+
   header,
   nav,
   footer,
@@ -128,15 +136,18 @@ body {
   .no-print-reader {
     display: none !important;
   }
+
   main {
     padding: 0 !important;
     margin: 0 !important;
     max-width: 100% !important;
     width: 100% !important;
   }
+
   .print-only {
     display: block !important;
   }
+
   .print-drm-notice {
     display: flex !important;
     flex-direction: column;
@@ -146,8 +157,110 @@ body {
     text-align: center;
     padding: 2rem;
   }
+
+  /* When downloading/printing marksheet, keep colors & photo layout */
+  body.printing-marksheet .printable-marksheet,
+  .printable-marksheet {
+    box-shadow: none !important;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 0 !important;
+    overflow: visible !important;
+  }
+
+  .printable-marksheet img {
+    max-width: 100% !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
 }
 
 .print-drm-notice {
   display: none;
+}
+
+/* PDF / export capture — full A4 document layout (no mobile scroll chrome) */
+.exporting-marksheet,
+.exporting-marksheet * {
+  -webkit-print-color-adjust: exact !important;
+  print-color-adjust: exact !important;
+}
+
+.exporting-marksheet {
+  width: 794px !important;
+  max-width: 794px !important;
+  height: auto !important;
+  max-height: none !important;
+  box-sizing: border-box !important;
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  overflow: visible !important;
+  padding: 20px 24px !important;
+}
+
+.exporting-marksheet .marks-swipe-hint,
+.exporting-marksheet .no-print {
+  display: none !important;
+}
+
+.exporting-marksheet .marks-table-wrap,
+.exporting-marksheet .marks-table-scroll {
+  overflow: visible !important;
+  max-height: none !important;
+  height: auto !important;
+}
+
+.exporting-marksheet .marks-table {
+  min-width: 0 !important;
+  width: 100% !important;
+  table-layout: auto !important;
+  font-size: 10px !important;
+}
+
+.exporting-marksheet .marks-table tbody tr {
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+
+.exporting-marksheet .marks-table th,
+.exporting-marksheet .marks-table td {
+  word-wrap: break-word !important;
+  overflow-wrap: break-word !important;
+  white-space: normal !important;
+  padding: 6px 5px !important;
+}
+
+.exporting-marksheet .particulars-body {
+  flex-direction: row !important;
+  align-items: stretch !important;
+}
+
+.exporting-marksheet .particulars-grid {
+  grid-template-columns: 1fr 1fr !important;
+}
+
+.exporting-marksheet .particulars-photo {
+  border-top: 0 !important;
+  border-left: 1px solid #e2e8f0 !important;
+}
+
+@media print {
+  .marks-swipe-hint {
+    display: none !important;
+  }
+  .marks-table-scroll {
+    overflow: visible !important;
+  }
+  .marks-table {
+    min-width: 0 !important;
+    width: 100% !important;
+    table-layout: fixed !important;
+  }
+  .particulars-body {
+    flex-direction: row !important;
+  }
+  .particulars-grid {
+    grid-template-columns: 1fr 1fr !important;
+  }
 }

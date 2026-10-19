@@ -265,7 +265,7 @@ export const BookDetailsPage = () => {
             {/* CTAs strictly matching access rules:
                 1. Free book: [ Read Free PDF ] -> /books/:id/read
                 2. Paid book (owned): [ ✓ Purchased — Read Book ] -> /books/:id/read
-                3. Paid book (unpurchased): [ Buy Now for ₹Price ] -> /books/:id/checkout
+                3. Paid book (unpurchased): [ Pay Now for ₹Price ] -> /books/:id/checkout
             */}
             <div className="pt-4 border-t border-[#E6E8EC] space-y-2">
               {isFree ? (
@@ -301,7 +301,7 @@ export const BookDetailsPage = () => {
                       fullWidth
                       icon={ShoppingBag}
                     >
-                      Buy Now for ₹{book.price}
+                      Pay Now for ₹{book.price}
                     </PrimaryButton>
                   </Link>
                   <p className="text-[11px] text-[#667085] text-center flex items-center justify-center gap-1">

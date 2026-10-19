@@ -24,6 +24,8 @@ export const ProtectedVideoPlayer = ({
   studentId = "KITSS20261084",
   onLectureComplete,
   isCompleted = false,
+  /** Shown under the video in portrait (esp. fullscreen) so the black area is not empty */
+  portraitPlaylist = null
 }) => {
   const videoRef = useRef(null);
   const containerRef = useRef(null);
@@ -35,11 +37,36 @@ export const ProtectedVideoPlayer = ({
   const [volume, setVolume] = useState(1);
   const [playbackRate, setPlaybackRate] = useState(1);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isPortrait, setIsPortrait] = useState(() =>
+    typeof window !== "undefined"
+      ? window.matchMedia("(orientation: portrait)").matches
+      : true
+  );
   const [showControls, setShowControls] = useState(true);
   const [isPrivacyShieldActive, setIsPrivacyShieldActive] = useState(false);
 
   // Moving watermark coordinates state
   const [watermarkPos, setWatermarkPos] = useState({ top: "12%", left: "10%" });
+
+  // Track device orientation — portrait should show class list under video
+  useEffect(() => {
+    const mq = window.matchMedia("(orientation: portrait)");
+    const onChange = (e) => setIsPortrait(e.matches);
+    setIsPortrait(mq.matches);
+    mq.addEventListener?.("change", onChange);
+    mq.addListener?.(onChange);
+    return () => {
+      mq.removeEventListener?.("change", onChange);
+      mq.removeListener?.(onChange);
+    };
+  }, []);
+
+  // Keep fullscreen flag in sync (user may exit via OS gesture)
+  useEffect(() => {
+    const onFsChange = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener("fullscreenchange", onFsChange);
+    return () => document.removeEventListener("fullscreenchange", onFsChange);
+  }, []);
 
   // Anti-Screen Recording: Window Blur & Tab Visibility Guard
   useEffect(() => {
@@ -206,6 +233,10 @@ export const ProtectedVideoPlayer = ({
     return false;
   };
 
+  // Fullscreen + portrait: class list fills leftover black space under the video
+  // Landscape fullscreen: video uses the full screen
+  const showFsPortraitList = isFullscreen && isPortrait && Boolean(portraitPlaylist);
+
   return (
     <div className="space-y-3">
       {/* Screenshot / Screen-recording Detection Warning Overlay */}
@@ -215,11 +246,21 @@ export const ProtectedVideoPlayer = ({
       <div
         ref={containerRef}
         onContextMenu={handleContextMenu}
-        className="relative bg-black rounded-2xl overflow-hidden shadow-xl border border-[#0A1D3F] flex flex-col group select-none"
+        className={`bg-black overflow-hidden shadow-xl border border-[#0A1D3F] flex flex-col group select-none ${
+          isFullscreen
+            ? "fixed inset-0 z-[200] rounded-none border-0 h-[100dvh] w-screen"
+            : "relative rounded-2xl"
+        }`}
         style={{ userSelect: "none", WebkitUserSelect: "none" }}
       >
-        {/* Aspect Ratio Box */}
-        <div className="relative aspect-16/9 bg-neutral-950 flex items-center justify-center overflow-hidden">
+        {/* Video box — landscape fullscreen fills; portrait keeps 16:9 so list can sit below */}
+        <div
+          className={`relative bg-neutral-950 flex items-center justify-center overflow-hidden ${
+            isFullscreen && !isPortrait
+              ? "flex-1 min-h-0 w-full"
+              : "aspect-16/9 w-full shrink-0"
+          }`}
+        >
           <video
             ref={videoRef}
             src={lecture?.videoUrl || "/videos/sample-lecture.mp4"}
@@ -431,15 +472,31 @@ export const ProtectedVideoPlayer = ({
             </div>
           </div>
         </div>
+
+        {showFsPortraitList && (
+          <div className="flex-1 min-h-0 overflow-y-auto bg-[#0B1220] border-t border-white/10">
+            <div className="sticky top-0 z-10 px-3 py-2 bg-[#0B1220]/95 backdrop-blur-sm border-b border-white/10">
+              <p className="text-[11px] font-bold text-white/90 uppercase tracking-wider">
+                Class list
+              </p>
+              <p className="text-[10px] text-white/50 truncate">
+                {courseTitle} • {subject}
+              </p>
+            </div>
+            <div className="p-2.5 pb-6">{portraitPlaylist}</div>
+          </div>
+        )}
       </div>
 
-      {/* Security notice directly beneath player */}
-      <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#FFF4E5] border border-[#FF8A00]/30 text-[#0A1D3F] text-xs">
-        <ShieldCheck className="w-4 h-4 text-[#FF8A00] shrink-0" />
-        <span className="font-medium">
-          Video content is protected and available for online viewing only. Single-device access enabled.
-        </span>
-      </div>
+      {/* Security notice — hide while fullscreen so portrait list gets space */}
+      {!isFullscreen && (
+        <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#FFF4E5] border border-[#FF8A00]/30 text-[#0A1D3F] text-xs">
+          <ShieldCheck className="w-4 h-4 text-[#FF8A00] shrink-0" />
+          <span className="font-medium">
+            Video content is protected and available for online viewing only. Single-device access enabled.
+          </span>
+        </div>
+      )}
     </div>
   );
 };

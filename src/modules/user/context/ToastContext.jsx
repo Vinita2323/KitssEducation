@@ -27,7 +27,7 @@ export const ToastProvider = ({ children }) => {
     <ToastContext.Provider value={{ addToast, showSuccess, showError, showInfo }}>
       {children}
       {/* Toast Render Portal */}
-      <div className="fixed top-4 right-4 z-[9999] flex flex-col gap-2 max-w-sm w-full pointer-events-none px-3">
+      <div className="no-print fixed top-4 right-4 z-[9999] flex flex-col gap-2 max-w-sm w-full pointer-events-none px-3">
         {toasts.map((toast) => (
           <div
             key={toast.id}

@@ -1,21 +1,16 @@
 import React, { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import {
   GraduationCap,
-  Video,
   BookOpen,
-  Calendar,
-  CheckCircle2,
   ArrowRight,
-  Sparkles,
   ShieldCheck,
-  TrendingUp,
-  AlertCircle
+  TrendingUp
 } from "lucide-react";
 import { coachingService } from "../../services/coachingService";
+import { CollegePromoCarousel } from "../../components/coaching/CollegePromoCarousel";
 
 export const MyCoursesPage = () => {
-  const navigate = useNavigate();
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -177,6 +172,8 @@ export const MyCoursesPage = () => {
           </div>
         )}
       </div>
+
+      <CollegePromoCarousel />
     </div>
   );
 };

@@ -21,6 +21,7 @@ import { BooksHomePage } from "../pages/books/BooksHomePage";
 import { BookDetailsPage } from "../pages/books/BookDetailsPage";
 import { BookCheckoutPage } from "../pages/books/BookCheckoutPage";
 import { PdfReaderPage } from "../pages/books/PdfReaderPage";
+import { MyPurchasedBooksPage } from "../pages/books/MyPurchasedBooksPage";
 
 // Online Coaching Module Pages
 import { CoachingHomePage } from "../pages/coaching/CoachingHomePage";
@@ -78,7 +79,8 @@ export const UserRoutes = () => {
         <Route path="/books/:id" element={<BookDetailsPage />} />
         <Route path="/books/:id/checkout" element={<BookCheckoutPage />} />
         <Route path="/books/:id/read" element={<PdfReaderPage />} />
-        <Route path="/library" element={<Navigate to="/home" replace />} />
+        <Route path="/my-books" element={<MyPurchasedBooksPage />} />
+        <Route path="/library" element={<Navigate to="/my-books" replace />} />
 
         {/* Online Coaching Hub */}
         <Route path="/coaching" element={<CoachingHomePage />} />

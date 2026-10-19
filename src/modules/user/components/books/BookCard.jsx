@@ -239,7 +239,7 @@ export const BookCard = ({
         {/* CTA Logic:
             1. Free Book: [ Read ] -> /books/:id/read
             2. Paid Book (Purchased): [ ✓ Purchased / Read ] -> /books/:id/read
-            3. Paid Book (Unpurchased): [ Buy Now ] -> /books/:id/checkout (or details)
+            3. Paid Book (Unpurchased): [ Pay Now ] -> /books/:id/checkout (or details)
             NEVER show "Read" for unpaid paid books!
         */}
         {isFree ? (
@@ -263,7 +263,7 @@ export const BookCard = ({
             to={`/books/${book.id}/checkout`}
             className="w-full py-1.5 bg-[#FF8A00] hover:bg-[#e07b00] text-white text-xs font-bold rounded-lg transition active:scale-95 flex items-center justify-center text-center shadow-2xs cursor-pointer"
           >
-            Buy Now
+            Pay Now
           </Link>
         )}
       </div>

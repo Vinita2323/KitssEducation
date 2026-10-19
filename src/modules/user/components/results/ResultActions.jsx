@@ -1,86 +1,199 @@
 import React, { useState } from "react";
-import { Download, Printer, ArrowLeft, Share2, Check } from "lucide-react";
+import { Download, Printer, ArrowLeft } from "lucide-react";
+import { toJpeg } from "html-to-image";
+import { jsPDF } from "jspdf";
 import { PrimaryButton, SecondaryButton } from "../common/PrimaryButton";
-import { useToast } from "../../context/ToastContext";
+
+/** A4 width at ~96dpi — forces desktop document layout for PDF capture */
+const EXPORT_WIDTH_PX = 794;
 
 /**
  * ResultActions
- * Action toolbar providing Print, Download, and Back/New Search triggers.
- * Hidden automatically when printing via 'no-print' CSS class.
+ * Print → browser print dialog
+ * Download → A4-style PDF of the full marksheet (not the mobile scroll view)
  */
 export const ResultActions = ({ result, onBack, onNewSearch }) => {
-  const { showSuccess } = useToast();
   const [downloading, setDownloading] = useState(false);
 
-  const handlePrint = () => {
-    window.print();
+  const getFileBaseName = () => {
+    const safeBoard = String(result?.board || result?.boardName || "Result")
+      .replace(/[^\w\-]+/g, "_")
+      .slice(0, 24);
+    const safeRoll = String(result?.rollNumber || "Student").replace(/[^\w\-]+/g, "_");
+    return `Marksheet_${safeBoard}_${safeRoll}`;
   };
 
-  const handleDownload = () => {
-    setDownloading(true);
-    showSuccess(`Generating Official Digital Marksheet PDF for Roll ${result?.rollNumber || ""}...`);
+  const downloadBlob = (blob, filename) => {
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    link.rel = "noopener";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+  };
 
-    setTimeout(() => {
-      try {
-        // Create an official text/markdown export or formatted PDF representation
-        const filename = `Marksheet_${result?.board || "Result"}_${result?.rollNumber || "Student"}.txt`;
-        const content = `===========================================================
-KITSS EDUCATION PLATFORM - OFFICIAL DIGITAL MARKS STATEMENT
-===========================================================
-Board: ${result?.boardName || result?.board || "Official Board"}
-Examination: ${result?.exam || "Examination"}
-Session: ${result?.year || "2026"}
+  const handlePrint = () => {
+    document.body.classList.add("printing-marksheet");
+    const cleanup = () => {
+      document.body.classList.remove("printing-marksheet");
+      window.removeEventListener("afterprint", cleanup);
+    };
+    window.addEventListener("afterprint", cleanup);
+    window.print();
+    setTimeout(cleanup, 1500);
+  };
 
-Candidate Name: ${result?.studentName || ""}
-Roll Number: ${result?.rollNumber || ""}
-${result?.enrollmentNumber ? `Enrollment Number: ${result.enrollmentNumber}\n` : ""}${result?.schoolName ? `Institution: ${result.schoolName}\n` : ""}
-Date of Issue: ${result?.issueDate || new Date().toLocaleDateString()}
-Verification Status: ${result?.verificationStatus || "Verified & Digitally Signed"}
+  /**
+   * Build an off-screen A4-width clone so capture is a proper document,
+   * not the phone scroll/swipe UI.
+   */
+  const buildExportClone = (sourceEl) => {
+    // Keep clone in viewport (hidden) so the browser fully lays out all table rows.
+    // Off-screen (-10000px) clones often get clipped height → missing subjects in PDF.
+    const host = document.createElement("div");
+    host.setAttribute("aria-hidden", "true");
+    host.style.cssText = [
+      "position:fixed",
+      "left:0",
+      "top:0",
+      `width:${EXPORT_WIDTH_PX}px`,
+      "background:#ffffff",
+      "z-index:2147483646",
+      "pointer-events:none",
+      "opacity:0",
+      "overflow:visible",
+      "height:auto"
+    ].join(";");
 
------------------------------------------------------------
-SUBJECT-WISE PERFORMANCE:
------------------------------------------------------------
-${(result?.subjects || [])
-  .map(
-    (s) =>
-      `${(s.code || "").padEnd(8)} ${(s.name || "").padEnd(35)} ${(s.obtained || s.total || "").toString().padStart(4)} / ${(s.maxMarks || 100).toString().padEnd(4)} Grade: ${s.grade || ""}`
-  )
-  .join("\n")}
+    const clone = sourceEl.cloneNode(true);
+    clone.id = "export-marksheet-clone";
+    clone.classList.add("exporting-marksheet", "printable-marksheet");
+    clone.style.height = "auto";
+    clone.style.maxHeight = "none";
+    clone.style.overflow = "visible";
+    clone.querySelectorAll(".marks-swipe-hint, .no-print").forEach((n) => n.remove());
 
------------------------------------------------------------
-RESULT SUMMARY:
------------------------------------------------------------
-Total Maximum Marks : ${result?.maxTotalMarks || 500}
-Total Marks Obtained: ${result?.obtainedMarks || result?.totalMarks || 0}
-Percentage          : ${result?.percentage}% ${result?.cgpa ? `(CGPA: ${result.cgpa})` : ""}
-Overall Grade       : ${result?.grade || ""}
-Final Status        : ${result?.status || "PASS"}
-
-Digital Verification ID: ${result?.admitCardId || result?.qrCodeString || "VERIFIED-OK"}
-===========================================================`;
-
-        const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.href = url;
-        link.download = filename;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-
-        showSuccess("Digital Marksheet downloaded successfully!");
-      } catch (err) {
-        console.error("Download error:", err);
-      } finally {
-        setDownloading(false);
+    clone.querySelectorAll("img").forEach((img) => {
+      const src = img.getAttribute("src");
+      if (src && src.startsWith("/")) {
+        img.setAttribute("src", `${window.location.origin}${src}`);
       }
-    }, 600);
+    });
+
+    host.appendChild(clone);
+    document.body.appendChild(host);
+    return { host, clone };
+  };
+
+  const handleDownload = async (e) => {
+    e?.preventDefault?.();
+    e?.stopPropagation?.();
+
+    const sourceEl = document.getElementById("printable-marksheet");
+    if (!sourceEl) {
+      console.error("printable-marksheet element not found");
+      return;
+    }
+
+    setDownloading(true);
+    const fileBase = getFileBaseName();
+    let host = null;
+
+    try {
+      await new Promise((r) => setTimeout(r, 60));
+
+      const built = buildExportClone(sourceEl);
+      host = built.host;
+      const { clone } = built;
+
+      // Wait for images in clone to load
+      const imgs = Array.from(clone.querySelectorAll("img"));
+      await Promise.all(
+        imgs.map(
+          (img) =>
+            new Promise((resolve) => {
+              if (img.complete) return resolve();
+              img.onload = () => resolve();
+              img.onerror = () => resolve();
+              setTimeout(resolve, 1500);
+            })
+        )
+      );
+
+      await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+
+      // Force full document height so every subject row is included
+      const exportWidth = EXPORT_WIDTH_PX;
+      const exportHeight = Math.max(
+        clone.scrollHeight,
+        clone.offsetHeight,
+        clone.getBoundingClientRect().height
+      );
+
+      const dataUrl = await toJpeg(clone, {
+        quality: 0.96,
+        pixelRatio: 2,
+        backgroundColor: "#ffffff",
+        cacheBust: true,
+        width: exportWidth,
+        height: exportHeight,
+        style: {
+          width: `${exportWidth}px`,
+          maxWidth: `${exportWidth}px`,
+          height: `${exportHeight}px`,
+          maxHeight: "none",
+          overflow: "visible",
+          transform: "none",
+          margin: "0"
+        },
+        filter: (node) => node?.tagName !== "SCRIPT"
+      });
+
+      const pdf = new jsPDF({
+        orientation: "portrait",
+        unit: "mm",
+        format: "a4"
+      });
+
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const margin = 8;
+      const usableWidth = pageWidth - margin * 2;
+      const usableHeight = pageHeight - margin * 2;
+
+      const imgProps = pdf.getImageProperties(dataUrl);
+      const imgWidth = usableWidth;
+      const imgHeight = (imgProps.height * imgWidth) / imgProps.width;
+
+      // Slice full marksheet across pages so no subject is cut off
+      let remaining = imgHeight;
+      let yOffset = margin;
+
+      pdf.addImage(dataUrl, "JPEG", margin, yOffset, imgWidth, imgHeight);
+      remaining -= usableHeight;
+
+      while (remaining > 2) {
+        yOffset = margin - (imgHeight - remaining);
+        pdf.addPage();
+        pdf.addImage(dataUrl, "JPEG", margin, yOffset, imgWidth, imgHeight);
+        remaining -= usableHeight;
+      }
+
+      downloadBlob(pdf.output("blob"), `${fileBase}.pdf`);
+    } catch (err) {
+      console.error("Marksheet download failed:", err);
+      alert("Could not download marksheet. Please try again.");
+    } finally {
+      if (host?.parentNode) host.parentNode.removeChild(host);
+      setDownloading(false);
+    }
   };
 
   return (
     <div className="no-print flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 bg-white p-1.5 sm:p-2 rounded-md border border-slate-200/80 shadow-2xs">
-      {/* Back Button */}
       <div className="flex items-center gap-1.5">
         {onBack && (
           <button
@@ -104,10 +217,10 @@ Digital Verification ID: ${result?.admitCardId || result?.qrCodeString || "VERIF
         )}
       </div>
 
-      {/* Action Buttons */}
       <div className="flex items-center gap-1.5 justify-end">
         <SecondaryButton
           size="sm"
+          type="button"
           onClick={handlePrint}
           icon={Printer}
           className="flex-1 sm:flex-initial"
@@ -118,12 +231,14 @@ Digital Verification ID: ${result?.admitCardId || result?.qrCodeString || "VERIF
         <PrimaryButton
           variant="navy"
           size="sm"
+          type="button"
           onClick={handleDownload}
           loading={downloading}
+          disabled={downloading}
           icon={Download}
           className="flex-1 sm:flex-initial"
         >
-          Download
+          {downloading ? "Downloading..." : "Download"}
         </PrimaryButton>
       </div>
     </div>

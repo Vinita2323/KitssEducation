@@ -28,14 +28,14 @@ export const ResultMarksTable = ({ subjects = [] }) => {
   };
 
   return (
-    <div className="overflow-hidden rounded-md border border-slate-200 shadow-2xs">
-      {/* Scroll indicator banner for mobile */}
-      <div className="block sm:hidden bg-slate-50 px-2.5 py-1 text-[9px] text-slate-500 font-medium border-b border-slate-200 text-right">
+    <div className="marks-table-wrap overflow-hidden rounded-md border border-slate-200 shadow-2xs">
+      {/* Scroll indicator — screen only, hidden in print/PDF export */}
+      <div className="marks-swipe-hint no-print block sm:hidden bg-slate-50 px-2.5 py-1 text-[9px] text-slate-500 font-medium border-b border-slate-200 text-right">
         👉 Swipe horizontally to view full marks table
       </div>
 
-      <div className="overflow-x-auto w-full">
-        <table className="w-full text-[11px] text-left border-collapse min-w-[480px]">
+      <div className="marks-table-scroll overflow-x-auto w-full">
+        <table className="marks-table w-full text-[11px] text-left border-collapse min-w-[480px]">
           <thead>
             <tr className="bg-[#0A1D3F] text-white">
               <th className="py-2 px-2.5 font-semibold uppercase tracking-wider text-[10px]">
