@@ -1,129 +1,29 @@
-// Razorpay Integration Service for KITSS Education Coaching & Course Subscriptions
-// Handles dynamic script loading, checkout initialization, and test transaction processing.
-
-export const RAZORPAY_CONFIG = {
-  keyId: "rzp_test_TRZdg2aAOYv4KK",
-  keySecret: "Zu7lopLZWWZtA4T0R5Z2ORhU",
-  merchantName: "KITSS Education",
-  themeColor: "#FF8A00",
-  logo: "/KitssLogo.png",
-};
-
-/**
- * Dynamically loads the official Razorpay Checkout SDK if not already present
- * @returns {Promise<boolean>} True if script loaded successfully
- */
-export const loadRazorpayScript = () => {
-  return new Promise((resolve) => {
-    if (typeof window !== "undefined" && window.Razorpay) {
-      resolve(true);
-      return;
-    }
-
-    const existingScript = document.getElementById("razorpay-checkout-script");
-    if (existingScript) {
-      existingScript.onload = () => resolve(true);
-      existingScript.onerror = () => resolve(false);
-      return;
-    }
-
-    const script = document.createElement("script");
-    script.id = "razorpay-checkout-script";
-    script.src = "https://checkout.razorpay.com/v1/checkout.js";
-    script.async = true;
-    script.onload = () => resolve(true);
-    script.onerror = () => {
-      console.error("Failed to load Razorpay Checkout SDK");
-      resolve(false);
-    };
-
+export const RAZORPAY_CONFIG = Object.freeze({ merchantName: 'KITSS Education', themeColor: '#FF8A00', logo: '/KitssLogo.png' });
+import { commerceService } from './commerceService';
+let scriptPromise;
+export function loadRazorpayScript() {
+  scriptPromise ??= new Promise((resolve, reject) => {
+    if (window.Razorpay) return resolve();
+    const script = document.createElement('script'); script.src = 'https://checkout.razorpay.com/v1/checkout.js'; script.async = true;
+    const timer = setTimeout(() => { script.remove(); reject(new Error('Checkout loading timed out')); }, 15000);
+    script.onload = () => { clearTimeout(timer); resolve(); }; script.onerror = () => { clearTimeout(timer); script.remove(); reject(new Error('Checkout unavailable')); };
     document.body.appendChild(script);
+  }).catch(error => { scriptPromise = null; throw error; });
+  return scriptPromise;
+}
+// Client-priced legacy callers cannot launch Checkout or grant access.
+export async function openRazorpayCheckout({ orderId, attemptKey, onSuccess, onFailure, onDismiss } = {}) {
+  if (!orderId || !attemptKey) throw new Error('Payment unavailable: approved backend product and order required. Registration and coaching policies remain pending.');
+  const result = await commerceService.attempt(orderId, attemptKey), checkout = result.checkout;
+  if (!checkout) return result;
+  if (checkout.paymentMode !== 'test' || checkout.simulated || !/^rzp_test_[A-Za-z0-9]+$/.test(checkout.keyId)) throw new Error('Approved Razorpay Test Mode checkout is unavailable');
+  await loadRazorpayScript();
+  const instance = new window.Razorpay({ key: checkout.keyId, order_id: checkout.providerOrderId, amount: checkout.amountMinor, currency: checkout.currency, name: 'KITSS Education', image: '/KitssLogo.png', theme: { color: '#FF8A00' },
+    handler: async response => {
+      try { const state = await commerceService.verify({ orderId, attemptId: checkout.attemptId, razorpay_order_id: response.razorpay_order_id, razorpay_payment_id: response.razorpay_payment_id, razorpay_signature: response.razorpay_signature }); onSuccess?.(state); }
+      catch (error) { onFailure?.(error); }
+    }, modal: { ondismiss: () => onDismiss?.(), backdropclose: false },
   });
-};
-
-/**
- * Opens Razorpay Checkout Modal
- * @param {Object} params
- * @param {number} params.amountInRupees - Amount in INR (will be converted to paise)
- * @param {Object} params.course - Course details (id, title)
- * @param {Object} [params.plan] - Selected plan details (name, duration)
- * @param {Object} [params.student] - Student contact info (name, email, phone)
- * @param {Function} params.onSuccess - Callback on successful payment (receives response with razorpay_payment_id)
- * @param {Function} [params.onFailure] - Callback on payment failure
- * @param {Function} [params.onDismiss] - Callback when modal is closed without payment
- */
-export const openRazorpayCheckout = async ({
-  amountInRupees,
-  course,
-  plan,
-  student,
-  onSuccess,
-  onFailure,
-  onDismiss,
-}) => {
-  const isLoaded = await loadRazorpayScript();
-
-  if (!isLoaded || !window.Razorpay) {
-    if (onFailure) {
-      onFailure(new Error("Razorpay Checkout SDK could not be loaded. Please check your network."));
-    }
-    return null;
-  }
-
-  const amountInPaise = Math.round(amountInRupees * 100);
-
-  const options = {
-    key: RAZORPAY_CONFIG.keyId,
-    amount: amountInPaise,
-    currency: "INR",
-    name: RAZORPAY_CONFIG.merchantName,
-    description: `${course?.title || "Coaching Course"}${plan?.name ? ` - ${plan.name}` : ""}`,
-    image: RAZORPAY_CONFIG.logo,
-    prefill: {
-      name: student?.name || "Student",
-      email: student?.email || "student@example.com",
-      contact: student?.phone || "9876543210",
-    },
-    notes: {
-      courseId: course?.id || "",
-      courseTitle: course?.title || "",
-      planName: plan?.name || "Standard Pass",
-      environment: "test_mode",
-    },
-    theme: {
-      color: RAZORPAY_CONFIG.themeColor,
-      backdrop_color: "rgba(10, 29, 63, 0.75)",
-    },
-    modal: {
-      ondismiss: function () {
-        if (onDismiss) onDismiss();
-      },
-      escape: true,
-      backdropclose: false,
-    },
-    handler: function (response) {
-      // response contains:
-      // - razorpay_payment_id (e.g. 'pay_29QQoUBi66xm2f')
-      // - razorpay_order_id (if order created on server)
-      // - razorpay_signature (if verified)
-      if (onSuccess) {
-        onSuccess(response);
-      }
-    },
-  };
-
-  try {
-    const rzpInstance = new window.Razorpay(options);
-    rzpInstance.on("payment.failed", function (failResponse) {
-      if (onFailure) {
-        onFailure(failResponse.error || new Error("Payment transaction failed."));
-      }
-    });
-    rzpInstance.open();
-    return rzpInstance;
-  } catch (err) {
-    console.error("Razorpay initiation error:", err);
-    if (onFailure) onFailure(err);
-    return null;
-  }
-};
+  instance.on('payment.failed', () => onFailure?.(new Error('Payment attempt failed. Check authoritative order status before retrying.')));
+  instance.open(); return result;
+}

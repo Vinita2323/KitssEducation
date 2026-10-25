@@ -1,0 +1,129 @@
+{
+  "sourceDatabase": "kitss_education_dev",
+  "restoredDatabase": "kitss_stage7_restore_5e74de7a30304273",
+  "localOnly": true,
+  "topologyChanged": false,
+  "logicalBackup": true,
+  "collections": [
+    {
+      "name": "siteSettings",
+      "rows": 0,
+      "indexes": 2,
+      "rowsMatch": true,
+      "indexCountMatch": true
+    },
+    {
+      "name": "sessions",
+      "rows": 0,
+      "indexes": 4,
+      "rowsMatch": true,
+      "indexCountMatch": true
+    },
+    {
+      "name": "auditlogs",
+      "rows": 22,
+      "indexes": 1,
+      "rowsMatch": true,
+      "indexCountMatch": true
+    },
+    {
+      "name": "banners",
+      "rows": 2,
+      "indexes": 2,
+      "rowsMatch": true,
+      "indexCountMatch": true
+    },
+    {
+      "name": "facultyProfiles",
+      "rows": 2,
+      "indexes": 2,
+      "rowsMatch": true,
+      "indexCountMatch": true
+    },
+    {
+      "name": "franchiseApplications",
+      "rows": 0,
+      "indexes": 4,
+      "rowsMatch": true,
+      "indexCountMatch": true
+    },
+    {
+      "name": "pageContents",
+      "rows": 2,
+      "indexes": 2,
+      "rowsMatch": true,
+      "indexCountMatch": true
+    },
+    {
+      "name": "taxonomies",
+      "rows": 0,
+      "indexes": 3,
+      "rowsMatch": true,
+      "indexCountMatch": true
+    },
+    {
+      "name": "universities",
+      "rows": 0,
+      "indexes": 3,
+      "rowsMatch": true,
+      "indexCountMatch": true
+    },
+    {
+      "name": "mediaAssets",
+      "rows": 4,
+      "indexes": 5,
+      "rowsMatch": true,
+      "indexCountMatch": true
+    },
+    {
+      "name": "auththrottles",
+      "rows": 0,
+      "indexes": 2,
+      "rowsMatch": true,
+      "indexCountMatch": true
+    },
+    {
+      "name": "admissionApplications",
+      "rows": 0,
+      "indexes": 4,
+      "rowsMatch": true,
+      "indexCountMatch": true
+    },
+    {
+      "name": "books",
+      "rows": 2,
+      "indexes": 3,
+      "rowsMatch": true,
+      "indexCountMatch": true
+    },
+    {
+      "name": "domainLocks",
+      "rows": 1,
+      "indexes": 1,
+      "rowsMatch": true,
+      "indexCountMatch": true
+    },
+    {
+      "name": "colleges",
+      "rows": 0,
+      "indexes": 5,
+      "rowsMatch": true,
+      "indexCountMatch": true
+    },
+    {
+      "name": "collegePrograms",
+      "rows": 0,
+      "indexes": 3,
+      "rowsMatch": true,
+      "indexCountMatch": true
+    },
+    {
+      "name": "users",
+      "rows": 2,
+      "indexes": 8,
+      "rowsMatch": true,
+      "indexCountMatch": true
+    }
+  ],
+  "passed": true
+}

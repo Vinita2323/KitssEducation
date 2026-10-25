@@ -13,20 +13,23 @@ import { CollegePromoCarousel } from "../../components/coaching/CollegePromoCaro
 export const MyCoursesPage = () => {
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
+    let active = true;
     const loadMyCourses = async () => {
       try {
         setLoading(true);
         const data = await coachingService.getMyCourses();
-        setCourses(data);
+        if (active) setCourses(data);
       } catch (err) {
-        console.error("Failed to load my courses:", err);
+        if (active) setError(err.message || 'Unable to load your courses. Please retry.');
       } finally {
-        setLoading(false);
+        if (active) setLoading(false);
       }
     };
     loadMyCourses();
+    return () => { active = false; };
   }, []);
 
   return (
@@ -66,6 +69,8 @@ export const MyCoursesPage = () => {
               <div key={n} className="bg-white rounded-md border border-[#E6E8EC] p-3 h-44 animate-pulse space-y-3" />
             ))}
           </div>
+        ) : error ? (
+          <p role="alert" className="bg-white rounded-xl border p-4 text-sm">{error}</p>
         ) : courses.length === 0 ? (
           /* Empty State: No Courses Yet */
           <div className="bg-white rounded-md border border-[#E6E8EC] p-6 sm:p-8 text-center space-y-3 card-shadow max-w-lg mx-auto">

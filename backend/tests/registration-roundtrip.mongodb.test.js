@@ -1,0 +1,45 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import http from 'node:http';
+import { randomUUID } from 'node:crypto';
+import { stage8Fixture } from './stage8-fixture.js';
+import { registrationFields } from '../src/modules/commerce/registration.js';
+const name = process.env.KITSS_STAGE10_INTAKE_TEST_DB;
+test('all approved intake fields round-trip through actual owner HTTP, MongoDB and admin review', { skip: !name ? 'No guarded intake test database; integration not executed' : false, timeout: 180000 }, async t => {
+  const f = await stage8Fixture(name); let server;
+  t.after(async () => { if (server) await new Promise(r => { server.close(r); server.closeAllConnections(); }); await f.close(); });
+  const student = await f.fixtureUser(['student']), other = await f.fixtureUser(['student']), admin = await f.fixtureUser();
+  server = http.createServer(f.app()); await new Promise(r => server.listen(0, '127.0.0.1', r));
+  const base = 'http://127.0.0.1:' + server.address().port + '/api/v1';
+  const cookie = actor => (actor.user.roles.includes('student') ? 'kitss_student_session=' : 'kitss_staff_session=') + actor.token;
+  const response = await fetch(base + '/auth/csrf'); const csrfToken = (await response.json()).data.csrfToken;
+  const csrfCookie = response.headers.getSetCookie().map(v => v.split(';')[0]).join('; ');
+  const request = async (path, actor, method = 'GET', body) => {
+    const r = await fetch(base + path, { method, headers: { Cookie: cookie(actor) + '; ' + csrfCookie, Origin: f.config.corsOrigins[0], 'X-CSRF-Token': csrfToken, 'Content-Type': 'application/json' }, ...(body ? { body: JSON.stringify(body) } : {}) });
+    return { status: r.status, body: await r.json() };
+  };
+  for (const [kind, names] of Object.entries(registrationFields)) await t.test(kind + ' fields, owner isolation, revision and staff notes', async () => {
+    const applicant = Object.fromEntries(names.split(' ').map(key => [key, key === 'isContinuing' ? true : ['email', 'emailId'].includes(key) ? student.user.emailNormalized : 'SYNTHETIC ' + key]));
+    const created = await request('/registration-applications', student, 'POST', { kind, applicant, idempotencyKey: randomUUID() }); assert.equal(created.status, 201);
+    const row = created.body.data;
+    assert.deepEqual(row.applicant, applicant);
+    assert.deepEqual((await f.models.RegistrationApplication.findById(row.id)).applicant, applicant);
+    assert.deepEqual((await request('/registration-applications/' + row.id + '/status', student)).body.data.applicant, applicant);
+    assert.equal((await request('/registration-applications/' + row.id + '/status', other)).status, 404);
+    assert.deepEqual((await request('/admin/registration-applications/' + row.id, admin)).body.data.applicant, applicant);
+    const first = names.split(' ')[0]; const next = { ...applicant, [first]: 'SYNTHETIC UPDATED VALUE' };
+    const saved = await request('/registration-applications/' + row.id, student, 'PATCH', { applicant: next, expectedRevision: row.revision }); assert.equal(saved.status, 200);
+    assert.deepEqual(saved.body.data.applicant, next);
+    assert.equal((await request('/registration-applications/' + row.id, student, 'PATCH', { applicant, expectedRevision: row.revision })).status, 409);
+    const note = await request('/admin/registration-applications/' + row.id + '/notes', admin, 'POST', { text: 'SYNTHETIC safe draft review', idempotencyKey: randomUUID() }); assert.equal(note.status, 200);
+    assert.equal(note.body.data.notes[0].text, 'SYNTHETIC safe draft review');
+    const ownerStatus = await request('/registration-applications/' + row.id + '/status', student);
+    assert.equal(ownerStatus.body.data.notes, undefined);
+    const ownerEdit = await request('/registration-applications/' + row.id, student, 'PATCH', { applicant: next, expectedRevision: note.body.data.revision });
+    assert.equal(ownerEdit.status, 200); assert.equal(ownerEdit.body.data.notes, undefined);
+    assert.equal((await request('/admin/registration-applications/' + row.id, admin)).body.data.notes[0].text, 'SYNTHETIC safe draft review');
+    assert.equal((await request('/registration-applications/' + row.id + '/submit', student, 'POST', { expectedRevision: saved.body.data.revision })).status, 409);
+    assert.equal((await request('/registration-applications', student, 'POST', { kind, applicant: { ...applicant, aadharNumber: 'SYNTHETIC_REJECTED' }, idempotencyKey: randomUUID() })).status, 422);
+    const persisted = await f.models.RegistrationApplication.findById(row.id); assert.equal(persisted.status, 'draft'); assert.equal(persisted.paymentState, 'blocked');
+  });
+});

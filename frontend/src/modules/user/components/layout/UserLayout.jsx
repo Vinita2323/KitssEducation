@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import { contentService } from '../../services/contentService';
+import React, { useState, useEffect } from "react";
 import { Outlet, Link, useLocation } from "react-router-dom";
 import { AppHeader } from "./AppHeader";
 import { BottomNavigation } from "./BottomNavigation";
@@ -7,9 +8,11 @@ import { SideDrawer } from "./SideDrawer";
 export const UserLayout = () => {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const location = useLocation();
+  const [publicSettings,setPublicSettings] = useState({}),[settingsError,setSettingsError] = useState('');
+  useEffect(()=>{const controller=new AbortController();contentService.settings(controller.signal).then(setPublicSettings).catch(e=>{if(e.code!=='ABORTED')setSettingsError(e.message);});return()=>controller.abort();},[]);
 
   // Immersive reader pages (e.g. /books/:id/read or /coaching/.../read) should have 100% of screen without standard navigation bars
-  const isImmersiveReader = location.pathname.includes("/read");
+  const isImmersiveReader = location.pathname.includes("/read") || /^\/coaching\/[^/]+\/book\/[^/]+$/.test(location.pathname);
   const isNotificationsPage = location.pathname.startsWith("/notifications");
 
   if (isImmersiveReader) {
@@ -26,17 +29,19 @@ export const UserLayout = () => {
     <div className="min-h-screen bg-[#F8FAFC] flex flex-col font-sans text-slate-900 antialiased selection:bg-slate-900 selection:text-white w-full max-w-full overflow-x-hidden">
       {/* App Header (Sticky) - hidden on notifications page as requested */}
       {!isNotificationsPage && (
-        <AppHeader onOpenDrawer={() => setDrawerOpen(true)} unreadCount={2} />
+        <AppHeader onOpenDrawer={() => setDrawerOpen(true)} brand={publicSettings.brand} />
       )}
 
       {/* Mobile Slide Drawer */}
-      <SideDrawer isOpen={drawerOpen} onClose={() => setDrawerOpen(false)} />
+      <SideDrawer isOpen={drawerOpen} onClose={() => setDrawerOpen(false)} support={publicSettings.support} />
 
       {/* Main Content Area */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-3 sm:py-5 pb-28 md:pb-12 min-w-0 overflow-x-hidden">
         <Outlet />
       </main>
 
+      {settingsError && <p role="status" className="text-xs text-amber-700 px-4">Public contact information is temporarily unavailable.</p>}
+      {publicSettings.support && <address className="not-italic text-xs text-[#667085] px-4 py-2 text-center">{publicSettings.support.email && <a href={'mailto:'+publicSettings.support.email}>{publicSettings.support.email}</a>} {publicSettings.support.phone} {publicSettings.support.address} {publicSettings.support.hours}</address>}
       {/* Mobile Bottom Navigation (Visible only < 768px) */}
       <BottomNavigation />
 
@@ -51,15 +56,15 @@ export const UserLayout = () => {
                   alt="KITSS Logo"
                   className="h-9 w-auto object-contain"
                 />
-                <span className="font-extrabold text-[#0A1D3F] text-base tracking-tight">
-                  KITSS <span className="text-[#FF8A00]">EDUCATION</span>
+                <span className="font-extrabold text-[#0A1D3F] text-base tracking-tight min-w-0 break-words [overflow-wrap:anywhere]">
+                  {publicSettings.brand?.name || <>KITSS <span className="text-[#FF8A00]">EDUCATION</span></>}
                 </span>
               </div>
               <p className="text-xs text-[#667085] leading-relaxed">
-                Empowering students across India with digital books, interactive online coaching, and seamless examination results.
+                {publicSettings.footer?.description || "Published platform information is being prepared."}
               </p>
               <p className="text-xs font-semibold text-[#FF8A00]">
-                "Learn Today, Lead Tomorrow"
+                {publicSettings.brand?.tagline || "KITSS Education"}
               </p>
             </div>
 
@@ -68,10 +73,8 @@ export const UserLayout = () => {
                 Digital Books
               </h4>
               <ul className="space-y-2 text-xs text-[#667085]">
-                <li><Link to="/books?board=CBSE" className="hover:text-[#FF8A00]">CBSE Board Books</Link></li>
-                <li><Link to="/books?board=ICSE" className="hover:text-[#FF8A00]">ICSE Board Books</Link></li>
-                <li><Link to="/books?board=NCERT" className="hover:text-[#FF8A00]">NCERT Solutions</Link></li>
-                <li><Link to="/books?board=State+Board" className="hover:text-[#FF8A00]">State Board Resources</Link></li>
+                <li><Link to="/books" className="hover:text-[#FF8A00]">Browse published books</Link></li>
+                <li><Link to="/my-books" className="hover:text-[#FF8A00]">My purchased books</Link></li>
               </ul>
             </div>
 
@@ -80,9 +83,8 @@ export const UserLayout = () => {
                 Online Coaching
               </h4>
               <ul className="space-y-2 text-xs text-[#667085]">
-                <li><Link to="/coaching?category=CBSE" className="hover:text-[#FF8A00]">CBSE Classes 9–12</Link></li>
-                <li><Link to="/coaching?category=JEE" className="hover:text-[#FF8A00]">JEE Main & Advanced</Link></li>
-                <li><Link to="/coaching?category=NEET" className="hover:text-[#FF8A00]">NEET Medical Prep</Link></li>
+                <li><Link to="/coaching" className="hover:text-[#FF8A00]">Browse published courses</Link></li>
+                <li><Link to="/coaching/select?choose=1" className="hover:text-[#FF8A00]">Choose course filters</Link></li>
                 <li><Link to="/subscriptions" className="hover:text-[#FF8A00]">Active Subscriptions</Link></li>
                 <li><Link to="/results" className="hover:text-[#FF8A00]">Board Exam Results</Link></li>
               </ul>
@@ -94,17 +96,19 @@ export const UserLayout = () => {
               </h4>
               <ul className="space-y-2 text-xs text-[#667085]">
                 <li><Link to="/profile" className="hover:text-[#FF8A00]">Student Account</Link></li>
-                <li><Link to="/orders" className="hover:text-[#FF8A00]">Orders & Invoices</Link></li>
+                <li><Link to="/orders" className="hover:text-[#FF8A00]">Orders & Receipts</Link></li>
                 <li><Link to="/settings" className="hover:text-[#FF8A00]">Security & Settings</Link></li>
                 <li className="text-xs text-[#0A1D3F] font-semibold pt-1">
-                  Helpline: +91 1800 123 4567
+                  {publicSettings.support?.phone || "Support phone not configured"}
                 </li>
               </ul>
             </div>
           </div>
 
+          {publicSettings.footer?.links?.length > 0 && <nav aria-label="Published footer links" className="flex flex-wrap gap-4 mt-5 text-xs">{publicSettings.footer.links.map((link, index) => link.type === 'internal' ? <Link key={index} to={link.target} className="underline break-all">{link.target}</Link> : <a key={index} href={link.target} target="_blank" rel="noopener noreferrer" className="underline break-all">{link.target}</a>)}</nav>}
+
           <div className="border-t border-[#E6E8EC] mt-8 pt-6 flex flex-col sm:flex-row items-center justify-between text-xs text-[#667085]">
-            <p>© {new Date().getFullYear()} KITSS EDUCATION. All Rights Reserved.</p>
+            <p>{publicSettings.footer?.copyright || <>© {new Date().getFullYear()} KITSS EDUCATION. All Rights Reserved.</>}</p>
             <p className="mt-2 sm:mt-0">Single Device Secure Student Platform</p>
           </div>
         </div>

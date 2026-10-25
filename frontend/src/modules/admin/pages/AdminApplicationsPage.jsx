@@ -17,11 +17,17 @@ import {
   User,
   ExternalLink
 } from "lucide-react";
+import { Pagination } from '../../user/components/common/Pagination';
+import { useAuth } from '../../user/context/AuthContext';
 import { adminService } from "../services/adminService";
 import { useToast } from "../../user/context/ToastContext";
 import { PrimaryButton, SecondaryButton } from "../../user/components/common/PrimaryButton";
 
 export const AdminApplicationsPage = () => {
+  const { can } = useAuth();
+  const [page, setPage] = useState(1);
+  const [meta, setMeta] = useState(null);
+  const [loadError, setLoadError] = useState('');
   const { showSuccess, showError } = useToast();
   const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -33,19 +39,21 @@ export const AdminApplicationsPage = () => {
   // Detail Modal State
   const [selectedApp, setSelectedApp] = useState(null);
   const [newStatus, setNewStatus] = useState("");
+  const [noteKey, setNoteKey] = useState(() => crypto.randomUUID());
   const [newNote, setNewNote] = useState("");
   const [updating, setUpdating] = useState(false);
 
   const fetchApplications = async () => {
     try {
       setLoading(true);
-      const data = await adminService.getApplications({
+      const result = await adminService.page('admission-applications', { page,
         status: statusFilter,
         search,
-      });
+       });
+      const data = result.data; setMeta(result.meta); setLoadError('');
       setApplications(data);
     } catch (err) {
-      showError("Failed to load admission applications");
+      setLoadError(err.message); setApplications([]); showError(err.message);
     } finally {
       setLoading(false);
     }
@@ -53,17 +61,19 @@ export const AdminApplicationsPage = () => {
 
   useEffect(() => {
     fetchApplications();
-  }, [statusFilter]);
+  }, [statusFilter, search, page]);
 
+  useEffect(() => { setPage(1); }, [statusFilter, search]);
   const handleSearchSubmit = (e) => {
     e.preventDefault();
     fetchApplications();
   };
 
-  const handleOpenDetail = (app) => {
+  const handleOpenDetail = async (app) => {
+    try { app = await adminService.getAdmission(app.id); } catch (error) { showError(error.message); return; }
     setSelectedApp(app);
     setNewStatus(app.status);
-    setNewNote("");
+    setNewNote(""); setNoteKey(crypto.randomUUID());
   };
 
   const handleStatusUpdate = async () => {
@@ -76,11 +86,11 @@ export const AdminApplicationsPage = () => {
         appId,
         newStatus,
         newNote.trim() ? newNote.trim() : null,
-        "Super Admin"
+        selectedApp.revision
       );
       showSuccess(`Status changed to "${newStatus}"`);
       setSelectedApp(updated);
-      setNewNote("");
+      setNewNote(""); setNoteKey(crypto.randomUUID());
       setApplications((prev) =>
         prev.map((a) => (String(a._id || a.id) === String(appId) ? updated : a))
       );
@@ -97,10 +107,10 @@ export const AdminApplicationsPage = () => {
 
     try {
       setUpdating(true);
-      const updated = await adminService.addAdminNote(appId, newNote.trim(), "Super Admin");
+      const updated = await adminService.addAdminNote(appId, newNote.trim(), noteKey);
       showSuccess("Internal note added");
       setSelectedApp(updated);
-      setNewNote("");
+      setNewNote(""); setNoteKey(crypto.randomUUID());
       setApplications((prev) =>
         prev.map((a) => (String(a._id || a.id) === String(appId) ? updated : a))
       );
@@ -123,6 +133,8 @@ export const AdminApplicationsPage = () => {
 
   return (
     <div className="space-y-6">
+      {loadError && <p role="alert" className="p-3 bg-red-50 text-red-700 rounded-xl">{loadError}</p>}
+      <Pagination meta={meta} onChange={setPage} loading={loading} />
       {/* Page Title */}
       <div>
         <h1 className="text-xl sm:text-2xl font-extrabold text-[#0A1D3F] tracking-tight">
@@ -264,7 +276,7 @@ export const AdminApplicationsPage = () => {
 
                       <td className="py-3.5 px-4 text-right">
                         <button
-                          onClick={() => handleOpenDetail(app)}
+                          aria-label={"Review admission " + app.reference} onClick={() => handleOpenDetail(app)}
                           className="px-3 py-1.5 rounded-xl text-xs font-bold text-[#0A1D3F] bg-gray-100 hover:bg-[#FF8A00] hover:text-white transition active:scale-95 shadow-2xs"
                         >
                           Review & Notes
@@ -388,7 +400,7 @@ export const AdminApplicationsPage = () => {
                     <button
                       key={st}
                       type="button"
-                      onClick={() => setNewStatus(st)}
+                      disabled={!can('admissions.review')} onClick={() => setNewStatus(st)}
                       className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition border ${
                         newStatus === st
                           ? "bg-[#0A1D3F] text-white border-[#0A1D3F] shadow-xs"
@@ -442,7 +454,7 @@ export const AdminApplicationsPage = () => {
                   />
                   <div className="flex justify-end gap-2">
                     {newNote.trim() && (
-                      <SecondaryButton size="sm" onClick={handleAddNoteOnly} loading={updating}>
+                      <SecondaryButton size="sm" disabled={!can('admissions.review')} onClick={handleAddNoteOnly} loading={updating}>
                         Save Note Only
                       </SecondaryButton>
                     )}
@@ -477,7 +489,7 @@ export const AdminApplicationsPage = () => {
                     variant="orange"
                     size="sm"
                     loading={updating}
-                    onClick={handleStatusUpdate}
+                    disabled={!can('admissions.review') || newStatus === selectedApp.status} onClick={handleStatusUpdate}
                   >
                     Update Application
                   </PrimaryButton>

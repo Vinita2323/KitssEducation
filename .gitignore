@@ -1,0 +1,24 @@
+node_modules/
+**/node_modules/
+.env
+.env.*
+**/.env
+**/.env.*
+!.env.example
+!**/.env.example
+backend/uploads/
+backend/coverage/
+*.log
+.runtime/
+# Browser validation artifacts may contain test identities.
+frontend/test-artifacts/
+**/dist/
+**/build/
+**/coverage/
+**/.vite/
+**/test-results/
+**/playwright-report/
+*.pem
+*.key
+*.p12
+*.pfx

@@ -97,7 +97,7 @@ export const VideoPlayerView = ({
       <div className="relative aspect-16/9 bg-neutral-900 flex items-center justify-center overflow-hidden">
         <video
           ref={videoRef}
-          src={lecture?.videoUrl || "/videos/sample-lecture.mp4"}
+          src={lecture?.videoUrl || undefined}
           onTimeUpdate={handleTimeUpdate}
           onLoadedMetadata={handleLoadedMetadata}
           onEnded={() => {

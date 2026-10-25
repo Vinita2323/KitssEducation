@@ -20,8 +20,8 @@ export const ProtectedVideoPlayer = ({
   lecture,
   courseTitle = "Online Coaching",
   subject = "Science",
-  studentName = "Rohan Sharma",
-  studentId = "KITSS20261084",
+  studentName = "",
+  studentId = "",
   onLectureComplete,
   isCompleted = false,
   /** Shown under the video in portrait (esp. fullscreen) so the black area is not empty */
@@ -263,16 +263,13 @@ export const ProtectedVideoPlayer = ({
         >
           <video
             ref={videoRef}
-            src={lecture?.videoUrl || "/videos/sample-lecture.mp4"}
+            src={lecture?.videoUrl || undefined}
             onTimeUpdate={handleTimeUpdate}
             onLoadedMetadata={handleLoadedMetadata}
             onPlay={() => setIsPlaying(true)}
             onPause={() => setIsPlaying(false)}
             onError={(e) => {
-              if (e.target.src !== window.location.origin + "/videos/sample-lecture.mp4") {
-                e.target.src = "/videos/sample-lecture.mp4";
-                e.target.load();
-              }
+              e.target.pause(); setIsPlaying(false);
             }}
             onEnded={() => {
               setIsPlaying(false);

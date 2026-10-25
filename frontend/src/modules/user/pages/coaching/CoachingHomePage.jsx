@@ -30,13 +30,14 @@ export const CoachingHomePage = () => {
   const [courses, setCourses] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error,setError]=useState(""),[classes,setClasses]=useState([]),[page,setPage]=useState(1),[total,setTotal]=useState(0);
 
   // Load categories
   useEffect(() => {
     const loadCats = async () => {
       try {
         const cats = await coachingService.getCategories();
-        setCategories(cats);
+        setCategories(cats); setClasses((await coachingService.getFacets()).classes);
       } catch (e) {
         console.error("Categories error:", e);
       }
@@ -44,25 +45,28 @@ export const CoachingHomePage = () => {
     loadCats();
   }, []);
 
+  useEffect(()=>setPage(1),[selectedCategory,selectedClass,query]);
   // Fetch courses with filter
   useEffect(() => {
+    const controller=new AbortController();
     const fetchCourses = async () => {
       try {
-        setLoading(true);
-        const data = await coachingService.getCourses({
+        setLoading(true); setError("");
+        const result = await coachingService.getCoursesPage({
+          page,
           category: selectedCategory,
           classGrade: selectedClass,
           query,
-        });
-        setCourses(data);
+        },controller.signal);
+        setCourses(result.data);setTotal(result.meta.total);
       } catch (err) {
-        console.error("Failed to load coaching courses:", err);
+        if(err.code!=="ABORTED"){setError(err.message);setCourses([]);}
       } finally {
-        setLoading(false);
+        if(!controller.signal.aborted)setLoading(false);
       }
     };
-    fetchCourses();
-  }, [selectedCategory, selectedClass, query]);
+    fetchCourses();return()=>controller.abort();
+  }, [selectedCategory, selectedClass, query,page]);
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
@@ -71,6 +75,8 @@ export const CoachingHomePage = () => {
 
   return (
     <div className="space-y-3.5 sm:space-y-5 max-w-7xl mx-auto">
+      {error&&<p role="alert" className="p-3 bg-red-50 border rounded-xl">{error}</p>}
+      <div className="flex gap-3 text-xs"><button disabled={page===1||loading} onClick={()=>setPage(p=>p-1)}>Previous page</button><span>Page {page} ? {total} courses</span><button disabled={page*20>=total||loading} onClick={()=>setPage(p=>p+1)}>Next page</button></div>
       {/* 1. Compact Search & Quick Filters Bar */}
       <div className="bg-white rounded-xl border border-[#E6E8EC] p-3 sm:p-4 shadow-2xs space-y-2.5">
         {/* Search Input */}
@@ -168,7 +174,7 @@ export const CoachingHomePage = () => {
                 <option value="All" className="bg-white text-[#0A1D3F] font-semibold">
                   All Classes
                 </option>
-                {["Class 8", "Class 9", "Class 10", "Class 11", "Class 12"].map((cls) => (
+                {classes.map(c=>c.name).map((cls) => (
                   <option key={cls} value={cls} className="bg-white text-[#0A1D3F] font-semibold">
                     {cls}
                   </option>

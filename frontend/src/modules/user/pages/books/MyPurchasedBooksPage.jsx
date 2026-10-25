@@ -1,3 +1,4 @@
+import { useAuth } from '../../context/AuthContext';
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
@@ -24,6 +25,8 @@ const coverIconMap = {
 };
 
 export const MyPurchasedBooksPage = () => {
+  const { user } = useAuth();
+  const [error,setError] = useState('');
   const navigate = useNavigate();
   const { purchasedBookIds, getBookProgress } = useLibrary();
   const [books, setBooks] = useState([]);
@@ -31,15 +34,16 @@ export const MyPurchasedBooksPage = () => {
 
   useEffect(() => {
     let cancelled = false;
+    setBooks([]);
     const load = async () => {
       try {
         setLoading(true);
         const all = await bookService.getMyLibraryBooks();
         const idSet = new Set(purchasedBookIds.map(String));
-        const purchased = all.filter((b) => idSet.has(String(b.id)));
+        const purchased = all.filter(b => b.canReadFull === true);
         if (!cancelled) setBooks(purchased);
       } catch (err) {
-        console.error("Purchased books load error:", err);
+        if(!cancelled)setError(err.message);
         if (!cancelled) setBooks([]);
       } finally {
         if (!cancelled) setLoading(false);
@@ -49,7 +53,7 @@ export const MyPurchasedBooksPage = () => {
     return () => {
       cancelled = true;
     };
-  }, [purchasedBookIds]);
+  }, [purchasedBookIds,user?.id]);
 
   return (
     <div className="max-w-4xl w-full mx-auto space-y-4 box-border">
@@ -77,6 +81,7 @@ export const MyPurchasedBooksPage = () => {
         )}
       </div>
 
+      {error && <p role="alert">{error}</p>}
       {loading ? (
         <SkeletonLoader type="card" count={3} />
       ) : books.length === 0 ? (
@@ -91,7 +96,7 @@ export const MyPurchasedBooksPage = () => {
         <div className="space-y-2.5">
           {books.map((book) => {
             const IconComponent = coverIconMap[book.coverIcon] || BookOpen;
-            const progress = getBookProgress(book.id);
+            const progress = book.readingState ?? getBookProgress(book.id);
             return (
               <div
                 key={book.id}
@@ -150,13 +155,13 @@ export const MyPurchasedBooksPage = () => {
                   >
                     Details
                   </Link>
-                  <Link
-                    to={`/books/${book.id}/read`}
+                  <a
+                    href={`/books/${book.id}/read`} target="_blank" rel="noopener noreferrer"
                     className="px-4 py-1.5 bg-[#0A1D3F] hover:bg-[#133C8B] text-white text-xs font-bold rounded-lg transition active:scale-95 shadow-xs flex items-center gap-1.5"
                   >
                     <BookOpen className="w-3.5 h-3.5" />
-                    <span>Read</span>
-                  </Link>
+                    <span>Open secure PDF</span>
+                  </a>
                 </div>
               </div>
             );

@@ -35,47 +35,7 @@ import {
 import { motion } from "framer-motion";
 import { collegeService } from "../../services/collegeService";
 import { useToast } from "../../context/ToastContext";
-
-const INDIAN_STATES = [
-  "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh",
-  "Delhi", "Goa", "Gujarat", "Haryana", "Himachal Pradesh", "Jharkhand",
-  "Karnataka", "Kerala", "Madhya Pradesh", "Maharashtra", "Manipur",
-  "Meghalaya", "Mizoram", "Nagaland", "Odisha", "Punjab", "Rajasthan",
-  "Sikkim", "Tamil Nadu", "Telangana", "Tripura", "Uttar Pradesh",
-  "Uttarakhand", "West Bengal", "Other / Outside India"
-];
-
-const INSTITUTION_TYPES = [
-  "College",
-  "University",
-  "Institute",
-  "Coaching Centre",
-  "Training Centre",
-  "Other"
-];
-
-const DESIGNATIONS = [
-  "Director",
-  "Principal",
-  "Dean",
-  "Admission Head",
-  "Franchise Coordinator",
-  "Managing Trustee",
-  "Other"
-];
-
-const DEFAULT_PROGRAM_OPTIONS = [
-  "Engineering & Technology",
-  "Management & Business (MBA/BBA)",
-  "Computer Applications & IT (BCA/MCA)",
-  "Medical & Healthcare Sciences",
-  "Arts, Humanities & Social Sciences",
-  "Commerce & Accounting",
-  "Science & Applied Research",
-  "Law & Legal Studies",
-  "Vocational & Skill Diplomas",
-  "Design, Media & Animation"
-];
+import { useAuth } from "../../context/AuthContext";
 
 const STEPS = [
   { id: 1, key: "institution", title: "Institution", subtitle: "Basic Institute Details", icon: Building2 },
@@ -86,7 +46,16 @@ const STEPS = [
 ];
 
 export const CollegeFranchiseForm = ({ onBack }) => {
+  const { loading: identityLoading } = useAuth();
   const { showSuccess, showError } = useToast();
+  const [taxonomy, setTaxonomy] = useState({ state: [], institution_type: [], designation: [], program: [] });
+  const [draft, setDraft] = useState(null), [draftMessage, setDraftMessage] = useState('');
+  const [creationKey] = useState(() => crypto.randomUUID());
+  const [recovery] = useState(() => ({ id: new URLSearchParams(window.location.search).get('draft'), draftCapability: window.location.hash.slice(1) }));
+  const [recoveryData, setRecoveryData] = useState(null);
+  const INDIAN_STATES = taxonomy.state.map(v => v.label), INSTITUTION_TYPES = taxonomy.institution_type.map(v => v.label), DESIGNATIONS = taxonomy.designation.map(v => v.label), DEFAULT_PROGRAM_OPTIONS = taxonomy.program.map(v => v.label);
+  useEffect(() => { Promise.all(['state','institution_type','designation','program'].map(async kind => [kind, await collegeService.getTaxonomies(kind)])).then(values => setTaxonomy(Object.fromEntries(values))).catch(error => showError(error.message)); }, []);
+  useEffect(() => { if (identityLoading || !recovery.id) return; if (window.location.hash) window.history.replaceState(null, '', window.location.pathname + window.location.search); collegeService.getFranchiseStatus(recovery).then(value => { setDraft({ ...recovery, revision: value.revision, reference: value.reference }); setRecoveryData(value.draft); setDraftMessage('Recovered ' + value.reference + ' — ' + value.status); if (value.status !== 'draft') setSuccessData({ applicationId: value.reference, status: value.status }); }).catch(error => showError(error.message)); }, [identityLoading]);
 
   // Current Step: 1, 2, 3, 4, 5, or 6 (Review)
   const [currentStep, setCurrentStep] = useState(1);
@@ -116,17 +85,17 @@ export const CollegeFranchiseForm = ({ onBack }) => {
   const [formData, setFormData] = useState({
     // Step 1: Institution Details
     institutionName: "",
-    institutionType: "College",
+    institutionType: "",
     yearEstablished: "",
     website: "",
     institutionLogo: null, // { name, size, preview }
 
     // Step 2: Affiliation & Franchise Details
-    programsOffered: ["Engineering & Technology", "Management & Business (MBA/BBA)"],
+    programsOffered: [],
 
     // Step 3: Authorized Contact
     contactPerson: "",
-    designation: "Director",
+    designation: "",
     email: "",
     mobile: "",
     alternateMobile: "",
@@ -134,7 +103,7 @@ export const CollegeFranchiseForm = ({ onBack }) => {
     // Step 4: Campus Location
     address: "",
     city: "",
-    state: "Delhi",
+    state: "",
     pincode: "",
     googleMapsLocation: "",
 
@@ -150,6 +119,12 @@ export const CollegeFranchiseForm = ({ onBack }) => {
     agreedToTerms: false,
   });
 
+  useEffect(() => {
+    if (!recoveryData || !universities.length || !taxonomy.state.length) return;
+    const v = recoveryData;
+    setFormData(current => ({ ...current, institutionName: v.institution?.name || '', institutionType: v.institution?.type || '', yearEstablished: String(v.institution?.yearEstablished || ''), website: v.institution?.website || '', institutionLogo: (() => { const logo = v.pendingDocuments?.find(d => d.purpose === 'institutionLogo'); return logo ? { name: logo.name, sizeBytes: logo.size, type: logo.contentType, preview: '' } : null; })(), programsOffered: v.programsOffered || [], contactPerson: v.contact?.person || '', designation: v.contact?.designation || '', email: v.contact?.email || '', mobile: v.contact?.mobile || '', alternateMobile: v.contact?.alternateMobile || '', address: v.location?.address || '', city: v.location?.city || '', state: taxonomy.state.find(s => s.id === v.location?.stateId)?.label || '', pincode: v.location?.pincode || '', googleMapsLocation: v.location?.mapsUrl || '', documents: Object.fromEntries(['registrationCert','affiliationCert','authLetter','panGstCert'].map(purpose => { const item = v.pendingDocuments?.find(d => d.purpose === purpose); return [purpose, item ? { name: item.name, sizeBytes: item.size, size: (item.size / 1024).toFixed(1) + ' KB', type: item.contentType } : null]; })) }));
+    setSelectedUniversity(universities.find(u => u.id === v.universityId) ?? null);
+  }, [recoveryData, universities, taxonomy.state]);
   // Step-level inline errors
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
@@ -183,12 +158,13 @@ export const CollegeFranchiseForm = ({ onBack }) => {
     const fetchColleges = async () => {
       try {
         setLoadingColleges(true);
-        setSelectedCollege(null);
+        if (!recoveryData) setSelectedCollege(null);
         const uniId = selectedUniversity._id || selectedUniversity.id;
         const data = await collegeService.getCollegesByUniversity(uniId, {
           status: "active",
         });
         setColleges(data || []);
+        if (recoveryData) setSelectedCollege(data.find(c => c.id === recoveryData.collegeId) ?? null);
       } catch (err) {
         console.error("Failed to load colleges for university", err);
       } finally {
@@ -256,23 +232,8 @@ export const CollegeFranchiseForm = ({ onBack }) => {
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      setFormData((prev) => ({
-        ...prev,
-        documents: {
-          ...prev.documents,
-          [docKey]: {
-            name: file.name,
-            size: (file.size / 1024).toFixed(1) + " KB",
-            type: file.type,
-            dataUrl: e.target.result,
-          },
-        },
-      }));
-      showSuccess(`Attached ${file.name}`);
-    };
-    reader.readAsDataURL(file);
+    setFormData(prev => ({ ...prev, documents: { ...prev.documents, [docKey]: { name: file.name, sizeBytes: file.size, size: (file.size / 1024).toFixed(1) + ' KB', type: file.type } } }));
+    showSuccess('Selected locally only. Secure uploads are pending; remove selected files before document-free submission.');
   };
 
   // Remove document
@@ -300,10 +261,10 @@ export const CollegeFranchiseForm = ({ onBack }) => {
         institutionLogo: {
           name: file.name,
           preview: e.target.result,
-          size: (file.size / 1024).toFixed(1) + " KB",
+          size: (file.size / 1024).toFixed(1) + " KB", sizeBytes: file.size, type: file.type,
         },
       }));
-      showSuccess("Institution logo attached.");
+      showSuccess('Logo preview is local only; remove it before document-free submission until secure uploads are available.');
     };
     reader.readAsDataURL(file);
   };
@@ -319,7 +280,7 @@ export const CollegeFranchiseForm = ({ onBack }) => {
       if (!formData.institutionType) {
         newErrors.institutionType = "Please select the institution type.";
       }
-      if (formData.yearEstablished && (!/^\d{4}$/.test(formData.yearEstablished) || Number(formData.yearEstablished) < 1850 || Number(formData.yearEstablished) > 2026)) {
+      if (formData.yearEstablished && (!/^\d{4}$/.test(formData.yearEstablished) || Number(formData.yearEstablished) < 1850 || Number(formData.yearEstablished) > new Date().getFullYear())) {
         newErrors.yearEstablished = "Please enter a valid 4-digit year (e.g. 2012).";
       }
     }
@@ -403,70 +364,30 @@ export const CollegeFranchiseForm = ({ onBack }) => {
     }
   };
 
-  // Final Form Submission
-  const handleSubmitApplication = async (e) => {
+  const draftPayload = () => {
+    const stateId = taxonomy.state.find(v => v.label === formData.state)?.id;
+    const pendingDocuments = Object.entries(formData.documents).filter(([,file]) => file).map(([purpose,file]) => ({ purpose, name: file.name, size: file.sizeBytes || 0, contentType: file.type || '' }));
+    if (formData.institutionLogo) pendingDocuments.push({ purpose: 'institutionLogo', name: formData.institutionLogo.name, size: formData.institutionLogo.sizeBytes || 0, contentType: formData.institutionLogo.type || '' });
+    return { universityId: selectedUniversity?.id, collegeId: selectedCollege?.id, institution: { name: formData.institutionName, type: formData.institutionType, website: formData.website, ...(formData.yearEstablished ? { yearEstablished: Number(formData.yearEstablished) } : {}) }, programsOffered: formData.programsOffered, contact: { person: formData.contactPerson, designation: formData.designation, email: formData.email, mobile: formData.mobile, alternateMobile: formData.alternateMobile }, location: { address: formData.address, city: formData.city, ...(stateId ? { stateId } : {}), pincode: formData.pincode, mapsUrl: formData.googleMapsLocation }, pendingDocuments };
+  };
+  const persistDraft = async () => {
+    if (!selectedUniversity || !selectedCollege) throw new Error('Select a university and college before saving a draft.');
+    const value = draft ? { ...draft, ...await collegeService.updateFranchiseDraft(draft, draftPayload()) } : await collegeService.createFranchiseDraft({ ...draftPayload(), idempotencyKey: creationKey });
+    setDraft(value); setDraftMessage('Draft saved in MongoDB: ' + value.reference + '. Files are selected locally, not uploaded.'); return value;
+  };
+  const saveDraft = async () => { setSubmitting(true); try { await persistDraft(); } catch (error) { showError(error.message); } finally { setSubmitting(false); } };
+  const handleSubmitApplication = async e => {
     e?.preventDefault();
-
-    if (!formData.agreedToTerms) {
-      setErrors({ agreement: "Please accept the franchise declaration and terms of partnership." });
-      return;
-    }
-
+    if (!formData.agreedToTerms) { setErrors({ agreement: 'Accept the declaration before submitting.' }); return; }
+    setSubmitting(true);
     try {
-      setSubmitting(true);
-      setErrors({});
-
-      const payload = {
-        universityId: selectedUniversity?._id || selectedUniversity?.id,
-        collegeId: selectedCollege?._id || selectedCollege?.id,
-        institutionName: formData.institutionName.trim() || selectedCollege?.name || "",
-        institutionType: formData.institutionType,
-        yearEstablished: formData.yearEstablished,
-        website: formData.website.trim(),
-        institutionLogo: formData.institutionLogo?.preview || "",
-        programsOffered: formData.programsOffered,
-        contactPerson: formData.contactPerson.trim(),
-        designation: formData.designation,
-        email: formData.email.trim().toLowerCase(),
-        mobile: formData.mobile.trim(),
-        alternateMobile: formData.alternateMobile.trim(),
-        address: formData.address.trim(),
-        city: formData.city.trim(),
-        state: formData.state.trim(),
-        pincode: formData.pincode.trim(),
-        googleMapsLocation: formData.googleMapsLocation.trim(),
-        documents: {
-          registrationCert: formData.documents.registrationCert?.name || "",
-          affiliationCert: formData.documents.affiliationCert?.name || "",
-          authLetter: formData.documents.authLetter?.name || "",
-          panGstCert: formData.documents.panGstCert?.name || "",
-        },
-      };
-
-      const result = await collegeService.submitFranchiseRegistration(payload);
-
-      setSuccessData({
-        applicationId: result.applicationId,
-        universityName: selectedUniversity?.name || "University Partner",
-        universityShort: selectedUniversity?.shortName || "UNIV",
-        collegeName: selectedCollege?.name || formData.institutionName || "Partner College",
-        collegeCode: selectedCollege?.code || "N/A",
-        contactPerson: formData.contactPerson,
-        designation: formData.designation,
-        email: formData.email,
-        mobile: formData.mobile,
-        city: formData.city,
-        state: formData.state,
-      });
-
-      showSuccess("Franchise application submitted successfully for Admin review!");
-    } catch (err) {
-      console.error("Submission failed:", err);
-      setErrors({ submit: err.message || "Failed to submit application. Please try again." });
-      showError(err.message || "Submission error");
-    } finally {
-      setSubmitting(false);
-    }
+      const saved = await persistDraft();
+      const result = await collegeService.submitFranchiseDraft(saved);
+      const authoritative = await collegeService.getFranchiseStatus(saved);
+      setDraft({ ...saved, revision: authoritative.revision });
+      setSuccessData({ applicationId: result.reference, status: authoritative.status, contactPerson: formData.contactPerson, designation: formData.designation, universityName: selectedUniversity.name, universityShort: selectedUniversity.shortName, collegeName: selectedCollege.name, collegeCode: selectedCollege.code, city: formData.city, state: formData.state, mobile: formData.mobile, email: formData.email });
+      showSuccess('Submitted for review. No affiliation or account was granted.');
+    } catch (error) { setErrors({ submit: error.message }); showError(error.message); } finally { setSubmitting(false); }
   };
 
   const copyApplicationId = () => {
@@ -494,6 +415,8 @@ export const CollegeFranchiseForm = ({ onBack }) => {
   // ========================================================
   // VIEW: SUCCESS / CONFIRMATION SCREEN
   // ========================================================
+  if (identityLoading) return <p role="status">Checking your session…</p>;
+
   if (successData) {
     return (
       <div className="bg-white p-5 sm:p-7 rounded-md border border-[#E2E8F0] shadow-md max-w-xl mx-auto text-center space-y-5 animate-in zoom-in-95 duration-200">
@@ -503,7 +426,7 @@ export const CollegeFranchiseForm = ({ onBack }) => {
 
         <div>
           <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 border border-amber-200 text-amber-700 text-xs font-bold uppercase tracking-wider mb-2">
-            Status: Pending Admin Approval
+            Status: {successData.status || "pending"}
           </span>
           <h2 className="text-xl sm:text-2xl font-bold text-[#0A1D3F] tracking-tight">
             Franchise Application Received
@@ -618,6 +541,7 @@ export const CollegeFranchiseForm = ({ onBack }) => {
   // ========================================================
   return (
     <div className="bg-white p-4 sm:p-6 lg:p-7 rounded-md border border-[#E2E8F0] shadow-md max-w-2xl sm:max-w-3xl mx-auto text-left transition-all">
+      <div className="mb-4 bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-[#0A1D3F] space-y-2"><p>Document-free review is permitted. Secure uploads and franchise approval are pending. Selecting a file does not upload it.</p>{draftMessage && <p role="status">{draftMessage}</p>}<button type="button" disabled={submitting || !selectedUniversity || !selectedCollege} onClick={saveDraft} className="px-3 py-2 rounded-lg bg-[#0A1D3F] text-white disabled:opacity-40">Save Draft</button>{draft && <button type="button" onClick={() => { const link = window.location.origin + '/register?type=franchise&draft=' + draft.id + '#' + (draft.draftCapability || ''); navigator.clipboard.writeText(link).then(() => showSuccess('Private recovery link copied. Keep it secret; guest links expire in 24 hours.')).catch(() => showError('Unable to copy link')); }} className="px-3 py-2">Copy private recovery link</button>}</div>
       {/* Top Header Navigation */}
       <div className="flex items-center justify-between border-b border-[#E2E8F0] pb-3.5 mb-4">
         <button
@@ -753,7 +677,7 @@ export const CollegeFranchiseForm = ({ onBack }) => {
                 </div>
                 <input
                   type="text"
-                  value={formData.institutionName}
+                  aria-label="Franchise institutionName" value={formData.institutionName}
                   onChange={(e) => handleInputChange("institutionName", e.target.value)}
                   placeholder="e.g. Apex Institute of Technology & Management"
                   className={`w-full pl-9 pr-3 py-2.5 text-xs bg-white border ${
@@ -774,11 +698,11 @@ export const CollegeFranchiseForm = ({ onBack }) => {
                 </label>
                 <div className="relative">
                   <select
-                    value={formData.institutionType}
+                    aria-label="Franchise institutionType" value={formData.institutionType}
                     onChange={(e) => handleInputChange("institutionType", e.target.value)}
                     className="w-full px-3 py-2.5 text-xs bg-white border border-[#CBD5E1] rounded-md text-[#0A1D3F] focus:outline-none focus:border-[#FF8A00] focus:ring-2 focus:ring-[#FF8A00]/15 transition cursor-pointer appearance-none"
                   >
-                    {INSTITUTION_TYPES.map((type) => (
+                    <option value="">Select institution type</option>{INSTITUTION_TYPES.map((type) => (
                       <option key={type} value={type}>
                         {type}
                       </option>
@@ -798,7 +722,7 @@ export const CollegeFranchiseForm = ({ onBack }) => {
                   </div>
                   <input
                     type="number"
-                    value={formData.yearEstablished}
+                    aria-label="Franchise yearEstablished" value={formData.yearEstablished}
                     onChange={(e) => handleInputChange("yearEstablished", e.target.value)}
                     placeholder="e.g. 2012"
                     min="1850"
@@ -825,7 +749,7 @@ export const CollegeFranchiseForm = ({ onBack }) => {
                 </div>
                 <input
                   type="text"
-                  value={formData.website}
+                  aria-label="Franchise website" value={formData.website}
                   onChange={(e) => handleInputChange("website", e.target.value)}
                   placeholder="https://institution.edu.in"
                   className="w-full pl-9 pr-3 py-2.5 text-xs bg-white border border-[#CBD5E1] rounded-md text-[#0A1D3F] focus:outline-none focus:border-[#FF8A00] focus:ring-2 focus:ring-[#FF8A00]/15 transition"
@@ -937,7 +861,7 @@ export const CollegeFranchiseForm = ({ onBack }) => {
               ) : (
                 <div className="relative">
                   <div
-                    onClick={() => setUniDropdownOpen(!uniDropdownOpen)}
+                    aria-label="Select franchise university" onClick={() => setUniDropdownOpen(!uniDropdownOpen)}
                     className={`w-full p-2.5 rounded-md bg-white border ${
                       errors.university ? "border-red-400 bg-red-50/20" : "border-[#CBD5E1]"
                     } flex items-center justify-between cursor-pointer hover:border-[#FF8A00] transition`}
@@ -1049,7 +973,7 @@ export const CollegeFranchiseForm = ({ onBack }) => {
               ) : (
                 <div className="relative">
                   <div
-                    onClick={() => setColDropdownOpen(!colDropdownOpen)}
+                    aria-label="Select franchise college" onClick={() => setColDropdownOpen(!colDropdownOpen)}
                     className={`w-full p-2.5 rounded-md bg-white border ${
                       errors.college ? "border-red-400 bg-red-50/20" : "border-[#CBD5E1]"
                     } flex items-center justify-between cursor-pointer hover:border-[#FF8A00] transition`}
@@ -1266,11 +1190,12 @@ export const CollegeFranchiseForm = ({ onBack }) => {
               Back
             </button>
             <button
+              disabled={loadingColleges || !selectedCollege}
               type="button"
               onClick={handleContinue}
               className="py-2.5 px-5 rounded-md bg-[#0A1D3F] hover:bg-[#133C8B] text-white text-xs font-semibold flex items-center gap-1.5 shadow-xs transition cursor-pointer"
             >
-              <span>Continue to Contact</span>
+              <span>{loadingColleges ? 'Loading colleges…' : 'Continue to Contact'}</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </div>
@@ -1307,7 +1232,7 @@ export const CollegeFranchiseForm = ({ onBack }) => {
                   </div>
                   <input
                     type="text"
-                    value={formData.contactPerson}
+                    aria-label="Franchise contactPerson" value={formData.contactPerson}
                     onChange={(e) => handleInputChange("contactPerson", e.target.value)}
                     placeholder="e.g. Dr. Rajesh Sharma"
                     className={`w-full pl-9 pr-3 py-2.5 text-xs bg-white border ${
@@ -1326,11 +1251,11 @@ export const CollegeFranchiseForm = ({ onBack }) => {
                 </label>
                 <div className="relative">
                   <select
-                    value={formData.designation}
+                    aria-label="Franchise designation" value={formData.designation}
                     onChange={(e) => handleInputChange("designation", e.target.value)}
                     className="w-full px-3 py-2.5 text-xs bg-white border border-[#CBD5E1] rounded-md text-[#0A1D3F] focus:outline-none focus:border-[#FF8A00] focus:ring-2 focus:ring-[#FF8A00]/15 transition cursor-pointer appearance-none"
                   >
-                    {DESIGNATIONS.map((desig) => (
+                    <option value="">Select designation</option>{DESIGNATIONS.map((desig) => (
                       <option key={desig} value={desig}>
                         {desig}
                       </option>
@@ -1352,7 +1277,7 @@ export const CollegeFranchiseForm = ({ onBack }) => {
                 </div>
                 <input
                   type="email"
-                  value={formData.email}
+                  aria-label="Franchise email" value={formData.email}
                   onChange={(e) => handleInputChange("email", e.target.value)}
                   placeholder="director@institution.edu.in"
                   className={`w-full pl-9 pr-3 py-2.5 text-xs bg-white border ${
@@ -1377,7 +1302,7 @@ export const CollegeFranchiseForm = ({ onBack }) => {
                   </div>
                   <input
                     type="tel"
-                    value={formData.mobile}
+                    aria-label="Franchise mobile" value={formData.mobile}
                     onChange={(e) => handleInputChange("mobile", e.target.value)}
                     placeholder="10-digit mobile"
                     maxLength={14}
@@ -1401,7 +1326,7 @@ export const CollegeFranchiseForm = ({ onBack }) => {
                   </div>
                   <input
                     type="tel"
-                    value={formData.alternateMobile}
+                    aria-label="Franchise alternateMobile" value={formData.alternateMobile}
                     onChange={(e) => handleInputChange("alternateMobile", e.target.value)}
                     placeholder="Landline or mobile"
                     className="w-full pl-9 pr-3 py-2.5 text-xs bg-white border border-[#CBD5E1] rounded-md text-[#0A1D3F] focus:outline-none focus:border-[#FF8A00] focus:ring-2 focus:ring-[#FF8A00]/15 transition"
@@ -1458,7 +1383,7 @@ export const CollegeFranchiseForm = ({ onBack }) => {
               <div className="relative">
                 <textarea
                   rows={2}
-                  value={formData.address}
+                  aria-label="Franchise address" value={formData.address}
                   onChange={(e) => handleInputChange("address", e.target.value)}
                   placeholder="Building Name, Sector / Area, Road, Landmark..."
                   className={`w-full p-2.5 text-xs bg-white border ${
@@ -1479,7 +1404,7 @@ export const CollegeFranchiseForm = ({ onBack }) => {
                 </label>
                 <input
                   type="text"
-                  value={formData.city}
+                  aria-label="Franchise city" value={formData.city}
                   onChange={(e) => handleInputChange("city", e.target.value)}
                   placeholder="e.g. Pune"
                   className={`w-full px-3 py-2.5 text-xs bg-white border ${
@@ -1497,11 +1422,11 @@ export const CollegeFranchiseForm = ({ onBack }) => {
                 </label>
                 <div className="relative">
                   <select
-                    value={formData.state}
+                    aria-label="Franchise state" value={formData.state}
                     onChange={(e) => handleInputChange("state", e.target.value)}
                     className="w-full px-3 py-2.5 text-xs bg-white border border-[#CBD5E1] rounded-md text-[#0A1D3F] focus:outline-none focus:border-[#FF8A00] focus:ring-2 focus:ring-[#FF8A00]/15 transition cursor-pointer appearance-none"
                   >
-                    {INDIAN_STATES.map((st) => (
+                    <option value="">Select state</option>{INDIAN_STATES.map((st) => (
                       <option key={st} value={st}>
                         {st}
                       </option>
@@ -1517,7 +1442,7 @@ export const CollegeFranchiseForm = ({ onBack }) => {
                 </label>
                 <input
                   type="text"
-                  value={formData.pincode}
+                  aria-label="Franchise pincode" value={formData.pincode}
                   onChange={(e) => handleInputChange("pincode", e.target.value)}
                   placeholder="6-digit PIN"
                   maxLength={6}
@@ -1544,7 +1469,7 @@ export const CollegeFranchiseForm = ({ onBack }) => {
                 </div>
                 <input
                   type="text"
-                  value={formData.googleMapsLocation}
+                  aria-label="Franchise googleMapsLocation" value={formData.googleMapsLocation}
                   onChange={(e) => handleInputChange("googleMapsLocation", e.target.value)}
                   placeholder="e.g. https://maps.google.com/?q=... or campus coordinates"
                   className="w-full pl-9 pr-3 py-2.5 text-xs bg-white border border-[#CBD5E1] rounded-md text-[#0A1D3F] focus:outline-none focus:border-[#FF8A00] focus:ring-2 focus:ring-[#FF8A00]/15 transition"
@@ -1947,7 +1872,7 @@ export const CollegeFranchiseForm = ({ onBack }) => {
               <div className="flex items-center justify-between pb-1 border-b border-[#E2E8F0]">
                 <div className="flex items-center gap-1.5 font-bold text-[#0A1D3F]">
                   <FileText className="w-3.5 h-3.5 text-[#FF8A00]" />
-                  <span>5. Uploaded Documents</span>
+                  <span>5. Document selections</span>
                 </div>
                 <button
                   type="button"
@@ -1962,25 +1887,25 @@ export const CollegeFranchiseForm = ({ onBack }) => {
                 <div>
                   <span className="text-[#64748B]">Registration Cert: </span>
                   <strong className={formData.documents.registrationCert ? "text-emerald-700" : "text-[#94A3B8]"}>
-                    {formData.documents.registrationCert ? "Attached" : "Not uploaded"}
+                    {formData.documents.registrationCert ? "Selected locally, not uploaded" : "Not uploaded"}
                   </strong>
                 </div>
                 <div>
                   <span className="text-[#64748B]">Affiliation Cert: </span>
                   <strong className={formData.documents.affiliationCert ? "text-emerald-700" : "text-[#94A3B8]"}>
-                    {formData.documents.affiliationCert ? "Attached" : "Not uploaded"}
+                    {formData.documents.affiliationCert ? "Selected locally, not uploaded" : "Not uploaded"}
                   </strong>
                 </div>
                 <div>
                   <span className="text-[#64748B]">Authorization Letter: </span>
                   <strong className={formData.documents.authLetter ? "text-emerald-700" : "text-[#94A3B8]"}>
-                    {formData.documents.authLetter ? "Attached" : "Not uploaded"}
+                    {formData.documents.authLetter ? "Selected locally, not uploaded" : "Not uploaded"}
                   </strong>
                 </div>
                 <div>
                   <span className="text-[#64748B]">PAN / GST: </span>
                   <strong className={formData.documents.panGstCert ? "text-emerald-700" : "text-[#94A3B8]"}>
-                    {formData.documents.panGstCert ? "Attached" : "Not uploaded"}
+                    {formData.documents.panGstCert ? "Selected locally, not uploaded" : "Not uploaded"}
                   </strong>
                 </div>
               </div>

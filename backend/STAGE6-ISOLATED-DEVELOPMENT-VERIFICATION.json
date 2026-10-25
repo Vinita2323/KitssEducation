@@ -1,0 +1,100 @@
+{
+  "label": "STAGE6_DEV_VERIFY",
+  "isolated": true,
+  "environment": "development",
+  "provider": "fake",
+  "simulated": true,
+  "realProviderCalls": 0,
+  "records": {
+    "verificationActorId": "6adc73c7d74781822f8a9818",
+    "bookId": "6adc73c7d74781822f8a9819",
+    "orderId": "6adc73c7d74781822f8a981a",
+    "fakeProviderOrderId": "order_acc2d0ec720d49499d294759d8741422",
+    "fakePaymentId": "pay_6976b862048a447e88ea547edd1f6349",
+    "eventJobId": "6adc73c7d74781822f8a981b"
+  },
+  "checks": {
+    "idempotentInternalRead": true,
+    "simulatedCapturePersisted": true,
+    "fulfillmentRemainsRestricted": true,
+    "authoritativeOwnerStatus": true,
+    "readinessAfterRestart": true,
+    "persistsAfterRestart": true,
+    "verificationActorRetired": true,
+    "persistsAfterMongoRestart": true
+  },
+  "destructiveOperations": false,
+  "database": "kitss_stage6_dev_cbce7283a4c04ff4",
+  "baselineCounts": {
+    "collegePrograms": 0,
+    "franchiseApplications": 0,
+    "auththrottles": 0,
+    "admissionApplications": 0,
+    "domainLocks": 1,
+    "registrationApplications": 0,
+    "colleges": 0,
+    "pageContents": 0,
+    "books": 0,
+    "mediaAssets": 0,
+    "users": 0,
+    "banners": 0,
+    "taxonomies": 0,
+    "auditlogs": 0,
+    "orders": 0,
+    "siteSettings": 0,
+    "bookEntitlements": 0,
+    "sessions": 0,
+    "facultyProfiles": 0,
+    "jobs": 0,
+    "universities": 0
+  },
+  "finalCounts": {
+    "collegePrograms": 0,
+    "franchiseApplications": 0,
+    "auththrottles": 4,
+    "admissionApplications": 0,
+    "domainLocks": 1,
+    "registrationApplications": 0,
+    "colleges": 0,
+    "pageContents": 0,
+    "books": 1,
+    "mediaAssets": 0,
+    "users": 1,
+    "banners": 0,
+    "taxonomies": 0,
+    "auditlogs": 3,
+    "orders": 1,
+    "siteSettings": 0,
+    "bookEntitlements": 0,
+    "sessions": 1,
+    "facultyProfiles": 0,
+    "jobs": 1,
+    "universities": 0
+  },
+  "indexes": {
+    "orders": [
+      "_id_",
+      "reference_1",
+      "userId_1_idempotencyKey_1",
+      "provider_1_paymentMode_1_providerOrderId_1",
+      "provider_1_paymentMode_1_paymentReferences_1",
+      "userId_1_product.kind_1_product.id_1",
+      "reconcile.state_1_reconcile.nextAt_1_reconcile.leaseUntil_1"
+    ],
+    "bookEntitlements": [
+      "_id_",
+      "orderId_1",
+      "userId_1_bookId_1"
+    ],
+    "registrationApplications": [
+      "_id_",
+      "reference_1",
+      "userId_1_idempotencyKey_1"
+    ],
+    "jobs": [
+      "_id_",
+      "key_1",
+      "state_1_availableAt_1_leaseUntil_1"
+    ]
+  }
+}

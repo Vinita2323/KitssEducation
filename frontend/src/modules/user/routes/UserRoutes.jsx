@@ -1,6 +1,8 @@
 import React from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 
+import { RouteGuard } from '../../../shared/auth/RouteGuard';
+import { IdentityPage } from '../pages/auth/IdentityPage';
 // Layouts
 import { UserLayout } from "../components/layout/UserLayout";
 import { AuthLayout } from "../components/layout/AuthLayout";
@@ -34,7 +36,6 @@ import { LecturePlayerPage } from "../pages/coaching/LecturePlayerPage";
 import { BookReaderPage } from "../pages/coaching/BookReaderPage";
 import { CourseSubscribePage } from "../pages/coaching/CourseSubscribePage";
 import { CoursePlayerPage } from "../pages/coaching/CoursePlayerPage";
-import { MySubscriptionsPage } from "../pages/coaching/MySubscriptionsPage";
 
 // Other Pages
 import { ResultsPage } from "../pages/results/ResultsPage";
@@ -43,7 +44,9 @@ import { NotificationsPage } from "../pages/notifications/NotificationsPage";
 import { ProfilePage } from "../pages/profile/ProfilePage";
 import { SettingsPage } from "../pages/profile/SettingsPage";
 
+import { useAuth } from "../context/AuthContext";
 export const UserRoutes = () => {
+  const {user}=useAuth();
   return (
     <Routes>
       {/* Direct landing without Splash or Onboarding */}
@@ -53,9 +56,12 @@ export const UserRoutes = () => {
 
       {/* Auth Screens with AuthLayout */}
       <Route element={<AuthLayout />}>
+        <Route path="/account/create" element={<IdentityPage />} />
+        <Route path="/account/verify" element={<IdentityPage verify />} />
+        <Route path="/staff/accept" element={<IdentityPage invitation />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
-        <Route path="/register-success" element={<RegisterSuccessPage />} />
+        <Route path="/register-success" element={<Navigate to="/account/verify" replace />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
       </Route>
@@ -77,36 +83,36 @@ export const UserRoutes = () => {
         {/* Books */}
         <Route path="/books" element={<BooksHomePage />} />
         <Route path="/books/:id" element={<BookDetailsPage />} />
-        <Route path="/books/:id/checkout" element={<BookCheckoutPage />} />
-        <Route path="/books/:id/read" element={<PdfReaderPage />} />
-        <Route path="/my-books" element={<MyPurchasedBooksPage />} />
+        <Route path="/books/:id/checkout" element={<RouteGuard><BookCheckoutPage /></RouteGuard>} />
+        <Route path="/books/:id/read" element={<RouteGuard><PdfReaderPage key={user?.id || "guest"} /></RouteGuard>} />
+        <Route path="/my-books" element={<RouteGuard><MyPurchasedBooksPage /></RouteGuard>} />
         <Route path="/library" element={<Navigate to="/my-books" replace />} />
 
         {/* Online Coaching Hub */}
         <Route path="/coaching" element={<CoachingHomePage />} />
-        <Route path="/coaching/register" element={<CourseRegistrationPage />} />
-        <Route path="/coaching/select" element={<CourseSelectorPage />} />
-        <Route path="/coaching/my-courses" element={<MyCoursesPage />} />
-        <Route path="/coaching/:id" element={<CourseDetailsPage />} />
-        <Route path="/coaching/:id/dashboard" element={<CourseDashboardPage />} />
-        <Route path="/coaching/:id/lecture/:lectureId" element={<LecturePlayerPage />} />
-        <Route path="/coaching/:id/book/:bookId" element={<BookReaderPage />} />
-        <Route path="/coaching/:id/subscribe" element={<CourseSubscribePage />} />
-        <Route path="/coaching/:id/player" element={<CoursePlayerPage />} />
-        <Route path="/subscriptions" element={<MyCoursesPage />} />
+        <Route path="/coaching/register" element={<RouteGuard><CourseRegistrationPage /></RouteGuard>} />
+        <Route path="/coaching/select" element={<CourseSelectorPage key={user?.id || "guest"} />} />
+        <Route path="/coaching/my-courses" element={<RouteGuard><MyCoursesPage key={user?.id || "guest"} /></RouteGuard>} />
+        <Route path="/coaching/:id" element={<CourseDetailsPage key={user?.id || "guest"} />} />
+        <Route path="/coaching/:id/dashboard" element={<RouteGuard><CourseDashboardPage key={user?.id || "guest"} /></RouteGuard>} />
+        <Route path="/coaching/:id/lecture/:lectureId" element={<LecturePlayerPage key={user?.id || "guest"} />} />
+        <Route path="/coaching/:id/book/:bookId" element={<RouteGuard><BookReaderPage key={user?.id || "guest"} /></RouteGuard>} />
+        <Route path="/coaching/:id/subscribe" element={<RouteGuard><CourseSubscribePage /></RouteGuard>} />
+        <Route path="/coaching/:id/player" element={<RouteGuard><CoursePlayerPage key={user?.id || "guest"} /></RouteGuard>} />
+        <Route path="/subscriptions" element={<RouteGuard><MyCoursesPage key={user?.id || "guest"} /></RouteGuard>} />
 
         {/* Results */}
         <Route path="/results" element={<ResultsPage />} />
 
         {/* Orders */}
-        <Route path="/orders" element={<MyOrdersPage />} />
+        <Route path="/orders" element={<RouteGuard><MyOrdersPage /></RouteGuard>} />
 
         {/* Notifications */}
-        <Route path="/notifications" element={<NotificationsPage />} />
+        <Route path="/notifications" element={<RouteGuard><NotificationsPage /></RouteGuard>} />
 
         {/* Profile & Settings */}
-        <Route path="/profile" element={<ProfilePage />} />
-        <Route path="/settings" element={<SettingsPage />} />
+        <Route path="/profile" element={<RouteGuard><ProfilePage /></RouteGuard>} />
+        <Route path="/settings" element={<RouteGuard><SettingsPage /></RouteGuard>} />
       </Route>
 
       {/* Fallback */}

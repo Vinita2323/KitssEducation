@@ -1,4 +1,6 @@
-import React, { useState } from "react";
+import { authService } from '../../services/authService';
+import { EmailChangeForm } from '../../components/auth/EmailChangeForm';
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ArrowLeft, Bell, Smartphone, Laptop, ShieldCheck, Moon, Sun, Info, Trash2 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
@@ -7,15 +9,18 @@ import { PrimaryButton } from "../../components/common/PrimaryButton";
 
 export const SettingsPage = () => {
   const navigate = useNavigate();
-  const { showSuccess } = useToast();
-  const { deviceInfo, handleTransferDeviceSession } = useAuth();
+  const { showSuccess, showError } = useToast();
+  const { deviceInfo, handleTransferDeviceSession, deviceConflict } = useAuth();
 
   const [examAlerts, setExamAlerts] = useState(true);
   const [courseUpdates, setCourseUpdates] = useState(true);
   const [promoAlerts, setPromoAlerts] = useState(false);
 
+  const [preferencesReady,setPreferencesReady]=useState(false),[saving,setSaving]=useState(false);
+  useEffect(()=>{const c=new AbortController();authService.getPreferences(c.signal).then(p=>{if(!c.signal.aborted){setExamAlerts(p.notification.examAlerts);setCourseUpdates(p.notification.courseUpdates);setPromoAlerts(p.notification.promoAlerts);setPreferencesReady(true);}}).catch(e=>{if(!c.signal.aborted)showError(e.message);});return()=>c.abort();},[]);
+  const savePreferences=async()=>{setSaving(true);try{await authService.savePreferences({notification:{examAlerts,courseUpdates,promoAlerts}});showSuccess('Preferences saved');}catch(e){showError(e.message);}finally{setSaving(false);}};
   const handleClearCache = () => {
-    showSuccess("Local offline cache cleared successfully.");
+    try { localStorage.removeItem('kits_course_selector_prefs'); showSuccess('Saved course filter preferences cleared on this browser. Server records are retained.'); } catch(e) { showError('Browser storage is unavailable'); }
   };
 
   return (
@@ -54,7 +59,7 @@ export const SettingsPage = () => {
             </div>
             <input
               type="checkbox"
-              checked={examAlerts}
+              disabled={!preferencesReady || saving} checked={examAlerts}
               onChange={(e) => setExamAlerts(e.target.checked)}
               className="w-5 h-5 rounded text-[#0A1D3F]"
             />
@@ -63,11 +68,11 @@ export const SettingsPage = () => {
           <label className="flex items-center justify-between p-3 bg-[#F7F8FA] rounded-2xl cursor-pointer">
             <div>
               <span className="font-bold text-[#0A1D3F] block">Course & Lecture Updates</span>
-              <span className="text-[11px] text-[#667085]">When new video lectures and test papers are added</span>
+              <span className="text-[11px] text-[#667085]">When course and lesson notices are published</span>
             </div>
             <input
               type="checkbox"
-              checked={courseUpdates}
+              disabled={!preferencesReady || saving} checked={courseUpdates}
               onChange={(e) => setCourseUpdates(e.target.checked)}
               className="w-5 h-5 rounded text-[#0A1D3F]"
             />
@@ -80,7 +85,7 @@ export const SettingsPage = () => {
             </div>
             <input
               type="checkbox"
-              checked={promoAlerts}
+              disabled={!preferencesReady || saving} checked={promoAlerts}
               onChange={(e) => setPromoAlerts(e.target.checked)}
               className="w-5 h-5 rounded text-[#0A1D3F]"
             />
@@ -88,6 +93,8 @@ export const SettingsPage = () => {
         </div>
       </div>
 
+      <button disabled={!preferencesReady || saving} onClick={savePreferences} className="bg-[#0A1D3F] text-white rounded-xl p-3 disabled:opacity-40">{saving?'Saving...':'Save preferences'}</button>
+      <EmailChangeForm />
       {/* Single Device Security */}
       <div className="bg-white rounded-3xl border border-[#E6E8EC] p-5 sm:p-6 shadow-xs space-y-3">
         <div className="flex items-center justify-between">
@@ -117,16 +124,17 @@ export const SettingsPage = () => {
                 </span>
               </div>
               <p className="text-[11px] text-[#667085] mt-0.5">
-                Token ID: <span className="font-mono font-semibold">{deviceInfo?.deviceId || "DEV-PRIMARY"}</span> • Authorized Single Session
+                Server-verified session • Authorized Single Session
               </p>
             </div>
           </div>
 
           <button
             type="button"
+            disabled={!deviceConflict}
+            title="Transfer requires a fresh login challenge and explicit confirmation"
             onClick={() => {
               handleTransferDeviceSession();
-              showSuccess("Other device sessions deauthorized. Current device is primary.");
             }}
             className="px-3 py-1.5 rounded-xl bg-white border border-[#E6E8EC] hover:bg-gray-50 text-[11px] font-bold text-[#0A1D3F] shadow-2xs transition active:scale-95 cursor-pointer whitespace-nowrap"
           >
@@ -139,13 +147,13 @@ export const SettingsPage = () => {
       <div className="bg-white rounded-3xl border border-[#E6E8EC] p-5 sm:p-6 shadow-xs space-y-3">
         <div className="flex items-center gap-2 text-xs font-bold text-[#0A1D3F] uppercase tracking-wider">
           <Trash2 className="w-4 h-4 text-[#D92D20]" />
-          <span>Storage & Offline Cache</span>
+          <span>Browser Preferences</span>
         </div>
 
         <div className="flex items-center justify-between p-3 bg-[#F7F8FA] rounded-2xl">
           <div>
-            <h4 className="text-xs font-bold text-[#0A1D3F]">Local Book & Video Cache</h4>
-            <p className="text-[11px] text-[#667085]">Free up storage on this device (approx. 24.8 MB)</p>
+            <h4 className="text-xs font-bold text-[#0A1D3F]">Saved Course Filters</h4>
+            <p className="text-[11px] text-[#667085]">Clear this browser's saved filters. Server records and reading progress are retained.</p>
           </div>
 
           <button
@@ -153,7 +161,7 @@ export const SettingsPage = () => {
             onClick={handleClearCache}
             className="px-3.5 py-1.5 bg-white border border-[#E6E8EC] hover:bg-gray-50 text-xs font-bold text-[#0A1D3F] rounded-xl transition"
           >
-            Clear Cache
+            Clear Filters
           </button>
         </div>
       </div>
@@ -164,8 +172,8 @@ export const SettingsPage = () => {
           <Info className="w-4 h-4 text-[#133C8B]" />
           <span>About KITSS Education</span>
         </div>
-        <p>Application Version: <strong>v2.4.0-web-prod</strong></p>
-        <p>© {new Date().getFullYear()} KITSS Education Private Limited. All Rights Reserved.</p>
+        <p>Application: <strong>KITSS Education web</strong></p>
+        <p>© {new Date().getFullYear()} KITSS Education. All Rights Reserved.</p>
       </div>
     </div>
   );

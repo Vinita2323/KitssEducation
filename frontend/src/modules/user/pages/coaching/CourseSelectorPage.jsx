@@ -1,3 +1,6 @@
+import { useAuth } from '../../context/AuthContext';
+import { authService } from '../../services/authService';
+import { Pagination } from '../../components/common/Pagination';
 import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import {
@@ -11,46 +14,12 @@ import {
   Check
 } from "lucide-react";
 import { coachingService } from "../../services/coachingService";
-import { getCoachingStore } from "../../data/mockCoachingData";
+
 import { CourseCard } from "../../components/coaching/CourseCard";
 import { SearchableSelect } from "../../components/common/SearchableSelect";
 import { useToast } from "../../context/ToastContext";
 
 const COURSE_PREFS_KEY = "kits_course_selector_prefs";
-
-const courseMatchesType = (course, selectedType) => {
-  if (!selectedType || selectedType === "All") return true;
-  if (selectedType.startsWith("Class ")) {
-    const grade = selectedType.toLowerCase().replace(/\s+/g, "");
-    return (course.class || "").toLowerCase().replace(/\s+/g, "") === grade;
-  }
-  const selected = selectedType.toLowerCase();
-  return [course.courseType, course.program, course.title]
-    .filter(Boolean)
-    .some((name) => name.toLowerCase() === selected);
-};
-
-const subjectsForSelection = ({ selectedType, selectedBoard, selectedState, selectedLanguage }) => {
-  const names = new Set();
-  (getCoachingStore().courses || []).forEach((course) => {
-    if (!courseMatchesType(course, selectedType)) return;
-    if (selectedBoard && selectedBoard !== "All") {
-      const board = (course.board || "All").toLowerCase();
-      if (board !== "all" && board !== selectedBoard.toLowerCase()) return;
-    }
-    if (selectedState && selectedState !== "All") {
-      const state = (course.state || "All").toLowerCase();
-      if (state !== "all" && state !== selectedState.toLowerCase()) return;
-    }
-    if (selectedLanguage && selectedLanguage !== "All") {
-      if ((course.language || "English").toLowerCase() !== selectedLanguage.toLowerCase()) return;
-    }
-    (course.subjects || []).forEach((subject) => {
-      if (subject) names.add(subject);
-    });
-  });
-  return [...names].sort((a, b) => a.localeCompare(b));
-};
 
 const readSavedCoursePrefs = () => {
   try {
@@ -70,8 +39,10 @@ const readSavedCoursePrefs = () => {
 export const CourseSelectorPage = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { showSuccess } = useToast();
-  const savedPrefs = readSavedCoursePrefs();
+  const { showSuccess, showError } = useToast();
+  const { user } = useAuth();
+  const savedPrefs = user ? null : readSavedCoursePrefs();
+  const [preferenceReady,setPreferenceReady]=useState(false),[preferenceError,setPreferenceError]=useState(''),[savingPreference,setSavingPreference]=useState(false);
   const openSelector = searchParams.get("choose") === "1";
 
   const [filtersSaved] = useState(() => !openSelector && Boolean(savedPrefs));
@@ -81,37 +52,14 @@ export const CourseSelectorPage = () => {
   const [selectedType, setSelectedType] = useState(savedPrefs?.type || "All");
   const [selectedLanguage, setSelectedLanguage] = useState(savedPrefs?.language || "All");
 
-  const boardsByState = {
-    Delhi: ["CBSE", "ICSE"],
-    "Madhya Pradesh": ["Madhya Pradesh Board", "CBSE", "ICSE"],
-    "Uttar Pradesh": ["Uttar Pradesh Board", "CBSE", "ICSE"],
-    Maharashtra: ["Maharashtra State Board", "CBSE", "ICSE"],
-  };
-
-  const boardOptions =
-    selectedState === "All"
-      ? [...new Set(Object.values(boardsByState).flat())]
-      : boardsByState[selectedState] || [];
-
-  const handleStateChange = (state) => {
-    setSelectedState(state);
-    const nextBoards = state === "All" ? Object.values(boardsByState).flat() : boardsByState[state] || [];
-    if (selectedBoard !== "All" && !nextBoards.includes(selectedBoard)) {
-      setSelectedBoard("All");
-    }
-  };
-
-  const subjectOptions = useMemo(
-    () =>
-      subjectsForSelection({
-        selectedType,
-        selectedBoard,
-        selectedState,
-        selectedLanguage,
-      }),
-    [selectedType, selectedBoard, selectedState, selectedLanguage]
-  );
-
+  const [facets,setFacets]=useState({boards:[],subjects:[],languages:[],classes:[],states:[]});
+  useEffect(()=>{const c=new AbortController();setPreferenceReady(false);setPreferenceError('');
+    Promise.all([coachingService.getFacets(c.signal),user ? authService.getPreferences(c.signal) : Promise.resolve(null)]).then(([f,p])=>{if(c.signal.aborted)return;setFacets(f);
+      if(p){const v=p.courseSelector||{};const label=(items,id)=>items.find(item=>item.id===id)?.name||'All';setSelectedBoard(label(f.boards,v.boardId));setSelectedState(label(f.states,v.stateId));setSelectedType(label(f.classes,v.classId));setSelectedSubject(label(f.subjects,v.subjectId));setSelectedLanguage(label(f.languages,v.languageId));}setPreferenceReady(true);
+    }).catch(e=>{if(!c.signal.aborted)setPreferenceError(e.message);});return()=>c.abort();},[user?.id]);
+  const boardOptions=facets.boards.map(i=>i.name);
+  const subjectOptions=facets.subjects.map(i=>i.name);
+  const handleStateChange=state=>{setSelectedState(state);setSelectedBoard('All');};
   useEffect(() => {
     if (selectedSubject !== "All" && !subjectOptions.includes(selectedSubject)) {
       setSelectedSubject("All");
@@ -120,6 +68,9 @@ export const CourseSelectorPage = () => {
 
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [page,setPage]=useState(1),[meta,setMeta]=useState(null);
+  useEffect(()=>setPage(1),[selectedBoard,selectedState,selectedSubject,selectedType,selectedLanguage]);
+  const [loadError, setLoadError] = useState("");
 
   // Enrollment modal state
   const [selectedCourseForJoin, setSelectedCourseForJoin] = useState(null);
@@ -127,7 +78,7 @@ export const CourseSelectorPage = () => {
   const [joinSuccess, setJoinSuccess] = useState(false);
 
   useEffect(() => {
-    if (filtersSaved) return;
+    if (filtersSaved || user) return;
     const hasChoice = [selectedBoard, selectedState, selectedSubject, selectedType, selectedLanguage].some(
       (value) => value && value !== "All"
     );
@@ -149,28 +100,37 @@ export const CourseSelectorPage = () => {
   }, [filtersSaved, selectedBoard, selectedState, selectedSubject, selectedType, selectedLanguage]);
 
   useEffect(() => {
+    const controller = new AbortController();
     const fetchCourses = async () => {
       try {
         setLoading(true);
-        const isClassFilter = selectedType.startsWith("Class ");
-        const data = await coachingService.getCourses({
+        setLoadError("");
+        const result = await coachingService.getCoursesPage({
+          page,
           board: selectedBoard,
           state: selectedState,
-          classGrade: isClassFilter ? selectedType : "All",
+          classGrade: selectedType,
           subject: selectedSubject,
-          courseType: isClassFilter ? "All" : selectedType,
           language: selectedLanguage,
-        });
-        setCourses(data);
+        }, controller.signal);
+        if (!controller.signal.aborted) {setCourses(result.data);setMeta(result.meta);}
       } catch (err) {
-        console.error("Course selector fetch error:", err);
+        if (!controller.signal.aborted) {
+          setCourses([]);
+          setLoadError(err.message || "Courses are unavailable. Please try again.");
+        }
       } finally {
-        setLoading(false);
+        if (!controller.signal.aborted) setLoading(false);
       }
     };
     fetchCourses();
-  }, [selectedBoard, selectedState, selectedSubject, selectedType, selectedLanguage]);
+    return () => controller.abort();
+  }, [selectedBoard, selectedState, selectedSubject, selectedType, selectedLanguage,page]);
 
+  const saveChoice=async()=>{setSavingPreference(true);setPreferenceError('');try{
+    const courseSelector={};for(const [key,value,items] of [['boardId',selectedBoard,facets.boards],['classId',selectedType,facets.classes],['stateId',selectedState,facets.states],['subjectId',selectedSubject,facets.subjects],['languageId',selectedLanguage,facets.languages]])courseSelector[key]=items.find(item=>item.name===value||item.id===value)?.id||'';
+    await authService.savePreferences({courseSelector});showSuccess('Course choices saved to your account.');
+  }catch(e){setPreferenceError(e.message);}finally{setSavingPreference(false);}};
   const handleJoinClick = (course) => {
     setSelectedCourseForJoin(course);
     setJoinSuccess(false);
@@ -180,7 +140,7 @@ export const CourseSelectorPage = () => {
     if (!selectedCourseForJoin) return;
     try {
       setJoining(true);
-      await coachingService.joinCourse(selectedCourseForJoin.id);
+      try { await coachingService.joinCourse(selectedCourseForJoin.id); } catch (e) { showError(e.message); setJoining(false); return; }
       setJoinSuccess(true);
       showSuccess("Course Joined Successfully!");
     } catch (err) {
@@ -193,12 +153,12 @@ export const CourseSelectorPage = () => {
   return (
     <div className="max-w-7xl mx-auto space-y-3">
       <Link
-        to="/coaching/course-cbse-10-sci"
+        to="/coaching"
         className="block -mt-3 sm:-mt-5 -mx-3 sm:-mx-6 lg:-mx-8 overflow-hidden"
       >
         <img
           src="/banners/results-banner-coaching.jpg"
-          alt="Live batches 2026. Crack CBSE, JEE and NEET with expert mentors."
+          alt="Explore published coaching courses"
           className="block w-full h-auto"
         />
       </Link>
@@ -206,6 +166,9 @@ export const CourseSelectorPage = () => {
         Select Your Course
       </h1>
 
+      {preferenceError&&<p role="alert" className="text-sm text-red-700">Course choices: {preferenceError}</p>}
+      {user&&<button disabled={!preferenceReady||savingPreference} type="button" onClick={saveChoice} className="p-2 border rounded-xl bg-white text-sm disabled:opacity-40">{savingPreference?'Saving course choices...':'Save course choices'}</button>}
+      <Pagination meta={meta} onChange={setPage} loading={loading}/>
       {/* Filter Matrix Controls — shown only until the student saves a choice */}
       {!filtersSaved && (
       <div className="bg-white rounded-md border border-[#E6E8EC] p-3 card-shadow">
@@ -216,15 +179,12 @@ export const CourseSelectorPage = () => {
               State
             </label>
             <select
-              value={selectedState}
+              aria-label="Course selector state" value={selectedState}
               onChange={(e) => handleStateChange(e.target.value)}
               className="w-full h-8 px-2.5 rounded-md bg-[#F7F8FA] border border-[#E6E8EC] text-xs font-semibold text-[#0A1D3F] focus:outline-none focus:border-[#FF8A00]"
             >
               <option value="All">All States</option>
-              <option value="Delhi">Delhi</option>
-              <option value="Madhya Pradesh">Madhya Pradesh</option>
-              <option value="Uttar Pradesh">Uttar Pradesh</option>
-              <option value="Maharashtra">Maharashtra</option>
+              {facets.states.map(s=><option key={s.id} value={s.name}>{s.name}</option>)}
             </select>
           </div>
 
@@ -234,7 +194,7 @@ export const CourseSelectorPage = () => {
               Board
             </label>
             <select
-              value={selectedBoard}
+              aria-label="Course selector board" value={selectedBoard}
               onChange={(e) => setSelectedBoard(e.target.value)}
               className="w-full h-8 px-2.5 rounded-md bg-[#F7F8FA] border border-[#E6E8EC] text-xs font-semibold text-[#0A1D3F] focus:outline-none focus:border-[#FF8A00]"
             >
@@ -259,29 +219,7 @@ export const CourseSelectorPage = () => {
               onChange={setSelectedType}
               placeholder="All Courses"
               searchPlaceholder="Search course"
-              options={[
-                { value: "All", label: "All Courses" },
-                { value: "Class 9", label: "Class 9", group: "Classes" },
-                { value: "Class 10", label: "Class 10", group: "Classes" },
-                { value: "Class 11", label: "Class 11", group: "Classes" },
-                { value: "Class 12", label: "Class 12", group: "Classes" },
-                { value: "MBA", label: "MBA", group: "Courses" },
-                { value: "M.Tech", label: "M.Tech", group: "Courses" },
-                { value: "B.Tech", label: "B.Tech", group: "Courses" },
-                { value: "BBA", label: "BBA", group: "Courses" },
-                { value: "BCA", label: "BCA", group: "Courses" },
-                { value: "MCA", label: "MCA", group: "Courses" },
-                { value: "B.Com", label: "B.Com", group: "Courses" },
-                { value: "B.Sc", label: "B.Sc", group: "Courses" },
-                { value: "B.A.", label: "B.A.", group: "Courses" },
-                { value: "B.Pharm", label: "B.Pharm", group: "Courses" },
-                { value: "B.Sc Nursing", label: "B.Sc Nursing", group: "Courses" },
-                { value: "LL.B.", label: "LL.B.", group: "Courses" },
-                { value: "LL.M.", label: "LL.M.", group: "Courses" },
-                { value: "M.Sc", label: "M.Sc", group: "Courses" },
-                { value: "B.Des", label: "B.Des", group: "Courses" },
-                { value: "Diploma", label: "Diploma", group: "Courses" },
-              ]}
+              options={[{value:'All',label:'All Courses'},...facets.classes.map(c=>({value:c.name,label:c.name}))]}
             />
           </div>
 
@@ -291,7 +229,7 @@ export const CourseSelectorPage = () => {
               Subject
             </label>
             <select
-              value={selectedSubject}
+              aria-label="Course selector subject" value={selectedSubject}
               onChange={(e) => setSelectedSubject(e.target.value)}
               className="w-full h-8 px-2.5 rounded-md bg-[#F7F8FA] border border-[#E6E8EC] text-xs font-semibold text-[#0A1D3F] focus:outline-none focus:border-[#FF8A00]"
             >
@@ -310,13 +248,12 @@ export const CourseSelectorPage = () => {
               Language
             </label>
             <select
-              value={selectedLanguage}
+              aria-label="Course selector language" value={selectedLanguage}
               onChange={(e) => setSelectedLanguage(e.target.value)}
               className="w-full h-8 px-2.5 rounded-md bg-[#F7F8FA] border border-[#E6E8EC] text-xs font-semibold text-[#0A1D3F] focus:outline-none focus:border-[#FF8A00]"
             >
               <option value="All">All Languages</option>
-              <option value="English">English</option>
-              <option value="Hindi">Hindi</option>
+              {facets.languages.map(l=><option key={l.id} value={l.name}>{l.name}</option>)}
             </select>
           </div>
         </div>
@@ -357,6 +294,8 @@ export const CourseSelectorPage = () => {
               <div key={n} className="bg-white rounded-2xl h-80 animate-pulse border border-[#E6E8EC] p-4" />
             ))}
           </div>
+        ) : loadError ? (
+          <p role="alert" className="bg-white rounded-2xl border p-6 text-sm">{loadError}</p>
         ) : courses.length === 0 ? (
           <div className="bg-white rounded-2xl border border-[#E6E8EC] p-10 text-center space-y-3 card-shadow">
             <h3 className="font-bold text-base text-[#0A1D3F]">No Matching Courses Found</h3>

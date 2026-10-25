@@ -21,6 +21,7 @@ import { useLibrary } from "../../context/LibraryContext";
 import { Modal } from "../../components/common/Modal";
 import { PrimaryButton, SecondaryButton } from "../../components/common/PrimaryButton";
 
+import { authService } from '../../services/authService';
 export const ProfilePage = () => {
   const { user, updateProfile, logout } = useAuth();
   const navigate = useNavigate();
@@ -37,32 +38,36 @@ export const ProfilePage = () => {
     name: user?.name || "",
     email: user?.email || "",
     phone: user?.phone || "",
-    board: user?.board || "CBSE",
-    class: user?.class || "Class 10"
+    board: user?.board || "",
+    class: user?.class || ""
   });
 
+  const [savingProfile, setSavingProfile] = useState(false);
   // Password state
   const [currPass, setCurrPass] = useState("");
   const [newPass, setNewPass] = useState("");
 
   const handleSaveProfile = async (e) => {
     e.preventDefault();
+    setSavingProfile(true);
     try {
-      await updateProfile(editData);
+      await updateProfile({ name: editData.name, phone: editData.phone, profile: { board: editData.board, class: editData.class } });
       showSuccess("Profile updated successfully!");
       setShowEditModal(false);
     } catch (err) {
-      showError("Failed to update profile.");
-    }
+      showError(err.message || "Failed to update profile.");
+    } finally { setSavingProfile(false); }
   };
 
   const handleChangePassword = async (e) => {
     e.preventDefault();
-    if (!newPass || newPass.length < 6) {
-      showError("New password must be at least 6 characters.");
+    if (!newPass || newPass.length < 12) {
+      showError("New password must be at least 12 characters.");
       return;
     }
-    showSuccess("Password changed successfully!");
+    try { await authService.changePassword(currPass, newPass); await logout(); navigate('/login'); }
+    catch (error) { showError(error.message); return; }
+    showSuccess("Password changed. Please sign in again.");
     setShowPasswordModal(false);
     setCurrPass("");
     setNewPass("");
@@ -83,7 +88,7 @@ export const ProfilePage = () => {
         <div className="flex flex-col sm:flex-row items-center sm:items-center gap-3.5 text-center sm:text-left">
           <div className="relative shrink-0">
             <img
-              src={user.avatar}
+              src={user.avatar || '/KitssLogo.png'}
               alt={user.name}
               className="w-14 h-14 sm:w-16 sm:h-16 rounded-full object-cover border-2 border-[#0A1D3F]/10 shadow-sm"
             />
@@ -126,7 +131,7 @@ export const ProfilePage = () => {
                 {user.class}
               </span>
               <span className="text-[10px] text-[#667085] font-medium">
-                Joined {user.joinDate}
+                {user.createdAt ? 'Joined ' + new Date(user.createdAt).toLocaleDateString('en-IN') : 'Account details'}
               </span>
             </div>
           </div>
@@ -137,7 +142,7 @@ export const ProfilePage = () => {
           <div className="p-2 bg-[#F7F8FA] rounded-xl text-center">
             <div className="flex items-center justify-center gap-1 text-orange-500 font-bold text-xs sm:text-sm">
               <Flame className="w-3.5 h-3.5 fill-orange-500" />
-              <span>{user.streakDays}d</span>
+              <span aria-label="Streak unavailable">—</span>
             </div>
             <span className="text-[9px] text-[#667085] block mt-0.5 truncate">Streak</span>
           </div>
@@ -145,7 +150,7 @@ export const ProfilePage = () => {
           <div className="p-2 bg-[#F7F8FA] rounded-xl text-center">
             <div className="flex items-center justify-center gap-1 text-amber-500 font-bold text-xs sm:text-sm">
               <Coins className="w-3.5 h-3.5 fill-amber-400" />
-              <span>{user.coins}</span>
+              <span aria-label="Coins unavailable">—</span>
             </div>
             <span className="text-[9px] text-[#667085] block mt-0.5 truncate">Coins</span>
           </div>
@@ -153,7 +158,7 @@ export const ProfilePage = () => {
           <div className="p-2 bg-[#F7F8FA] rounded-xl text-center">
             <div className="flex items-center justify-center gap-1 text-[#0A1D3F] font-bold text-xs sm:text-sm">
               <Video className="w-3.5 h-3.5" />
-              <span>{user.completedLectures}</span>
+              <span aria-label="Lecture total unavailable">—</span>
             </div>
             <span className="text-[9px] text-[#667085] block mt-0.5 truncate">Lectures</span>
           </div>
@@ -191,7 +196,7 @@ export const ProfilePage = () => {
               <Phone className="w-3.5 h-3.5 text-gray-400 shrink-0" />
               <div className="min-w-0">
                 <span className="text-[9px] text-[#667085] block leading-none mb-0.5">Mobile Number</span>
-                <span className="font-semibold text-[#0A1D3F] text-[11px]">{user.phone}</span>
+                <span className="font-semibold text-[#0A1D3F] text-[11px]">{user.phone || 'Not provided'}</span>
               </div>
             </div>
 
@@ -199,7 +204,7 @@ export const ProfilePage = () => {
               <Calendar className="w-3.5 h-3.5 text-gray-400 shrink-0" />
               <div className="min-w-0">
                 <span className="text-[9px] text-[#667085] block leading-none mb-0.5">Date of Birth</span>
-                <span className="font-semibold text-[#0A1D3F] text-[11px]">{user.dob}</span>
+                <span className="font-semibold text-[#0A1D3F] text-[11px]">Not provided</span>
               </div>
             </div>
           </div>
@@ -329,7 +334,7 @@ export const ProfilePage = () => {
             <label className="font-bold block mb-1">Full Name</label>
             <input
               type="text"
-              value={editData.name}
+              aria-label="Profile full name" value={editData.name}
               onChange={(e) => setEditData({ ...editData, name: e.target.value })}
               className="w-full p-2.5 bg-[#F7F8FA] border border-[#E6E8EC] rounded-xl text-xs"
               required
@@ -340,7 +345,7 @@ export const ProfilePage = () => {
             <label className="font-bold block mb-1">Email Address</label>
             <input
               type="email"
-              value={editData.email}
+              aria-label="Profile email" readOnly value={editData.email}
               onChange={(e) => setEditData({ ...editData, email: e.target.value })}
               className="w-full p-2.5 bg-[#F7F8FA] border border-[#E6E8EC] rounded-xl text-xs"
               required
@@ -351,7 +356,7 @@ export const ProfilePage = () => {
             <label className="font-bold block mb-1">Mobile Number</label>
             <input
               type="tel"
-              value={editData.phone}
+              aria-label="Profile phone" value={editData.phone}
               onChange={(e) => setEditData({ ...editData, phone: e.target.value })}
               className="w-full p-2.5 bg-[#F7F8FA] border border-[#E6E8EC] rounded-xl text-xs"
               required
@@ -392,8 +397,8 @@ export const ProfilePage = () => {
             <SecondaryButton fullWidth size="sm" onClick={() => setShowEditModal(false)}>
               Cancel
             </SecondaryButton>
-            <PrimaryButton variant="navy" fullWidth size="sm" type="submit">
-              Save Changes
+            <PrimaryButton disabled={savingProfile} variant="navy" fullWidth size="sm" type="submit">
+              {savingProfile ? "Saving..." : "Save Changes"}
             </PrimaryButton>
           </div>
         </form>
@@ -424,7 +429,7 @@ export const ProfilePage = () => {
               type="password"
               value={newPass}
               onChange={(e) => setNewPass(e.target.value)}
-              placeholder="At least 6 characters"
+              placeholder="At least 12 characters"
               className="w-full p-2.5 bg-[#F7F8FA] border border-[#E6E8EC] rounded-xl text-xs"
               required
             />

@@ -1,0 +1,346 @@
+{
+  "routes": [
+    {
+      "route": "/",
+      "path": "/",
+      "portal": "student",
+      "finalPath": "/home"
+    },
+    {
+      "route": "/splash",
+      "path": "/splash",
+      "portal": "student",
+      "finalPath": "/home"
+    },
+    {
+      "route": "/onboarding",
+      "path": "/onboarding",
+      "portal": "student",
+      "finalPath": "/home"
+    },
+    {
+      "route": "/account/create",
+      "path": "/account/create",
+      "portal": "student",
+      "finalPath": "/account/create"
+    },
+    {
+      "route": "/account/verify",
+      "path": "/account/verify",
+      "portal": "student",
+      "finalPath": "/account/verify"
+    },
+    {
+      "route": "/staff/accept",
+      "path": "/staff/accept",
+      "portal": "student",
+      "finalPath": "/staff/accept"
+    },
+    {
+      "route": "/login",
+      "path": "/login",
+      "portal": "student",
+      "finalPath": "/login"
+    },
+    {
+      "route": "/register",
+      "path": "/register",
+      "portal": "student",
+      "finalPath": "/register"
+    },
+    {
+      "route": "/register-success",
+      "path": "/register-success",
+      "portal": "student",
+      "finalPath": "/account/verify"
+    },
+    {
+      "route": "/forgot-password",
+      "path": "/forgot-password",
+      "portal": "student",
+      "finalPath": "/forgot-password"
+    },
+    {
+      "route": "/reset-password",
+      "path": "/reset-password",
+      "portal": "student",
+      "finalPath": "/reset-password"
+    },
+    {
+      "route": "/home",
+      "path": "/home",
+      "portal": "student",
+      "finalPath": "/home"
+    },
+    {
+      "route": "/about",
+      "path": "/about",
+      "portal": "student",
+      "finalPath": "/about"
+    },
+    {
+      "route": "/categories",
+      "path": "/categories",
+      "portal": "student",
+      "finalPath": "/categories"
+    },
+    {
+      "route": "/institutes",
+      "path": "/institutes",
+      "portal": "student",
+      "finalPath": "/institutes"
+    },
+    {
+      "route": "/institutes/:id",
+      "path": "/institutes/6add670ee5179ef7b318d477",
+      "portal": "student",
+      "finalPath": "/institutes"
+    },
+    {
+      "route": "/colleges",
+      "path": "/colleges",
+      "portal": "student",
+      "finalPath": "/colleges"
+    },
+    {
+      "route": "/colleges/:id",
+      "path": "/colleges/6add670ee5179ef7b318d477",
+      "portal": "student",
+      "finalPath": "/colleges"
+    },
+    {
+      "route": "/books",
+      "path": "/books",
+      "portal": "student",
+      "finalPath": "/books"
+    },
+    {
+      "route": "/books/:id",
+      "path": "/books/6add6704e5179ef7b318d473",
+      "portal": "student",
+      "finalPath": "/books/6add6704e5179ef7b318d473"
+    },
+    {
+      "route": "/books/:id/checkout",
+      "path": "/books/6add6704e5179ef7b318d473/checkout",
+      "portal": "student",
+      "finalPath": "/books/6add6704e5179ef7b318d473/checkout"
+    },
+    {
+      "route": "/books/:id/read",
+      "path": "/books/6add6704e5179ef7b318d473/read",
+      "portal": "student",
+      "finalPath": "/books/6add6704e5179ef7b318d473/read"
+    },
+    {
+      "route": "/my-books",
+      "path": "/my-books",
+      "portal": "student",
+      "finalPath": "/my-books"
+    },
+    {
+      "route": "/library",
+      "path": "/library",
+      "portal": "student",
+      "finalPath": "/my-books"
+    },
+    {
+      "route": "/coaching",
+      "path": "/coaching",
+      "portal": "student",
+      "finalPath": "/coaching"
+    },
+    {
+      "route": "/coaching/register",
+      "path": "/coaching/register",
+      "portal": "student",
+      "finalPath": "/coaching/register"
+    },
+    {
+      "route": "/coaching/select",
+      "path": "/coaching/select",
+      "portal": "student",
+      "finalPath": "/coaching/select"
+    },
+    {
+      "route": "/coaching/my-courses",
+      "path": "/coaching/my-courses",
+      "portal": "student",
+      "finalPath": "/coaching/my-courses"
+    },
+    {
+      "route": "/coaching/:id",
+      "path": "/coaching/6add670ee5179ef7b318d477",
+      "portal": "student",
+      "finalPath": "/coaching/6add670ee5179ef7b318d477"
+    },
+    {
+      "route": "/coaching/:id/dashboard",
+      "path": "/coaching/6add670ee5179ef7b318d477/dashboard",
+      "portal": "student",
+      "finalPath": "/coaching/6add670ee5179ef7b318d477/dashboard"
+    },
+    {
+      "route": "/coaching/:id/lecture/:lectureId",
+      "path": "/coaching/6add670ee5179ef7b318d477/lecture/6add6714e5179ef7b318d479",
+      "portal": "student",
+      "finalPath": "/coaching/6add670ee5179ef7b318d477/lecture/6add6714e5179ef7b318d479"
+    },
+    {
+      "route": "/coaching/:id/book/:bookId",
+      "path": "/coaching/6add670ee5179ef7b318d477/book/6add6704e5179ef7b318d473",
+      "portal": "student",
+      "finalPath": "/coaching/6add670ee5179ef7b318d477/book/6add6704e5179ef7b318d473"
+    },
+    {
+      "route": "/coaching/:id/subscribe",
+      "path": "/coaching/6add670ee5179ef7b318d477/subscribe",
+      "portal": "student",
+      "finalPath": "/coaching/6add670ee5179ef7b318d477/subscribe"
+    },
+    {
+      "route": "/coaching/:id/player",
+      "path": "/coaching/6add670ee5179ef7b318d477/player",
+      "portal": "student",
+      "finalPath": "/coaching/6add670ee5179ef7b318d477/player"
+    },
+    {
+      "route": "/subscriptions",
+      "path": "/subscriptions",
+      "portal": "student",
+      "finalPath": "/subscriptions"
+    },
+    {
+      "route": "/results",
+      "path": "/results",
+      "portal": "student",
+      "finalPath": "/results"
+    },
+    {
+      "route": "/orders",
+      "path": "/orders",
+      "portal": "student",
+      "finalPath": "/orders"
+    },
+    {
+      "route": "/notifications",
+      "path": "/notifications",
+      "portal": "student",
+      "finalPath": "/notifications"
+    },
+    {
+      "route": "/profile",
+      "path": "/profile",
+      "portal": "student",
+      "finalPath": "/profile"
+    },
+    {
+      "route": "/settings",
+      "path": "/settings",
+      "portal": "student",
+      "finalPath": "/settings"
+    },
+    {
+      "route": "/admin",
+      "portal": "admin"
+    },
+    {
+      "route": "/admin/results",
+      "path": "/admin/results",
+      "portal": "admin",
+      "finalPath": "/admin/results"
+    },
+    {
+      "route": "/admin/notifications",
+      "path": "/admin/notifications",
+      "portal": "admin",
+      "finalPath": "/admin/notifications"
+    },
+    {
+      "route": "/admin/coaching",
+      "path": "/admin/coaching",
+      "portal": "admin",
+      "finalPath": "/admin/coaching"
+    },
+    {
+      "route": "/admin/enrollments",
+      "path": "/admin/enrollments",
+      "portal": "admin",
+      "finalPath": "/admin/enrollments"
+    },
+    {
+      "route": "/admin/orders",
+      "path": "/admin/orders",
+      "portal": "admin",
+      "finalPath": "/admin/orders"
+    },
+    {
+      "route": "/admin/registrations",
+      "path": "/admin/registrations",
+      "portal": "admin",
+      "finalPath": "/admin/registrations"
+    },
+    {
+      "route": "/admin/content",
+      "path": "/admin/content",
+      "portal": "admin",
+      "finalPath": "/admin/content"
+    },
+    {
+      "route": "/admin/media",
+      "path": "/admin/media",
+      "portal": "admin",
+      "finalPath": "/admin/media"
+    },
+    {
+      "route": "/admin/settings",
+      "path": "/admin/settings",
+      "portal": "admin",
+      "finalPath": "/admin/settings"
+    },
+    {
+      "route": "/admin/taxonomies",
+      "path": "/admin/taxonomies",
+      "portal": "admin",
+      "finalPath": "/admin/taxonomies"
+    },
+    {
+      "route": "/admin/universities",
+      "path": "/admin/universities",
+      "portal": "admin",
+      "finalPath": "/admin/universities"
+    },
+    {
+      "route": "/admin/colleges",
+      "path": "/admin/colleges",
+      "portal": "admin",
+      "finalPath": "/admin/colleges"
+    },
+    {
+      "route": "/admin/colleges/:collegeId/courses",
+      "path": "/admin/colleges/6add6735e5179ef7b318d485/courses",
+      "portal": "admin",
+      "finalPath": "/admin/colleges/6add6735e5179ef7b318d485/courses"
+    },
+    {
+      "route": "/admin/franchise-requests",
+      "path": "/admin/franchise-requests",
+      "portal": "admin",
+      "finalPath": "/admin/franchise-requests"
+    },
+    {
+      "route": "/admin/applications",
+      "path": "/admin/applications",
+      "portal": "admin",
+      "finalPath": "/admin/applications"
+    },
+    {
+      "route": "/admin/books",
+      "path": "/admin/books",
+      "portal": "admin",
+      "finalPath": "/admin/books"
+    }
+  ],
+  "pageErrors": [],
+  "unexpectedApiFailures": []
+}

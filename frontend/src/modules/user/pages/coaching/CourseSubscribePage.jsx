@@ -28,7 +28,7 @@ export const CourseSubscribePage = () => {
 
   const [course, setCourse] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [selectedPlan, setSelectedPlan] = useState("annual");
+  const [selectedPlan, setSelectedPlan] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("upi");
   const [processing, setProcessing] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -49,100 +49,10 @@ export const CourseSubscribePage = () => {
     fetchCourse();
   }, [id]);
 
-  const plans = [
-    {
-      id: "annual",
-      name: "12 Months Full Academic Pass",
-      duration: "1 Year Access",
-      price: course ? course.price : 999,
-      originalPrice: course ? course.originalPrice : 1499,
-      discount: "33% OFF",
-      isPopular: true
-    },
-    {
-      id: "semester",
-      name: "6 Months Semester Pass",
-      duration: "6 Months Access",
-      price: 699,
-      originalPrice: 999,
-      discount: "30% OFF",
-      isPopular: false
-    },
-    {
-      id: "quarterly",
-      name: "3 Months Exam Sprint",
-      duration: "3 Months Access",
-      price: 399,
-      originalPrice: 599,
-      discount: "33% OFF",
-      isPopular: false
-    }
-  ];
+  const plans = course?.subscriptionPlans ?? [];
+  const currentPlan = plans.find((p) => p.id === selectedPlan) || plans[0] || { name: 'No approved plan', duration: 'Not configured', price: null };
 
-  const currentPlan = plans.find((p) => p.id === selectedPlan) || plans[0];
-
-  const handleSubscribe = async () => {
-    if (!course) return;
-
-    try {
-      setProcessing(true);
-      await openRazorpayCheckout({
-        amountInRupees: currentPlan.price,
-        course,
-        plan: currentPlan,
-        student: {
-          name: "Rohan Sharma",
-          email: "rohan.sharma@example.com",
-          phone: "+91 98765 43210",
-        },
-        onSuccess: async (razorpayResponse) => {
-          try {
-            const res = await coachingService.subscribeCourse(course.id, {
-              planName: currentPlan.name,
-              price: currentPlan.price,
-              transactionId: razorpayResponse.razorpay_payment_id,
-            });
-
-            // Register order
-            await orderService.createOrder({
-              productName: `${course.title} (${currentPlan.name})`,
-              type: "Course",
-              category: "Online Coaching",
-              amount: currentPlan.price,
-              originalAmount: currentPlan.originalPrice,
-              discountAmount: currentPlan.originalPrice - currentPlan.price,
-              paymentMethod: `Razorpay (${razorpayResponse.razorpay_payment_id})`,
-              transactionId: razorpayResponse.razorpay_payment_id,
-            });
-
-            markCourseSubscribed(course.id);
-            setSubscriptionResult({
-              ...res,
-              paymentId: razorpayResponse.razorpay_payment_id,
-            });
-            setShowSuccessModal(true);
-            showSuccess(`Payment Successful! Payment ID: ${razorpayResponse.razorpay_payment_id}`);
-          } catch (err) {
-            console.error("Subscription sync error:", err);
-            showError("Payment received, error activating subscription.");
-          } finally {
-            setProcessing(false);
-          }
-        },
-        onFailure: (err) => {
-          showError(err.message || "Payment transaction could not be processed.");
-          setProcessing(false);
-        },
-        onDismiss: () => {
-          showError("Razorpay checkout was dismissed.");
-          setProcessing(false);
-        },
-      });
-    } catch (err) {
-      showError("Could not launch Razorpay checkout.");
-      setProcessing(false);
-    }
-  };
+  const handleSubscribe = async () => showError('Razorpay Test Mode is disabled. Renewal policy requires separate approval.');
 
   if (loading) {
     return <SkeletonLoader type="card" count={2} />;
@@ -151,8 +61,8 @@ export const CourseSubscribePage = () => {
   if (!course) {
     return (
       <ErrorState
-        title="Course Not Found"
-        message="Could not load the course for subscription."
+        title="Coaching Checkout Unavailable"
+        message="Purchases and renewals require an approved course catalogue, real plans, validity and eligibility policies. No enrollment is granted."
         onRetry={() => navigate("/coaching")}
       />
     );
@@ -160,6 +70,7 @@ export const CourseSubscribePage = () => {
 
   return (
     <div className="max-w-xl mx-auto space-y-5">
+      <p role="status" className="p-3 bg-amber-50 border rounded-xl text-xs">Coaching checkout and renewal unavailable: Razorpay Test Mode is disabled; renewal rules remain pending. No enrollment is granted.</p>
       {/* Top Back Link */}
       <div className="flex items-center justify-between">
         <button
@@ -179,7 +90,7 @@ export const CourseSubscribePage = () => {
             Select Subscription Plan
           </h2>
           <p className="text-xs text-[#667085] mt-0.5">
-            Unlimited access to video lectures, notes & test series
+            Prepaid access according to the explicitly configured plan
           </p>
         </div>
 
@@ -227,15 +138,16 @@ export const CourseSubscribePage = () => {
                     )}
                   </div>
                   <p className="text-xs text-[#667085]">{plan.duration}</p>
+                  {plan.features?.length > 0 && <ul aria-label={plan.name+' benefits'} className="list-disc pl-4 text-xs text-[#667085]">{plan.features.map((feature,index)=><li key={index}>{feature}</li>)}</ul>}
                 </div>
 
                 <div className="text-right shrink-0">
                   <span className="text-sm sm:text-base font-bold text-[#0A1D3F]">
                     ₹{plan.price}
                   </span>
-                  <span className="text-xs text-[#667085] line-through block">
+                  {plan.originalPrice != null && <span className="text-xs text-[#667085] line-through block">
                     ₹{plan.originalPrice}
-                  </span>
+                  </span>}
                 </div>
               </button>
             );
@@ -280,8 +192,9 @@ export const CourseSubscribePage = () => {
             fullWidth
             onClick={handleSubscribe}
             loading={processing}
+            disabled
           >
-            Pay ₹{currentPlan.price} with Razorpay
+            Test payments unavailable
           </PrimaryButton>
         </div>
       </div>

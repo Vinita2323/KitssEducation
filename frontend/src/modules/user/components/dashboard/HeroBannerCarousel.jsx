@@ -13,118 +13,21 @@ import {
   Flame
 } from "lucide-react";
 
+import { contentService } from '../../services/contentService';
+
 export const HeroBannerCarousel = () => {
   const [current, setCurrent] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
   const touchStartX = useRef(0);
   const touchEndX = useRef(0);
 
-  const banners = [
-    {
-      id: "coaching",
-      tag: "LIVE BATCHES 2026",
-      tagIcon: Flame,
-      tagStyle: "bg-rose-500/20 text-rose-300 border-rose-400/30",
-      title: "Crack CBSE, JEE & NEET with Expert Mentors",
-      subtitle: "Daily interactive classes, recorded vaults & All-India live tests.",
-      ctaText: "Explore Courses",
-      ctaLink: "/coaching",
-      gradient: "from-[#0A1D3F] via-[#112D60] to-[#FF8A00]/40",
-      accentGlow: "bg-[#FF8A00]/25",
-      accentBadge: "text-[#FF8A00]",
-      icon: Video,
-      graphic: (
-        <div className="relative w-24 h-24 sm:w-32 sm:h-32 shrink-0 flex items-center justify-center">
-          <div className="absolute inset-0 bg-gradient-to-tr from-[#FF8A00] to-amber-300 rounded-2xl rotate-6 opacity-30 blur-md" />
-          <div className="relative w-20 h-20 sm:w-26 sm:h-26 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 flex flex-col items-center justify-center text-white shadow-xl">
-            <Video className="w-8 h-8 sm:w-9 sm:h-9 text-[#FF8A00] mb-0.5 stroke-[1.8]" />
-            <span className="text-[10px] font-extrabold uppercase tracking-wider text-amber-200">
-              Live Stream
-            </span>
-          </div>
-        </div>
-      )
-    },
-    {
-      id: "results",
-      tag: "OFFICIAL MARKSHEETS 2026",
-      tagIcon: FileCheck,
-      tagStyle: "bg-teal-500/20 text-teal-300 border-teal-400/30",
-      title: "Instant Examination Results & Verification",
-      subtitle: "Check School & University board examination marksheets online.",
-      ctaText: "Check Result",
-      ctaLink: "/results",
-      gradient: "from-[#071739] via-[#0A2647] to-[#0D9488]/40",
-      accentGlow: "bg-teal-500/25",
-      accentBadge: "text-teal-400",
-      icon: FileCheck,
-      graphic: (
-        <div className="relative w-24 h-24 sm:w-32 sm:h-32 shrink-0 flex items-center justify-center">
-          <div className="absolute inset-0 bg-gradient-to-tr from-teal-500 to-emerald-300 rounded-2xl -rotate-6 opacity-30 blur-md" />
-          <div className="relative w-20 h-20 sm:w-26 sm:h-26 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 flex flex-col items-center justify-center text-white shadow-xl">
-            <FileCheck className="w-8 h-8 sm:w-9 sm:h-9 text-teal-400 mb-0.5 stroke-[1.8]" />
-            <span className="text-[10px] font-extrabold uppercase tracking-wider text-teal-200">
-              Verified
-            </span>
-          </div>
-        </div>
-      )
-    },
-    {
-      id: "books",
-      tag: "CURRICULUM TEXTBOOKS",
-      tagIcon: BookOpen,
-      tagStyle: "bg-amber-500/20 text-amber-300 border-amber-400/30",
-      title: "Digital Books with Smart In-App Reader",
-      subtitle: "NCERT, CBSE & State Board textbooks with interactive exercises.",
-      ctaText: "Browse Library",
-      ctaLink: "/books",
-      gradient: "from-[#0A1D3F] via-[#1E293B] to-[#FF8A00]/30",
-      accentGlow: "bg-[#FF8A00]/20",
-      accentBadge: "text-amber-400",
-      icon: BookOpen,
-      graphic: (
-        <div className="relative w-24 h-24 sm:w-32 sm:h-32 shrink-0 flex items-center justify-center">
-          <div className="absolute inset-0 bg-gradient-to-tr from-amber-500 to-orange-400 rounded-2xl rotate-3 opacity-30 blur-md" />
-          <div className="relative w-20 h-20 sm:w-26 sm:h-26 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 flex flex-col items-center justify-center text-white shadow-xl">
-            <BookOpen className="w-8 h-8 sm:w-9 sm:h-9 text-[#FF8A00] mb-0.5 stroke-[1.8]" />
-            <span className="text-[10px] font-extrabold uppercase tracking-wider text-orange-200">
-              Digital PDF
-            </span>
-          </div>
-        </div>
-      )
-    },
-    {
-      id: "colleges",
-      tag: "ADMISSIONS OPEN 2026",
-      tagIcon: GraduationCap,
-      tagStyle: "bg-indigo-500/20 text-indigo-300 border-indigo-400/30",
-      title: "Find Verified Partner Colleges & Degrees",
-      subtitle: "Explore top universities, fee structures, and scholarship options.",
-      ctaText: "Explore Colleges",
-      ctaLink: "/colleges",
-      gradient: "from-[#061226] via-[#0A1D3F] to-[#0D9488]/30",
-      accentGlow: "bg-indigo-500/25",
-      accentBadge: "text-teal-300",
-      icon: GraduationCap,
-      graphic: (
-        <div className="relative w-24 h-24 sm:w-32 sm:h-32 shrink-0 flex items-center justify-center">
-          <div className="absolute inset-0 bg-gradient-to-tr from-indigo-500 to-teal-400 rounded-2xl -rotate-3 opacity-30 blur-md" />
-          <div className="relative w-20 h-20 sm:w-26 sm:h-26 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 flex flex-col items-center justify-center text-white shadow-xl">
-            <GraduationCap className="w-8 h-8 sm:w-9 sm:h-9 text-teal-300 mb-0.5 stroke-[1.8]" />
-            <span className="text-[10px] font-extrabold uppercase tracking-wider text-teal-100">
-              Partner Hub
-            </span>
-          </div>
-        </div>
-      )
-    }
-  ];
+  const [published, setPublished] = useState([]), [error, setError] = useState(''), [loading, setLoading] = useState(true);
+  useEffect(() => { const controller = new AbortController(); contentService.banners('home',controller.signal).then(rows=>{setPublished(rows);setCurrent(0);}).catch(e=>{if(e.code!=='ABORTED')setError(e.message);}).finally(()=>{if(!controller.signal.aborted)setLoading(false);});return()=>controller.abort();},[]);
+  const banners = published.map(b => ({...b,tagIcon:Sparkles,ctaLink:b.link?.target,gradient:b.variant==='teal'?'from-[#071739] to-[#0D9488]':b.variant==='orange'?'from-[#0A1D3F] to-[#FF8A00]':'from-[#0A1D3F] to-[#133C8B]',accentGlow:'bg-[#FF8A00]/25',graphic:<img src={b.imageUrl} alt={b.title} className="w-24 h-24 sm:w-32 sm:h-32 rounded-2xl object-cover" />}));
 
   // Auto-advance carousel
   useEffect(() => {
-    if (isHovered) return;
+    if (isHovered || banners.length < 2) return;
     const interval = setInterval(() => {
       setCurrent((prev) => (prev + 1) % banners.length);
     }, 5500);
@@ -157,7 +60,8 @@ export const HeroBannerCarousel = () => {
     }
   };
 
-  const activeBanner = banners[current];
+  if (!banners.length) return <div className="p-6 rounded-xl bg-[#0A1D3F] text-white text-sm" role={error ? 'alert' : 'status'}>{error || (loading ? 'Loading announcements?' : 'No published announcements.')}</div>;
+  const activeBanner = banners[current % banners.length];
   const TagIcon = activeBanner.tagIcon;
 
   return (
@@ -205,13 +109,13 @@ export const HeroBannerCarousel = () => {
 
               {/* Action Button & Subtle Desktop Navigation */}
               <div className="pt-1.5 flex items-center gap-2.5">
-                <Link
-                  to={activeBanner.ctaLink}
+                <a
+                  href={activeBanner.ctaLink}
                   className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white hover:bg-slate-100 text-[#0A1D3F] text-xs sm:text-sm font-bold shadow-xs hover:shadow transition-all active:scale-95 group cursor-pointer"
                 >
                   <span>{activeBanner.ctaText}</span>
                   <ArrowRight className="w-3.5 h-3.5 text-[#FF8A00] group-hover:translate-x-1 transition-transform" />
-                </Link>
+                </a>
 
                 {/* Compact Desktop Arrows */}
                 <div className="hidden sm:flex items-center gap-1.5 ml-1">

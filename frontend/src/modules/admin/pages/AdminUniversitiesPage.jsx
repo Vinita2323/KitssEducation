@@ -15,11 +15,17 @@ import {
   ChevronRight,
   AlertCircle
 } from "lucide-react";
+import { Pagination } from '../../user/components/common/Pagination';
+import { useAuth } from '../../user/context/AuthContext';
 import { adminService } from "../services/adminService";
 import { useToast } from "../../user/context/ToastContext";
 import { PrimaryButton, SecondaryButton } from "../../user/components/common/PrimaryButton";
 
 export const AdminUniversitiesPage = () => {
+  const { can } = useAuth();
+  const [page, setPage] = useState(1);
+  const [meta, setMeta] = useState(null);
+  const [loadError, setLoadError] = useState('');
   const { showSuccess, showError } = useToast();
   const [universities, setUniversities] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -36,8 +42,8 @@ export const AdminUniversitiesPage = () => {
   const initialForm = {
     name: "",
     shortName: "",
-    logo: "https://images.unsplash.com/photo-1592280771190-3e2e4d571952?w=160&auto=format&fit=crop&q=80",
-    status: "active",
+    logo: "",
+    status: "draft",
   };
 
   const [formData, setFormData] = useState(initialForm);
@@ -45,13 +51,14 @@ export const AdminUniversitiesPage = () => {
   const fetchUniversities = async () => {
     try {
       setLoading(true);
-      const data = await adminService.getUniversities({
+      const result = await adminService.page('universities', { page,
         status: statusFilter,
         search,
-      });
+       });
+      const data = result.data; setMeta(result.meta); setLoadError('');
       setUniversities(data || []);
     } catch (err) {
-      showError("Failed to load universities");
+      setLoadError(err.message); setUniversities([]); showError(err.message);
     } finally {
       setLoading(false);
     }
@@ -59,8 +66,9 @@ export const AdminUniversitiesPage = () => {
 
   useEffect(() => {
     fetchUniversities();
-  }, [statusFilter]);
+  }, [statusFilter, search, page]);
 
+  useEffect(() => { setPage(1); }, [statusFilter, search]);
   const handleSearchSubmit = (e) => {
     e.preventDefault();
     fetchUniversities();
@@ -98,7 +106,7 @@ export const AdminUniversitiesPage = () => {
       setSaving(true);
       if (editingUni) {
         const uId = editingUni._id || editingUni.id;
-        await adminService.updateUniversity(uId, formData);
+        await adminService.updateUniversity(uId, { ...formData, expectedRevision: editingUni.revision });
         showSuccess("University updated successfully");
       } else {
         await adminService.createUniversity(formData);
@@ -116,7 +124,7 @@ export const AdminUniversitiesPage = () => {
   const handleToggleStatus = async (uni) => {
     const uId = uni._id || uni.id;
     try {
-      await adminService.toggleUniversityStatus(uId);
+      await adminService.toggleUniversityStatus(uId, uni);
       showSuccess(`University status updated to ${uni.status === "active" ? "Inactive" : "Active"}`);
       fetchUniversities();
     } catch (err) {
@@ -128,15 +136,15 @@ export const AdminUniversitiesPage = () => {
     const uId = uni._id || uni.id;
     if (
       !window.confirm(
-        `Are you sure you want to delete "${uni.name}"? This action cannot be undone.`
+        `Are you sure you want to archive "${uni.name}"? Historical references will be retained.`
       )
     ) {
       return;
     }
 
     try {
-      await adminService.deleteUniversity(uId);
-      showSuccess("University deleted successfully");
+      await adminService.deleteUniversity(uId, uni);
+      showSuccess("University archived successfully");
       fetchUniversities();
     } catch (err) {
       showError(err.message || "Failed to delete university");
@@ -145,6 +153,8 @@ export const AdminUniversitiesPage = () => {
 
   return (
     <div className="space-y-6">
+      {loadError && <p role="alert" className="p-3 bg-red-50 text-red-700 rounded-xl">{loadError}</p>}
+      <Pagination meta={meta} onChange={setPage} loading={loading} />
       {/* Header Banner */}
       <div className="bg-white rounded-2xl border border-[#E6E8EC] p-5 sm:p-6 shadow-2xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
@@ -162,7 +172,7 @@ export const AdminUniversitiesPage = () => {
         </div>
 
         <PrimaryButton
-          onClick={handleOpenCreate}
+          disabled={!can('institutions.write')} onClick={handleOpenCreate}
           variant="navy"
           size="md"
           icon={Plus}
@@ -233,6 +243,7 @@ export const AdminUniversitiesPage = () => {
             return (
               <div
                 key={uId}
+                data-testid={"university-" + uni.shortName}
                 className="bg-white rounded-2xl border border-[#E6E8EC] p-4 sm:p-5 shadow-2xs hover:shadow-md transition-all flex flex-col justify-between space-y-4"
               >
                 <div>
@@ -255,7 +266,7 @@ export const AdminUniversitiesPage = () => {
                     </div>
 
                     <button
-                      onClick={() => handleToggleStatus(uni)}
+                      disabled={!can('institutions.write')} onClick={() => handleToggleStatus(uni)}
                       title={`Click to ${uni.status === "active" ? "deactivate" : "activate"}`}
                       className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold capitalize transition cursor-pointer ${
                         uni.status === "active"
@@ -306,14 +317,14 @@ export const AdminUniversitiesPage = () => {
 
                   <div className="flex items-center gap-1">
                     <button
-                      onClick={() => handleOpenEdit(uni)}
+                      disabled={!can('institutions.write')} aria-label="Edit university" onClick={() => handleOpenEdit(uni)}
                       className="p-1.5 rounded-lg text-gray-500 hover:text-[#0A1D3F] hover:bg-gray-100 transition cursor-pointer"
                       title="Edit University"
                     >
                       <Edit2 className="w-3.5 h-3.5" />
                     </button>
                     <button
-                      onClick={() => handleDelete(uni)}
+                      disabled={!can('institutions.write')} aria-label="Archive university" onClick={() => handleDelete(uni)}
                       className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition cursor-pointer"
                       title="Delete University"
                     >
@@ -359,7 +370,7 @@ export const AdminUniversitiesPage = () => {
                 </label>
                 <input
                   type="text"
-                  value={formData.name}
+                  aria-label="University name" value={formData.name}
                   onChange={(e) =>
                     setFormData({ ...formData, name: e.target.value })
                   }
@@ -376,7 +387,7 @@ export const AdminUniversitiesPage = () => {
                 </label>
                 <input
                   type="text"
-                  value={formData.shortName}
+                  aria-label="University shortName" value={formData.shortName}
                   onChange={(e) =>
                     setFormData({
                       ...formData,
@@ -396,7 +407,7 @@ export const AdminUniversitiesPage = () => {
                 </label>
                 <input
                   type="text"
-                  value={formData.logo}
+                  aria-label="University logo" value={formData.logo}
                   onChange={(e) =>
                     setFormData({ ...formData, logo: e.target.value })
                   }
@@ -411,13 +422,13 @@ export const AdminUniversitiesPage = () => {
                   Status
                 </label>
                 <select
-                  value={formData.status}
+                  aria-label="University status" value={formData.status}
                   onChange={(e) =>
                     setFormData({ ...formData, status: e.target.value })
                   }
                   className="w-full px-3 py-2 bg-[#F7F8FA] border border-[#E6E8EC] rounded-xl text-xs sm:text-sm text-[#0A1D3F] focus:outline-none focus:border-[#0A1D3F] transition"
                 >
-                  <option value="active">Active (Visible in Registration)</option>
+                  <option value="draft">Draft</option><option value="active">Active (Visible in Registration)</option>
                   <option value="inactive">Inactive (Hidden)</option>
                 </select>
               </div>

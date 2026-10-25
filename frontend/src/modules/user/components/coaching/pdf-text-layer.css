@@ -1,0 +1,7 @@
+/* Scoped to the pinned PDF.js TextLayer API; never render PDF text as HTML. */
+.kitss-pdf-page { position: relative; margin-inline: auto; --scale-round-x: 1px; --scale-round-y: 1px; }
+.kitss-pdf-text { position: absolute; inset: 0; overflow: clip; line-height: 1; text-align: initial; transform-origin: 0 0; text-size-adjust: none; user-select: text; --text-scale-factor: calc(var(--total-scale-factor) * var(--min-font-size, 1)); }
+.kitss-pdf-text :is(span, br) { color: transparent; position: absolute; white-space: pre; cursor: text; transform-origin: 0 0; user-select: text; }
+.kitss-pdf-text > :not(.markedContent), .kitss-pdf-text .markedContent span:not(.markedContent) { --font-height: 0; --scale-x: 1; --rotate: 0deg; font-size: calc(var(--text-scale-factor) * var(--font-height)); transform: rotate(var(--rotate)) scaleX(var(--scale-x)) scale(calc(1 / var(--min-font-size, 1))); }
+.kitss-pdf-text .markedContent { display: contents; }
+.kitss-pdf-text ::selection { background: rgb(255 138 0 / 35%); }

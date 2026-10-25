@@ -1,3 +1,4 @@
+import { RegistrationDraftControls, useRegistrationFee } from './RegistrationDraftControls';
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -82,7 +83,7 @@ export const StudyRegistrationForm = ({ onBack }) => {
   const [paymentMethod, setPaymentMethod] = useState("upi");
   const [upiApp, setUpiApp] = useState("gpay");
   const [selectedBank, setSelectedBank] = useState("State Bank of India (SBI)");
-  const [registrationFee] = useState(299);
+  const registrationFee = useRegistrationFee('study');
   const [transactionId, setTransactionId] = useState("");
 
   // All 14 Requested Fields State
@@ -252,83 +253,7 @@ export const StudyRegistrationForm = ({ onBack }) => {
 
   const handlePrev = () => setStep((prev) => Math.max(prev - 1, 1));
 
-  const completeStudyRegistration = async (txnId) => {
-    try {
-      const generatedTxn = txnId || `TXN-STU-${Date.now().toString().slice(-8)}`;
-      setTransactionId(generatedTxn);
-
-      const registeredUser = await register({
-        name: formData.studentName,
-        phone: formData.callingNo,
-        email: formData.email,
-        dob: formData.dob,
-        state: formData.state,
-        district: formData.district,
-        city: formData.city,
-        address: formData.address,
-        pincode: formData.pincode,
-        fatherName: formData.fatherName,
-        motherName: formData.motherName,
-        whatsappNo: formData.whatsappNo,
-        applyCourseName: formData.applyCourseName,
-        applyInstituteName: formData.applyInstituteName,
-        board: formData.applyCourseName,
-        class: formData.applyCourseName
-      });
-
-      const userCredentials = {
-        userId: registeredUser?.id || `STU-${Math.floor(100000 + Math.random() * 900000)}`,
-        password: `Kits@${Math.floor(1000 + Math.random() * 9000)}`
-      };
-
-      setCredentials(userCredentials);
-      setIsSuccess(true);
-      setStep(6);
-      showSuccess("Study enrollment fee verified & account created!");
-    } catch (err) {
-      showError(err.message || "Registration failed after payment.");
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const handlePaymentAndSubmit = async (e) => {
-    if (e) e.preventDefault();
-    if (!validateStep(1) || !validateStep(2) || !validateStep(3) || !validateStep(4)) return;
-
-    setSubmitting(true);
-    try {
-      await openRazorpayCheckout({
-        amountInRupees: registrationFee,
-        course: {
-          id: `STUDY_${formData.applyCourseName.slice(0, 15).replace(/\s+/g, "_")}`,
-          title: `KITSS Digital Learning Pass - ${formData.applyCourseName}`
-        },
-        plan: {
-          name: "Annual Student Learning Pass",
-          duration: "1 Year Access"
-        },
-        student: {
-          name: formData.studentName,
-          email: formData.email,
-          phone: formData.callingNo
-        },
-        onSuccess: async (response) => {
-          await completeStudyRegistration(response?.razorpay_payment_id);
-        },
-        onFailure: (err) => {
-          setSubmitting(false);
-          showError(err?.message || "Payment cancelled or failed.");
-        },
-        onDismiss: () => {
-          setSubmitting(false);
-        }
-      });
-    } catch (err) {
-      setSubmitting(false);
-      showError(err.message || "Unable to launch checkout payment gateway.");
-    }
-  };
+  const handlePaymentAndSubmit = async e => { e?.preventDefault(); showError('Submission and payments are blocked pending approved document and eligibility policies. Save a draft instead.'); };
 
   const copyCred = (text, type) => {
     navigator.clipboard.writeText(text);
@@ -345,6 +270,7 @@ export const StudyRegistrationForm = ({ onBack }) => {
 
   return (
     <div className="w-full max-w-2xl mx-auto bg-white rounded-lg border border-slate-200/90 shadow-2xs overflow-hidden">
+      <RegistrationDraftControls kind="study" formData={formData} setFormData={setFormData} />
       {/* Top Banner - Compact */}
       <div className="p-3 sm:p-3.5 border-b border-slate-200/80 flex items-center justify-between">
         <div className="flex items-center gap-2.5">
@@ -920,7 +846,7 @@ export const StudyRegistrationForm = ({ onBack }) => {
                           </div>
                         )}
                         <input
-                          type="file"
+                          type="file" disabled title="Document privacy policy pending"
                           accept="image/*,.pdf"
                           onChange={(e) => handleFileChange("courseCertificate", e.target.files[0])}
                           className="hidden"
@@ -952,7 +878,7 @@ export const StudyRegistrationForm = ({ onBack }) => {
                           </div>
                         )}
                         <input
-                          type="file"
+                          type="file" disabled title="Document privacy policy pending"
                           accept="image/*"
                           onChange={(e) => handleFileChange("passportPhoto", e.target.files[0])}
                           className="hidden"
@@ -977,7 +903,7 @@ export const StudyRegistrationForm = ({ onBack }) => {
                       </label>
                       <input
                         type="text"
-                        name="aadharNumber"
+                        name="aadharNumber" disabled title="Identity collection is blocked pending privacy approval"
                         placeholder="XXXX XXXX XXXX (12 digits)"
                         value={formData.aadharNumber}
                         onChange={handleChange}
@@ -1009,7 +935,7 @@ export const StudyRegistrationForm = ({ onBack }) => {
                           </div>
                         )}
                         <input
-                          type="file"
+                          type="file" disabled title="Document privacy policy pending"
                           accept="image/*,.pdf"
                           onChange={(e) => handleFileChange("aadharCard", e.target.files[0])}
                           className="hidden"
@@ -1055,7 +981,7 @@ export const StudyRegistrationForm = ({ onBack }) => {
                       </div>
                       <div className="text-right">
                         <span className="text-xl sm:text-2xl font-black text-[#FF8A00]">₹{registrationFee}</span>
-                        <span className="text-[9px] text-emerald-300 block font-semibold">Annual student pass</span>
+                        <span className="text-[9px] text-emerald-300 block font-semibold">Registration policy pending</span>
                       </div>
                     </div>
                     <div className="text-[10px] text-slate-300 border-t border-white/10 pt-1.5 flex items-center justify-between">

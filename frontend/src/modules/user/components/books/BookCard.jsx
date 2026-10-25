@@ -62,7 +62,7 @@ export const BookCard = ({
             </h4>
             <div className="flex items-center justify-between text-[10px] sm:text-[11px]">
               <span className="text-[#667085]">Class {book.class}</span>
-              <RatingBadge rating={book.rating} />
+              {book.ratingSummary?.source && <RatingBadge rating={book.ratingSummary.value} />}
             </div>
             <div className="pt-1 flex items-baseline justify-between">
               <span className="text-xs font-bold text-[#0A1D3F]">
@@ -179,6 +179,7 @@ export const BookCard = ({
             </div>
           </Link>
 
+          {book.coverUrl && <img src={book.coverUrl} alt={book.title + ' cover'} className="absolute inset-0 w-full h-full object-cover pointer-events-none" />}
           {/* Wishlist toggle */}
           <button
             type="button"
@@ -198,7 +199,7 @@ export const BookCard = ({
         <div className="mt-2 space-y-0.5 min-w-0">
           <div className="flex items-center justify-between text-[11px] gap-1 min-w-0">
             <span className="font-bold text-[#FF8A00] truncate">{book.subject}</span>
-            <RatingBadge rating={book.rating} />
+            {book.ratingSummary?.source && <RatingBadge rating={book.ratingSummary.value} />}
           </div>
 
           <Link to={`/books/${book.id}`} className="block min-w-0">
@@ -242,30 +243,7 @@ export const BookCard = ({
             3. Paid Book (Unpurchased): [ Pay Now ] -> /books/:id/checkout (or details)
             NEVER show "Read" for unpaid paid books!
         */}
-        {isFree ? (
-          <Link
-            to={`/books/${book.id}/read`}
-            className="w-full py-1.5 bg-[#0A1D3F] hover:bg-[#133C8B] text-white text-xs font-bold rounded-lg transition active:scale-95 flex items-center justify-center gap-1 shadow-2xs cursor-pointer"
-          >
-            <BookOpen className="w-3.5 h-3.5" />
-            <span>Read</span>
-          </Link>
-        ) : owned ? (
-          <Link
-            to={`/books/${book.id}/read`}
-            className="w-full py-1.5 bg-[#17B26A] hover:bg-[#0E9355] text-white text-xs font-bold rounded-lg transition active:scale-95 flex items-center justify-center gap-1 shadow-2xs cursor-pointer"
-          >
-            <CheckCircle2 className="w-3.5 h-3.5" />
-            <span>Read</span>
-          </Link>
-        ) : (
-          <Link
-            to={`/books/${book.id}/checkout`}
-            className="w-full py-1.5 bg-[#FF8A00] hover:bg-[#e07b00] text-white text-xs font-bold rounded-lg transition active:scale-95 flex items-center justify-center text-center shadow-2xs cursor-pointer"
-          >
-            Pay Now
-          </Link>
-        )}
+        <button type="button" disabled className="w-full py-1.5 bg-[#FF8A00] text-white text-xs font-bold rounded-lg opacity-70">{isFree ? 'Reading pending' : 'Purchasing pending'}</button>
       </div>
     </div>
   );

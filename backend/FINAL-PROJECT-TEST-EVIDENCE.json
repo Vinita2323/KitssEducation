@@ -1,0 +1,480 @@
+{
+  "auditDate": "2026-10-25",
+  "runtime": "Node 22.15.0; pinned 22.23.4 not independently exercised",
+  "finalRuns": [
+    {
+      "log": "project-audit-backend-local-rerun.log",
+      "tests": 153,
+      "pass": 152,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 1,
+      "durationSeconds": 422.05,
+      "scope": "Complete final backend plus shared HTTP client; local standalone MongoDB; final application backend source"
+    },
+    {
+      "log": "project-audit-browser-institutions.log",
+      "tests": 6,
+      "pass": 6,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "durationSeconds": 157.99,
+      "scope": "Institutions/admission/franchise workflows; real configured development host; unchanged width loop omitted"
+    },
+    {
+      "log": "project-audit-browser-publishing.log",
+      "tests": 5,
+      "pass": 5,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "durationSeconds": 150.23,
+      "scope": "Publishing/CMS/media workflows; real configured development host; unchanged width loop omitted"
+    },
+    {
+      "log": "project-audit-local-browser-completeness.log",
+      "tests": 5,
+      "pass": 5,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "durationSeconds": 118.46,
+      "scope": "New CMS/selector/pagination/PDF/keyboard workflows; actual local MongoDB/HTTP/Chrome"
+    },
+    {
+      "log": "project-audit-browser-final-commerce.log",
+      "tests": 7,
+      "pass": 7,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "durationSeconds": 143.57,
+      "scope": "Complete commerce browser workflows; local MongoDB; isolated fake provider; unchanged width loop omitted"
+    },
+    {
+      "log": "project-audit-editorial-browser.log",
+      "tests": 7,
+      "pass": 7,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "durationSeconds": 113.68,
+      "scope": "Final coaching/reader/admin editorial workflows with actual public outcomes/benefits; unchanged width loop omitted"
+    },
+    {
+      "log": "project-audit-browser-final-stage8.log",
+      "tests": 10,
+      "pass": 10,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "durationSeconds": 267.68,
+      "scope": "Complete results/notifications/profile/preferences/email-proof browser workflows; local MongoDB; 375/1440px"
+    },
+    {
+      "log": "project-audit-local-browser-stage10.log",
+      "tests": 13,
+      "pass": 13,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "durationSeconds": 318.94,
+      "scope": "Complete Stage 10 admin/user/operations/CMS browser workflows; seven widths"
+    },
+    {
+      "log": "project-audit-routes-complete.log",
+      "tests": 14,
+      "pass": 14,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "durationSeconds": 547.15,
+      "scope": "Complete 40 user route patterns/20 admin sections; all admin sections at eight original-plan widths"
+    },
+    {
+      "log": "project-audit-local-browser-video.log",
+      "tests": 14,
+      "pass": 14,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "durationSeconds": 276.15,
+      "scope": "Complete video upload/playback/seek/resume/queue/isolation/mobile and seven-width acceptance"
+    },
+    {
+      "log": "project-audit-video-copy-browser.log",
+      "tests": 7,
+      "pass": 7,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "durationSeconds": 101.31,
+      "scope": "Final video workflows after truthful summary/duration update; unchanged seven-width loop omitted"
+    },
+    {
+      "log": "project-audit-local-browser-auth.log",
+      "tests": 16,
+      "pass": 16,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "durationSeconds": 215.82,
+      "scope": "Complete desktop/mobile identity/guard browser interactions; HTTP doubles only"
+    }
+  ],
+  "allCompletedAttempts": [
+    {
+      "log": "project-audit-backend-local-final.log",
+      "tests": 153,
+      "pass": 143,
+      "fail": 7,
+      "cancelled": 2,
+      "skipped": 1,
+      "durationSeconds": 3088.15
+    },
+    {
+      "log": "project-audit-backend-local-rerun.log",
+      "tests": 153,
+      "pass": 152,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 1,
+      "durationSeconds": 422.05
+    },
+    {
+      "log": "project-audit-backend-retry.log",
+      "tests": 28,
+      "pass": 27,
+      "fail": 1,
+      "cancelled": 0,
+      "skipped": 0,
+      "durationSeconds": 145.82
+    },
+    {
+      "log": "project-audit-backend.log",
+      "tests": 144,
+      "pass": 141,
+      "fail": 2,
+      "cancelled": 0,
+      "skipped": 1,
+      "durationSeconds": 808.64
+    },
+    {
+      "log": "project-audit-browser-auth.log",
+      "tests": 16,
+      "pass": 14,
+      "fail": 2,
+      "cancelled": 0,
+      "skipped": 0,
+      "durationSeconds": 197.36
+    },
+    {
+      "log": "project-audit-browser-coaching.log",
+      "tests": 1,
+      "pass": 0,
+      "fail": 1,
+      "cancelled": 0,
+      "skipped": 0,
+      "durationSeconds": 5.27
+    },
+    {
+      "log": "project-audit-browser-commerce.log",
+      "tests": 7,
+      "pass": 4,
+      "fail": 3,
+      "cancelled": 0,
+      "skipped": 0,
+      "durationSeconds": 219.33
+    },
+    {
+      "log": "project-audit-browser-final-coaching.log",
+      "tests": 7,
+      "pass": 7,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "durationSeconds": 190.76
+    },
+    {
+      "log": "project-audit-browser-final-commerce.log",
+      "tests": 7,
+      "pass": 7,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "durationSeconds": 143.57
+    },
+    {
+      "log": "project-audit-browser-final-stage8.log",
+      "tests": 10,
+      "pass": 10,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "durationSeconds": 267.68
+    },
+    {
+      "log": "project-audit-browser-institutions.log",
+      "tests": 6,
+      "pass": 6,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "durationSeconds": 157.99
+    },
+    {
+      "log": "project-audit-browser-publishing.log",
+      "tests": 5,
+      "pass": 5,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "durationSeconds": 150.23
+    },
+    {
+      "log": "project-audit-browser-stage10.log",
+      "tests": 1,
+      "pass": 0,
+      "fail": 1,
+      "cancelled": 0,
+      "skipped": 0,
+      "durationSeconds": 4.8
+    },
+    {
+      "log": "project-audit-browser-stage8.log",
+      "tests": 1,
+      "pass": 0,
+      "fail": 1,
+      "cancelled": 0,
+      "skipped": 0,
+      "durationSeconds": 5.01
+    },
+    {
+      "log": "project-audit-browser-stage9.log",
+      "tests": 1,
+      "pass": 0,
+      "fail": 1,
+      "cancelled": 0,
+      "skipped": 0,
+      "durationSeconds": 5.24
+    },
+    {
+      "log": "project-audit-browser-video.log",
+      "tests": 1,
+      "pass": 0,
+      "fail": 1,
+      "cancelled": 0,
+      "skipped": 0,
+      "durationSeconds": 4.94
+    },
+    {
+      "log": "project-audit-commerce-final.log",
+      "tests": 15,
+      "pass": 15,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "durationSeconds": 120.66
+    },
+    {
+      "log": "project-audit-editorial-browser.log",
+      "tests": 7,
+      "pass": 7,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "durationSeconds": 113.68
+    },
+    {
+      "log": "project-audit-local-browser-auth.log",
+      "tests": 16,
+      "pass": 16,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "durationSeconds": 215.82
+    },
+    {
+      "log": "project-audit-local-browser-coaching.log",
+      "tests": 7,
+      "pass": 5,
+      "fail": 2,
+      "cancelled": 0,
+      "skipped": 0,
+      "durationSeconds": 191.54
+    },
+    {
+      "log": "project-audit-local-browser-commerce.log",
+      "tests": 7,
+      "pass": 1,
+      "fail": 4,
+      "cancelled": 2,
+      "skipped": 0,
+      "durationSeconds": 2899.96
+    },
+    {
+      "log": "project-audit-local-browser-completeness.log",
+      "tests": 5,
+      "pass": 5,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "durationSeconds": 118.46
+    },
+    {
+      "log": "project-audit-local-browser-stage10.log",
+      "tests": 13,
+      "pass": 13,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "durationSeconds": 318.94
+    },
+    {
+      "log": "project-audit-local-browser-stage8.log",
+      "tests": 10,
+      "pass": 8,
+      "fail": 2,
+      "cancelled": 0,
+      "skipped": 0,
+      "durationSeconds": 288.06
+    },
+    {
+      "log": "project-audit-local-browser-stage9.log",
+      "tests": 1,
+      "pass": 0,
+      "fail": 0,
+      "cancelled": 1,
+      "skipped": 0,
+      "durationSeconds": 1916.19
+    },
+    {
+      "log": "project-audit-local-browser-video.log",
+      "tests": 14,
+      "pass": 14,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "durationSeconds": 276.15
+    },
+    {
+      "log": "project-audit-new-browser-fourth.log",
+      "tests": 4,
+      "pass": 4,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "durationSeconds": 183.3
+    },
+    {
+      "log": "project-audit-new-browser-rerun.log",
+      "tests": 4,
+      "pass": 1,
+      "fail": 3,
+      "cancelled": 0,
+      "skipped": 0,
+      "durationSeconds": 209.74
+    },
+    {
+      "log": "project-audit-new-browser-third.log",
+      "tests": 4,
+      "pass": 2,
+      "fail": 2,
+      "cancelled": 0,
+      "skipped": 0,
+      "durationSeconds": 164.36
+    },
+    {
+      "log": "project-audit-new-browser.log",
+      "tests": 4,
+      "pass": 0,
+      "fail": 4,
+      "cancelled": 0,
+      "skipped": 0,
+      "durationSeconds": 218.5
+    },
+    {
+      "log": "project-audit-publishing-local-retry.log",
+      "tests": 10,
+      "pass": 10,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "durationSeconds": 122.16
+    },
+    {
+      "log": "project-audit-routes-complete.log",
+      "tests": 14,
+      "pass": 14,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "durationSeconds": 547.15
+    },
+    {
+      "log": "project-audit-video-copy-browser.log",
+      "tests": 7,
+      "pass": 7,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "durationSeconds": 101.31
+    }
+  ],
+  "interruptedAttempt": {
+    "log": "project-audit-browser-final-stage9.log",
+    "exitCode": -1,
+    "reason": "Stopped exact owned route-test Node processes after root redirect race; replaced immediate assertion with stable text readiness and reran complete route/width suite. Partial pre-summary output is not a passing suite."
+  },
+  "builds": [
+    {
+      "log": "project-audit-baseline-build.log",
+      "success": true,
+      "logSha256": "611de887781faf0fd86971b9a89d990c4fcdebd689a6e6938fc7d3b9a6670200"
+    },
+    {
+      "log": "project-audit-final-build.log",
+      "success": true,
+      "logSha256": "d8228157bec0431ef6a1be44e98498716b2b5f6b6235e67b4c5611cc1b976d83"
+    },
+    {
+      "log": "project-audit-release-build.log",
+      "success": true,
+      "logSha256": "5675a71c6deb439595b7df52efce3e66ba51d86c88aa80304ce43045d38b0075"
+    }
+  ],
+  "dependencyAudits": {
+    "backend": {
+      "info": 0,
+      "low": 0,
+      "moderate": 0,
+      "high": 0,
+      "critical": 0,
+      "total": 0
+    },
+    "frontend": {
+      "info": 0,
+      "low": 0,
+      "moderate": 0,
+      "high": 0,
+      "critical": 0,
+      "total": 0
+    }
+  },
+  "databasePreservation": {
+    "applicationCollections": 32,
+    "serverDatabaseCount": 3,
+    "remainingProjectTestDatabases": 0,
+    "applicationCountsAndIndexCountsUnchanged": true,
+    "historicalAuditEntriesWithoutAction": 0,
+    "matchesStage10ApplicationCountsAndIndexes": true
+  },
+  "notes": [
+    "No actual SMTP/payment/scanner/official-source operational acceptance.",
+    "Backend optional legacy replica-set check skipped; local standalone and configured-host integrations are separate evidence.",
+    "Physical iOS/Safari/Android and exhaustive accessibility/print/zoom/virtual keyboard acceptance not performed.",
+    "Historical failures are retained separately and are not summed into final passing counts.",
+    "No dependency upgrade, actual credential change, application data reset, live payment, deployment or push."
+  ]
+}

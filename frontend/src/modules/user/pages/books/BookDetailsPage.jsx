@@ -1,3 +1,4 @@
+import { commerceService } from '../../services/commerceService';
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import {
@@ -38,27 +39,32 @@ const iconMap = {
 export const BookDetailsPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { isBookOwned, isWishlisted, toggleWishlist, getBookProgress } = useLibrary();
+  const { isBookOwned, isWishlisted, isWishlistPending, toggleWishlist, getBookProgress } = useLibrary();
   const { showSuccess, showInfo } = useToast();
 
+  const [paymentAvailable,setPaymentAvailable] = useState(false);
+  useEffect(()=>{const c=new AbortController();commerceService.config(c.signal).then(r=>setPaymentAvailable(r.available)).catch(()=>{});return()=>c.abort();},[]);
   const [book, setBook] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
 
   useEffect(() => {
+    const controller = new AbortController();
     const fetchBook = async () => {
       try {
         setLoading(true);
-        const data = await bookService.getBookById(id);
-        setBook(data);
+        setError(null);
+        const data = await bookService.getBookById(id, controller.signal);
+        if (!controller.signal.aborted) setBook(data);
       } catch (err) {
-        setError(err.message || "Failed to load book details.");
+        if (!controller.signal.aborted) setError(err.message || "Failed to load book details.");
       } finally {
-        setLoading(false);
+        if (!controller.signal.aborted) setLoading(false);
       }
     };
     fetchBook();
+    return () => controller.abort();
   }, [id]);
 
   const handleShare = () => {
@@ -113,6 +119,7 @@ export const BookDetailsPage = () => {
             onClick={() => toggleWishlist(book.id)}
             className="p-2 rounded-xl bg-white border border-[#E6E8EC] hover:bg-gray-50 active:scale-95 transition text-[#0A1D3F] cursor-pointer"
             aria-label="Wishlist"
+            disabled={isWishlistPending?.(book.id)}
           >
             <Heart
               className={`w-4 h-4 ${
@@ -162,6 +169,7 @@ export const BookDetailsPage = () => {
                 {book.author}
               </div>
 
+              {book.coverUrl && <img src={book.coverUrl} alt={book.title + ' cover'} className="absolute inset-0 w-full h-full object-cover" />}
               {/* Decorative circle */}
               <div className="absolute -bottom-10 -right-10 w-32 h-32 rounded-full border-4 border-white/10 pointer-events-none" />
             </div>
@@ -209,7 +217,7 @@ export const BookDetailsPage = () => {
 
               {/* Rating */}
               <div className="flex items-center gap-2 mt-2.5">
-                <RatingBadge rating={book.rating} count={book.reviewCount} />
+                {book.ratingSummary?.source && <RatingBadge rating={book.ratingSummary.value} count={book.ratingSummary.count} />}
                 <span className="text-xs text-[#667085]">• Verified Educational Curriculum</span>
               </div>
 
@@ -257,7 +265,7 @@ export const BookDetailsPage = () => {
                 <div className="p-3 bg-white rounded-xl border border-[#E6E8EC] text-center">
                   <HardDrive className="w-4 h-4 mx-auto text-[#6C4AB6] mb-1" />
                   <span className="text-[10px] text-[#667085] block">File Size</span>
-                  <span className="text-xs font-bold text-[#0A1D3F]">{book.fileSize || "10 MB"}</span>
+                  <span className="text-xs font-bold text-[#0A1D3F]">{book.fileSize || "Private PDF"}</span>
                 </div>
               </div>
             </div>
@@ -268,48 +276,8 @@ export const BookDetailsPage = () => {
                 3. Paid book (unpurchased): [ Pay Now for ₹Price ] -> /books/:id/checkout
             */}
             <div className="pt-4 border-t border-[#E6E8EC] space-y-2">
-              {isFree ? (
-                <Link to={`/books/${book.id}/read`} className="block">
-                  <PrimaryButton
-                    variant="navy"
-                    size="lg"
-                    fullWidth
-                    icon={BookOpen}
-                  >
-                    Read Free E-Book
-                  </PrimaryButton>
-                </Link>
-              ) : owned ? (
-                <Link to={`/books/${book.id}/read`} className="block">
-                  <PrimaryButton
-                    variant="green"
-                    size="lg"
-                    fullWidth
-                    icon={CheckCircle2}
-                  >
-                    {progress?.currentPage > 1
-                      ? `Continue Reading (Page ${progress.currentPage})`
-                      : "Read Book in PDF Viewer"}
-                  </PrimaryButton>
-                </Link>
-              ) : (
-                <div className="space-y-2">
-                  <Link to={`/books/${book.id}/checkout`} className="block">
-                    <PrimaryButton
-                      variant="orange"
-                      size="lg"
-                      fullWidth
-                      icon={ShoppingBag}
-                    >
-                      Pay Now for ₹{book.price}
-                    </PrimaryButton>
-                  </Link>
-                  <p className="text-[11px] text-[#667085] text-center flex items-center justify-center gap-1">
-                    <ShieldCheck className="w-3.5 h-3.5 text-[#17B26A]" />
-                    Instant access to complete PDF upon checkout
-                  </p>
-                </div>
-              )}
+              <PrimaryButton variant="orange" size="lg" fullWidth disabled={isFree || !paymentAvailable} onClick={()=>navigate(`/books/${book.id}/checkout`)}>{isFree ? 'Full reading policy pending' : paymentAvailable ? 'Review Test Mode Checkout' : 'Test payments unavailable'}</PrimaryButton>
+              <p className="text-xs text-[#667085]">Public samples are available below when approved. No payment or full-book access is granted here.</p>
             </div>
           </div>
         </div>

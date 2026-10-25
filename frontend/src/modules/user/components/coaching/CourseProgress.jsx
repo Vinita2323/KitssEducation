@@ -2,10 +2,10 @@ import React from "react";
 import { CheckCircle2, Video, BookOpen, Clock, Award, Sparkles, TrendingUp } from "lucide-react";
 
 export const CourseProgress = ({
-  courseTitle = "Class 10 CBSE Science",
-  progressPercentage = 42,
-  completedLectures = 36,
-  totalLectures = 85,
+  courseTitle = "Course",
+  progressPercentage = 0,
+  completedLectures = 0,
+  totalLectures = 0,
   subjectsData = [],
 }) => {
   return (

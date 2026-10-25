@@ -33,7 +33,7 @@ export const BookList = ({ subjectsData = [], onReadOnline }) => {
             Protected Online Study Materials
           </h4>
           <p className="text-[#667085] text-[11px]">
-            Chapter workbooks and formula sheets are available for in-app reading. Direct downloads are restricted.
+            Chapter workbooks and formula sheets are available for in-app reading. Server authorization is required. Already received copies cannot be revoked.
           </p>
         </div>
       </div>

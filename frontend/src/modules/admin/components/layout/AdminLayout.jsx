@@ -13,19 +13,38 @@ import {
   ExternalLink
 } from "lucide-react";
 
+import { useAuth } from '../../../user/context/AuthContext';
+import { StaffInvitations } from '../StaffInvitations';
+import { useDialogFocus } from '../../../../shared/ui/useDialogFocus';
 export const AdminLayout = () => {
+  const { user, can, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+  const isStage4 = location.pathname === "/admin" || /^\/admin\/(users|audit-logs|operations|universities|colleges|applications|franchise-requests|taxonomies|books|content|media|settings|orders|registrations|coaching|enrollments|results|notifications)(\/|$)/.test(location.pathname);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const drawer = useDialogFocus(sidebarOpen, () => setSidebarOpen(false));
 
   const navItems = [
-    { label: "Dashboard", path: "/admin", icon: LayoutDashboard, exact: true },
-    { label: "Universities", path: "/admin/universities", icon: GraduationCap },
-    { label: "Colleges / Institutes", path: "/admin/colleges", icon: Building2 },
-    { label: "Franchise Requests", path: "/admin/franchise-requests", icon: ShieldCheck },
-    { label: "Admission Applications", path: "/admin/applications", icon: FileText },
-    { label: "Digital Books", path: "/admin/books", icon: BookOpen },
-  ];
+    { label: "User accounts", path: "/admin/users", icon: ShieldCheck, permission: "accounts.read" },
+    { label: "Audit logs", path: "/admin/audit-logs", icon: FileText, permission: "audit.read" },
+    { label: "Job monitoring", path: "/admin/operations", icon: FileText, permission: "operations.read" },
+    { label: "Results", path: "/admin/results", icon: FileText, permission: "results.read" },
+    { label: "Notifications", path: "/admin/notifications", icon: FileText, permission: "notifications.read" },
+    { label: "Coaching", path: "/admin/coaching", icon: GraduationCap, permission: "learning.read" },
+    { label: "Enrollments", path: "/admin/enrollments", icon: BookOpen, permission: "learning.read" },
+    { label: "Orders / Payments", path: "/admin/orders", icon: BookOpen, permission: "commerce.read" },
+    { label: "Registration drafts", path: "/admin/registrations", icon: FileText, permission: "registrations.read" },
+    { label: "Content", path: "/admin/content", icon: FileText, permission: "content.read" },
+    { label: "Media", path: "/admin/media", icon: BookOpen, permission: "media.read" },
+    { label: "Site settings", path: "/admin/settings", icon: ShieldCheck, permission: "settings.read" },
+    { label: "Taxonomy", path: "/admin/taxonomies", icon: GraduationCap, permission: "content.read" },
+    { label: "Dashboard", path: "/admin", icon: LayoutDashboard, exact: true, permission: "dashboard.read" },
+    { label: "Universities", path: "/admin/universities", icon: GraduationCap, permission: "institutions.read" },
+    { label: "Colleges / Institutes", path: "/admin/colleges", icon: Building2, permission: "institutions.read" },
+    { label: "Franchise Requests", path: "/admin/franchise-requests", icon: ShieldCheck, permission: "franchises.read" },
+    { label: "Admission Applications", path: "/admin/applications", icon: FileText, permission: "admissions.read" },
+    { label: "Digital Books", path: "/admin/books", icon: BookOpen, permission: "learning.read" },
+  ].filter(item => can(item.permission));
 
   const isActive = (item) => {
     if (item.exact) return location.pathname === item.path;
@@ -41,6 +60,7 @@ export const AdminLayout = () => {
             {/* Left: Mobile hamburger & Logo */}
             <div className="flex items-center gap-3">
               <button
+                aria-label="Open admin navigation"
                 onClick={() => setSidebarOpen(!sidebarOpen)}
                 className="md:hidden p-2 rounded-xl text-white hover:bg-white/10 transition"
               >
@@ -62,6 +82,7 @@ export const AdminLayout = () => {
               </div>
             </div>
 
+            <button onClick={async () => { try { await logout(); navigate("/login"); } catch { alert("Logout failed; retry when the connection is restored."); } }} className="text-xs p-2">Sign out</button>
             {/* Right: Switch to Student Portal & Admin Avatar */}
             <div className="flex items-center gap-3">
               <Link
@@ -77,8 +98,8 @@ export const AdminLayout = () => {
                   AD
                 </div>
                 <div className="hidden md:block text-left">
-                  <p className="text-xs font-bold text-white leading-tight">Administrator</p>
-                  <p className="text-[10px] text-emerald-400">Super Admin</p>
+                  <p className="text-xs font-bold text-white leading-tight">{user.name}</p>
+                  <p className="text-[10px] text-emerald-400">{user.roles.includes("super_admin") ? "Super Admin" : "Staff"}</p>
                 </div>
               </div>
             </div>
@@ -130,11 +151,12 @@ export const AdminLayout = () => {
               className="fixed inset-0 bg-[#0A1D3F]/60 backdrop-blur-xs"
               onClick={() => setSidebarOpen(false)}
             />
-            <div className="relative w-64 bg-white h-full shadow-2xl z-10 p-4 flex flex-col justify-between animate-in slide-in-from-left duration-200">
+            <div ref={drawer} role="dialog" aria-modal="true" aria-label="Admin navigation" tabIndex={-1} className="relative w-64 max-w-full bg-white h-full overflow-y-auto shadow-2xl z-10 p-4 flex flex-col justify-between animate-in slide-in-from-left duration-200">
               <div className="space-y-4">
                 <div className="flex items-center justify-between pb-3 border-b border-[#E6E8EC]">
                   <span className="font-bold text-sm text-[#0A1D3F]">Admin Menu</span>
                   <button
+                    aria-label="Close admin navigation"
                     onClick={() => setSidebarOpen(false)}
                     className="p-1 rounded-lg text-gray-400 hover:text-gray-700"
                   >
@@ -181,7 +203,9 @@ export const AdminLayout = () => {
 
         {/* Main Content Viewport */}
         <main className="flex-1 min-w-0">
-          <Outlet />
+          <StaffInvitations />
+          {!isStage4 && <p role="status" className="mb-4 p-3 bg-amber-50 border rounded-xl text-xs text-[#0A1D3F]">Preview data only. Business management APIs are pending integration; changes are disabled.</p>}
+          <fieldset disabled={!isStage4} className="min-w-0"><Outlet /></fieldset>
         </main>
       </div>
     </div>

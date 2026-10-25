@@ -1,0 +1,2921 @@
+{
+  "database": "kitss_education_dev",
+  "hostFingerprint": "6a913851d4eb3226a3fa2ecf1e7486397de952590d85173d3a1df8efb60f196e",
+  "backupRoot": "C:\\Users\\RCom\\Desktop\\KitssEducation\\.runtime\\stage10-backup-1792910945361",
+  "backupReadable": true,
+  "serverDatabaseCount": 19,
+  "projectTestCandidates": 16,
+  "databases": [
+    {
+      "name": "kitss_education_dev",
+      "collections": [
+        {
+          "name": "siteSettings",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "0b31dd943e6c9e06ce925ded30b2e9a62b5e11125d775b17bfa91eefc0a0102d"
+        },
+        {
+          "name": "sessions",
+          "count": 0,
+          "indexes": 4,
+          "sha256": "f1fd20b05ac253f06d833bbdfd9a2127ee914497a1682f834592c71a6eaf8adb"
+        },
+        {
+          "name": "resultHistory",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "369950cabc23c0b0a9c2da34abbad6c9877a3804d7dd158312d7c777c6bbcf3c"
+        },
+        {
+          "name": "auditlogs",
+          "count": 22,
+          "indexes": 1,
+          "sha256": "b1fdea29fdc0dc5fc3b1ebd71747251a4dbf8a7ced1fe464c22e34d9f7ef3062"
+        },
+        {
+          "name": "banners",
+          "count": 2,
+          "indexes": 2,
+          "sha256": "76032b112f87a8314f88aaaf9a674cdf06d635e0c31a9a5d259c527af49502bd"
+        },
+        {
+          "name": "lessons",
+          "count": 2,
+          "indexes": 2,
+          "sha256": "4d956a20568c559f6b074d0f783fbca3678014abb461d1ce17d0c7039a257261"
+        },
+        {
+          "name": "facultyProfiles",
+          "count": 2,
+          "indexes": 2,
+          "sha256": "dea01b7c7cef5c98e64459da0c932b2d7e038d467ce17645e17b5db2a4014d0e"
+        },
+        {
+          "name": "notificationReceipts",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "9aaffff739d28844c08fe6585fe8091ec211b5180fa80a1925e6ac3c21a139e1"
+        },
+        {
+          "name": "franchiseApplications",
+          "count": 0,
+          "indexes": 4,
+          "sha256": "ed9e9c25eb8baac36fbf0eccf1241f1dc68833cb852a7a32d99f1b36da92e030"
+        },
+        {
+          "name": "pageContents",
+          "count": 2,
+          "indexes": 2,
+          "sha256": "751f46599ddb6d2f48ce91b644c7aba934f4d16f49ccb3f33b7f2d371cb15700"
+        },
+        {
+          "name": "notifications",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "a55f2abfd400e07cca821a4a5a9aae36d4467f2f157ebe4a14c296b424758eba"
+        },
+        {
+          "name": "coachingCourses",
+          "count": 2,
+          "indexes": 2,
+          "sha256": "a23248aaac4055ceb0eca78fdb54c7c8236155be980bfd8ddec4da73b18a6423"
+        },
+        {
+          "name": "taxonomies",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "dc0c383db525c47901fd51a534604b871c4f3a48dcb88f9cda004b3fd27f8b25"
+        },
+        {
+          "name": "bookEntitlements",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "101b387e9dc2f89559ac3b9cf203b12d3655ac1efe814c6b340d02858a022be7"
+        },
+        {
+          "name": "learningProgress",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "0c663cefa4b2c68c2dbe3cb5fe90747b7ac7fa8f840da74b9612b1a14cdd8eb8"
+        },
+        {
+          "name": "universities",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "ef2340869e2b66e475cc2dfe7fbf43dfb74a06f509340e17938b89780d82f2e9"
+        },
+        {
+          "name": "mediaAssets",
+          "count": 4,
+          "indexes": 5,
+          "sha256": "bf2224de78da40553ae21b068e4d29d68ec6c06c1de0211f622f52ee084cf5b5"
+        },
+        {
+          "name": "auththrottles",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "5c2476a7227b0adef14eade08e6729b3128acd9ce98c2937df684a94545dda0f"
+        },
+        {
+          "name": "admissionApplications",
+          "count": 0,
+          "indexes": 4,
+          "sha256": "420d151ea9e6271627459444e072982c12636fb21929c40b300e13ee66bc6f4b"
+        },
+        {
+          "name": "resultRecords",
+          "count": 0,
+          "indexes": 4,
+          "sha256": "58a64d90d1c637ce431a447514364a28c227f1b0b59a92d9dcb411f7a01a6bf1"
+        },
+        {
+          "name": "resultIssuers",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "0b31dd943e6c9e06ce925ded30b2e9a62b5e11125d775b17bfa91eefc0a0102d"
+        },
+        {
+          "name": "enrollments",
+          "count": 0,
+          "indexes": 4,
+          "sha256": "e79879f5b7d36275f36f9a7e9eb37de508daabffa206f179d64aea8737b29ef6"
+        },
+        {
+          "name": "books",
+          "count": 2,
+          "indexes": 3,
+          "sha256": "829b2364290729d6e12b781d894bd947eb61dff590d843c0c40d616af4ee8222"
+        },
+        {
+          "name": "exams",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "5bcf0a5edd4ffb2add93155fd05d970b6e39464eed4294087907733bdcf3a82b"
+        },
+        {
+          "name": "domainLocks",
+          "count": 1,
+          "indexes": 1,
+          "sha256": "3399ca7f8d4eef52f34fad617c1ce3a7c855eebfcfd58f38e38f1953e9a47785"
+        },
+        {
+          "name": "colleges",
+          "count": 0,
+          "indexes": 5,
+          "sha256": "2d1883a4b2386b413af61d5d02e46eaf27867f695190e050157e63b399688708"
+        },
+        {
+          "name": "collegePrograms",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "273500359da6c3492b8c8161043cab63abea98388732b21c2af38865aebf8ba6"
+        },
+        {
+          "name": "users",
+          "count": 2,
+          "indexes": 9,
+          "sha256": "d796a4333e3ac45423f6a1e2bd0e4e96ec10660663583215a317ef54bde78f7f"
+        },
+        {
+          "name": "orders",
+          "count": 0,
+          "indexes": 8,
+          "sha256": "a723e1d149c6f168757dec4dfc52a9a7e7ad2b8120416a75f795404725cda495"
+        },
+        {
+          "name": "registrationApplications",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "15062b65ad7f15b9fc22992b7e0a19f8109b76534dc5cb53d03acf3eafd8d0ff"
+        },
+        {
+          "name": "jobs",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "6813707d6e8513738b583e515e375eb5da548f41af95ca21418996afad415ff8"
+        },
+        {
+          "name": "coursePlans",
+          "count": 2,
+          "indexes": 2,
+          "sha256": "58fe65e2c8652a344ca904b33b105075e2cce18bbc1bb23e7b18a2f2fb433a56"
+        }
+      ],
+      "disposable": false
+    },
+    {
+      "name": "kitss_stage10_browser_2fc01fc632b64344",
+      "collections": [
+        {
+          "name": "auththrottles",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "5c2476a7227b0adef14eade08e6729b3128acd9ce98c2937df684a94545dda0f"
+        },
+        {
+          "name": "franchiseApplications",
+          "count": 0,
+          "indexes": 4,
+          "sha256": "ed9e9c25eb8baac36fbf0eccf1241f1dc68833cb852a7a32d99f1b36da92e030"
+        },
+        {
+          "name": "admissionApplications",
+          "count": 0,
+          "indexes": 4,
+          "sha256": "420d151ea9e6271627459444e072982c12636fb21929c40b300e13ee66bc6f4b"
+        },
+        {
+          "name": "sessions",
+          "count": 0,
+          "indexes": 4,
+          "sha256": "f1fd20b05ac253f06d833bbdfd9a2127ee914497a1682f834592c71a6eaf8adb"
+        },
+        {
+          "name": "taxonomies",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "dc0c383db525c47901fd51a534604b871c4f3a48dcb88f9cda004b3fd27f8b25"
+        },
+        {
+          "name": "siteSettings",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "0b31dd943e6c9e06ce925ded30b2e9a62b5e11125d775b17bfa91eefc0a0102d"
+        },
+        {
+          "name": "books",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "fdbe1f257a5c77f47a94ff677a632c81b1eb7c674f72391a5dd0dea5a9061955"
+        },
+        {
+          "name": "learningProgress",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "0c663cefa4b2c68c2dbe3cb5fe90747b7ac7fa8f840da74b9612b1a14cdd8eb8"
+        },
+        {
+          "name": "auditlogs",
+          "count": 0,
+          "indexes": 1,
+          "sha256": "d03a702da6f295647850e5d06b117ae0120b6b18082f802279bf0ff13fa79f22"
+        },
+        {
+          "name": "resultIssuers",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "0b31dd943e6c9e06ce925ded30b2e9a62b5e11125d775b17bfa91eefc0a0102d"
+        },
+        {
+          "name": "enrollments",
+          "count": 0,
+          "indexes": 4,
+          "sha256": "e79879f5b7d36275f36f9a7e9eb37de508daabffa206f179d64aea8737b29ef6"
+        },
+        {
+          "name": "exams",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "5bcf0a5edd4ffb2add93155fd05d970b6e39464eed4294087907733bdcf3a82b"
+        },
+        {
+          "name": "users",
+          "count": 0,
+          "indexes": 9,
+          "sha256": "3f321f2f9f8d6c8ee95d129aeb0b1b31304dcaac7d48db38bbc940d241201fa1"
+        },
+        {
+          "name": "mediaAssets",
+          "count": 0,
+          "indexes": 5,
+          "sha256": "48fef125a06c1110791d52164f567f020ebfe019165add46361eda24adf79b05"
+        },
+        {
+          "name": "facultyProfiles",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "6fbf27db77632b3b9fba66a3e3a67c4edcbd8448d3d5a510b030ce807436560a"
+        },
+        {
+          "name": "coursePlans",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "493d12d3698c5fc15ea60643a84abf45e3315114c7ec06ad8c3de922cdfa7a8e"
+        },
+        {
+          "name": "universities",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "ef2340869e2b66e475cc2dfe7fbf43dfb74a06f509340e17938b89780d82f2e9"
+        },
+        {
+          "name": "pageContents",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "0b31dd943e6c9e06ce925ded30b2e9a62b5e11125d775b17bfa91eefc0a0102d"
+        },
+        {
+          "name": "collegePrograms",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "273500359da6c3492b8c8161043cab63abea98388732b21c2af38865aebf8ba6"
+        },
+        {
+          "name": "coachingCourses",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "16cb82028764ae0b0eb382aa03e93bfb13b442ab1de524f5850de952f81467fe"
+        },
+        {
+          "name": "resultHistory",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "369950cabc23c0b0a9c2da34abbad6c9877a3804d7dd158312d7c777c6bbcf3c"
+        },
+        {
+          "name": "resultRecords",
+          "count": 0,
+          "indexes": 4,
+          "sha256": "58a64d90d1c637ce431a447514364a28c227f1b0b59a92d9dcb411f7a01a6bf1"
+        },
+        {
+          "name": "notificationReceipts",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "9aaffff739d28844c08fe6585fe8091ec211b5180fa80a1925e6ac3c21a139e1"
+        },
+        {
+          "name": "banners",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "85b5579c7bf4f0d3bba65a6ddac43f8f2bb0f120d5674a2e0c2813af0bc37066"
+        },
+        {
+          "name": "notifications",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "a55f2abfd400e07cca821a4a5a9aae36d4467f2f157ebe4a14c296b424758eba"
+        },
+        {
+          "name": "bookEntitlements",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "101b387e9dc2f89559ac3b9cf203b12d3655ac1efe814c6b340d02858a022be7"
+        },
+        {
+          "name": "domainLocks",
+          "count": 0,
+          "indexes": 1,
+          "sha256": "d03a702da6f295647850e5d06b117ae0120b6b18082f802279bf0ff13fa79f22"
+        },
+        {
+          "name": "lessons",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "bf76a756348ce1912eac944c15ab52dae381630eebb40c8d32d3d939f76d8042"
+        },
+        {
+          "name": "orders",
+          "count": 0,
+          "indexes": 8,
+          "sha256": "95e4a35681538c2b4b1dbefa40961ac614dee7681b31fce73845093aef0a1e48"
+        },
+        {
+          "name": "colleges",
+          "count": 0,
+          "indexes": 5,
+          "sha256": "2d1883a4b2386b413af61d5d02e46eaf27867f695190e050157e63b399688708"
+        },
+        {
+          "name": "jobs",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "6813707d6e8513738b583e515e375eb5da548f41af95ca21418996afad415ff8"
+        },
+        {
+          "name": "registrationApplications",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "15062b65ad7f15b9fc22992b7e0a19f8109b76534dc5cb53d03acf3eafd8d0ff"
+        }
+      ],
+      "disposable": true
+    },
+    {
+      "name": "kitss_stage10_browser_a67a5debc7bc45a6",
+      "collections": [
+        {
+          "name": "universities",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "ef2340869e2b66e475cc2dfe7fbf43dfb74a06f509340e17938b89780d82f2e9"
+        },
+        {
+          "name": "bookEntitlements",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "101b387e9dc2f89559ac3b9cf203b12d3655ac1efe814c6b340d02858a022be7"
+        },
+        {
+          "name": "coachingCourses",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "16cb82028764ae0b0eb382aa03e93bfb13b442ab1de524f5850de952f81467fe"
+        },
+        {
+          "name": "resultHistory",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "369950cabc23c0b0a9c2da34abbad6c9877a3804d7dd158312d7c777c6bbcf3c"
+        },
+        {
+          "name": "orders",
+          "count": 0,
+          "indexes": 8,
+          "sha256": "95e4a35681538c2b4b1dbefa40961ac614dee7681b31fce73845093aef0a1e48"
+        },
+        {
+          "name": "coursePlans",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "493d12d3698c5fc15ea60643a84abf45e3315114c7ec06ad8c3de922cdfa7a8e"
+        },
+        {
+          "name": "lessons",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "bf76a756348ce1912eac944c15ab52dae381630eebb40c8d32d3d939f76d8042"
+        },
+        {
+          "name": "exams",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "5bcf0a5edd4ffb2add93155fd05d970b6e39464eed4294087907733bdcf3a82b"
+        },
+        {
+          "name": "facultyProfiles",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "6fbf27db77632b3b9fba66a3e3a67c4edcbd8448d3d5a510b030ce807436560a"
+        },
+        {
+          "name": "jobs",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "6813707d6e8513738b583e515e375eb5da548f41af95ca21418996afad415ff8"
+        },
+        {
+          "name": "siteSettings",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "0b31dd943e6c9e06ce925ded30b2e9a62b5e11125d775b17bfa91eefc0a0102d"
+        },
+        {
+          "name": "enrollments",
+          "count": 0,
+          "indexes": 4,
+          "sha256": "e79879f5b7d36275f36f9a7e9eb37de508daabffa206f179d64aea8737b29ef6"
+        },
+        {
+          "name": "books",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "fdbe1f257a5c77f47a94ff677a632c81b1eb7c674f72391a5dd0dea5a9061955"
+        },
+        {
+          "name": "users",
+          "count": 0,
+          "indexes": 9,
+          "sha256": "3f321f2f9f8d6c8ee95d129aeb0b1b31304dcaac7d48db38bbc940d241201fa1"
+        },
+        {
+          "name": "notificationReceipts",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "9aaffff739d28844c08fe6585fe8091ec211b5180fa80a1925e6ac3c21a139e1"
+        },
+        {
+          "name": "franchiseApplications",
+          "count": 0,
+          "indexes": 4,
+          "sha256": "ed9e9c25eb8baac36fbf0eccf1241f1dc68833cb852a7a32d99f1b36da92e030"
+        },
+        {
+          "name": "collegePrograms",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "273500359da6c3492b8c8161043cab63abea98388732b21c2af38865aebf8ba6"
+        },
+        {
+          "name": "pageContents",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "0b31dd943e6c9e06ce925ded30b2e9a62b5e11125d775b17bfa91eefc0a0102d"
+        },
+        {
+          "name": "resultIssuers",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "0b31dd943e6c9e06ce925ded30b2e9a62b5e11125d775b17bfa91eefc0a0102d"
+        },
+        {
+          "name": "auththrottles",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "5c2476a7227b0adef14eade08e6729b3128acd9ce98c2937df684a94545dda0f"
+        },
+        {
+          "name": "mediaAssets",
+          "count": 0,
+          "indexes": 5,
+          "sha256": "48fef125a06c1110791d52164f567f020ebfe019165add46361eda24adf79b05"
+        },
+        {
+          "name": "colleges",
+          "count": 0,
+          "indexes": 5,
+          "sha256": "2d1883a4b2386b413af61d5d02e46eaf27867f695190e050157e63b399688708"
+        },
+        {
+          "name": "domainLocks",
+          "count": 0,
+          "indexes": 1,
+          "sha256": "d03a702da6f295647850e5d06b117ae0120b6b18082f802279bf0ff13fa79f22"
+        },
+        {
+          "name": "taxonomies",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "dc0c383db525c47901fd51a534604b871c4f3a48dcb88f9cda004b3fd27f8b25"
+        },
+        {
+          "name": "learningProgress",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "0c663cefa4b2c68c2dbe3cb5fe90747b7ac7fa8f840da74b9612b1a14cdd8eb8"
+        },
+        {
+          "name": "auditlogs",
+          "count": 0,
+          "indexes": 1,
+          "sha256": "d03a702da6f295647850e5d06b117ae0120b6b18082f802279bf0ff13fa79f22"
+        },
+        {
+          "name": "resultRecords",
+          "count": 0,
+          "indexes": 4,
+          "sha256": "58a64d90d1c637ce431a447514364a28c227f1b0b59a92d9dcb411f7a01a6bf1"
+        },
+        {
+          "name": "registrationApplications",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "15062b65ad7f15b9fc22992b7e0a19f8109b76534dc5cb53d03acf3eafd8d0ff"
+        },
+        {
+          "name": "banners",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "85b5579c7bf4f0d3bba65a6ddac43f8f2bb0f120d5674a2e0c2813af0bc37066"
+        },
+        {
+          "name": "notifications",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "a55f2abfd400e07cca821a4a5a9aae36d4467f2f157ebe4a14c296b424758eba"
+        },
+        {
+          "name": "sessions",
+          "count": 0,
+          "indexes": 4,
+          "sha256": "f1fd20b05ac253f06d833bbdfd9a2127ee914497a1682f834592c71a6eaf8adb"
+        },
+        {
+          "name": "admissionApplications",
+          "count": 0,
+          "indexes": 4,
+          "sha256": "420d151ea9e6271627459444e072982c12636fb21929c40b300e13ee66bc6f4b"
+        }
+      ],
+      "disposable": true
+    },
+    {
+      "name": "kitss_stage10_browser_b08d32a566c04efb",
+      "collections": [
+        {
+          "name": "resultHistory",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "369950cabc23c0b0a9c2da34abbad6c9877a3804d7dd158312d7c777c6bbcf3c"
+        },
+        {
+          "name": "jobs",
+          "count": 1,
+          "indexes": 3,
+          "sha256": "f9c1a6c2b80e18160da927592b4357a3eefe819a4e525c957b42d82f2b0291e6"
+        },
+        {
+          "name": "learningProgress",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "0c663cefa4b2c68c2dbe3cb5fe90747b7ac7fa8f840da74b9612b1a14cdd8eb8"
+        },
+        {
+          "name": "siteSettings",
+          "count": 1,
+          "indexes": 2,
+          "sha256": "3fd4ead58c8a2bb12538888566c5b5ddd7e05701e84931c903acedfa2a1cf2ff"
+        },
+        {
+          "name": "bookEntitlements",
+          "count": 1,
+          "indexes": 3,
+          "sha256": "e64bb000c6aacca4d5aeeccf52191c9829633b3bd50bb9ddf2690e1d33fadcb2"
+        },
+        {
+          "name": "auththrottles",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "5c2476a7227b0adef14eade08e6729b3128acd9ce98c2937df684a94545dda0f"
+        },
+        {
+          "name": "auditlogs",
+          "count": 0,
+          "indexes": 1,
+          "sha256": "d03a702da6f295647850e5d06b117ae0120b6b18082f802279bf0ff13fa79f22"
+        },
+        {
+          "name": "enrollments",
+          "count": 0,
+          "indexes": 4,
+          "sha256": "e79879f5b7d36275f36f9a7e9eb37de508daabffa206f179d64aea8737b29ef6"
+        },
+        {
+          "name": "notifications",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "a55f2abfd400e07cca821a4a5a9aae36d4467f2f157ebe4a14c296b424758eba"
+        },
+        {
+          "name": "registrationApplications",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "15062b65ad7f15b9fc22992b7e0a19f8109b76534dc5cb53d03acf3eafd8d0ff"
+        },
+        {
+          "name": "lessons",
+          "count": 2,
+          "indexes": 2,
+          "sha256": "9302a1752d6b5a9e02ef2c059b487e6b16f32f2f74cf19515c8ec4f0911ef805"
+        },
+        {
+          "name": "resultRecords",
+          "count": 0,
+          "indexes": 4,
+          "sha256": "58a64d90d1c637ce431a447514364a28c227f1b0b59a92d9dcb411f7a01a6bf1"
+        },
+        {
+          "name": "resultIssuers",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "0b31dd943e6c9e06ce925ded30b2e9a62b5e11125d775b17bfa91eefc0a0102d"
+        },
+        {
+          "name": "collegePrograms",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "273500359da6c3492b8c8161043cab63abea98388732b21c2af38865aebf8ba6"
+        },
+        {
+          "name": "sessions",
+          "count": 0,
+          "indexes": 4,
+          "sha256": "f1fd20b05ac253f06d833bbdfd9a2127ee914497a1682f834592c71a6eaf8adb"
+        },
+        {
+          "name": "coursePlans",
+          "count": 1,
+          "indexes": 2,
+          "sha256": "848812e8f6913c590178420e7f6f8d2b0bda338e6d4a4ac9ec2b503010eb2164"
+        },
+        {
+          "name": "notificationReceipts",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "9aaffff739d28844c08fe6585fe8091ec211b5180fa80a1925e6ac3c21a139e1"
+        },
+        {
+          "name": "facultyProfiles",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "6fbf27db77632b3b9fba66a3e3a67c4edcbd8448d3d5a510b030ce807436560a"
+        },
+        {
+          "name": "exams",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "5bcf0a5edd4ffb2add93155fd05d970b6e39464eed4294087907733bdcf3a82b"
+        },
+        {
+          "name": "taxonomies",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "dc0c383db525c47901fd51a534604b871c4f3a48dcb88f9cda004b3fd27f8b25"
+        },
+        {
+          "name": "universities",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "ef2340869e2b66e475cc2dfe7fbf43dfb74a06f509340e17938b89780d82f2e9"
+        },
+        {
+          "name": "pageContents",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "0b31dd943e6c9e06ce925ded30b2e9a62b5e11125d775b17bfa91eefc0a0102d"
+        },
+        {
+          "name": "users",
+          "count": 0,
+          "indexes": 9,
+          "sha256": "3f321f2f9f8d6c8ee95d129aeb0b1b31304dcaac7d48db38bbc940d241201fa1"
+        },
+        {
+          "name": "banners",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "85b5579c7bf4f0d3bba65a6ddac43f8f2bb0f120d5674a2e0c2813af0bc37066"
+        },
+        {
+          "name": "domainLocks",
+          "count": 0,
+          "indexes": 1,
+          "sha256": "d03a702da6f295647850e5d06b117ae0120b6b18082f802279bf0ff13fa79f22"
+        },
+        {
+          "name": "admissionApplications",
+          "count": 0,
+          "indexes": 4,
+          "sha256": "420d151ea9e6271627459444e072982c12636fb21929c40b300e13ee66bc6f4b"
+        },
+        {
+          "name": "coachingCourses",
+          "count": 1,
+          "indexes": 2,
+          "sha256": "ff0054228554d919794d74e2bc1140894a9a76ecb63f382aefc1b4d6a8ed3e52"
+        },
+        {
+          "name": "orders",
+          "count": 22,
+          "indexes": 8,
+          "sha256": "fdf8f9dbee45c45b3377b371f97cd83bec0ab369135e1ad7a727bba2937db483"
+        },
+        {
+          "name": "mediaAssets",
+          "count": 5,
+          "indexes": 5,
+          "sha256": "ea626c955675eedaad22457138ddeb5ea16189b3308430866c8b5005d415a10a"
+        },
+        {
+          "name": "colleges",
+          "count": 0,
+          "indexes": 5,
+          "sha256": "2d1883a4b2386b413af61d5d02e46eaf27867f695190e050157e63b399688708"
+        },
+        {
+          "name": "books",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "fdbe1f257a5c77f47a94ff677a632c81b1eb7c674f72391a5dd0dea5a9061955"
+        },
+        {
+          "name": "franchiseApplications",
+          "count": 0,
+          "indexes": 4,
+          "sha256": "ed9e9c25eb8baac36fbf0eccf1241f1dc68833cb852a7a32d99f1b36da92e030"
+        }
+      ],
+      "disposable": true
+    },
+    {
+      "name": "kitss_stage10_browser_d8be96b7aaa241fa",
+      "collections": [
+        {
+          "name": "orders",
+          "count": 0,
+          "indexes": 8,
+          "sha256": "95e4a35681538c2b4b1dbefa40961ac614dee7681b31fce73845093aef0a1e48"
+        },
+        {
+          "name": "mediaAssets",
+          "count": 0,
+          "indexes": 5,
+          "sha256": "48fef125a06c1110791d52164f567f020ebfe019165add46361eda24adf79b05"
+        },
+        {
+          "name": "enrollments",
+          "count": 0,
+          "indexes": 4,
+          "sha256": "e79879f5b7d36275f36f9a7e9eb37de508daabffa206f179d64aea8737b29ef6"
+        },
+        {
+          "name": "colleges",
+          "count": 0,
+          "indexes": 5,
+          "sha256": "2d1883a4b2386b413af61d5d02e46eaf27867f695190e050157e63b399688708"
+        },
+        {
+          "name": "banners",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "85b5579c7bf4f0d3bba65a6ddac43f8f2bb0f120d5674a2e0c2813af0bc37066"
+        },
+        {
+          "name": "bookEntitlements",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "101b387e9dc2f89559ac3b9cf203b12d3655ac1efe814c6b340d02858a022be7"
+        },
+        {
+          "name": "users",
+          "count": 0,
+          "indexes": 9,
+          "sha256": "3f321f2f9f8d6c8ee95d129aeb0b1b31304dcaac7d48db38bbc940d241201fa1"
+        },
+        {
+          "name": "resultIssuers",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "0b31dd943e6c9e06ce925ded30b2e9a62b5e11125d775b17bfa91eefc0a0102d"
+        },
+        {
+          "name": "domainLocks",
+          "count": 0,
+          "indexes": 1,
+          "sha256": "d03a702da6f295647850e5d06b117ae0120b6b18082f802279bf0ff13fa79f22"
+        },
+        {
+          "name": "resultHistory",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "369950cabc23c0b0a9c2da34abbad6c9877a3804d7dd158312d7c777c6bbcf3c"
+        },
+        {
+          "name": "jobs",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "6813707d6e8513738b583e515e375eb5da548f41af95ca21418996afad415ff8"
+        },
+        {
+          "name": "facultyProfiles",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "6fbf27db77632b3b9fba66a3e3a67c4edcbd8448d3d5a510b030ce807436560a"
+        },
+        {
+          "name": "coursePlans",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "493d12d3698c5fc15ea60643a84abf45e3315114c7ec06ad8c3de922cdfa7a8e"
+        },
+        {
+          "name": "lessons",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "bf76a756348ce1912eac944c15ab52dae381630eebb40c8d32d3d939f76d8042"
+        },
+        {
+          "name": "books",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "fdbe1f257a5c77f47a94ff677a632c81b1eb7c674f72391a5dd0dea5a9061955"
+        },
+        {
+          "name": "siteSettings",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "0b31dd943e6c9e06ce925ded30b2e9a62b5e11125d775b17bfa91eefc0a0102d"
+        },
+        {
+          "name": "collegePrograms",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "273500359da6c3492b8c8161043cab63abea98388732b21c2af38865aebf8ba6"
+        },
+        {
+          "name": "auditlogs",
+          "count": 0,
+          "indexes": 1,
+          "sha256": "d03a702da6f295647850e5d06b117ae0120b6b18082f802279bf0ff13fa79f22"
+        },
+        {
+          "name": "universities",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "ef2340869e2b66e475cc2dfe7fbf43dfb74a06f509340e17938b89780d82f2e9"
+        },
+        {
+          "name": "exams",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "5bcf0a5edd4ffb2add93155fd05d970b6e39464eed4294087907733bdcf3a82b"
+        },
+        {
+          "name": "notifications",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "a55f2abfd400e07cca821a4a5a9aae36d4467f2f157ebe4a14c296b424758eba"
+        },
+        {
+          "name": "auththrottles",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "5c2476a7227b0adef14eade08e6729b3128acd9ce98c2937df684a94545dda0f"
+        },
+        {
+          "name": "resultRecords",
+          "count": 0,
+          "indexes": 4,
+          "sha256": "58a64d90d1c637ce431a447514364a28c227f1b0b59a92d9dcb411f7a01a6bf1"
+        },
+        {
+          "name": "notificationReceipts",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "9aaffff739d28844c08fe6585fe8091ec211b5180fa80a1925e6ac3c21a139e1"
+        },
+        {
+          "name": "admissionApplications",
+          "count": 0,
+          "indexes": 4,
+          "sha256": "420d151ea9e6271627459444e072982c12636fb21929c40b300e13ee66bc6f4b"
+        },
+        {
+          "name": "coachingCourses",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "16cb82028764ae0b0eb382aa03e93bfb13b442ab1de524f5850de952f81467fe"
+        },
+        {
+          "name": "pageContents",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "0b31dd943e6c9e06ce925ded30b2e9a62b5e11125d775b17bfa91eefc0a0102d"
+        },
+        {
+          "name": "franchiseApplications",
+          "count": 0,
+          "indexes": 4,
+          "sha256": "ed9e9c25eb8baac36fbf0eccf1241f1dc68833cb852a7a32d99f1b36da92e030"
+        },
+        {
+          "name": "sessions",
+          "count": 0,
+          "indexes": 4,
+          "sha256": "f1fd20b05ac253f06d833bbdfd9a2127ee914497a1682f834592c71a6eaf8adb"
+        },
+        {
+          "name": "registrationApplications",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "15062b65ad7f15b9fc22992b7e0a19f8109b76534dc5cb53d03acf3eafd8d0ff"
+        },
+        {
+          "name": "taxonomies",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "dc0c383db525c47901fd51a534604b871c4f3a48dcb88f9cda004b3fd27f8b25"
+        },
+        {
+          "name": "learningProgress",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "0c663cefa4b2c68c2dbe3cb5fe90747b7ac7fa8f840da74b9612b1a14cdd8eb8"
+        }
+      ],
+      "disposable": true
+    },
+    {
+      "name": "kitss_stage10_browser_e7035fdbf6994b89",
+      "collections": [
+        {
+          "name": "notifications",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "a55f2abfd400e07cca821a4a5a9aae36d4467f2f157ebe4a14c296b424758eba"
+        },
+        {
+          "name": "bookEntitlements",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "101b387e9dc2f89559ac3b9cf203b12d3655ac1efe814c6b340d02858a022be7"
+        },
+        {
+          "name": "colleges",
+          "count": 0,
+          "indexes": 5,
+          "sha256": "2d1883a4b2386b413af61d5d02e46eaf27867f695190e050157e63b399688708"
+        },
+        {
+          "name": "enrollments",
+          "count": 0,
+          "indexes": 4,
+          "sha256": "e79879f5b7d36275f36f9a7e9eb37de508daabffa206f179d64aea8737b29ef6"
+        },
+        {
+          "name": "auththrottles",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "5c2476a7227b0adef14eade08e6729b3128acd9ce98c2937df684a94545dda0f"
+        },
+        {
+          "name": "taxonomies",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "dc0c383db525c47901fd51a534604b871c4f3a48dcb88f9cda004b3fd27f8b25"
+        },
+        {
+          "name": "notificationReceipts",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "9aaffff739d28844c08fe6585fe8091ec211b5180fa80a1925e6ac3c21a139e1"
+        },
+        {
+          "name": "siteSettings",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "0b31dd943e6c9e06ce925ded30b2e9a62b5e11125d775b17bfa91eefc0a0102d"
+        },
+        {
+          "name": "resultHistory",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "369950cabc23c0b0a9c2da34abbad6c9877a3804d7dd158312d7c777c6bbcf3c"
+        },
+        {
+          "name": "mediaAssets",
+          "count": 0,
+          "indexes": 5,
+          "sha256": "48fef125a06c1110791d52164f567f020ebfe019165add46361eda24adf79b05"
+        },
+        {
+          "name": "orders",
+          "count": 0,
+          "indexes": 8,
+          "sha256": "95e4a35681538c2b4b1dbefa40961ac614dee7681b31fce73845093aef0a1e48"
+        },
+        {
+          "name": "coachingCourses",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "16cb82028764ae0b0eb382aa03e93bfb13b442ab1de524f5850de952f81467fe"
+        },
+        {
+          "name": "banners",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "85b5579c7bf4f0d3bba65a6ddac43f8f2bb0f120d5674a2e0c2813af0bc37066"
+        },
+        {
+          "name": "learningProgress",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "0c663cefa4b2c68c2dbe3cb5fe90747b7ac7fa8f840da74b9612b1a14cdd8eb8"
+        },
+        {
+          "name": "sessions",
+          "count": 0,
+          "indexes": 4,
+          "sha256": "f1fd20b05ac253f06d833bbdfd9a2127ee914497a1682f834592c71a6eaf8adb"
+        },
+        {
+          "name": "universities",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "ef2340869e2b66e475cc2dfe7fbf43dfb74a06f509340e17938b89780d82f2e9"
+        },
+        {
+          "name": "exams",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "5bcf0a5edd4ffb2add93155fd05d970b6e39464eed4294087907733bdcf3a82b"
+        },
+        {
+          "name": "pageContents",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "0b31dd943e6c9e06ce925ded30b2e9a62b5e11125d775b17bfa91eefc0a0102d"
+        },
+        {
+          "name": "users",
+          "count": 0,
+          "indexes": 9,
+          "sha256": "3f321f2f9f8d6c8ee95d129aeb0b1b31304dcaac7d48db38bbc940d241201fa1"
+        },
+        {
+          "name": "resultIssuers",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "0b31dd943e6c9e06ce925ded30b2e9a62b5e11125d775b17bfa91eefc0a0102d"
+        },
+        {
+          "name": "franchiseApplications",
+          "count": 0,
+          "indexes": 4,
+          "sha256": "ed9e9c25eb8baac36fbf0eccf1241f1dc68833cb852a7a32d99f1b36da92e030"
+        },
+        {
+          "name": "registrationApplications",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "15062b65ad7f15b9fc22992b7e0a19f8109b76534dc5cb53d03acf3eafd8d0ff"
+        },
+        {
+          "name": "resultRecords",
+          "count": 0,
+          "indexes": 4,
+          "sha256": "58a64d90d1c637ce431a447514364a28c227f1b0b59a92d9dcb411f7a01a6bf1"
+        },
+        {
+          "name": "jobs",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "6813707d6e8513738b583e515e375eb5da548f41af95ca21418996afad415ff8"
+        },
+        {
+          "name": "facultyProfiles",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "6fbf27db77632b3b9fba66a3e3a67c4edcbd8448d3d5a510b030ce807436560a"
+        },
+        {
+          "name": "lessons",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "bf76a756348ce1912eac944c15ab52dae381630eebb40c8d32d3d939f76d8042"
+        },
+        {
+          "name": "books",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "fdbe1f257a5c77f47a94ff677a632c81b1eb7c674f72391a5dd0dea5a9061955"
+        },
+        {
+          "name": "coursePlans",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "493d12d3698c5fc15ea60643a84abf45e3315114c7ec06ad8c3de922cdfa7a8e"
+        },
+        {
+          "name": "domainLocks",
+          "count": 0,
+          "indexes": 1,
+          "sha256": "d03a702da6f295647850e5d06b117ae0120b6b18082f802279bf0ff13fa79f22"
+        },
+        {
+          "name": "collegePrograms",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "273500359da6c3492b8c8161043cab63abea98388732b21c2af38865aebf8ba6"
+        },
+        {
+          "name": "admissionApplications",
+          "count": 0,
+          "indexes": 4,
+          "sha256": "420d151ea9e6271627459444e072982c12636fb21929c40b300e13ee66bc6f4b"
+        },
+        {
+          "name": "auditlogs",
+          "count": 0,
+          "indexes": 1,
+          "sha256": "d03a702da6f295647850e5d06b117ae0120b6b18082f802279bf0ff13fa79f22"
+        }
+      ],
+      "disposable": true
+    },
+    {
+      "name": "kitss_stage10_test_1a0f19db6f114291",
+      "collections": [
+        {
+          "name": "universities",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "ef2340869e2b66e475cc2dfe7fbf43dfb74a06f509340e17938b89780d82f2e9"
+        },
+        {
+          "name": "sessions",
+          "count": 0,
+          "indexes": 4,
+          "sha256": "f1fd20b05ac253f06d833bbdfd9a2127ee914497a1682f834592c71a6eaf8adb"
+        },
+        {
+          "name": "notifications",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "a55f2abfd400e07cca821a4a5a9aae36d4467f2f157ebe4a14c296b424758eba"
+        },
+        {
+          "name": "coachingCourses",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "16cb82028764ae0b0eb382aa03e93bfb13b442ab1de524f5850de952f81467fe"
+        },
+        {
+          "name": "resultIssuers",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "0b31dd943e6c9e06ce925ded30b2e9a62b5e11125d775b17bfa91eefc0a0102d"
+        },
+        {
+          "name": "admissionApplications",
+          "count": 0,
+          "indexes": 4,
+          "sha256": "420d151ea9e6271627459444e072982c12636fb21929c40b300e13ee66bc6f4b"
+        },
+        {
+          "name": "notificationReceipts",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "9aaffff739d28844c08fe6585fe8091ec211b5180fa80a1925e6ac3c21a139e1"
+        },
+        {
+          "name": "bookEntitlements",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "101b387e9dc2f89559ac3b9cf203b12d3655ac1efe814c6b340d02858a022be7"
+        },
+        {
+          "name": "colleges",
+          "count": 0,
+          "indexes": 5,
+          "sha256": "2d1883a4b2386b413af61d5d02e46eaf27867f695190e050157e63b399688708"
+        },
+        {
+          "name": "siteSettings",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "0b31dd943e6c9e06ce925ded30b2e9a62b5e11125d775b17bfa91eefc0a0102d"
+        },
+        {
+          "name": "facultyProfiles",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "6fbf27db77632b3b9fba66a3e3a67c4edcbd8448d3d5a510b030ce807436560a"
+        },
+        {
+          "name": "learningProgress",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "0c663cefa4b2c68c2dbe3cb5fe90747b7ac7fa8f840da74b9612b1a14cdd8eb8"
+        },
+        {
+          "name": "banners",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "85b5579c7bf4f0d3bba65a6ddac43f8f2bb0f120d5674a2e0c2813af0bc37066"
+        },
+        {
+          "name": "collegePrograms",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "273500359da6c3492b8c8161043cab63abea98388732b21c2af38865aebf8ba6"
+        },
+        {
+          "name": "auththrottles",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "5c2476a7227b0adef14eade08e6729b3128acd9ce98c2937df684a94545dda0f"
+        },
+        {
+          "name": "books",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "fdbe1f257a5c77f47a94ff677a632c81b1eb7c674f72391a5dd0dea5a9061955"
+        },
+        {
+          "name": "enrollments",
+          "count": 0,
+          "indexes": 4,
+          "sha256": "e79879f5b7d36275f36f9a7e9eb37de508daabffa206f179d64aea8737b29ef6"
+        },
+        {
+          "name": "jobs",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "6813707d6e8513738b583e515e375eb5da548f41af95ca21418996afad415ff8"
+        },
+        {
+          "name": "auditlogs",
+          "count": 0,
+          "indexes": 1,
+          "sha256": "d03a702da6f295647850e5d06b117ae0120b6b18082f802279bf0ff13fa79f22"
+        },
+        {
+          "name": "orders",
+          "count": 0,
+          "indexes": 8,
+          "sha256": "95e4a35681538c2b4b1dbefa40961ac614dee7681b31fce73845093aef0a1e48"
+        },
+        {
+          "name": "lessons",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "bf76a756348ce1912eac944c15ab52dae381630eebb40c8d32d3d939f76d8042"
+        },
+        {
+          "name": "franchiseApplications",
+          "count": 0,
+          "indexes": 4,
+          "sha256": "ed9e9c25eb8baac36fbf0eccf1241f1dc68833cb852a7a32d99f1b36da92e030"
+        },
+        {
+          "name": "exams",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "5bcf0a5edd4ffb2add93155fd05d970b6e39464eed4294087907733bdcf3a82b"
+        },
+        {
+          "name": "taxonomies",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "dc0c383db525c47901fd51a534604b871c4f3a48dcb88f9cda004b3fd27f8b25"
+        },
+        {
+          "name": "domainLocks",
+          "count": 0,
+          "indexes": 1,
+          "sha256": "d03a702da6f295647850e5d06b117ae0120b6b18082f802279bf0ff13fa79f22"
+        },
+        {
+          "name": "mediaAssets",
+          "count": 0,
+          "indexes": 5,
+          "sha256": "48fef125a06c1110791d52164f567f020ebfe019165add46361eda24adf79b05"
+        },
+        {
+          "name": "pageContents",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "0b31dd943e6c9e06ce925ded30b2e9a62b5e11125d775b17bfa91eefc0a0102d"
+        },
+        {
+          "name": "coursePlans",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "493d12d3698c5fc15ea60643a84abf45e3315114c7ec06ad8c3de922cdfa7a8e"
+        },
+        {
+          "name": "resultRecords",
+          "count": 0,
+          "indexes": 4,
+          "sha256": "58a64d90d1c637ce431a447514364a28c227f1b0b59a92d9dcb411f7a01a6bf1"
+        },
+        {
+          "name": "resultHistory",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "369950cabc23c0b0a9c2da34abbad6c9877a3804d7dd158312d7c777c6bbcf3c"
+        },
+        {
+          "name": "registrationApplications",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "15062b65ad7f15b9fc22992b7e0a19f8109b76534dc5cb53d03acf3eafd8d0ff"
+        },
+        {
+          "name": "users",
+          "count": 0,
+          "indexes": 9,
+          "sha256": "3f321f2f9f8d6c8ee95d129aeb0b1b31304dcaac7d48db38bbc940d241201fa1"
+        }
+      ],
+      "disposable": true
+    },
+    {
+      "name": "kitss_stage10_test_c926dec4f22f4fdb",
+      "collections": [
+        {
+          "name": "pageContents",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "0b31dd943e6c9e06ce925ded30b2e9a62b5e11125d775b17bfa91eefc0a0102d"
+        },
+        {
+          "name": "auththrottles",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "5c2476a7227b0adef14eade08e6729b3128acd9ce98c2937df684a94545dda0f"
+        },
+        {
+          "name": "taxonomies",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "dc0c383db525c47901fd51a534604b871c4f3a48dcb88f9cda004b3fd27f8b25"
+        },
+        {
+          "name": "lessons",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "bf76a756348ce1912eac944c15ab52dae381630eebb40c8d32d3d939f76d8042"
+        },
+        {
+          "name": "admissionApplications",
+          "count": 0,
+          "indexes": 4,
+          "sha256": "420d151ea9e6271627459444e072982c12636fb21929c40b300e13ee66bc6f4b"
+        },
+        {
+          "name": "sessions",
+          "count": 0,
+          "indexes": 4,
+          "sha256": "f1fd20b05ac253f06d833bbdfd9a2127ee914497a1682f834592c71a6eaf8adb"
+        },
+        {
+          "name": "resultIssuers",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "0b31dd943e6c9e06ce925ded30b2e9a62b5e11125d775b17bfa91eefc0a0102d"
+        },
+        {
+          "name": "colleges",
+          "count": 0,
+          "indexes": 5,
+          "sha256": "2d1883a4b2386b413af61d5d02e46eaf27867f695190e050157e63b399688708"
+        },
+        {
+          "name": "coachingCourses",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "16cb82028764ae0b0eb382aa03e93bfb13b442ab1de524f5850de952f81467fe"
+        },
+        {
+          "name": "orders",
+          "count": 0,
+          "indexes": 8,
+          "sha256": "95e4a35681538c2b4b1dbefa40961ac614dee7681b31fce73845093aef0a1e48"
+        },
+        {
+          "name": "coursePlans",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "493d12d3698c5fc15ea60643a84abf45e3315114c7ec06ad8c3de922cdfa7a8e"
+        },
+        {
+          "name": "enrollments",
+          "count": 0,
+          "indexes": 4,
+          "sha256": "e79879f5b7d36275f36f9a7e9eb37de508daabffa206f179d64aea8737b29ef6"
+        },
+        {
+          "name": "domainLocks",
+          "count": 0,
+          "indexes": 1,
+          "sha256": "d03a702da6f295647850e5d06b117ae0120b6b18082f802279bf0ff13fa79f22"
+        },
+        {
+          "name": "universities",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "ef2340869e2b66e475cc2dfe7fbf43dfb74a06f509340e17938b89780d82f2e9"
+        },
+        {
+          "name": "bookEntitlements",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "101b387e9dc2f89559ac3b9cf203b12d3655ac1efe814c6b340d02858a022be7"
+        },
+        {
+          "name": "siteSettings",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "0b31dd943e6c9e06ce925ded30b2e9a62b5e11125d775b17bfa91eefc0a0102d"
+        },
+        {
+          "name": "exams",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "5bcf0a5edd4ffb2add93155fd05d970b6e39464eed4294087907733bdcf3a82b"
+        },
+        {
+          "name": "mediaAssets",
+          "count": 0,
+          "indexes": 5,
+          "sha256": "48fef125a06c1110791d52164f567f020ebfe019165add46361eda24adf79b05"
+        },
+        {
+          "name": "banners",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "85b5579c7bf4f0d3bba65a6ddac43f8f2bb0f120d5674a2e0c2813af0bc37066"
+        },
+        {
+          "name": "franchiseApplications",
+          "count": 0,
+          "indexes": 4,
+          "sha256": "ed9e9c25eb8baac36fbf0eccf1241f1dc68833cb852a7a32d99f1b36da92e030"
+        },
+        {
+          "name": "jobs",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "6813707d6e8513738b583e515e375eb5da548f41af95ca21418996afad415ff8"
+        },
+        {
+          "name": "resultRecords",
+          "count": 0,
+          "indexes": 4,
+          "sha256": "58a64d90d1c637ce431a447514364a28c227f1b0b59a92d9dcb411f7a01a6bf1"
+        },
+        {
+          "name": "registrationApplications",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "15062b65ad7f15b9fc22992b7e0a19f8109b76534dc5cb53d03acf3eafd8d0ff"
+        },
+        {
+          "name": "resultHistory",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "369950cabc23c0b0a9c2da34abbad6c9877a3804d7dd158312d7c777c6bbcf3c"
+        },
+        {
+          "name": "notifications",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "a55f2abfd400e07cca821a4a5a9aae36d4467f2f157ebe4a14c296b424758eba"
+        },
+        {
+          "name": "collegePrograms",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "273500359da6c3492b8c8161043cab63abea98388732b21c2af38865aebf8ba6"
+        },
+        {
+          "name": "facultyProfiles",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "6fbf27db77632b3b9fba66a3e3a67c4edcbd8448d3d5a510b030ce807436560a"
+        },
+        {
+          "name": "notificationReceipts",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "9aaffff739d28844c08fe6585fe8091ec211b5180fa80a1925e6ac3c21a139e1"
+        },
+        {
+          "name": "learningProgress",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "0c663cefa4b2c68c2dbe3cb5fe90747b7ac7fa8f840da74b9612b1a14cdd8eb8"
+        },
+        {
+          "name": "auditlogs",
+          "count": 0,
+          "indexes": 1,
+          "sha256": "d03a702da6f295647850e5d06b117ae0120b6b18082f802279bf0ff13fa79f22"
+        },
+        {
+          "name": "books",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "fdbe1f257a5c77f47a94ff677a632c81b1eb7c674f72391a5dd0dea5a9061955"
+        },
+        {
+          "name": "users",
+          "count": 0,
+          "indexes": 9,
+          "sha256": "3f321f2f9f8d6c8ee95d129aeb0b1b31304dcaac7d48db38bbc940d241201fa1"
+        }
+      ],
+      "disposable": true
+    },
+    {
+      "name": "kitss_stage4_browser_95325e03ae3241a8",
+      "collections": [
+        {
+          "name": "franchiseApplications",
+          "count": 0,
+          "indexes": 4,
+          "sha256": "ed9e9c25eb8baac36fbf0eccf1241f1dc68833cb852a7a32d99f1b36da92e030"
+        },
+        {
+          "name": "collegePrograms",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "273500359da6c3492b8c8161043cab63abea98388732b21c2af38865aebf8ba6"
+        },
+        {
+          "name": "admissionApplications",
+          "count": 0,
+          "indexes": 4,
+          "sha256": "420d151ea9e6271627459444e072982c12636fb21929c40b300e13ee66bc6f4b"
+        },
+        {
+          "name": "users",
+          "count": 0,
+          "indexes": 9,
+          "sha256": "3f321f2f9f8d6c8ee95d129aeb0b1b31304dcaac7d48db38bbc940d241201fa1"
+        },
+        {
+          "name": "auditlogs",
+          "count": 0,
+          "indexes": 1,
+          "sha256": "d03a702da6f295647850e5d06b117ae0120b6b18082f802279bf0ff13fa79f22"
+        },
+        {
+          "name": "universities",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "ef2340869e2b66e475cc2dfe7fbf43dfb74a06f509340e17938b89780d82f2e9"
+        },
+        {
+          "name": "colleges",
+          "count": 0,
+          "indexes": 5,
+          "sha256": "2d1883a4b2386b413af61d5d02e46eaf27867f695190e050157e63b399688708"
+        },
+        {
+          "name": "auththrottles",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "5c2476a7227b0adef14eade08e6729b3128acd9ce98c2937df684a94545dda0f"
+        },
+        {
+          "name": "domainLocks",
+          "count": 0,
+          "indexes": 1,
+          "sha256": "d03a702da6f295647850e5d06b117ae0120b6b18082f802279bf0ff13fa79f22"
+        },
+        {
+          "name": "taxonomies",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "dc0c383db525c47901fd51a534604b871c4f3a48dcb88f9cda004b3fd27f8b25"
+        },
+        {
+          "name": "sessions",
+          "count": 0,
+          "indexes": 4,
+          "sha256": "f1fd20b05ac253f06d833bbdfd9a2127ee914497a1682f834592c71a6eaf8adb"
+        }
+      ],
+      "disposable": true
+    },
+    {
+      "name": "kitss_stage5_browser_e6ba7d8db73e4365",
+      "collections": [
+        {
+          "name": "admissionApplications",
+          "count": 0,
+          "indexes": 4,
+          "sha256": "420d151ea9e6271627459444e072982c12636fb21929c40b300e13ee66bc6f4b"
+        },
+        {
+          "name": "siteSettings",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "0b31dd943e6c9e06ce925ded30b2e9a62b5e11125d775b17bfa91eefc0a0102d"
+        },
+        {
+          "name": "banners",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "85b5579c7bf4f0d3bba65a6ddac43f8f2bb0f120d5674a2e0c2813af0bc37066"
+        },
+        {
+          "name": "pageContents",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "0b31dd943e6c9e06ce925ded30b2e9a62b5e11125d775b17bfa91eefc0a0102d"
+        },
+        {
+          "name": "franchiseApplications",
+          "count": 0,
+          "indexes": 4,
+          "sha256": "ed9e9c25eb8baac36fbf0eccf1241f1dc68833cb852a7a32d99f1b36da92e030"
+        },
+        {
+          "name": "auththrottles",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "5c2476a7227b0adef14eade08e6729b3128acd9ce98c2937df684a94545dda0f"
+        },
+        {
+          "name": "colleges",
+          "count": 0,
+          "indexes": 5,
+          "sha256": "2d1883a4b2386b413af61d5d02e46eaf27867f695190e050157e63b399688708"
+        },
+        {
+          "name": "taxonomies",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "dc0c383db525c47901fd51a534604b871c4f3a48dcb88f9cda004b3fd27f8b25"
+        },
+        {
+          "name": "books",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "fdbe1f257a5c77f47a94ff677a632c81b1eb7c674f72391a5dd0dea5a9061955"
+        },
+        {
+          "name": "facultyProfiles",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "6fbf27db77632b3b9fba66a3e3a67c4edcbd8448d3d5a510b030ce807436560a"
+        },
+        {
+          "name": "sessions",
+          "count": 0,
+          "indexes": 4,
+          "sha256": "f1fd20b05ac253f06d833bbdfd9a2127ee914497a1682f834592c71a6eaf8adb"
+        },
+        {
+          "name": "auditlogs",
+          "count": 0,
+          "indexes": 1,
+          "sha256": "d03a702da6f295647850e5d06b117ae0120b6b18082f802279bf0ff13fa79f22"
+        },
+        {
+          "name": "mediaAssets",
+          "count": 0,
+          "indexes": 5,
+          "sha256": "48fef125a06c1110791d52164f567f020ebfe019165add46361eda24adf79b05"
+        },
+        {
+          "name": "collegePrograms",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "273500359da6c3492b8c8161043cab63abea98388732b21c2af38865aebf8ba6"
+        },
+        {
+          "name": "users",
+          "count": 0,
+          "indexes": 9,
+          "sha256": "3f321f2f9f8d6c8ee95d129aeb0b1b31304dcaac7d48db38bbc940d241201fa1"
+        },
+        {
+          "name": "domainLocks",
+          "count": 0,
+          "indexes": 1,
+          "sha256": "d03a702da6f295647850e5d06b117ae0120b6b18082f802279bf0ff13fa79f22"
+        },
+        {
+          "name": "universities",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "ef2340869e2b66e475cc2dfe7fbf43dfb74a06f509340e17938b89780d82f2e9"
+        }
+      ],
+      "disposable": true
+    },
+    {
+      "name": "kitss_stage6_browser_6271737f748c4556",
+      "collections": [
+        {
+          "name": "registrationApplications",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "15062b65ad7f15b9fc22992b7e0a19f8109b76534dc5cb53d03acf3eafd8d0ff"
+        },
+        {
+          "name": "mediaAssets",
+          "count": 0,
+          "indexes": 5,
+          "sha256": "48fef125a06c1110791d52164f567f020ebfe019165add46361eda24adf79b05"
+        },
+        {
+          "name": "taxonomies",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "dc0c383db525c47901fd51a534604b871c4f3a48dcb88f9cda004b3fd27f8b25"
+        },
+        {
+          "name": "auththrottles",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "5c2476a7227b0adef14eade08e6729b3128acd9ce98c2937df684a94545dda0f"
+        },
+        {
+          "name": "franchiseApplications",
+          "count": 0,
+          "indexes": 4,
+          "sha256": "ed9e9c25eb8baac36fbf0eccf1241f1dc68833cb852a7a32d99f1b36da92e030"
+        },
+        {
+          "name": "users",
+          "count": 0,
+          "indexes": 9,
+          "sha256": "3f321f2f9f8d6c8ee95d129aeb0b1b31304dcaac7d48db38bbc940d241201fa1"
+        },
+        {
+          "name": "siteSettings",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "0b31dd943e6c9e06ce925ded30b2e9a62b5e11125d775b17bfa91eefc0a0102d"
+        },
+        {
+          "name": "bookEntitlements",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "101b387e9dc2f89559ac3b9cf203b12d3655ac1efe814c6b340d02858a022be7"
+        },
+        {
+          "name": "pageContents",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "0b31dd943e6c9e06ce925ded30b2e9a62b5e11125d775b17bfa91eefc0a0102d"
+        },
+        {
+          "name": "facultyProfiles",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "6fbf27db77632b3b9fba66a3e3a67c4edcbd8448d3d5a510b030ce807436560a"
+        },
+        {
+          "name": "books",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "fdbe1f257a5c77f47a94ff677a632c81b1eb7c674f72391a5dd0dea5a9061955"
+        },
+        {
+          "name": "sessions",
+          "count": 0,
+          "indexes": 4,
+          "sha256": "f1fd20b05ac253f06d833bbdfd9a2127ee914497a1682f834592c71a6eaf8adb"
+        },
+        {
+          "name": "colleges",
+          "count": 0,
+          "indexes": 5,
+          "sha256": "2d1883a4b2386b413af61d5d02e46eaf27867f695190e050157e63b399688708"
+        },
+        {
+          "name": "banners",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "85b5579c7bf4f0d3bba65a6ddac43f8f2bb0f120d5674a2e0c2813af0bc37066"
+        },
+        {
+          "name": "orders",
+          "count": 0,
+          "indexes": 8,
+          "sha256": "95e4a35681538c2b4b1dbefa40961ac614dee7681b31fce73845093aef0a1e48"
+        },
+        {
+          "name": "admissionApplications",
+          "count": 0,
+          "indexes": 4,
+          "sha256": "420d151ea9e6271627459444e072982c12636fb21929c40b300e13ee66bc6f4b"
+        },
+        {
+          "name": "auditlogs",
+          "count": 0,
+          "indexes": 1,
+          "sha256": "d03a702da6f295647850e5d06b117ae0120b6b18082f802279bf0ff13fa79f22"
+        },
+        {
+          "name": "domainLocks",
+          "count": 0,
+          "indexes": 1,
+          "sha256": "d03a702da6f295647850e5d06b117ae0120b6b18082f802279bf0ff13fa79f22"
+        },
+        {
+          "name": "universities",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "ef2340869e2b66e475cc2dfe7fbf43dfb74a06f509340e17938b89780d82f2e9"
+        },
+        {
+          "name": "collegePrograms",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "273500359da6c3492b8c8161043cab63abea98388732b21c2af38865aebf8ba6"
+        },
+        {
+          "name": "jobs",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "6813707d6e8513738b583e515e375eb5da548f41af95ca21418996afad415ff8"
+        }
+      ],
+      "disposable": true
+    },
+    {
+      "name": "kitss_stage6_test_00489215a61f481a",
+      "collections": [
+        {
+          "name": "registrationApplications",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "15062b65ad7f15b9fc22992b7e0a19f8109b76534dc5cb53d03acf3eafd8d0ff"
+        },
+        {
+          "name": "auditlogs",
+          "count": 0,
+          "indexes": 1,
+          "sha256": "d03a702da6f295647850e5d06b117ae0120b6b18082f802279bf0ff13fa79f22"
+        },
+        {
+          "name": "books",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "fdbe1f257a5c77f47a94ff677a632c81b1eb7c674f72391a5dd0dea5a9061955"
+        },
+        {
+          "name": "admissionApplications",
+          "count": 0,
+          "indexes": 4,
+          "sha256": "420d151ea9e6271627459444e072982c12636fb21929c40b300e13ee66bc6f4b"
+        },
+        {
+          "name": "users",
+          "count": 0,
+          "indexes": 9,
+          "sha256": "3f321f2f9f8d6c8ee95d129aeb0b1b31304dcaac7d48db38bbc940d241201fa1"
+        },
+        {
+          "name": "orders",
+          "count": 0,
+          "indexes": 8,
+          "sha256": "95e4a35681538c2b4b1dbefa40961ac614dee7681b31fce73845093aef0a1e48"
+        },
+        {
+          "name": "mediaAssets",
+          "count": 0,
+          "indexes": 5,
+          "sha256": "48fef125a06c1110791d52164f567f020ebfe019165add46361eda24adf79b05"
+        },
+        {
+          "name": "facultyProfiles",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "6fbf27db77632b3b9fba66a3e3a67c4edcbd8448d3d5a510b030ce807436560a"
+        },
+        {
+          "name": "domainLocks",
+          "count": 0,
+          "indexes": 1,
+          "sha256": "d03a702da6f295647850e5d06b117ae0120b6b18082f802279bf0ff13fa79f22"
+        },
+        {
+          "name": "auththrottles",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "5c2476a7227b0adef14eade08e6729b3128acd9ce98c2937df684a94545dda0f"
+        },
+        {
+          "name": "colleges",
+          "count": 0,
+          "indexes": 5,
+          "sha256": "2d1883a4b2386b413af61d5d02e46eaf27867f695190e050157e63b399688708"
+        },
+        {
+          "name": "banners",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "85b5579c7bf4f0d3bba65a6ddac43f8f2bb0f120d5674a2e0c2813af0bc37066"
+        },
+        {
+          "name": "bookEntitlements",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "101b387e9dc2f89559ac3b9cf203b12d3655ac1efe814c6b340d02858a022be7"
+        },
+        {
+          "name": "universities",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "ef2340869e2b66e475cc2dfe7fbf43dfb74a06f509340e17938b89780d82f2e9"
+        },
+        {
+          "name": "collegePrograms",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "273500359da6c3492b8c8161043cab63abea98388732b21c2af38865aebf8ba6"
+        },
+        {
+          "name": "franchiseApplications",
+          "count": 0,
+          "indexes": 4,
+          "sha256": "ed9e9c25eb8baac36fbf0eccf1241f1dc68833cb852a7a32d99f1b36da92e030"
+        },
+        {
+          "name": "taxonomies",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "dc0c383db525c47901fd51a534604b871c4f3a48dcb88f9cda004b3fd27f8b25"
+        },
+        {
+          "name": "siteSettings",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "0b31dd943e6c9e06ce925ded30b2e9a62b5e11125d775b17bfa91eefc0a0102d"
+        },
+        {
+          "name": "jobs",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "6813707d6e8513738b583e515e375eb5da548f41af95ca21418996afad415ff8"
+        },
+        {
+          "name": "pageContents",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "0b31dd943e6c9e06ce925ded30b2e9a62b5e11125d775b17bfa91eefc0a0102d"
+        },
+        {
+          "name": "sessions",
+          "count": 0,
+          "indexes": 4,
+          "sha256": "f1fd20b05ac253f06d833bbdfd9a2127ee914497a1682f834592c71a6eaf8adb"
+        }
+      ],
+      "disposable": true
+    },
+    {
+      "name": "kitss_stage6_test_4e01eb26e5b04564",
+      "collections": [
+        {
+          "name": "facultyProfiles",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "6fbf27db77632b3b9fba66a3e3a67c4edcbd8448d3d5a510b030ce807436560a"
+        },
+        {
+          "name": "books",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "fdbe1f257a5c77f47a94ff677a632c81b1eb7c674f72391a5dd0dea5a9061955"
+        },
+        {
+          "name": "colleges",
+          "count": 0,
+          "indexes": 5,
+          "sha256": "2d1883a4b2386b413af61d5d02e46eaf27867f695190e050157e63b399688708"
+        },
+        {
+          "name": "collegePrograms",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "273500359da6c3492b8c8161043cab63abea98388732b21c2af38865aebf8ba6"
+        },
+        {
+          "name": "franchiseApplications",
+          "count": 0,
+          "indexes": 4,
+          "sha256": "ed9e9c25eb8baac36fbf0eccf1241f1dc68833cb852a7a32d99f1b36da92e030"
+        },
+        {
+          "name": "mediaAssets",
+          "count": 0,
+          "indexes": 5,
+          "sha256": "48fef125a06c1110791d52164f567f020ebfe019165add46361eda24adf79b05"
+        },
+        {
+          "name": "auththrottles",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "5c2476a7227b0adef14eade08e6729b3128acd9ce98c2937df684a94545dda0f"
+        },
+        {
+          "name": "auditlogs",
+          "count": 0,
+          "indexes": 1,
+          "sha256": "d03a702da6f295647850e5d06b117ae0120b6b18082f802279bf0ff13fa79f22"
+        },
+        {
+          "name": "taxonomies",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "dc0c383db525c47901fd51a534604b871c4f3a48dcb88f9cda004b3fd27f8b25"
+        },
+        {
+          "name": "orders",
+          "count": 0,
+          "indexes": 8,
+          "sha256": "95e4a35681538c2b4b1dbefa40961ac614dee7681b31fce73845093aef0a1e48"
+        },
+        {
+          "name": "pageContents",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "0b31dd943e6c9e06ce925ded30b2e9a62b5e11125d775b17bfa91eefc0a0102d"
+        },
+        {
+          "name": "banners",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "85b5579c7bf4f0d3bba65a6ddac43f8f2bb0f120d5674a2e0c2813af0bc37066"
+        },
+        {
+          "name": "jobs",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "6813707d6e8513738b583e515e375eb5da548f41af95ca21418996afad415ff8"
+        },
+        {
+          "name": "universities",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "ef2340869e2b66e475cc2dfe7fbf43dfb74a06f509340e17938b89780d82f2e9"
+        },
+        {
+          "name": "users",
+          "count": 0,
+          "indexes": 9,
+          "sha256": "3f321f2f9f8d6c8ee95d129aeb0b1b31304dcaac7d48db38bbc940d241201fa1"
+        },
+        {
+          "name": "admissionApplications",
+          "count": 0,
+          "indexes": 4,
+          "sha256": "420d151ea9e6271627459444e072982c12636fb21929c40b300e13ee66bc6f4b"
+        },
+        {
+          "name": "domainLocks",
+          "count": 0,
+          "indexes": 1,
+          "sha256": "d03a702da6f295647850e5d06b117ae0120b6b18082f802279bf0ff13fa79f22"
+        },
+        {
+          "name": "sessions",
+          "count": 0,
+          "indexes": 4,
+          "sha256": "f1fd20b05ac253f06d833bbdfd9a2127ee914497a1682f834592c71a6eaf8adb"
+        },
+        {
+          "name": "bookEntitlements",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "101b387e9dc2f89559ac3b9cf203b12d3655ac1efe814c6b340d02858a022be7"
+        },
+        {
+          "name": "siteSettings",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "0b31dd943e6c9e06ce925ded30b2e9a62b5e11125d775b17bfa91eefc0a0102d"
+        },
+        {
+          "name": "registrationApplications",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "15062b65ad7f15b9fc22992b7e0a19f8109b76534dc5cb53d03acf3eafd8d0ff"
+        }
+      ],
+      "disposable": true
+    },
+    {
+      "name": "kitss_stage7_browser_2354d2e7c29a46d6",
+      "collections": [
+        {
+          "name": "collegePrograms",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "273500359da6c3492b8c8161043cab63abea98388732b21c2af38865aebf8ba6"
+        },
+        {
+          "name": "admissionApplications",
+          "count": 0,
+          "indexes": 4,
+          "sha256": "420d151ea9e6271627459444e072982c12636fb21929c40b300e13ee66bc6f4b"
+        },
+        {
+          "name": "siteSettings",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "0b31dd943e6c9e06ce925ded30b2e9a62b5e11125d775b17bfa91eefc0a0102d"
+        },
+        {
+          "name": "universities",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "ef2340869e2b66e475cc2dfe7fbf43dfb74a06f509340e17938b89780d82f2e9"
+        },
+        {
+          "name": "enrollments",
+          "count": 2,
+          "indexes": 4,
+          "sha256": "2c5e17c237a2f237497ffedc29c63f01e6d4edac719d1b891d11f18860d49631"
+        },
+        {
+          "name": "taxonomies",
+          "count": 1,
+          "indexes": 3,
+          "sha256": "7951091e246014c79181a5c4b90f3a28a97716df449e0979110e33388879b32b"
+        },
+        {
+          "name": "colleges",
+          "count": 0,
+          "indexes": 5,
+          "sha256": "2d1883a4b2386b413af61d5d02e46eaf27867f695190e050157e63b399688708"
+        },
+        {
+          "name": "auditlogs",
+          "count": 53,
+          "indexes": 1,
+          "sha256": "81f9803e81965a5b8439800bef778d4ba9a0b57de60395ce8c82c6b7e192020c"
+        },
+        {
+          "name": "sessions",
+          "count": 0,
+          "indexes": 4,
+          "sha256": "f1fd20b05ac253f06d833bbdfd9a2127ee914497a1682f834592c71a6eaf8adb"
+        },
+        {
+          "name": "domainLocks",
+          "count": 1,
+          "indexes": 1,
+          "sha256": "3399ca7f8d4eef52f34fad617c1ce3a7c855eebfcfd58f38e38f1953e9a47785"
+        },
+        {
+          "name": "registrationApplications",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "15062b65ad7f15b9fc22992b7e0a19f8109b76534dc5cb53d03acf3eafd8d0ff"
+        },
+        {
+          "name": "users",
+          "count": 5,
+          "indexes": 9,
+          "sha256": "9a2523309e795f03fbb3728fd8a0abe0629173e8b6f4a9c89fa07f88c3cbe126"
+        },
+        {
+          "name": "coursePlans",
+          "count": 2,
+          "indexes": 2,
+          "sha256": "4e1bf2317cdc4aa726eadba38fe74a46ced9b4fbda579f49376a6ff7f55ec665"
+        },
+        {
+          "name": "orders",
+          "count": 3,
+          "indexes": 8,
+          "sha256": "41d3132f6fc4f13fa0c2e01e2d343554b9c915718a6e66baca2df19b7e96bdd3"
+        },
+        {
+          "name": "facultyProfiles",
+          "count": 1,
+          "indexes": 2,
+          "sha256": "9db4a304221c0c480ba0538f17b9a59b731f3acf89082ed4bebe688e2aa58264"
+        },
+        {
+          "name": "coachingCourses",
+          "count": 3,
+          "indexes": 2,
+          "sha256": "73aa13d90a7a71b235c975ea1f9825fcc4508dc38b29e1314224b462475993ad"
+        },
+        {
+          "name": "bookEntitlements",
+          "count": 1,
+          "indexes": 3,
+          "sha256": "599b4c09790895474be2cebd02df1011fd8a94123ad55be3689628df9510e3df"
+        },
+        {
+          "name": "mediaAssets",
+          "count": 5,
+          "indexes": 5,
+          "sha256": "dd353ed700ec5f88be950c4652180bf0629a1ab22406df898422fc73f18cc283"
+        },
+        {
+          "name": "lessons",
+          "count": 3,
+          "indexes": 2,
+          "sha256": "cc820ca561009d18a806a79b8d465e3201c5677f3a1e7324a5c0a343ce6261da"
+        },
+        {
+          "name": "pageContents",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "0b31dd943e6c9e06ce925ded30b2e9a62b5e11125d775b17bfa91eefc0a0102d"
+        },
+        {
+          "name": "jobs",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "6813707d6e8513738b583e515e375eb5da548f41af95ca21418996afad415ff8"
+        },
+        {
+          "name": "books",
+          "count": 1,
+          "indexes": 3,
+          "sha256": "9f236dc905c765e07eb2f88bd61e760c2f8e985abcbe0a426bf19027a5ac0446"
+        },
+        {
+          "name": "learningProgress",
+          "count": 2,
+          "indexes": 3,
+          "sha256": "f7c88f2593bebb2f716ad119f7f05b28f659c9d7df55d1ab198e6120ae5af8dc"
+        },
+        {
+          "name": "franchiseApplications",
+          "count": 0,
+          "indexes": 4,
+          "sha256": "ed9e9c25eb8baac36fbf0eccf1241f1dc68833cb852a7a32d99f1b36da92e030"
+        },
+        {
+          "name": "auththrottles",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "5c2476a7227b0adef14eade08e6729b3128acd9ce98c2937df684a94545dda0f"
+        },
+        {
+          "name": "banners",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "85b5579c7bf4f0d3bba65a6ddac43f8f2bb0f120d5674a2e0c2813af0bc37066"
+        }
+      ],
+      "disposable": true
+    },
+    {
+      "name": "kitss_stage7_browser_c506096fa1d64957",
+      "collections": [
+        {
+          "name": "franchiseApplications",
+          "count": 0,
+          "indexes": 4,
+          "sha256": "ed9e9c25eb8baac36fbf0eccf1241f1dc68833cb852a7a32d99f1b36da92e030"
+        },
+        {
+          "name": "taxonomies",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "dc0c383db525c47901fd51a534604b871c4f3a48dcb88f9cda004b3fd27f8b25"
+        },
+        {
+          "name": "domainLocks",
+          "count": 0,
+          "indexes": 1,
+          "sha256": "d03a702da6f295647850e5d06b117ae0120b6b18082f802279bf0ff13fa79f22"
+        },
+        {
+          "name": "admissionApplications",
+          "count": 0,
+          "indexes": 4,
+          "sha256": "420d151ea9e6271627459444e072982c12636fb21929c40b300e13ee66bc6f4b"
+        },
+        {
+          "name": "siteSettings",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "0b31dd943e6c9e06ce925ded30b2e9a62b5e11125d775b17bfa91eefc0a0102d"
+        },
+        {
+          "name": "books",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "fdbe1f257a5c77f47a94ff677a632c81b1eb7c674f72391a5dd0dea5a9061955"
+        },
+        {
+          "name": "auditlogs",
+          "count": 0,
+          "indexes": 1,
+          "sha256": "d03a702da6f295647850e5d06b117ae0120b6b18082f802279bf0ff13fa79f22"
+        },
+        {
+          "name": "facultyProfiles",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "6fbf27db77632b3b9fba66a3e3a67c4edcbd8448d3d5a510b030ce807436560a"
+        },
+        {
+          "name": "coachingCourses",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "16cb82028764ae0b0eb382aa03e93bfb13b442ab1de524f5850de952f81467fe"
+        },
+        {
+          "name": "colleges",
+          "count": 0,
+          "indexes": 5,
+          "sha256": "2d1883a4b2386b413af61d5d02e46eaf27867f695190e050157e63b399688708"
+        },
+        {
+          "name": "registrationApplications",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "15062b65ad7f15b9fc22992b7e0a19f8109b76534dc5cb53d03acf3eafd8d0ff"
+        },
+        {
+          "name": "orders",
+          "count": 0,
+          "indexes": 8,
+          "sha256": "95e4a35681538c2b4b1dbefa40961ac614dee7681b31fce73845093aef0a1e48"
+        },
+        {
+          "name": "learningProgress",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "0c663cefa4b2c68c2dbe3cb5fe90747b7ac7fa8f840da74b9612b1a14cdd8eb8"
+        },
+        {
+          "name": "auththrottles",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "5c2476a7227b0adef14eade08e6729b3128acd9ce98c2937df684a94545dda0f"
+        },
+        {
+          "name": "coursePlans",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "493d12d3698c5fc15ea60643a84abf45e3315114c7ec06ad8c3de922cdfa7a8e"
+        },
+        {
+          "name": "enrollments",
+          "count": 0,
+          "indexes": 4,
+          "sha256": "e79879f5b7d36275f36f9a7e9eb37de508daabffa206f179d64aea8737b29ef6"
+        },
+        {
+          "name": "lessons",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "bf76a756348ce1912eac944c15ab52dae381630eebb40c8d32d3d939f76d8042"
+        },
+        {
+          "name": "banners",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "85b5579c7bf4f0d3bba65a6ddac43f8f2bb0f120d5674a2e0c2813af0bc37066"
+        },
+        {
+          "name": "users",
+          "count": 0,
+          "indexes": 9,
+          "sha256": "3f321f2f9f8d6c8ee95d129aeb0b1b31304dcaac7d48db38bbc940d241201fa1"
+        },
+        {
+          "name": "sessions",
+          "count": 0,
+          "indexes": 4,
+          "sha256": "f1fd20b05ac253f06d833bbdfd9a2127ee914497a1682f834592c71a6eaf8adb"
+        },
+        {
+          "name": "bookEntitlements",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "101b387e9dc2f89559ac3b9cf203b12d3655ac1efe814c6b340d02858a022be7"
+        },
+        {
+          "name": "collegePrograms",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "273500359da6c3492b8c8161043cab63abea98388732b21c2af38865aebf8ba6"
+        },
+        {
+          "name": "pageContents",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "0b31dd943e6c9e06ce925ded30b2e9a62b5e11125d775b17bfa91eefc0a0102d"
+        },
+        {
+          "name": "jobs",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "6813707d6e8513738b583e515e375eb5da548f41af95ca21418996afad415ff8"
+        },
+        {
+          "name": "mediaAssets",
+          "count": 0,
+          "indexes": 5,
+          "sha256": "48fef125a06c1110791d52164f567f020ebfe019165add46361eda24adf79b05"
+        },
+        {
+          "name": "universities",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "ef2340869e2b66e475cc2dfe7fbf43dfb74a06f509340e17938b89780d82f2e9"
+        }
+      ],
+      "disposable": true
+    },
+    {
+      "name": "kitss_stage8_browser_27cb3d5631a94e04",
+      "collections": [
+        {
+          "name": "resultIssuers",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "0b31dd943e6c9e06ce925ded30b2e9a62b5e11125d775b17bfa91eefc0a0102d"
+        },
+        {
+          "name": "banners",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "85b5579c7bf4f0d3bba65a6ddac43f8f2bb0f120d5674a2e0c2813af0bc37066"
+        },
+        {
+          "name": "mediaAssets",
+          "count": 0,
+          "indexes": 5,
+          "sha256": "48fef125a06c1110791d52164f567f020ebfe019165add46361eda24adf79b05"
+        },
+        {
+          "name": "coachingCourses",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "16cb82028764ae0b0eb382aa03e93bfb13b442ab1de524f5850de952f81467fe"
+        },
+        {
+          "name": "resultRecords",
+          "count": 0,
+          "indexes": 4,
+          "sha256": "58a64d90d1c637ce431a447514364a28c227f1b0b59a92d9dcb411f7a01a6bf1"
+        },
+        {
+          "name": "pageContents",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "0b31dd943e6c9e06ce925ded30b2e9a62b5e11125d775b17bfa91eefc0a0102d"
+        },
+        {
+          "name": "notificationReceipts",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "9aaffff739d28844c08fe6585fe8091ec211b5180fa80a1925e6ac3c21a139e1"
+        },
+        {
+          "name": "colleges",
+          "count": 0,
+          "indexes": 5,
+          "sha256": "2d1883a4b2386b413af61d5d02e46eaf27867f695190e050157e63b399688708"
+        },
+        {
+          "name": "orders",
+          "count": 0,
+          "indexes": 8,
+          "sha256": "95e4a35681538c2b4b1dbefa40961ac614dee7681b31fce73845093aef0a1e48"
+        },
+        {
+          "name": "taxonomies",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "dc0c383db525c47901fd51a534604b871c4f3a48dcb88f9cda004b3fd27f8b25"
+        },
+        {
+          "name": "admissionApplications",
+          "count": 0,
+          "indexes": 4,
+          "sha256": "420d151ea9e6271627459444e072982c12636fb21929c40b300e13ee66bc6f4b"
+        },
+        {
+          "name": "domainLocks",
+          "count": 0,
+          "indexes": 1,
+          "sha256": "d03a702da6f295647850e5d06b117ae0120b6b18082f802279bf0ff13fa79f22"
+        },
+        {
+          "name": "lessons",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "bf76a756348ce1912eac944c15ab52dae381630eebb40c8d32d3d939f76d8042"
+        },
+        {
+          "name": "auththrottles",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "5c2476a7227b0adef14eade08e6729b3128acd9ce98c2937df684a94545dda0f"
+        },
+        {
+          "name": "exams",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "5bcf0a5edd4ffb2add93155fd05d970b6e39464eed4294087907733bdcf3a82b"
+        },
+        {
+          "name": "learningProgress",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "0c663cefa4b2c68c2dbe3cb5fe90747b7ac7fa8f840da74b9612b1a14cdd8eb8"
+        },
+        {
+          "name": "sessions",
+          "count": 0,
+          "indexes": 4,
+          "sha256": "f1fd20b05ac253f06d833bbdfd9a2127ee914497a1682f834592c71a6eaf8adb"
+        },
+        {
+          "name": "collegePrograms",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "273500359da6c3492b8c8161043cab63abea98388732b21c2af38865aebf8ba6"
+        },
+        {
+          "name": "jobs",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "6813707d6e8513738b583e515e375eb5da548f41af95ca21418996afad415ff8"
+        },
+        {
+          "name": "enrollments",
+          "count": 0,
+          "indexes": 4,
+          "sha256": "e79879f5b7d36275f36f9a7e9eb37de508daabffa206f179d64aea8737b29ef6"
+        },
+        {
+          "name": "siteSettings",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "0b31dd943e6c9e06ce925ded30b2e9a62b5e11125d775b17bfa91eefc0a0102d"
+        },
+        {
+          "name": "registrationApplications",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "15062b65ad7f15b9fc22992b7e0a19f8109b76534dc5cb53d03acf3eafd8d0ff"
+        },
+        {
+          "name": "users",
+          "count": 0,
+          "indexes": 9,
+          "sha256": "3f321f2f9f8d6c8ee95d129aeb0b1b31304dcaac7d48db38bbc940d241201fa1"
+        },
+        {
+          "name": "universities",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "ef2340869e2b66e475cc2dfe7fbf43dfb74a06f509340e17938b89780d82f2e9"
+        },
+        {
+          "name": "resultHistory",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "369950cabc23c0b0a9c2da34abbad6c9877a3804d7dd158312d7c777c6bbcf3c"
+        },
+        {
+          "name": "franchiseApplications",
+          "count": 0,
+          "indexes": 4,
+          "sha256": "ed9e9c25eb8baac36fbf0eccf1241f1dc68833cb852a7a32d99f1b36da92e030"
+        },
+        {
+          "name": "auditlogs",
+          "count": 0,
+          "indexes": 1,
+          "sha256": "d03a702da6f295647850e5d06b117ae0120b6b18082f802279bf0ff13fa79f22"
+        },
+        {
+          "name": "bookEntitlements",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "101b387e9dc2f89559ac3b9cf203b12d3655ac1efe814c6b340d02858a022be7"
+        },
+        {
+          "name": "notifications",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "a55f2abfd400e07cca821a4a5a9aae36d4467f2f157ebe4a14c296b424758eba"
+        },
+        {
+          "name": "coursePlans",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "493d12d3698c5fc15ea60643a84abf45e3315114c7ec06ad8c3de922cdfa7a8e"
+        },
+        {
+          "name": "facultyProfiles",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "6fbf27db77632b3b9fba66a3e3a67c4edcbd8448d3d5a510b030ce807436560a"
+        },
+        {
+          "name": "books",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "fdbe1f257a5c77f47a94ff677a632c81b1eb7c674f72391a5dd0dea5a9061955"
+        }
+      ],
+      "disposable": true
+    },
+    {
+      "name": "kitss_stage9_browser_3e6d1a3bb34e4a3d",
+      "collections": [
+        {
+          "name": "auththrottles",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "5c2476a7227b0adef14eade08e6729b3128acd9ce98c2937df684a94545dda0f"
+        },
+        {
+          "name": "lessons",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "bf76a756348ce1912eac944c15ab52dae381630eebb40c8d32d3d939f76d8042"
+        },
+        {
+          "name": "domainLocks",
+          "count": 0,
+          "indexes": 1,
+          "sha256": "d03a702da6f295647850e5d06b117ae0120b6b18082f802279bf0ff13fa79f22"
+        },
+        {
+          "name": "enrollments",
+          "count": 0,
+          "indexes": 4,
+          "sha256": "e79879f5b7d36275f36f9a7e9eb37de508daabffa206f179d64aea8737b29ef6"
+        },
+        {
+          "name": "facultyProfiles",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "6fbf27db77632b3b9fba66a3e3a67c4edcbd8448d3d5a510b030ce807436560a"
+        },
+        {
+          "name": "notifications",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "a55f2abfd400e07cca821a4a5a9aae36d4467f2f157ebe4a14c296b424758eba"
+        },
+        {
+          "name": "resultHistory",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "369950cabc23c0b0a9c2da34abbad6c9877a3804d7dd158312d7c777c6bbcf3c"
+        },
+        {
+          "name": "registrationApplications",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "15062b65ad7f15b9fc22992b7e0a19f8109b76534dc5cb53d03acf3eafd8d0ff"
+        },
+        {
+          "name": "siteSettings",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "0b31dd943e6c9e06ce925ded30b2e9a62b5e11125d775b17bfa91eefc0a0102d"
+        },
+        {
+          "name": "sessions",
+          "count": 0,
+          "indexes": 4,
+          "sha256": "f1fd20b05ac253f06d833bbdfd9a2127ee914497a1682f834592c71a6eaf8adb"
+        },
+        {
+          "name": "orders",
+          "count": 0,
+          "indexes": 8,
+          "sha256": "95e4a35681538c2b4b1dbefa40961ac614dee7681b31fce73845093aef0a1e48"
+        },
+        {
+          "name": "books",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "fdbe1f257a5c77f47a94ff677a632c81b1eb7c674f72391a5dd0dea5a9061955"
+        },
+        {
+          "name": "banners",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "85b5579c7bf4f0d3bba65a6ddac43f8f2bb0f120d5674a2e0c2813af0bc37066"
+        },
+        {
+          "name": "users",
+          "count": 0,
+          "indexes": 9,
+          "sha256": "3f321f2f9f8d6c8ee95d129aeb0b1b31304dcaac7d48db38bbc940d241201fa1"
+        },
+        {
+          "name": "pageContents",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "0b31dd943e6c9e06ce925ded30b2e9a62b5e11125d775b17bfa91eefc0a0102d"
+        },
+        {
+          "name": "collegePrograms",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "273500359da6c3492b8c8161043cab63abea98388732b21c2af38865aebf8ba6"
+        },
+        {
+          "name": "exams",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "5bcf0a5edd4ffb2add93155fd05d970b6e39464eed4294087907733bdcf3a82b"
+        },
+        {
+          "name": "taxonomies",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "dc0c383db525c47901fd51a534604b871c4f3a48dcb88f9cda004b3fd27f8b25"
+        },
+        {
+          "name": "coachingCourses",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "16cb82028764ae0b0eb382aa03e93bfb13b442ab1de524f5850de952f81467fe"
+        },
+        {
+          "name": "mediaAssets",
+          "count": 0,
+          "indexes": 5,
+          "sha256": "48fef125a06c1110791d52164f567f020ebfe019165add46361eda24adf79b05"
+        },
+        {
+          "name": "franchiseApplications",
+          "count": 0,
+          "indexes": 4,
+          "sha256": "ed9e9c25eb8baac36fbf0eccf1241f1dc68833cb852a7a32d99f1b36da92e030"
+        },
+        {
+          "name": "jobs",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "6813707d6e8513738b583e515e375eb5da548f41af95ca21418996afad415ff8"
+        },
+        {
+          "name": "coursePlans",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "493d12d3698c5fc15ea60643a84abf45e3315114c7ec06ad8c3de922cdfa7a8e"
+        },
+        {
+          "name": "resultRecords",
+          "count": 0,
+          "indexes": 4,
+          "sha256": "58a64d90d1c637ce431a447514364a28c227f1b0b59a92d9dcb411f7a01a6bf1"
+        },
+        {
+          "name": "colleges",
+          "count": 0,
+          "indexes": 5,
+          "sha256": "2d1883a4b2386b413af61d5d02e46eaf27867f695190e050157e63b399688708"
+        },
+        {
+          "name": "learningProgress",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "0c663cefa4b2c68c2dbe3cb5fe90747b7ac7fa8f840da74b9612b1a14cdd8eb8"
+        },
+        {
+          "name": "universities",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "ef2340869e2b66e475cc2dfe7fbf43dfb74a06f509340e17938b89780d82f2e9"
+        },
+        {
+          "name": "resultIssuers",
+          "count": 0,
+          "indexes": 2,
+          "sha256": "0b31dd943e6c9e06ce925ded30b2e9a62b5e11125d775b17bfa91eefc0a0102d"
+        },
+        {
+          "name": "auditlogs",
+          "count": 0,
+          "indexes": 1,
+          "sha256": "d03a702da6f295647850e5d06b117ae0120b6b18082f802279bf0ff13fa79f22"
+        },
+        {
+          "name": "notificationReceipts",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "9aaffff739d28844c08fe6585fe8091ec211b5180fa80a1925e6ac3c21a139e1"
+        },
+        {
+          "name": "admissionApplications",
+          "count": 0,
+          "indexes": 4,
+          "sha256": "420d151ea9e6271627459444e072982c12636fb21929c40b300e13ee66bc6f4b"
+        },
+        {
+          "name": "bookEntitlements",
+          "count": 0,
+          "indexes": 3,
+          "sha256": "101b387e9dc2f89559ac3b9cf203b12d3655ac1efe814c6b340d02858a022be7"
+        }
+      ],
+      "disposable": true
+    }
+  ],
+  "removed": [
+    "kitss_stage10_browser_2fc01fc632b64344",
+    "kitss_stage10_browser_a67a5debc7bc45a6",
+    "kitss_stage10_browser_b08d32a566c04efb",
+    "kitss_stage10_browser_d8be96b7aaa241fa",
+    "kitss_stage10_browser_e7035fdbf6994b89",
+    "kitss_stage10_test_1a0f19db6f114291",
+    "kitss_stage10_test_c926dec4f22f4fdb",
+    "kitss_stage4_browser_95325e03ae3241a8",
+    "kitss_stage5_browser_e6ba7d8db73e4365",
+    "kitss_stage6_browser_6271737f748c4556",
+    "kitss_stage6_test_00489215a61f481a",
+    "kitss_stage6_test_4e01eb26e5b04564",
+    "kitss_stage7_browser_2354d2e7c29a46d6",
+    "kitss_stage7_browser_c506096fa1d64957",
+    "kitss_stage8_browser_27cb3d5631a94e04",
+    "kitss_stage9_browser_3e6d1a3bb34e4a3d"
+  ],
+  "postCleanupVerification": {
+    "applicationCollections": 32,
+    "serverDatabaseCount": 3,
+    "remainingProjectTestDatabases": 0,
+    "applicationCountsAndIndexCountsUnchanged": true,
+    "historicalAuditEntriesWithoutAction": 0
+  },
+  "stage10Totals": {
+    "removedDatabases": 25,
+    "removedCollections": 638,
+    "applicationCountsMatchBothVerifiedBackups": true,
+    "backendOnlyInterimCleanupExcludedBrowserDatabases": true
+  }
+}

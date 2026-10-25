@@ -1,4 +1,5 @@
 import React from "react";
+import { usePublishedContent } from '../common/PublishedContent';
 import { Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -17,6 +18,7 @@ import {
 
 export const CategorySheet = ({ isOpen, onClose }) => {
   const navigate = useNavigate();
+  const { data } = usePublishedContent('categories');
 
   const handleNavigate = (path) => {
     onClose();
@@ -26,25 +28,25 @@ export const CategorySheet = ({ isOpen, onClose }) => {
   const categories = [
     {
       title: "Coaching",
-      subtitle: "CBSE 9-12, JEE & NEET Live Batches",
+      subtitle: "Published courses, plans and supported lessons",
       path: "/coaching",
       icon: Video,
-      badge: "LIVE",
+      badge: null,
       badgeColor: "bg-rose-500 text-white",
       color: "from-amber-500/10 to-orange-500/10 text-[#FF8A00] border-orange-500/20"
     },
     {
       title: "Examination Results",
-      subtitle: "Board & University Marksheet Verification",
+      subtitle: "Examination information and authorized result access",
       path: "/results",
       icon: FileCheck,
-      badge: "2026 LIVE",
+      badge: null,
       badgeColor: "bg-teal-600 text-white",
       color: "from-teal-500/10 to-emerald-500/10 text-teal-600 border-teal-500/20"
     },
     {
       title: "Digital Books",
-      subtitle: "Curriculum Textbooks, NCERT & Notes",
+      subtitle: "Published books and approved previews",
       path: "/books",
       icon: BookOpen,
       badge: "UPDATED",
@@ -53,7 +55,7 @@ export const CategorySheet = ({ isOpen, onClose }) => {
     },
     {
       title: "Partner Colleges",
-      subtitle: "Verified Universities & Direct Admissions",
+      subtitle: "College programs and admission enquiries",
       path: "/colleges",
       icon: GraduationCap,
       badge: "ADMISSIONS",
@@ -71,7 +73,7 @@ export const CategorySheet = ({ isOpen, onClose }) => {
     },
     {
       title: "My Orders & Receipts",
-      subtitle: "Track book purchases and study pack invoices",
+      subtitle: "Track your orders and payment receipts",
       path: "/orders",
       icon: ShoppingBag,
       badge: null,
@@ -133,7 +135,9 @@ export const CategorySheet = ({ isOpen, onClose }) => {
 
             {/* Category Grid */}
             <div className="overflow-y-auto pt-3 space-y-2 max-h-[60vh] pr-0.5">
-              {categories.map((cat, idx) => {
+              {categories.map((base, idx) => {
+                const item = data.sections?.flatMap(s => s.items || []).find(i => i.linkKey === base.path.slice(1));
+                const cat = item ? { ...base, title: item.heading || base.title, subtitle: item.body || base.subtitle } : base;
                 const Icon = cat.icon;
                 return (
                   <motion.button

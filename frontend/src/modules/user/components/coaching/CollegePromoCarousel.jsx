@@ -8,55 +8,23 @@ import {
   MapPin
 } from "lucide-react";
 
-const BANNERS = [
-  {
-    id: "promo-du",
-    tag: "ADMISSIONS OPEN 2026",
-    collegeName: "Delhi University",
-    subtitle: "CUET & partner pathways — premier collegiate programs.",
-    location: "New Delhi, Delhi",
-    website: "https://du.ac.in",
-    image:
-      "https://images.unsplash.com/photo-1541339907198-e08756dedf3f?w=1200&auto=format&fit=crop&q=80",
-    gradient: "from-[#0A1D3F]/95 via-[#0A1D3F]/75 to-[#0A1D3F]/35"
-  },
-  {
-    id: "promo-lpu",
-    tag: "SCHOLARSHIPS VIA LPUNEST",
-    collegeName: "Lovely Professional University",
-    subtitle: "India's largest campus — global placements & industry labs.",
-    location: "Phagwara, Punjab",
-    website: "https://lpu.in",
-    image:
-      "https://images.unsplash.com/photo-1497366216548-37526070297c?w=1200&auto=format&fit=crop&q=80",
-    gradient: "from-[#133C8B]/95 via-[#133C8B]/70 to-[#FF8A00]/25"
-  },
-  {
-    id: "promo-manipal",
-    tag: "INSTITUTION OF EMINENCE",
-    collegeName: "Manipal University",
-    subtitle: "Top-ranked engineering, health sciences & management.",
-    location: "Manipal, Karnataka",
-    website: "https://manipal.edu",
-    image:
-      "https://images.unsplash.com/photo-1592280771190-3e2e4d571952?w=1200&auto=format&fit=crop&q=80",
-    gradient: "from-[#0F766E]/95 via-[#0F766E]/70 to-[#0A1D3F]/30"
-  }
-];
+import { contentService } from '../../services/contentService';
 
 export const CollegePromoCarousel = () => {
+  const [BANNERS,setBanners]=useState([]);
+  useEffect(()=>{const controller=new AbortController();contentService.banners('my_courses',controller.signal).then(rows=>setBanners(rows.map(b=>({...b,collegeName:b.title,website:b.link?.target,image:b.imageUrl,gradient:'from-[#0A1D3F]/95 via-[#0A1D3F]/75 to-[#0A1D3F]/35'})))).catch(()=>{});return()=>controller.abort();},[]);
   const [current, setCurrent] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
   const touchStartX = useRef(0);
   const touchEndX = useRef(0);
 
   useEffect(() => {
-    if (isHovered) return;
+    if (isHovered || !BANNERS.length) return;
     const interval = setInterval(() => {
       setCurrent((prev) => (prev + 1) % BANNERS.length);
     }, 5500);
     return () => clearInterval(interval);
-  }, [isHovered]);
+  }, [isHovered,BANNERS.length]);
 
   const handleNext = () => setCurrent((prev) => (prev + 1) % BANNERS.length);
   const handlePrev = () =>
@@ -77,6 +45,7 @@ export const CollegePromoCarousel = () => {
   };
 
   const banner = BANNERS[current];
+  if(!banner)return null;
 
   return (
     <div className="space-y-2.5">

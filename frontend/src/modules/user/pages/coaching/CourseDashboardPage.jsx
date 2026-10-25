@@ -110,7 +110,7 @@ export const CourseDashboardPage = () => {
 
         <span className="text-[11px] font-bold text-[#17B26A] bg-[#17B26A]/10 px-2.5 py-0.5 rounded flex items-center gap-1">
           <ShieldCheck className="w-3 h-3" />
-          <span>Access Active</span>
+          <span>{course.isEnrolled ? "Access Active" : course.enrollment?.state || "Enrollment required"}</span>
         </span>
       </div>
 

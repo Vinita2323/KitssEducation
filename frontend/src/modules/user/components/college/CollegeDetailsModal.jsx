@@ -15,7 +15,11 @@ import {
   Award
 } from "lucide-react";
 
-export const CollegeDetailsModal = ({ college, isOpen, onClose }) => {
+import { collegeService } from '../../services/collegeService';
+export const CollegeDetailsModal = ({ college: selectedCollege, isOpen, onClose }) => {
+  const [college, setCollege] = React.useState(null);
+  const [error, setError] = React.useState('');
+  React.useEffect(() => { let active = true; if (isOpen && selectedCollege?.id) { setCollege(null); setError(''); collegeService.getCollegeById(selectedCollege.id).then(value => { if (active) setCollege(value); }).catch(failure => { if (active) setError(failure.message); }); } return () => { active = false; }; }, [isOpen, selectedCollege?.id]);
   // Prevent background page scrolling when modal is open
   React.useEffect(() => {
     if (!isOpen) return;
@@ -35,7 +39,8 @@ export const CollegeDetailsModal = ({ college, isOpen, onClose }) => {
     };
   }, [isOpen]);
 
-  if (!isOpen || !college) return null;
+  if (!isOpen) return null;
+  if (!college) return <div className="fixed inset-0 z-50 bg-black/60 p-4 flex items-center justify-center"><div className="bg-white p-6 rounded-2xl"><p role={error ? 'alert' : 'status'}>{error || 'Loading college details…'}</p><button onClick={onClose}>Close</button></div></div>;
 
   // Resolve official website of the college
   const getOfficialWebsite = () => {

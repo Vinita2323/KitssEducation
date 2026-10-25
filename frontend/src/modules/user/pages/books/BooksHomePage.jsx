@@ -6,6 +6,7 @@ import { HierarchyDropdowns } from "../../components/books/BoardSelector";
 import { BookCard } from "../../components/books/BookCard";
 import { SkeletonLoader, EmptyState } from "../../components/common/EmptyState";
 import { X, RotateCcw } from "lucide-react";
+import { Pagination } from '../../components/common/Pagination';
 
 export const BooksHomePage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -21,6 +22,8 @@ export const BooksHomePage = () => {
   const [selectedMaxPrice, setSelectedMaxPrice] = useState("");
 
   const [books, setBooks] = useState([]);
+  const [page, setPage] = useState(1), [meta, setMeta] = useState(null), [loadError, setLoadError] = useState('');
+  const [languages, setLanguages] = useState([]);
   const [boards, setBoards] = useState([]);
   const [availableClasses, setAvailableClasses] = useState([]);
   const [availableSubjects, setAvailableSubjects] = useState([]);
@@ -32,6 +35,7 @@ export const BooksHomePage = () => {
       try {
         const bData = await bookService.getBoards();
         setBoards(bData);
+        setLanguages((await bookService.getFacets()).languages);
       } catch (err) {
         console.error("Error loading boards:", err);
       }
@@ -94,11 +98,12 @@ export const BooksHomePage = () => {
 
   // Fetch filtered books whenever any filter, search, or sort changes
   useEffect(() => {
+    const controller = new AbortController();
     let isCurrent = true;
     const fetchBooks = async () => {
       try {
         setLoading(true);
-        const data = await bookService.getBooks({
+        const result = await bookService.getBooksPage({ page,
           board: selectedBoard,
           className: selectedClass,
           subject: selectedSubject,
@@ -108,11 +113,11 @@ export const BooksHomePage = () => {
           language: selectedLanguage,
           minPrice: selectedMinPrice,
           maxPrice: selectedMaxPrice
-        });
+        }, controller.signal);
         if (!isCurrent) return;
-        setBooks(data);
+        setBooks(result.data); setMeta(result.meta); setLoadError('');
       } catch (err) {
-        console.error("Error fetching books:", err);
+        if (isCurrent && err.code !== 'ABORTED') { setLoadError(err.message); setBooks([]); }
       } finally {
         if (isCurrent) setLoading(false);
       }
@@ -121,6 +126,7 @@ export const BooksHomePage = () => {
     fetchBooks();
     return () => {
       isCurrent = false;
+      controller.abort();
     };
   }, [
     selectedBoard,
@@ -131,8 +137,9 @@ export const BooksHomePage = () => {
     selectedType,
     selectedLanguage,
     selectedMinPrice,
-    selectedMaxPrice
+    selectedMaxPrice, page
   ]);
+  useEffect(() => setPage(1), [selectedBoard, selectedClass, selectedSubject, query, selectedSort, selectedType, selectedLanguage, selectedMinPrice, selectedMaxPrice]);
 
   // Handlers for Board, Class, Subject, and Language dropdowns
   const handleBoardClick = (boardId) => {
@@ -220,6 +227,7 @@ export const BooksHomePage = () => {
 
       {/* 4 Dropdown Filters (Board -> Class -> Subject -> Language) */}
       <HierarchyDropdowns
+        languages={languages}
         boards={boards}
         classes={availableClasses}
         subjects={availableSubjects}
@@ -232,6 +240,12 @@ export const BooksHomePage = () => {
         onSelectSubject={handleSubjectClick}
         onSelectLanguage={handleLanguageClick}
       />
+      <div className="flex flex-wrap gap-2 bg-white p-3 rounded-xl border text-xs text-[#0A1D3F]">
+        <label>Sort <select aria-label="Sort books" className="p-2 border rounded-lg" value={selectedSort} onChange={e => setSelectedSort(e.target.value)}><option value="featured">Title</option><option value="newest">Newest</option><option value="price-low">Price: low to high</option><option value="price-high">Price: high to low</option></select></label>
+        <label>Price type <select aria-label="Book price type" className="p-2 border rounded-lg" value={selectedType} onChange={e => setSelectedType(e.target.value)}><option value="all">All</option><option value="free">Zero-priced</option><option value="paid">Paid</option></select></label>
+        <label className="min-w-0">Minimum INR <input aria-label="Minimum book price" type="number" min="0" value={selectedMinPrice} onChange={e => setSelectedMinPrice(e.target.value)} className="p-2 border rounded-lg w-24" /></label>
+        <label className="min-w-0">Maximum INR <input aria-label="Maximum book price" type="number" min="0" value={selectedMaxPrice} onChange={e => setSelectedMaxPrice(e.target.value)} className="p-2 border rounded-lg w-24" /></label>
+      </div>
 
       {/* Active Filter Chips */}
       {hasActiveFilters && (
@@ -293,7 +307,7 @@ export const BooksHomePage = () => {
               {headingContext}
             </h2>
             <p className="text-[11px] text-[#667085]">
-              Showing {books.length} book{books.length === 1 ? "" : "s"}
+              Showing {meta?.total ?? 0} book{meta?.total === 1 ? "" : "s"}
             </p>
           </div>
 
@@ -308,6 +322,8 @@ export const BooksHomePage = () => {
           </div>
         </div>
 
+        {loadError && <p role="alert" className="p-3 bg-red-50 text-red-700 rounded-xl">{loadError}</p>}
+        <Pagination meta={meta} onChange={setPage} loading={loading} />
         {/* Book Grid */}
         {loading ? (
           <SkeletonLoader type="book" count={6} />

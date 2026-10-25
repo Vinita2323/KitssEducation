@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useMemo } from "react";
+import React, { useState, useRef, useEffect, useMemo, useId } from "react";
 import { createPortal } from "react-dom";
 import { ChevronDown, Search, Check, X, Plus } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -28,6 +28,8 @@ export const SearchableSelect = ({
   const containerRef = useRef(null);
   const menuRef = useRef(null);
   const searchInputRef = useRef(null);
+  const triggerRef = useRef(null), listId = useId();
+  const [activeIndex, setActiveIndex] = useState(0);
 
   const normalizedOptions = options.map((opt) => {
     if (typeof opt === "object" && opt !== null) {
@@ -62,6 +64,17 @@ export const SearchableSelect = ({
     allowCustom && trimmedSearch.length >= 2 && !exactMatch;
 
   const showSearch = searchable || allowCustom;
+  useEffect(() => setActiveIndex(0), [searchTerm, isOpen]);
+  const menuKey = e => {
+    if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); setIsOpen(false); triggerRef.current?.focus(); }
+    else if (e.key === 'Tab') setIsOpen(false);
+    else if (['ArrowDown','ArrowUp','Home','End'].includes(e.key)) {
+      e.preventDefault(); const count = filteredOptions.length + (showCustomOption ? 1 : 0);
+      setActiveIndex(i => e.key === 'Home' ? 0 : e.key === 'End' ? Math.max(0,count-1) : count ? (i+(e.key === 'ArrowDown'?1:-1)+count)%count : 0);
+    } else if (e.key === 'Enter') {
+      e.preventDefault(); if(showCustomOption && activeIndex === filteredOptions.length) handleSelectCustom(); else if(filteredOptions[activeIndex]) handleSelect(filteredOptions[activeIndex].value);
+    }
+  };
 
   useEffect(() => {
     const handleOutsideClick = (e) => {
@@ -164,6 +177,7 @@ export const SearchableSelect = ({
     onChange?.(val);
     setIsOpen(false);
     setSearchTerm("");
+    triggerRef.current?.focus();
   };
 
   const handleSelectCustom = () => {
@@ -182,6 +196,7 @@ export const SearchableSelect = ({
       {isOpen && (
         <motion.div
           ref={menuRef}
+          onKeyDown={menuKey}
           initial={{ opacity: 0, y: openUpwards ? 4 : -4, scale: 0.99 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: openUpwards ? 4 : -4, scale: 0.99 }}
@@ -203,6 +218,8 @@ export const SearchableSelect = ({
                 <input
                   ref={searchInputRef}
                   type="text"
+                  role="combobox" aria-label={searchPlaceholder} aria-expanded="true" aria-controls={listId}
+                  aria-activedescendant={listId+'-'+activeIndex}
                   placeholder={
                     allowCustom
                       ? "Search or type institute name"
@@ -210,12 +227,6 @@ export const SearchableSelect = ({
                   }
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && showCustomOption) {
-                      e.preventDefault();
-                      handleSelectCustom();
-                    }
-                  }}
                   className="w-full pl-7 pr-6 py-1.5 bg-white border border-slate-200 rounded-md text-[11px] text-[#0A1D3F] placeholder:text-slate-400 focus:outline-none focus:border-[#FF8A00]"
                   onClick={(e) => e.stopPropagation()}
                 />
@@ -236,11 +247,13 @@ export const SearchableSelect = ({
           )}
 
           <div
+            id={listId} role="listbox" aria-label={placeholder}
             style={{ maxHeight: `${menuMaxHeight}px` }}
             className="overflow-y-auto overflow-x-hidden p-1 space-y-0.5 overscroll-contain"
           >
             {showCustomOption && (
               <div
+                role="option" id={listId+'-'+filteredOptions.length} aria-selected={activeIndex===filteredOptions.length}
                 onClick={handleSelectCustom}
                 className="px-2.5 py-1.5 rounded-md text-xs font-semibold cursor-pointer transition-all flex items-center gap-2 bg-[#FFF7ED] text-[#FF8A00] hover:bg-orange-100 border border-orange-100 mb-0.5"
               >
@@ -262,7 +275,10 @@ export const SearchableSelect = ({
                       </p>
                     )}
                     <div
+                      role="option" id={listId+'-'+index} aria-selected={isSelected}
                       onClick={() => handleSelect(opt.value)}
+                      onMouseEnter={() => setActiveIndex(index)}
+                      style={activeIndex===index ? {backgroundColor:'#fff7ed'} : undefined}
                       className={`px-2.5 py-1.5 rounded-md text-xs font-medium cursor-pointer transition-all flex items-center justify-between gap-2 ${
                         isSelected
                           ? "bg-orange-50 text-[#FF8A00] font-bold"
@@ -293,10 +309,14 @@ export const SearchableSelect = ({
   return (
     <div ref={containerRef} className={`relative w-full ${className}`}>
       <div
+        ref={triggerRef} aria-haspopup="listbox" aria-expanded={isOpen} aria-controls={isOpen?listId:undefined} aria-disabled={disabled}
         role="button"
         tabIndex={disabled ? -1 : 0}
         onClick={handleToggle}
         onKeyDown={(e) => {
+          if(disabled)return;
+          if(isOpen) { menuKey(e); return; }
+          if(e.key==='ArrowDown'||e.key==='ArrowUp') {e.preventDefault();setIsOpen(true);return;}
           if (e.key === "Enter" || e.key === " ") {
             e.preventDefault();
             handleToggle();

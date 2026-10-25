@@ -1,3 +1,4 @@
+import { RegistrationDraftControls, useRegistrationFee } from './RegistrationDraftControls';
 import React, { useState } from "react";
 import {
   GraduationCap,
@@ -78,7 +79,7 @@ export const TeacherProfessorForm = ({ onBack }) => {
   const [paymentMethod, setPaymentMethod] = useState("upi");
   const [upiApp, setUpiApp] = useState("gpay");
   const [selectedBank, setSelectedBank] = useState("State Bank of India (SBI)");
-  const [verificationFee] = useState(199);
+  const verificationFee = useRegistrationFee('teacher');
   const [transactionId, setTransactionId] = useState("");
 
   // All 11 Required Fields State
@@ -258,54 +259,7 @@ export const TeacherProfessorForm = ({ onBack }) => {
 
   const handlePrev = () => setStep((prev) => Math.max(prev - 1, 1));
 
-  const completeRegistrationSuccess = (txnId) => {
-    const generatedTxn = txnId || `TXN-FAC-${Date.now().toString().slice(-8)}`;
-    setTransactionId(generatedTxn);
-    const generatedFacultyId = `KITSS-FAC-${Math.floor(100000 + Math.random() * 900000)}`;
-    setFacultyId(generatedFacultyId);
-    setIsSuccess(true);
-    setStep(5);
-    setSubmitting(false);
-    showSuccess("Faculty verification fee paid & application registered!");
-  };
-
-  const handlePaymentAndSubmit = async (e) => {
-    if (e) e.preventDefault();
-    if (!validateStep(1) || !validateStep(2) || !validateStep(3)) return;
-
-    setSubmitting(true);
-    try {
-      await openRazorpayCheckout({
-        amountInRupees: verificationFee,
-        course: {
-          id: "FACULTY_ACCREDITATION",
-          title: `Faculty Registration - ${formData.title} ${formData.fullName}`
-        },
-        plan: {
-          name: "Faculty Onboarding & Verification",
-          duration: "Accredited Access"
-        },
-        student: {
-          name: `${formData.title} ${formData.fullName}`,
-          email: formData.email,
-          phone: formData.contactNumber
-        },
-        onSuccess: (response) => {
-          completeRegistrationSuccess(response?.razorpay_payment_id);
-        },
-        onFailure: (err) => {
-          setSubmitting(false);
-          showError(err?.message || "Payment cancelled or failed.");
-        },
-        onDismiss: () => {
-          setSubmitting(false);
-        }
-      });
-    } catch (err) {
-      setSubmitting(false);
-      showError(err.message || "Unable to launch checkout payment gateway.");
-    }
-  };
+  const handlePaymentAndSubmit = async e => { e?.preventDefault(); showError('Submission and payments are blocked pending approved document and eligibility policies. Save a draft instead.'); };
 
   const copyFacultyId = () => {
     navigator.clipboard.writeText(facultyId);
@@ -316,6 +270,7 @@ export const TeacherProfessorForm = ({ onBack }) => {
 
   return (
     <div className="w-full max-w-2xl mx-auto bg-white rounded-lg border border-slate-200/90 shadow-2xs overflow-hidden">
+      <RegistrationDraftControls kind="teacher" formData={formData} setFormData={setFormData} />
       {/* Top Banner - Compact */}
       <div className="p-3 sm:p-3.5 border-b border-slate-200/80 flex items-center justify-between">
         <div className="flex items-center gap-2.5">
@@ -837,7 +792,7 @@ export const TeacherProfessorForm = ({ onBack }) => {
                           </div>
                         )}
                         <input
-                          type="file"
+                          type="file" disabled title="Document privacy policy pending"
                           accept="image/*"
                           onChange={(e) => handleFileChange("passportPhoto", e.target.files[0])}
                           className="hidden"
@@ -869,7 +824,7 @@ export const TeacherProfessorForm = ({ onBack }) => {
                           </div>
                         )}
                         <input
-                          type="file"
+                          type="file" disabled title="Document privacy policy pending"
                           accept="image/*,.pdf"
                           onChange={(e) => handleFileChange("experienceDoc", e.target.files[0])}
                           className="hidden"
@@ -894,7 +849,7 @@ export const TeacherProfessorForm = ({ onBack }) => {
                       </label>
                       <input
                         type="text"
-                        name="aadharNumber"
+                        name="aadharNumber" disabled title="Identity collection is blocked pending privacy approval"
                         placeholder="XXXX XXXX XXXX (12 digits)"
                         value={formData.aadharNumber}
                         onChange={handleChange}
@@ -926,7 +881,7 @@ export const TeacherProfessorForm = ({ onBack }) => {
                           </div>
                         )}
                         <input
-                          type="file"
+                          type="file" disabled title="Document privacy policy pending"
                           accept="image/*,.pdf"
                           onChange={(e) => handleFileChange("aadharCard", e.target.files[0])}
                           className="hidden"

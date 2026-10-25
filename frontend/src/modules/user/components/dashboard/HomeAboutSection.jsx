@@ -1,6 +1,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { ChevronRight } from "lucide-react";
+import { usePublishedContent } from '../common/PublishedContent';
 
 const BookLightbulbArt = () => (
   <svg
@@ -31,6 +32,8 @@ const BookLightbulbArt = () => (
 );
 
 export const HomeAboutSection = () => {
+  const { data } = usePublishedContent('home');
+  const teaser = data.sections.find(section => section.key === 'about-teaser');
   return (
     <section className="pt-1 pb-1 -mx-4 sm:mx-0">
       <Link
@@ -50,10 +53,10 @@ export const HomeAboutSection = () => {
             About Us
           </span>
           <span className="mt-0.5 block text-[13px] sm:text-[15px] font-black text-[#0A1D3F] truncate">
-            Know KITSS Education
+            {teaser?.heading || 'About KITSS Education'}
           </span>
           <span className="mt-0.5 block text-[10.5px] sm:text-xs text-[#667085] truncate">
-            Our story, mission & faculty
+            {teaser?.body || 'View published organization information'}
           </span>
         </span>
 

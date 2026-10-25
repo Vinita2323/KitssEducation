@@ -1,0 +1,521 @@
+{
+  "database": "kitss_education_dev",
+  "checks": {
+    "initialReadiness": true,
+    "draftExcluded": true,
+    "unpaidEnrollmentDenied": true,
+    "razorpayDisabled": true,
+    "stage4Public": true,
+    "stage5Public": true,
+    "stage3Protected": true,
+    "restartReadiness": true,
+    "persistence": true,
+    "allStage3to7Collections": true,
+    "allPassed": true
+  },
+  "realPayments": false,
+  "fixtures": {
+    "courseId": "6adc85ce2fbecaf49d8b5350",
+    "lessonId": "6adc85ce2fbecaf49d8b5351",
+    "planId": "6adc85ce2fbecaf49d8b5352"
+  },
+  "collections": [
+    {
+      "name": "siteSettings",
+      "count": 0,
+      "indexes": [
+        {
+          "name": "_id_",
+          "unique": false
+        },
+        {
+          "name": "key_1",
+          "unique": true
+        }
+      ]
+    },
+    {
+      "name": "sessions",
+      "count": 0,
+      "indexes": [
+        {
+          "name": "_id_",
+          "unique": false
+        },
+        {
+          "name": "tokenHash_1",
+          "unique": true
+        },
+        {
+          "name": "userId_1",
+          "unique": false
+        },
+        {
+          "name": "expiresAt_1",
+          "unique": false
+        }
+      ]
+    },
+    {
+      "name": "auditlogs",
+      "count": 22,
+      "indexes": [
+        {
+          "name": "_id_",
+          "unique": false
+        }
+      ]
+    },
+    {
+      "name": "banners",
+      "count": 2,
+      "indexes": [
+        {
+          "name": "_id_",
+          "unique": false
+        },
+        {
+          "name": "placement_1_status_1_sortOrder_1",
+          "unique": false
+        }
+      ]
+    },
+    {
+      "name": "lessons",
+      "count": 2,
+      "indexes": [
+        {
+          "name": "_id_",
+          "unique": false
+        },
+        {
+          "name": "courseId_1_status_1_sortOrder_1",
+          "unique": false
+        }
+      ]
+    },
+    {
+      "name": "facultyProfiles",
+      "count": 2,
+      "indexes": [
+        {
+          "name": "_id_",
+          "unique": false
+        },
+        {
+          "name": "status_1_sortOrder_1",
+          "unique": false
+        }
+      ]
+    },
+    {
+      "name": "franchiseApplications",
+      "count": 0,
+      "indexes": [
+        {
+          "name": "_id_",
+          "unique": false
+        },
+        {
+          "name": "reference_1",
+          "unique": true
+        },
+        {
+          "name": "ownerKey_1_idempotencyKey_1",
+          "unique": true
+        },
+        {
+          "name": "status_1_createdAt_-1",
+          "unique": false
+        }
+      ]
+    },
+    {
+      "name": "pageContents",
+      "count": 2,
+      "indexes": [
+        {
+          "name": "_id_",
+          "unique": false
+        },
+        {
+          "name": "key_1",
+          "unique": true
+        }
+      ]
+    },
+    {
+      "name": "coachingCourses",
+      "count": 2,
+      "indexes": [
+        {
+          "name": "_id_",
+          "unique": false
+        },
+        {
+          "name": "status_1_publishedSnapshot.category_1_publishedSnapshot.languageId_1",
+          "unique": false
+        }
+      ]
+    },
+    {
+      "name": "taxonomies",
+      "count": 0,
+      "indexes": [
+        {
+          "name": "_id_",
+          "unique": false
+        },
+        {
+          "name": "kind_1_key_1",
+          "unique": true
+        },
+        {
+          "name": "kind_1_status_1_sortOrder_1",
+          "unique": false
+        }
+      ]
+    },
+    {
+      "name": "bookEntitlements",
+      "count": 0,
+      "indexes": [
+        {
+          "name": "_id_",
+          "unique": false
+        },
+        {
+          "name": "orderId_1",
+          "unique": true
+        },
+        {
+          "name": "userId_1_bookId_1",
+          "unique": true
+        }
+      ]
+    },
+    {
+      "name": "learningProgress",
+      "count": 0,
+      "indexes": [
+        {
+          "name": "_id_",
+          "unique": false
+        },
+        {
+          "name": "userId_1_bookId_1",
+          "unique": true
+        },
+        {
+          "name": "userId_1_lessonId_1",
+          "unique": true
+        }
+      ]
+    },
+    {
+      "name": "universities",
+      "count": 0,
+      "indexes": [
+        {
+          "name": "_id_",
+          "unique": false
+        },
+        {
+          "name": "publicId_1",
+          "unique": true
+        },
+        {
+          "name": "shortNameNormalized_1",
+          "unique": true
+        }
+      ]
+    },
+    {
+      "name": "mediaAssets",
+      "count": 4,
+      "indexes": [
+        {
+          "name": "_id_",
+          "unique": false
+        },
+        {
+          "name": "key_1",
+          "unique": true
+        },
+        {
+          "name": "ownerUserId_1_idempotencyKey_1",
+          "unique": true
+        },
+        {
+          "name": "status_1_createdAt_1",
+          "unique": false
+        },
+        {
+          "name": "checksum_1",
+          "unique": false
+        }
+      ]
+    },
+    {
+      "name": "auththrottles",
+      "count": 0,
+      "indexes": [
+        {
+          "name": "_id_",
+          "unique": false
+        },
+        {
+          "name": "expiresAt_1",
+          "unique": false
+        }
+      ]
+    },
+    {
+      "name": "admissionApplications",
+      "count": 0,
+      "indexes": [
+        {
+          "name": "_id_",
+          "unique": false
+        },
+        {
+          "name": "reference_1",
+          "unique": true
+        },
+        {
+          "name": "ownerKey_1_idempotencyKey_1",
+          "unique": true
+        },
+        {
+          "name": "collegeId_1_status_1_createdAt_-1",
+          "unique": false
+        }
+      ]
+    },
+    {
+      "name": "enrollments",
+      "count": 0,
+      "indexes": [
+        {
+          "name": "_id_",
+          "unique": false
+        },
+        {
+          "name": "orderId_1",
+          "unique": true
+        },
+        {
+          "name": "userId_1_courseId_1",
+          "unique": true
+        },
+        {
+          "name": "userId_1_expiresAt_1",
+          "unique": false
+        }
+      ]
+    },
+    {
+      "name": "books",
+      "count": 2,
+      "indexes": [
+        {
+          "name": "_id_",
+          "unique": false
+        },
+        {
+          "name": "publicId_1",
+          "unique": true
+        },
+        {
+          "name": "status_1_languageId_1_boardId_1_classId_1_subjectId_1",
+          "unique": false
+        }
+      ]
+    },
+    {
+      "name": "domainLocks",
+      "count": 1,
+      "indexes": [
+        {
+          "name": "_id_",
+          "unique": false
+        }
+      ]
+    },
+    {
+      "name": "colleges",
+      "count": 0,
+      "indexes": [
+        {
+          "name": "_id_",
+          "unique": false
+        },
+        {
+          "name": "publicId_1",
+          "unique": true
+        },
+        {
+          "name": "code_1",
+          "unique": true
+        },
+        {
+          "name": "universityId_1_status_1",
+          "unique": false
+        },
+        {
+          "name": "stateId_1_district_1_status_1",
+          "unique": false
+        }
+      ]
+    },
+    {
+      "name": "collegePrograms",
+      "count": 0,
+      "indexes": [
+        {
+          "name": "_id_",
+          "unique": false
+        },
+        {
+          "name": "collegeId_1_nameNormalized_1_degreeType_1",
+          "unique": true
+        },
+        {
+          "name": "collegeId_1_status_1_admissionStatus_1",
+          "unique": false
+        }
+      ]
+    },
+    {
+      "name": "users",
+      "count": 2,
+      "indexes": [
+        {
+          "name": "_id_",
+          "unique": false
+        },
+        {
+          "name": "publicId_1",
+          "unique": true
+        },
+        {
+          "name": "emailNormalized_1",
+          "unique": true
+        },
+        {
+          "name": "bootstrapKey_1",
+          "unique": true
+        },
+        {
+          "name": "challenges.verify.id_1",
+          "unique": false
+        },
+        {
+          "name": "challenges.reset.id_1",
+          "unique": false
+        },
+        {
+          "name": "challenges.transfer.id_1",
+          "unique": false
+        },
+        {
+          "name": "challenges.invite.id_1",
+          "unique": false
+        }
+      ]
+    },
+    {
+      "name": "orders",
+      "count": 0,
+      "indexes": [
+        {
+          "name": "_id_",
+          "unique": false
+        },
+        {
+          "name": "reference_1",
+          "unique": true
+        },
+        {
+          "name": "userId_1_idempotencyKey_1",
+          "unique": true
+        },
+        {
+          "name": "provider_1_paymentMode_1_providerOrderId_1",
+          "unique": true
+        },
+        {
+          "name": "provider_1_paymentMode_1_paymentReferences_1",
+          "unique": true
+        },
+        {
+          "name": "userId_1_product.kind_1_product.id_1",
+          "unique": true
+        },
+        {
+          "name": "reconcile.state_1_reconcile.nextAt_1_reconcile.leaseUntil_1",
+          "unique": false
+        },
+        {
+          "name": "userId_1_product.courseId_1",
+          "unique": true
+        }
+      ]
+    },
+    {
+      "name": "registrationApplications",
+      "count": 0,
+      "indexes": [
+        {
+          "name": "_id_",
+          "unique": false
+        },
+        {
+          "name": "reference_1",
+          "unique": true
+        },
+        {
+          "name": "userId_1_idempotencyKey_1",
+          "unique": true
+        }
+      ]
+    },
+    {
+      "name": "jobs",
+      "count": 0,
+      "indexes": [
+        {
+          "name": "_id_",
+          "unique": false
+        },
+        {
+          "name": "key_1",
+          "unique": true
+        },
+        {
+          "name": "state_1_availableAt_1_leaseUntil_1",
+          "unique": false
+        }
+      ]
+    },
+    {
+      "name": "coursePlans",
+      "count": 2,
+      "indexes": [
+        {
+          "name": "_id_",
+          "unique": false
+        },
+        {
+          "name": "courseId_1_name_1",
+          "unique": true
+        }
+      ]
+    }
+  ],
+  "topology": {
+    "replicaSetAdvertised": true,
+    "changed": false,
+    "transactionsUsed": false
+  }
+}

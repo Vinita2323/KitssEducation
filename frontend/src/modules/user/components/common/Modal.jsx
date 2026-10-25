@@ -1,5 +1,6 @@
 import React, { useEffect } from "react";
 import { X } from "lucide-react";
+import { useDialogFocus } from '../../../../shared/ui/useDialogFocus';
 
 export const Modal = ({
   isOpen,
@@ -9,6 +10,7 @@ export const Modal = ({
   maxWidth = "max-w-md",
   showClose = true
 }) => {
+  const dialog = useDialogFocus(isOpen, onClose);
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
@@ -32,6 +34,7 @@ export const Modal = ({
 
       {/* Modal Dialog */}
       <div
+        ref={dialog} role="dialog" aria-modal="true" aria-label={title} tabIndex={-1}
         className={`relative bg-white w-full ${maxWidth} rounded-2xl shadow-2xl border border-[#E6E8EC] z-10 overflow-hidden flex flex-col max-h-[90vh] animate-in fade-in zoom-in-95 duration-200`}
       >
         {/* Header */}
@@ -39,6 +42,7 @@ export const Modal = ({
           <h3 className="text-base font-bold text-[#0A1D3F]">{title}</h3>
           {showClose && (
             <button
+              aria-label="Close dialog"
               onClick={onClose}
               className="p-1 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition"
             >
@@ -55,6 +59,7 @@ export const Modal = ({
 };
 
 export const BottomSheet = ({ isOpen, onClose, title, children }) => {
+  const dialog = useDialogFocus(isOpen, onClose);
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
@@ -77,7 +82,7 @@ export const BottomSheet = ({ isOpen, onClose, title, children }) => {
       />
 
       {/* Sheet */}
-      <div className="relative bg-white w-full max-w-lg mx-auto rounded-t-3xl shadow-2xl border-t border-[#E6E8EC] z-10 max-h-[85vh] flex flex-col animate-in slide-in-from-bottom duration-300">
+      <div ref={dialog} role="dialog" aria-modal="true" aria-label={title} tabIndex={-1} className="relative bg-white w-full max-w-lg mx-auto rounded-t-3xl shadow-2xl border-t border-[#E6E8EC] z-10 max-h-[85vh] flex flex-col animate-in slide-in-from-bottom duration-300">
         {/* Pull handle */}
         <div className="flex justify-center pt-3 pb-1">
           <div className="w-12 h-1.5 bg-gray-300 rounded-full" />
@@ -87,6 +92,7 @@ export const BottomSheet = ({ isOpen, onClose, title, children }) => {
         <div className="flex items-center justify-between px-5 py-3 border-b border-[#E6E8EC]">
           <h3 className="text-base font-bold text-[#0A1D3F]">{title}</h3>
           <button
+            aria-label="Close dialog"
             onClick={onClose}
             className="p-1 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition"
           >

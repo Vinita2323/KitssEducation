@@ -171,6 +171,7 @@ export const SubjectDropdown = ({
 };
 
 export const LanguageDropdown = ({
+  languages = [],
   selectedLanguage = "All",
   onSelect
 }) => {
@@ -206,12 +207,7 @@ export const LanguageDropdown = ({
           <option value="All" className="bg-white text-[#0A1D3F] font-semibold">
             All Languages
           </option>
-          <option value="English" className="bg-white text-[#0A1D3F] font-semibold">
-            English Medium
-          </option>
-          <option value="Hindi" className="bg-white text-[#0A1D3F] font-semibold">
-            Hindi Medium (हिंदी)
-          </option>
+          {languages.map(language => <option key={language.id} value={language.id}>{language.name}</option>)}
         </select>
         <ChevronDown
           className={`w-4 h-4 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none transition ${
@@ -224,6 +220,7 @@ export const LanguageDropdown = ({
 };
 
 export const HierarchyDropdowns = ({
+  languages = [],
   boards = [],
   classes = [],
   subjects = [],
@@ -255,6 +252,7 @@ export const HierarchyDropdowns = ({
           onSelect={onSelectSubject}
         />
         <LanguageDropdown
+          languages={languages}
           selectedLanguage={selectedLanguage}
           onSelect={onSelectLanguage}
         />

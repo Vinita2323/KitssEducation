@@ -1,3 +1,4 @@
+import { RegistrationDraftControls } from '../../components/auth/RegistrationDraftControls';
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import {
@@ -78,23 +79,7 @@ export const CourseRegistrationPage = () => {
     }
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!validate()) return;
-
-    try {
-      setSubmitting(true);
-      const res = await coachingService.registerStudent(formData);
-      if (res.credentials) {
-        setCreatedCredentials(res.credentials);
-      }
-      setIsSuccess(true);
-    } catch (err) {
-      console.error("Registration error:", err);
-    } finally {
-      setSubmitting(false);
-    }
-  };
+  const handleSubmit = e => { e.preventDefault(); setErrors({ policy: 'Submission and enrollment are blocked pending approved plans and activation policy. Save a draft instead.' }); };
 
   return (
     <div className="max-w-2xl mx-auto py-6 sm:py-10 space-y-6">
@@ -112,6 +97,7 @@ export const CourseRegistrationPage = () => {
         </p>
       </div>
 
+      <RegistrationDraftControls kind="coaching-profile" formData={formData} setFormData={setFormData} />
       {isSuccess ? (
         /* Success Screen */
         <div className="bg-white rounded-3xl border border-[#E6E8EC] p-6 sm:p-10 text-center card-shadow space-y-5 animate-in zoom-in-95 duration-200 max-w-lg mx-auto">

@@ -1,28 +1,22 @@
-import { mockNotifications, mockAnnouncements } from "../data/mockNotifications";
-
-const delay = (ms = 250) => new Promise((resolve) => setTimeout(resolve, ms));
-
+import { httpClient } from '../../../shared/api/httpClient';
+import { authenticatedWrite } from './authService';
+const changed = result => {
+  window.dispatchEvent(new Event('kitss:notifications-changed'));
+  return result;
+};
 export const notificationService = {
+  list: (page = 1, signal) => httpClient.request('/me/notifications?page=' + page, {
+    signal
+  }),
   async getNotifications() {
-    await delay(300);
-    return mockNotifications;
+    return (await this.list()).data;
   },
-
   async markAsRead(id) {
-    await delay(150);
-    const item = mockNotifications.find((n) => n.id === id);
-    if (item) item.isRead = true;
-    return { success: true };
+    return changed(await authenticatedWrite('/me/notifications/' + id + '/read', {}, 'PUT'));
   },
-
-  async markAllAsRead() {
-    await delay(200);
-    mockNotifications.forEach((n) => (n.isRead = true));
-    return { success: true };
-  },
-
-  async getAnnouncements() {
-    await delay(250);
-    return mockAnnouncements;
+  async markAllAsRead(through) {
+    return changed(await authenticatedWrite('/me/notifications/read-all', {
+      through: through ?? new Date().toISOString()
+    }));
   }
 };

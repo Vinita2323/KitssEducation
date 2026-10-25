@@ -1,0 +1,223 @@
+{
+  "label": "STAGE5_DEV_VERIFY",
+  "environment": "development",
+  "database": "kitss_education_dev",
+  "createdAt": "2026-10-24T07:33:56.240Z",
+  "baselineCounts": {
+    "siteSettings": 0,
+    "sessions": 1,
+    "auditlogs": 11,
+    "banners": 1,
+    "facultyProfiles": 1,
+    "franchiseApplications": 0,
+    "pageContents": 1,
+    "taxonomies": 0,
+    "universities": 0,
+    "mediaAssets": 2,
+    "auththrottles": 2,
+    "admissionApplications": 0,
+    "books": 1,
+    "domainLocks": 1,
+    "colleges": 0,
+    "collegePrograms": 0,
+    "users": 1
+  },
+  "records": {
+    "verificationActorId": "6adc5f6f5f481252de4bbee4",
+    "bookId": "6adc5f705f481252de4bbee5",
+    "bannerId": "6adc5f705f481252de4bbee6",
+    "facultyId": "6adc5f715f481252de4bbee7",
+    "pageId": "6adc5f715f481252de4bbee8",
+    "pageKey": "about",
+    "media": [
+      {
+        "id": "6adc5f725f481252de4bbee9",
+        "status": "quarantined",
+        "scan": "pending",
+        "bytes": 169
+      },
+      {
+        "id": "6adc5f765f481252de4bbeea",
+        "status": "quarantined",
+        "scan": "pending",
+        "bytes": 1371
+      }
+    ],
+    "allMedia": [
+      {
+        "id": "6adc5f765f481252de4bbeea",
+        "status": "quarantined",
+        "mime": "application/pdf",
+        "bytes": 1371
+      },
+      {
+        "id": "6adc5f725f481252de4bbee9",
+        "status": "quarantined",
+        "mime": "image/png",
+        "bytes": 169
+      }
+    ]
+  },
+  "checks": {
+    "authorizedDraftCreateAndUpdate": true,
+    "publicDraftExcluded": true,
+    "actualBrowserExecuted": true,
+    "actualFrontendRendersPersistedDraft": true,
+    "readinessAfterRestart": true,
+    "persistsAfterRestart": true,
+    "verificationActorRetired": true
+  },
+  "destructiveOperations": false,
+  "previousRuns": [
+    {
+      "label": "STAGE5_DEV_VERIFY",
+      "environment": "development",
+      "database": "kitss_education_dev",
+      "createdAt": "2026-10-24T07:28:44.607Z",
+      "baselineCounts": {
+        "sessions": 0,
+        "auditlogs": 0,
+        "franchiseApplications": 0,
+        "taxonomies": 0,
+        "universities": 0,
+        "auththrottles": 0,
+        "admissionApplications": 0,
+        "domainLocks": 1,
+        "colleges": 0,
+        "collegePrograms": 0,
+        "users": 0
+      },
+      "records": {
+        "verificationActorId": "6adc5e34a04caa67a3120dcd",
+        "bookId": "6adc5e35a04caa67a3120dce",
+        "bannerId": "6adc5e36a04caa67a3120dcf",
+        "facultyId": "6adc5e37a04caa67a3120dd0",
+        "pageId": "6adc5e37a04caa67a3120dd1",
+        "pageKey": "home",
+        "media": [
+          {
+            "id": "6adc5e38a04caa67a3120dd2",
+            "status": "quarantined",
+            "scan": "pending",
+            "bytes": 169
+          }
+        ],
+        "allMedia": [
+          {
+            "id": "6adc5e38a04caa67a3120dd2",
+            "status": "quarantined",
+            "mime": "image/png",
+            "bytes": 169
+          },
+          {
+            "id": "6adc5e3ea04caa67a3120dd3",
+            "status": "deleted",
+            "mime": "application/pdf"
+          }
+        ]
+      },
+      "checks": {
+        "verificationActorRetired": true
+      },
+      "destructiveOperations": false,
+      "finalCounts": {
+        "siteSettings": 0,
+        "sessions": 1,
+        "auditlogs": 11,
+        "banners": 1,
+        "facultyProfiles": 1,
+        "franchiseApplications": 0,
+        "pageContents": 1,
+        "taxonomies": 0,
+        "universities": 0,
+        "mediaAssets": 2,
+        "auththrottles": 3,
+        "admissionApplications": 0,
+        "books": 1,
+        "domainLocks": 1,
+        "colleges": 0,
+        "collegePrograms": 0,
+        "users": 1
+      },
+      "indexes": {
+        "books": [
+          "_id_",
+          "publicId_1",
+          "status_1_languageId_1_boardId_1_classId_1_subjectId_1"
+        ],
+        "pageContents": [
+          "_id_",
+          "key_1"
+        ],
+        "banners": [
+          "_id_",
+          "placement_1_status_1_sortOrder_1"
+        ],
+        "facultyProfiles": [
+          "_id_",
+          "status_1_sortOrder_1"
+        ],
+        "siteSettings": [
+          "_id_",
+          "key_1"
+        ],
+        "mediaAssets": [
+          "_id_",
+          "key_1",
+          "ownerUserId_1_idempotencyKey_1",
+          "status_1_createdAt_1",
+          "checksum_1"
+        ]
+      }
+    }
+  ],
+  "finalCounts": {
+    "siteSettings": 0,
+    "sessions": 2,
+    "auditlogs": 22,
+    "banners": 2,
+    "facultyProfiles": 2,
+    "franchiseApplications": 0,
+    "pageContents": 2,
+    "taxonomies": 0,
+    "universities": 0,
+    "mediaAssets": 4,
+    "auththrottles": 5,
+    "admissionApplications": 0,
+    "books": 2,
+    "domainLocks": 1,
+    "colleges": 0,
+    "collegePrograms": 0,
+    "users": 2
+  },
+  "indexes": {
+    "books": [
+      "_id_",
+      "publicId_1",
+      "status_1_languageId_1_boardId_1_classId_1_subjectId_1"
+    ],
+    "pageContents": [
+      "_id_",
+      "key_1"
+    ],
+    "banners": [
+      "_id_",
+      "placement_1_status_1_sortOrder_1"
+    ],
+    "facultyProfiles": [
+      "_id_",
+      "status_1_sortOrder_1"
+    ],
+    "siteSettings": [
+      "_id_",
+      "key_1"
+    ],
+    "mediaAssets": [
+      "_id_",
+      "key_1",
+      "ownerUserId_1_idempotencyKey_1",
+      "status_1_createdAt_1",
+      "checksum_1"
+    ]
+  }
+}

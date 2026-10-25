@@ -1,21 +1,15 @@
-import { mockSubscriptions } from "../data/mockSubscriptions";
-
-const delay = (ms = 300) => new Promise((resolve) => setTimeout(resolve, ms));
-
+import { coachingService } from './coachingService';
 export const subscriptionService = {
   async getSubscriptions() {
-    await delay(350);
-    return mockSubscriptions;
+    return (await coachingService.getMyCourses()).map(course => ({
+      ...course,
+      courseId: course.id,
+      courseName: course.title,
+      status: course.enrollment.state,
+      expiresAt: course.enrollment.expiresAt
+    }));
   },
-
-  async renewSubscription(subscriptionId) {
-    await delay(500);
-    const sub = mockSubscriptions.find((s) => s.id === subscriptionId);
-    if (sub) {
-      sub.status = "Active";
-      sub.daysRemaining = 365;
-      sub.expiryDate = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
-    }
-    return { success: true, subscription: sub };
+  async renewSubscription() {
+    throw new Error('Renewals require a separately approved prepaid policy and verified captured payment.');
   }
 };

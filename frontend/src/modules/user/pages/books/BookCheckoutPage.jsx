@@ -1,4 +1,8 @@
-import React, { useState, useEffect } from "react";
+import { commerceService } from '../../services/commerceService';
+import { openRazorpayCheckout } from '../../services/razorpayService';
+import { useAuth } from '../../context/AuthContext';
+import { useSearchParams } from 'react-router-dom';
+import React, { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import {
   ArrowLeft,
@@ -22,6 +26,14 @@ import { SkeletonLoader, ErrorState } from "../../components/common/EmptyState";
 export const BookCheckoutPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const actingIdentity = useRef(user?.id); actingIdentity.current = user?.id;
+  const [params,setParams] = useSearchParams();
+  const [availability,setAvailability] = useState(null), [order,setOrder] = useState(null), [paymentMessage,setPaymentMessage] = useState('');
+  const creationKey = useRef(crypto.randomUUID()), attemptKey = useRef(crypto.randomUUID());
+  useEffect(() => { const c = new AbortController(); setOrder(null); commerceService.config(c.signal).then(setAvailability).catch(e=>{if(e.code!=='ABORTED')setPaymentMessage(e.message);}); return ()=>c.abort(); }, [user?.id]);
+  const orderId = params.get('order');
+  useEffect(() => { if (!orderId) return; const c = new AbortController(); let count=0; const refresh=()=>commerceService.status(orderId,c.signal).then(row=>{setOrder(row); if(row.orderStatus==='captured'&&row.activationStatus==='applied'){setCompletedOrder({...row,amount:row.amountMinor/100});setShowSuccessModal(true);}}).catch(e=>{if(e.code!=='ABORTED')setPaymentMessage(e.message);});refresh();const timer=setInterval(()=>{if(++count<=40)refresh();},3000);return()=>{c.abort();clearInterval(timer);};},[orderId,user?.id]);
   const { markBookPurchased, isBookOwned } = useLibrary();
   const { showSuccess, showError } = useToast();
 
@@ -48,31 +60,15 @@ export const BookCheckoutPage = () => {
   }, [id]);
 
   const handlePayNow = async () => {
-    if (!book) return;
-
+    if (!book || !availability?.available) { setPaymentMessage('Payments unavailable until rotated Test Mode credentials and operator validation are ready.'); return; }
+    const checkoutIdentity = user?.id;
+    setProcessing(true);
     try {
-      setProcessing(true);
-      const res = await bookService.purchaseBook(book.id, paymentMethod.toUpperCase());
-      
-      // Register order in orderService
-      const orderRes = await orderService.createOrder({
-        productName: `${book.title} - ${book.subtitle}`,
-        type: "Book",
-        category: "Digital Books",
-        amount: book.price,
-        originalAmount: book.originalPrice || book.price,
-        discountAmount: (book.originalPrice || book.price) - book.price,
-        paymentMethod: paymentMethod === "upi" ? "UPI (Google Pay / PhonePe)" : "Card / Net Banking"
-      });
-
-      markBookPurchased(book.id);
-      setCompletedOrder(orderRes.order);
-      setShowSuccessModal(true);
-    } catch (err) {
-      showError(err.message || "Payment could not be processed.");
-    } finally {
-      setProcessing(false);
-    }
+      const current = order || await commerceService.create({kind:'book',id:book.id},creationKey.current);
+      if (actingIdentity.current !== checkoutIdentity) return;
+      setOrder(current);const next=new URLSearchParams(params);next.set('order',current.id);setParams(next,{replace:true});
+      await openRazorpayCheckout({orderId:current.id,attemptKey:current.attemptId || attemptKey.current,onSuccess:state=>{if(actingIdentity.current !== checkoutIdentity)return;setOrder(state);setPaymentMessage(state.orderStatus==='captured'?'Capture verified; checking fulfillment.':state.paymentStatus==='failed'?'Payment attempt failed. No access granted; check order status before retry.':'Payment pending capture.');},onDismiss:()=>{if(actingIdentity.current === checkoutIdentity)setPaymentMessage('Checkout dismissed. Payment status remains pending until provider verification.');},onFailure:e=>{if(actingIdentity.current === checkoutIdentity)setPaymentMessage(e.message);}});
+    } catch(e){setPaymentMessage(e.message);} finally{setProcessing(false);}
   };
 
   if (loading) {
@@ -89,8 +85,9 @@ export const BookCheckoutPage = () => {
     );
   }
 
-  const isFree = book.isFree === true || Number(book.price) === 0;
-  const alreadyOwned = isBookOwned(book.id) || isFree;
+  const displayPrice = order ? order.amountMinor / 100 : book.price;
+  const isFree = Number(displayPrice) === 0;
+  const alreadyOwned = isBookOwned(book.id);
 
   if (alreadyOwned) {
     return (
@@ -120,7 +117,7 @@ export const BookCheckoutPage = () => {
     );
   }
 
-  const discountVal = (book.originalPrice || book.price) - book.price;
+  const discountVal = order ? 0 : (book.originalPrice || book.price) - book.price;
 
   return (
     <div className="max-w-xl mx-auto space-y-5">
@@ -164,9 +161,9 @@ export const BookCheckoutPage = () => {
 
           <div className="text-right shrink-0">
             <span className="text-sm font-bold text-[#0A1D3F]">
-              ₹{book.price}
+              ₹{displayPrice}
             </span>
-            {book.originalPrice && (
+            {!order && book.originalPrice && (
               <span className="text-xs text-[#667085] line-through block">
                 ₹{book.originalPrice}
               </span>
@@ -182,9 +179,9 @@ export const BookCheckoutPage = () => {
 
           <div className="space-y-2">
             {[
-              { id: "upi", name: "UPI (Google Pay, PhonePe, Paytm)", icon: Smartphone, desc: "Instant & Zero Convenience Fee" },
+              { id: "upi", name: "UPI (Google Pay, PhonePe, Paytm)", icon: Smartphone, desc: "Choose a payment method in Razorpay Checkout" },
               { id: "card", name: "Debit / Credit Card", icon: CreditCard, desc: "Visa, MasterCard, RuPay" },
-              { id: "netbanking", name: "Net Banking", icon: Building, desc: "All Indian Banks Supported" },
+              { id: "netbanking", name: "Net Banking", icon: Building, desc: "Availability is determined by Razorpay" },
             ].map((method) => {
               const Icon = method.icon;
               const isSelected = paymentMethod === method.id;
@@ -233,7 +230,7 @@ export const BookCheckoutPage = () => {
         <div className="p-4 bg-[#F7F8FA] rounded-2xl border border-[#E6E8EC] space-y-2 text-xs">
           <div className="flex justify-between text-[#667085]">
             <span>Original Price:</span>
-            <span>₹{book.originalPrice || book.price}</span>
+            <span>₹{order ? displayPrice : book.originalPrice || displayPrice}</span>
           </div>
           {discountVal > 0 && (
             <div className="flex justify-between text-[#17B26A] font-semibold">
@@ -242,21 +239,25 @@ export const BookCheckoutPage = () => {
             </div>
           )}
           <div className="flex justify-between text-[#667085]">
-            <span>Platform Fee:</span>
-            <span className="text-[#17B26A] font-semibold">FREE (₹0)</span>
+            <span>Tax and fee policy:</span>
+            <span className="text-[#17B26A] font-semibold">Pending confirmation</span>
           </div>
           <div className="border-t border-[#E6E8EC] pt-2 flex justify-between text-sm font-bold text-[#0A1D3F]">
             <span>Final Payable Amount:</span>
-            <span className="text-[#FF8A00]">₹{book.price}</span>
+            <span className="text-[#FF8A00]">₹{displayPrice}</span>
           </div>
         </div>
 
         {/* Security Assurance */}
         <div className="flex items-center justify-center gap-1.5 text-[11px] text-[#667085]">
           <ShieldCheck className="w-4 h-4 text-[#17B26A]" />
-          <span>256-Bit SSL Encrypted Mock Payment Gateway</span>
+          <span>Razorpay Standard Checkout - Test Mode only</span>
         </div>
 
+        {paymentMessage && <p role="status" className="text-xs text-amber-800">{paymentMessage}</p>}
+        {!availability?.available && <p role="status" className="p-3 rounded-xl bg-amber-50 text-xs">Payments unavailable: fresh rotated Test Mode credentials and operator validation are pending.</p>}
+        {isFree && <p role="status" className="text-xs">Zero-price access policy is pending. No automatic entitlement is granted.</p>}
+        {order && <p role="status" className="text-xs break-words">{order.simulated ? 'SIMULATED TEST - ' : 'Test Mode - '}Order {order.reference}: {order.orderStatus}; payment: {order.paymentStatus}; fulfillment: {order.activationStatus}</p>}
         {/* CTA */}
         <div>
           <PrimaryButton
@@ -265,8 +266,9 @@ export const BookCheckoutPage = () => {
             fullWidth
             onClick={handlePayNow}
             loading={processing}
+            disabled={!availability?.available || isFree || order?.creationStatus === 'unknown'}
           >
-            Pay ₹{book.price} & Access Book
+            Pay ₹{displayPrice} & Access Book
           </PrimaryButton>
         </div>
       </div>
@@ -276,9 +278,9 @@ export const BookCheckoutPage = () => {
         isOpen={showSuccessModal}
         onClose={() => {
           setShowSuccessModal(false);
-          navigate(`/books/${book.id}/read`);
+          navigate("/orders");
         }}
-        title="Payment Successful!"
+        title="Test payment captured and fulfilled"
         showClose={false}
       >
         <div className="text-center py-2 space-y-3">
@@ -290,7 +292,7 @@ export const BookCheckoutPage = () => {
             Thank You for Your Order!
           </h3>
           <p className="text-xs text-[#667085]">
-            Your digital book has been added to <strong>My Library</strong>.
+            Backend verification confirmed capture and an entitlement. The full reading experience follows in a later stage.
           </p>
 
           {completedOrder && (
@@ -317,7 +319,7 @@ export const BookCheckoutPage = () => {
               fullWidth
               onClick={() => {
                 setShowSuccessModal(false);
-                navigate(`/books/${book.id}/read`);
+                navigate("/orders");
               }}
               icon={ArrowRight}
             >

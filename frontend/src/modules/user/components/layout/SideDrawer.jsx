@@ -24,8 +24,10 @@ import {
 import { useAuth } from "../../context/AuthContext";
 import { Modal } from "../common/Modal";
 import { PrimaryButton, SecondaryButton } from "../common/PrimaryButton";
+import { useDialogFocus } from '../../../../shared/ui/useDialogFocus';
 
-export const SideDrawer = ({ isOpen, onClose }) => {
+export const SideDrawer = ({ isOpen, onClose, support = {} }) => {
+  const drawer = useDialogFocus(isOpen, onClose);
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -76,6 +78,7 @@ export const SideDrawer = ({ isOpen, onClose }) => {
 
           {/* Drawer Panel with spring slide */}
           <motion.div
+            ref={drawer} role="dialog" aria-modal="true" aria-label="Student navigation" tabIndex={-1}
             initial={{ x: "-100%" }}
             animate={{ x: 0 }}
             exit={{ x: "-100%" }}
@@ -104,6 +107,7 @@ export const SideDrawer = ({ isOpen, onClose }) => {
                   type="button"
                   whileTap={{ scale: 0.9 }}
                   onClick={onClose}
+                  aria-label="Close navigation menu"
                   className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition cursor-pointer"
                 >
                   <X className="w-5 h-5" />
@@ -115,7 +119,7 @@ export const SideDrawer = ({ isOpen, onClose }) => {
               <div className="p-4 bg-[#F7F8FA] border-b border-[#E6E8EC]">
                 <div className="flex items-center gap-3">
                   <img
-                    src={user.avatar}
+                    src={user.avatar || '/KitssLogo.png'}
                     alt={user.name}
                     className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-xs"
                   />
@@ -269,15 +273,15 @@ export const SideDrawer = ({ isOpen, onClose }) => {
           <div className="space-y-2">
             <div className="flex items-center justify-between p-2.5 rounded-lg border border-[#E6E8EC]">
               <span className="text-gray-500">Student Helpline:</span>
-              <span className="font-bold">+91 1800 123 4567</span>
+              <span className="font-bold break-all">{support.phone || 'Not configured'}</span>
             </div>
             <div className="flex items-center justify-between p-2.5 rounded-lg border border-[#E6E8EC]">
               <span className="text-gray-500">Email Support:</span>
-              <span className="font-bold">support@kitseducation.com</span>
+              <span className="font-bold break-all">{support.email || 'Not configured'}</span>
             </div>
             <div className="flex items-center justify-between p-2.5 rounded-lg border border-[#E6E8EC]">
               <span className="text-gray-500">Hours:</span>
-              <span className="font-bold">Mon - Sat (9 AM - 7 PM)</span>
+              <span className="font-bold break-words">{support.hours || 'Not configured'}</span>
             </div>
           </div>
           <PrimaryButton

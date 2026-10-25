@@ -13,9 +13,9 @@ import { Link } from "react-router-dom";
 export const CoachingSidebar = ({
   activeTab = "lectures",
   onTabChange,
-  courseTitle = "Class 10 CBSE Science",
+  courseTitle = "Course",
   courseId,
-  progressPercentage = 42,
+  progressPercentage = 0,
 }) => {
   const tabs = [
     { id: "lectures", label: "Lectures", icon: Video },

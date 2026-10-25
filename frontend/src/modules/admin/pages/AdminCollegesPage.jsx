@@ -15,22 +15,23 @@ import {
   ChevronRight,
   Filter
 } from "lucide-react";
+import { Pagination } from '../../user/components/common/Pagination';
+import { useAuth } from '../../user/context/AuthContext';
+import { collegeService } from '../../user/services/collegeService';
 import { adminService } from "../services/adminService";
 import { useToast } from "../../user/context/ToastContext";
 import { PrimaryButton, SecondaryButton } from "../../user/components/common/PrimaryButton";
 
-const INDIAN_STATES = [
-  "Delhi", "Punjab", "Karnataka", "Uttar Pradesh", "Maharashtra", "Rajasthan",
-  "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh",
-  "Goa", "Gujarat", "Haryana", "Himachal Pradesh", "Jharkhand", "Kerala",
-  "Madhya Pradesh", "Manipur", "Meghalaya", "Mizoram", "Nagaland", "Odisha",
-  "Sikkim", "Tamil Nadu", "Telangana", "Tripura", "Uttarakhand", "West Bengal"
-];
+
 
 export const AdminCollegesPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const initialUniParam = searchParams.get("universityId") || "All";
 
+  const { can } = useAuth();
+  const [page, setPage] = useState(1);
+  const [meta, setMeta] = useState(null);
+  const [loadError, setLoadError] = useState('');
   const { showSuccess, showError } = useToast();
   const [colleges, setColleges] = useState([]);
   const [universities, setUniversities] = useState([]);
@@ -51,29 +52,32 @@ export const AdminCollegesPage = () => {
     name: "",
     code: "",
     universityId: "",
-    logo: "https://images.unsplash.com/photo-1592280771190-3e2e4d571952?w=160&auto=format&fit=crop&q=80",
-    banner: "https://images.unsplash.com/photo-1541339907198-e08756dedf3f?w=1200&auto=format&fit=crop&q=80",
+    logo: "",
+    banner: "",
     description: "",
     address: "",
-    city: "New Delhi",
-    district: "New Delhi",
-    state: "Delhi",
+    city: "",
+    district: "",
+    state: "", stateId: "", category: "College", verification: { state: "unverified", source: "" },
     country: "India",
-    location: "New Delhi, Delhi",
-    collegeType: "Constituent College",
-    status: "active",
+    location: "",
+    collegeType: "",
+    status: "draft",
     about: "",
-    facilities: "High-Tech Labs, Central Digital Library, AC Hostels, Sports Complex, Wi-Fi Smart Classrooms",
-    admissionInformation: "Admissions open for session 2026-2027. Direct admission based on merit and franchise counseling.",
+    facilities: "",
+    admissionInformation: "",
     contactInformation: {
-      phone: "+91 98110 00000",
-      email: "admissions@college.edu.in",
-      website: "https://college.edu.in",
+      phone: "",
+      email: "",
+      website: "",
     },
   };
 
+  const [states, setStates] = useState([]), [districts, setDistricts] = useState([]);
+  useEffect(() => { collegeService.getTaxonomies('state').then(setStates).catch(error => showError(error.message)); }, []);
   const [formData, setFormData] = useState(initialForm);
 
+  useEffect(() => { if (formData.stateId) collegeService.getTaxonomies('district', formData.stateId).then(setDistricts).catch(error => showError(error.message)); else setDistricts([]); }, [formData.stateId]);
   const fetchUniversities = async () => {
     try {
       const data = await adminService.getUniversities();
@@ -86,14 +90,15 @@ export const AdminCollegesPage = () => {
   const fetchColleges = async () => {
     try {
       setLoading(true);
-      const data = await adminService.getColleges({
+      const result = await adminService.page('colleges', { page,
         universityId: selectedUniFilter,
         status: statusFilter,
         search,
-      });
+       });
+      const data = result.data; setMeta(result.meta); setLoadError('');
       setColleges(data || []);
     } catch (err) {
-      showError("Failed to load colleges");
+      setLoadError(err.message); setColleges([]); showError(err.message);
     } finally {
       setLoading(false);
     }
@@ -105,8 +110,9 @@ export const AdminCollegesPage = () => {
 
   useEffect(() => {
     fetchColleges();
-  }, [selectedUniFilter, statusFilter]);
+  }, [selectedUniFilter, statusFilter, search, page]);
 
+  useEffect(() => { setPage(1); }, [statusFilter, search]);
   const handleSearchSubmit = (e) => {
     e.preventDefault();
     fetchColleges();
@@ -153,10 +159,10 @@ export const AdminCollegesPage = () => {
       address: college.address || "",
       city: college.city || "",
       district: college.district || college.city || "",
-      state: college.state || "Delhi",
+      state: college.state || "", stateId: college.stateId || "", category: college.category || "College", verification: college.verification || { state: "unverified", source: "" },
       country: college.country || "India",
       location: college.location || "",
-      collegeType: college.collegeType || "Constituent College",
+      collegeType: college.collegeType || "",
       status: college.status || "active",
       about: college.about || college.description || "",
       facilities: Array.isArray(college.facilities)
@@ -164,9 +170,9 @@ export const AdminCollegesPage = () => {
         : college.facilities || "",
       admissionInformation: college.admissionInformation || "",
       contactInformation: {
-        phone: college.contactInformation?.phone || "+91 98110 00000",
-        email: college.contactInformation?.email || "admissions@college.edu.in",
-        website: college.contactInformation?.website || "https://college.edu.in",
+        phone: college.contactInformation?.phone || "",
+        email: college.contactInformation?.email || "",
+        website: college.contactInformation?.website || "",
       },
     });
     setModalOpen(true);
@@ -194,7 +200,7 @@ export const AdminCollegesPage = () => {
 
       if (editingCollege) {
         const cId = editingCollege._id || editingCollege.id;
-        await adminService.updateCollege(cId, payload);
+        await adminService.updateCollege(cId, { ...payload, expectedRevision: editingCollege.revision });
         showSuccess("College updated successfully");
       } else {
         await adminService.createCollege(payload);
@@ -213,7 +219,7 @@ export const AdminCollegesPage = () => {
   const handleToggleStatus = async (college) => {
     const cId = college._id || college.id;
     try {
-      await adminService.toggleCollegeStatus(cId);
+      await adminService.toggleCollegeStatus(cId, college);
       showSuccess(
         `College status updated to ${
           college.status === "active" ? "Inactive" : "Active"
@@ -236,8 +242,8 @@ export const AdminCollegesPage = () => {
     }
 
     try {
-      await adminService.deleteCollege(cId);
-      showSuccess("College deleted successfully");
+      await adminService.deleteCollege(cId, college);
+      showSuccess("College archived successfully");
       fetchColleges();
     } catch (err) {
       showError(err.message || "Failed to delete college");
@@ -246,6 +252,8 @@ export const AdminCollegesPage = () => {
 
   return (
     <div className="space-y-6">
+      {loadError && <p role="alert" className="p-3 bg-red-50 text-red-700 rounded-xl">{loadError}</p>}
+      <Pagination meta={meta} onChange={setPage} loading={loading} />
       {/* Header Banner */}
       <div className="bg-white rounded-2xl border border-[#E6E8EC] p-5 sm:p-6 shadow-2xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
@@ -263,7 +271,7 @@ export const AdminCollegesPage = () => {
         </div>
 
         <PrimaryButton
-          onClick={handleOpenCreate}
+          disabled={!can('institutions.write')} onClick={handleOpenCreate}
           variant="navy"
           size="md"
           icon={Plus}
@@ -353,7 +361,7 @@ export const AdminCollegesPage = () => {
           {colleges.map((college) => {
             const cId = college._id || college.id;
             const uniName =
-              college.universityId?.name || "Independent University";
+              college.universityId?.name || "University not supplied";
             const uniShort = college.universityId?.shortName || "";
 
             return (
@@ -370,7 +378,7 @@ export const AdminCollegesPage = () => {
                     </span>
 
                     <button
-                      onClick={() => handleToggleStatus(college)}
+                      disabled={!can('institutions.write')} onClick={() => handleToggleStatus(college)}
                       title={`Click to ${
                         college.status === "active" ? "deactivate" : "activate"
                       }`}
@@ -429,7 +437,7 @@ export const AdminCollegesPage = () => {
                         Affiliation
                       </span>
                       <span className="font-bold text-xs text-emerald-600 truncate block">
-                        {college.collegeType || "Constituent"}
+                        {college.collegeType || "Not supplied"}
                       </span>
                     </div>
                   </div>
@@ -447,14 +455,14 @@ export const AdminCollegesPage = () => {
 
                   <div className="flex items-center gap-1">
                     <button
-                      onClick={() => handleOpenEdit(college)}
+                      disabled={!can('institutions.write')} aria-label="Edit college" onClick={() => handleOpenEdit(college)}
                       className="p-1.5 rounded-lg text-gray-500 hover:text-[#0A1D3F] hover:bg-gray-100 transition cursor-pointer"
                       title="Edit College"
                     >
                       <Edit2 className="w-3.5 h-3.5" />
                     </button>
                     <button
-                      onClick={() => handleDelete(college)}
+                      disabled={!can('institutions.write')} aria-label="Archive college" onClick={() => handleDelete(college)}
                       className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition cursor-pointer"
                       title="Delete College"
                     >
@@ -499,7 +507,7 @@ export const AdminCollegesPage = () => {
                   Parent University / Franchise Provider <span className="text-red-500">*</span>
                 </label>
                 <select
-                  value={formData.universityId}
+                  disabled={Boolean(editingCollege)} aria-label="College universityId" value={formData.universityId}
                   onChange={(e) =>
                     setFormData({ ...formData, universityId: e.target.value })
                   }
@@ -523,7 +531,7 @@ export const AdminCollegesPage = () => {
                   </label>
                   <input
                     type="text"
-                    value={formData.name}
+                    aria-label="College name" value={formData.name}
                     onChange={(e) =>
                       setFormData({ ...formData, name: e.target.value })
                     }
@@ -539,7 +547,7 @@ export const AdminCollegesPage = () => {
                   </label>
                   <input
                     type="text"
-                    value={formData.code}
+                    aria-label="College code" value={formData.code}
                     onChange={(e) =>
                       setFormData({ ...formData, code: e.target.value.toUpperCase() })
                     }
@@ -557,7 +565,7 @@ export const AdminCollegesPage = () => {
                   </label>
                   <input
                     type="text"
-                    value={formData.city}
+                    aria-label="College city" value={formData.city}
                     onChange={(e) =>
                       setFormData({ ...formData, city: e.target.value })
                     }
@@ -572,16 +580,16 @@ export const AdminCollegesPage = () => {
                     State <span className="text-red-500">*</span>
                   </label>
                   <select
-                    value={formData.state}
+                    aria-label="College stateId" value={formData.stateId}
                     onChange={(e) =>
-                      setFormData({ ...formData, state: e.target.value })
+                      setFormData({ ...formData, stateId: e.target.value, district: "" })
                     }
                     className="w-full px-3 py-2 bg-[#F7F8FA] border border-[#E6E8EC] rounded-xl text-xs text-[#0A1D3F] focus:outline-none focus:border-[#0A1D3F]"
                     required
                   >
-                    {INDIAN_STATES.map((st) => (
-                      <option key={st} value={st}>
-                        {st}
+                    <option value="">Select state</option>{states.map((st) => (
+                      <option key={st.id} value={st.id}>
+                        {st.label}
                       </option>
                     ))}
                   </select>
@@ -592,13 +600,13 @@ export const AdminCollegesPage = () => {
                     College Type
                   </label>
                   <select
-                    value={formData.collegeType}
+                    aria-label="College collegeType" value={formData.collegeType}
                     onChange={(e) =>
                       setFormData({ ...formData, collegeType: e.target.value })
                     }
                     className="w-full px-3 py-2 bg-[#F7F8FA] border border-[#E6E8EC] rounded-xl text-xs text-[#0A1D3F] focus:outline-none focus:border-[#0A1D3F]"
                   >
-                    <option value="Constituent College">Constituent College</option>
+                    <option value="">Select type</option><option value="Constituent College">Constituent College</option>
                     <option value="Affiliated College">Affiliated College</option>
                     <option value="Autonomous College">Autonomous College</option>
                     <option value="Faculty / School">Faculty / School</option>
@@ -607,6 +615,10 @@ export const AdminCollegesPage = () => {
                 </div>
               </div>
 
+              <label className="block text-xs font-bold">District<select className="w-full p-2 border rounded-xl" aria-label="College district" value={formData.district} onChange={e => setFormData({ ...formData, district: e.target.value })} required><option value="">Select district</option>{districts.map(d => <option key={d.id} value={d.label}>{d.label}</option>)}</select></label>
+              <label className="block text-xs font-bold">Directory category<select className="w-full p-2 border rounded-xl" aria-label="College category" value={formData.category} onChange={e => setFormData({ ...formData, category: e.target.value })}>{['University','College','School','Institute'].map(value => <option key={value}>{value}</option>)}</select></label>
+              <label className="block text-xs"><input type="checkbox" checked={formData.verification?.state === 'verified'} onChange={e => setFormData({ ...formData, verification: { ...formData.verification, state: e.target.checked ? 'verified' : 'unverified' } })} /> Relationship verified by authorized reviewer</label>
+              <label className="block text-xs font-bold">Verification evidence reference<input aria-label="Verification evidence reference" className="w-full p-2 border rounded-xl" value={formData.verification?.source || ''} onChange={e => setFormData({ ...formData, verification: { ...formData.verification, source: e.target.value } })} placeholder="Approved source/reference, required to publish" /></label>
               {/* Address */}
               <div>
                 <label className="block text-xs font-bold text-[#0A1D3F] mb-1">
@@ -614,7 +626,7 @@ export const AdminCollegesPage = () => {
                 </label>
                 <input
                   type="text"
-                  value={formData.address}
+                  aria-label="College address" value={formData.address}
                   onChange={(e) =>
                     setFormData({ ...formData, address: e.target.value })
                   }
@@ -630,7 +642,7 @@ export const AdminCollegesPage = () => {
                 </label>
                 <textarea
                   rows={2}
-                  value={formData.description}
+                  aria-label="College description" value={formData.description}
                   onChange={(e) =>
                     setFormData({ ...formData, description: e.target.value })
                   }
@@ -645,13 +657,13 @@ export const AdminCollegesPage = () => {
                   Status
                 </label>
                 <select
-                  value={formData.status}
+                  aria-label="College status" value={formData.status}
                   onChange={(e) =>
                     setFormData({ ...formData, status: e.target.value })
                   }
                   className="w-full px-3 py-2 bg-[#F7F8FA] border border-[#E6E8EC] rounded-xl text-xs sm:text-sm text-[#0A1D3F] focus:outline-none focus:border-[#0A1D3F]"
                 >
-                  <option value="active">Active (Visible in Franchise Selection)</option>
+                  <option value="draft">Draft</option><option value="active">Active (Visible in Franchise Selection)</option>
                   <option value="inactive">Inactive (Hidden)</option>
                 </select>
               </div>

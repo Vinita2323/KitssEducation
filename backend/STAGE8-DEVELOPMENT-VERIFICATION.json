@@ -1,0 +1,17 @@
+{
+  "database": "kitss_education_dev",
+  "checks": {
+    "ready": true,
+    "restartReady": true,
+    "resultConfig": true,
+    "officialPublicationDisabled": true,
+    "notificationsProtected": true,
+    "preferencesProtected": true,
+    "razorpayDisabled": true,
+    "stage8CollectionsPresent": true
+  },
+  "applicationCollectionCount": 32,
+  "realProviderCalls": false,
+  "applicationFixturesCreated": false,
+  "environmentOrTopologyChanged": false
+}

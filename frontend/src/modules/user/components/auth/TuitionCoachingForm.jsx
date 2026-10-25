@@ -1,3 +1,4 @@
+import { RegistrationDraftControls, useRegistrationFee } from './RegistrationDraftControls';
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -106,7 +107,7 @@ export const TuitionCoachingForm = ({ onBack }) => {
   const [paymentMethod, setPaymentMethod] = useState("upi");
   const [upiApp, setUpiApp] = useState("gpay");
   const [selectedBank, setSelectedBank] = useState("State Bank of India (SBI)");
-  const [registrationFee] = useState(499);
+  const registrationFee = useRegistrationFee('tuition');
   const [createdCredentials, setCreatedCredentials] = useState(null);
   const [transactionId, setTransactionId] = useState("");
   const [copiedUserId, setCopiedUserId] = useState(false);
@@ -210,83 +211,7 @@ export const TuitionCoachingForm = ({ onBack }) => {
     setStep((prev) => Math.max(prev - 1, 1));
   };
 
-  const completeTuitionRegistration = async (txnId) => {
-    try {
-      const generatedTxn = txnId || `TXN-KTS-${Date.now().toString().slice(-8)}`;
-      setTransactionId(generatedTxn);
-
-      const registeredUser = await register({
-        name: formData.studentName,
-        phone: formData.contactNo,
-        email: formData.emailId,
-        dob: formData.dob,
-        state: formData.stateName,
-        district: formData.district,
-        city: formData.district,
-        address: formData.address,
-        pincode: formData.pincode,
-        fatherName: formData.fatherName,
-        motherName: formData.motherName,
-        whatsappNo: formData.whatsappNo,
-        board: formData.studyBoard,
-        class: formData.studentClass,
-        applyCourseName: formData.studentClass,
-        applyInstituteName: formData.schoolName
-      });
-
-      const creds = {
-        userId: registeredUser?.id || `KTS-TC-${Math.floor(100000 + Math.random() * 900000)}`,
-        password: `Pass@${Math.floor(1000 + Math.random() * 9000)}`,
-        applicationNo: `TC-APP-2026-${Math.floor(10000 + Math.random() * 90000)}`
-      };
-
-      setCreatedCredentials(creds);
-      setIsSuccess(true);
-      setStep(6);
-      showSuccess("Tuition admission completed & Student ID generated!");
-    } catch (err) {
-      showError(err.message || "User registration failed after payment.");
-    } finally {
-      setSubmittingPayment(false);
-    }
-  };
-
-  const handlePaymentAndCreateUser = async (e) => {
-    if (e) e.preventDefault();
-    setSubmittingPayment(true);
-
-    try {
-      await openRazorpayCheckout({
-        amountInRupees: registrationFee,
-        course: {
-          id: `TUITION_${formData.studentClass.replace(/\s+/g, "_")}`,
-          title: `Tuition & Coaching Admission - ${formData.studentClass}`
-        },
-        plan: {
-          name: "Annual Coaching Batch Enrollment",
-          duration: "1 Year Access"
-        },
-        student: {
-          name: formData.studentName,
-          email: formData.emailId,
-          phone: formData.contactNo
-        },
-        onSuccess: async (response) => {
-          await completeTuitionRegistration(response?.razorpay_payment_id);
-        },
-        onFailure: (err) => {
-          setSubmittingPayment(false);
-          showError(err?.message || "Payment cancelled or failed.");
-        },
-        onDismiss: () => {
-          setSubmittingPayment(false);
-        }
-      });
-    } catch (err) {
-      setSubmittingPayment(false);
-      showError(err.message || "Unable to launch checkout payment gateway.");
-    }
-  };
+  const handlePaymentAndCreateUser = async e => { e?.preventDefault(); showError('Submission and payments are blocked pending approved document and eligibility policies. Save a draft instead.'); };
 
   const copyText = (text, type) => {
     navigator.clipboard.writeText(text);
@@ -303,6 +228,7 @@ export const TuitionCoachingForm = ({ onBack }) => {
 
   return (
     <div className="w-full max-w-2xl mx-auto bg-white rounded-lg border border-slate-200/90 shadow-2xs overflow-hidden">
+      <RegistrationDraftControls kind="tuition" formData={formData} setFormData={setFormData} />
       {/* Top Banner & Header - Compact & Clean */}
       <div className="p-3 sm:p-3.5 border-b border-slate-200/80 flex items-center justify-between">
         <div className="flex items-center gap-2.5">
@@ -955,7 +881,7 @@ export const TuitionCoachingForm = ({ onBack }) => {
                     <input
                       type="text"
                       maxLength="12"
-                      name="aadharNumber"
+                      name="aadharNumber" disabled title="Identity collection is blocked pending privacy approval"
                       placeholder="12-digit Aadhar Number (e.g. 1234 5678 9012)"
                       value={formData.aadharNumber}
                       onChange={handleChange}
@@ -969,7 +895,7 @@ export const TuitionCoachingForm = ({ onBack }) => {
                         <UploadCloud className="w-4 h-4 text-[#FF8A00]" />
                         <span className="truncate">{formData.aadharCardFile ? formData.aadharCardFile.name : "Select Aadhar (Photo/PDF)"}</span>
                         <input
-                          type="file"
+                          type="file" disabled title="Document privacy policy pending"
                           accept="image/*,.pdf"
                           onChange={(e) => handleFileChange("aadharCard", e.target.files[0])}
                           className="hidden"
@@ -1008,7 +934,7 @@ export const TuitionCoachingForm = ({ onBack }) => {
                           </div>
                         )}
                         <input
-                          type="file"
+                          type="file" disabled title="Document privacy policy pending"
                           accept="image/*"
                           onChange={(e) => handleFileChange("passportPhoto", e.target.files[0])}
                           className="hidden"
@@ -1037,7 +963,7 @@ export const TuitionCoachingForm = ({ onBack }) => {
                           </div>
                         )}
                         <input
-                          type="file"
+                          type="file" disabled title="Document privacy policy pending"
                           accept="image/*,.pdf"
                           onChange={(e) => handleFileChange("classIdCard", e.target.files[0])}
                           className="hidden"

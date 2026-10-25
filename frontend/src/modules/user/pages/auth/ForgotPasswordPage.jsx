@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { User, Mail, ArrowRight, KeyRound } from "lucide-react";
 import { authService } from "../../services/authService";
 import { useToast } from "../../context/ToastContext";
@@ -14,15 +14,15 @@ export const ForgotPasswordPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!identifier.trim()) {
-      showError("Please enter your User ID or Email.");
+      showError("Please enter your registered email.");
       return;
     }
 
     try {
       setLoading(true);
-      await authService.forgotPassword(identifier);
-      showSuccess("Verification code sent! Enter OTP to reset password.");
-      navigate("/reset-password", { state: { identifier } });
+      const result = await authService.forgotPassword(identifier);
+      showSuccess(result.message);
+      navigate("/reset-password", { state: { challengeId: result.challengeId } });
     } catch (err) {
       showError(err.message || "Could not send reset code.");
     } finally {
@@ -41,21 +41,21 @@ export const ForgotPasswordPage = () => {
           Forgot Password?
         </h2>
         <p className="text-xs sm:text-sm text-[#667085] mt-1">
-          Enter your registered User ID or Email address to receive an OTP.
+          Enter your registered registered email address to receive an OTP.
         </p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label className="block text-xs font-bold text-[#0A1D3F] mb-1.5">
-            User ID or Email
+            registered email
           </label>
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
               <User className="w-4 h-4" />
             </div>
             <input
-              type="text"
+              type="email"
               value={identifier}
               onChange={(e) => setIdentifier(e.target.value)}
               placeholder="e.g. KITSS20261084 or student@example.com"
@@ -92,7 +92,8 @@ export const ResetPasswordPage = () => {
   const navigate = useNavigate();
   const { showSuccess, showError } = useToast();
 
-  const [otp, setOtp] = useState("123456");
+  const location = useLocation();
+  const [otp, setOtp] = useState('');
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -103,8 +104,8 @@ export const ResetPasswordPage = () => {
       showError("Please enter the 6-digit OTP.");
       return;
     }
-    if (!newPassword || newPassword.length < 6) {
-      showError("Password must be at least 6 characters.");
+    if (!newPassword || newPassword.length < 12) {
+      showError("Password must be at least 12 characters.");
       return;
     }
     if (newPassword !== confirmPassword) {
@@ -114,7 +115,7 @@ export const ResetPasswordPage = () => {
 
     try {
       setLoading(true);
-      await authService.resetPassword(otp, newPassword);
+      await authService.resetPassword({ challengeId: location.state?.challengeId || '', otp, newPassword });
       showSuccess("Password reset successfully! Please login with your new password.");
       navigate("/login");
     } catch (err) {
@@ -159,7 +160,7 @@ export const ResetPasswordPage = () => {
             type="password"
             value={newPassword}
             onChange={(e) => setNewPassword(e.target.value)}
-            placeholder="At least 6 characters"
+            placeholder="At least 12 characters"
             className="w-full px-4 py-2.5 bg-[#F7F8FA] border border-[#E6E8EC] rounded-xl text-xs sm:text-sm text-[#0A1D3F] focus:outline-none focus:ring-2 focus:ring-[#0A1D3F]/20 focus:border-[#0A1D3F] transition"
             required
           />

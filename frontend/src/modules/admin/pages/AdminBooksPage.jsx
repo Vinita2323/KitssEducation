@@ -18,7 +18,10 @@ import {
   DollarSign
 } from "lucide-react";
 import { bookService } from "../../user/services/bookService";
-import { mockBoards, mockClasses, mockSubjects } from "../../user/data/mockBooks";
+import { collegeService } from '../../user/services/collegeService';
+import { useAuth } from '../../user/context/AuthContext';
+import { Pagination } from '../../user/components/common/Pagination';
+import { BookEditor } from '../components/BookEditor';
 
 const COLOR_PRESETS = [
   { label: "Navy Blue", value: "from-[#0A1D3F] to-[#133C8B]" },
@@ -32,6 +35,11 @@ const COLOR_PRESETS = [
 const ICON_PRESETS = ["BookOpen", "Calculator", "Atom", "BookMarked", "Globe2", "Languages"];
 
 export const AdminBooksPage = () => {
+  const { can } = useAuth();
+  const [page, setPage] = useState(1), [meta, setMeta] = useState(null), [loadError, setLoadError] = useState('');
+  const [tax, setTax] = useState({board:[],class:[],subject:[]});
+  const taxonomyBoards = tax.board.map(t => ({id:t.id,name:t.label})), taxonomyClasses = tax.class.map(t => t.label), taxonomySubjects = tax.subject.map(t => ({id:t.id,name:t.label}));
+  useEffect(() => { Promise.all(['board','class','subject'].map(async kind => [kind,await collegeService.getTaxonomies(kind)])).then(rows=>setTax(Object.fromEntries(rows))).catch(e=>setLoadError(e.message)); }, []);
   const [books, setBooks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -47,35 +55,10 @@ export const AdminBooksPage = () => {
   const [deleteConfirmId, setDeleteConfirmId] = useState(null);
   const [toastMessage, setToastMessage] = useState(null);
 
-  // Form State
-  const initialFormState = {
-    title: "",
-    subtitle: "",
-    board: "CBSE",
-    class: "10",
-    subject: "Mathematics",
-    price: 199,
-    originalPrice: 299,
-    discount: "33% OFF",
-    isFree: false,
-    pages: 250,
-    language: "English",
-    fileSize: "12.5 MB",
-    author: "KITSS Academic Editorial Board",
-    description: "Prepared for comprehensive curriculum mastery with solved exemplar problems and practice tests.",
-    chapters: "1. Overview & Fundamentals\n2. Core Theorems\n3. Exemplar Solutions\n4. Practice Papers",
-    keywords: "curriculum, exam prep, solved questions, exemplar",
-    coverColor: "from-[#0A1D3F] to-[#133C8B]",
-    coverIcon: "BookOpen",
-    status: "published"
-  };
-
-  const [formData, setFormData] = useState(initialFormState);
-
   const loadBooks = async () => {
     try {
       setLoading(true);
-      const data = await bookService.getAllBooksForAdmin({
+      const result = await bookService.adminPage({ page,
         board: filterBoard,
         className: filterClass,
         subject: filterSubject,
@@ -83,9 +66,9 @@ export const AdminBooksPage = () => {
         status: filterStatus,
         query: searchQuery
       });
-      setBooks(data);
+      setBooks(result.data); setMeta(result.meta); setLoadError('');
     } catch (err) {
-      console.error("Error loading admin books:", err);
+      setBooks([]); setLoadError(err.message);
     } finally {
       setLoading(false);
     }
@@ -93,107 +76,48 @@ export const AdminBooksPage = () => {
 
   useEffect(() => {
     loadBooks();
-  }, [filterBoard, filterClass, filterSubject, filterType, filterStatus, searchQuery]);
+  }, [filterBoard, filterClass, filterSubject, filterType, filterStatus, searchQuery, page]);
+  useEffect(()=>setPage(1),[filterBoard,filterClass,filterSubject,filterType,filterStatus,searchQuery]);
 
   const showToast = (msg) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 3500);
   };
 
-  const handleOpenAddModal = () => {
-    setEditingBook(null);
-    setFormData(initialFormState);
-    setModalOpen(true);
-  };
-
-  const handleOpenEditModal = (book) => {
-    setEditingBook(book);
-    setFormData({
-      title: book.title || "",
-      subtitle: book.subtitle || "",
-      board: book.board || "CBSE",
-      class: String(book.class || "10"),
-      subject: book.subject || "Mathematics",
-      price: book.price || 0,
-      originalPrice: book.originalPrice || 0,
-      discount: book.discount || "",
-      isFree: Boolean(book.isFree),
-      pages: book.pages || 200,
-      language: book.language || "English",
-      fileSize: book.fileSize || "10 MB",
-      author: book.author || "KITSS Editorial Team",
-      description: book.description || "",
-      chapters: Array.isArray(book.chapters) ? book.chapters.join("\n") : (book.chapters || ""),
-      keywords: Array.isArray(book.keywords) ? book.keywords.join(", ") : (book.keywords || ""),
-      coverColor: book.coverColor || "from-[#0A1D3F] to-[#133C8B]",
-      coverIcon: book.coverIcon || "BookOpen",
-      status: book.status || "published"
-    });
-    setModalOpen(true);
-  };
-
-  const handleSaveBook = async (e) => {
-    e.preventDefault();
-    try {
-      if (!formData.title.trim()) {
-        alert("Please enter a book title");
-        return;
-      }
-
-      if (editingBook) {
-        await bookService.updateBook(editingBook.id, formData);
-        showToast(`Updated "${formData.title}" successfully.`);
-      } else {
-        await bookService.addBook(formData);
-        showToast(`Added "${formData.title}" to catalog.`);
-      }
-
-      setModalOpen(false);
-      loadBooks();
-    } catch (err) {
-      console.error("Error saving book:", err);
-      alert("Failed to save book: " + err.message);
-    }
-  };
-
+  const handleOpenAddModal = () => { setEditingBook(null); setModalOpen(true); };
+  const handleOpenEditModal = book => { setEditingBook(book); setModalOpen(true); };
   const handleDeleteBook = async (id) => {
     try {
-      await bookService.deleteBook(id);
-      showToast("Book deleted from catalog.");
+      await bookService.deleteBook(books.find(b=>b.id===id));
+      showToast("Book archived; historical records retained.");
       setDeleteConfirmId(null);
       loadBooks();
     } catch (err) {
       console.error("Error deleting book:", err);
-      alert("Failed to delete book");
+      setLoadError(err.message);
     }
   };
 
   const handleTogglePublish = async (id) => {
     try {
-      const updated = await bookService.togglePublishStatus(id);
+      const updated = await bookService.togglePublishStatus(books.find(b=>b.id===id));
       showToast(`Status changed to ${updated.status}.`);
       loadBooks();
     } catch (err) {
-      console.error("Error toggling status:", err);
-    }
-  };
-
-  const handleResetCatalog = () => {
-    if (window.confirm("Are you sure you want to reset the books catalog to initial factory defaults? Any custom books added will be reset.")) {
-      bookService.resetToDefaults();
-      showToast("Catalog reset to factory default mock books.");
-      loadBooks();
+      setLoadError(err.message);
     }
   };
 
   // Stats calculation
-  const totalCount = books.length;
+  const totalCount = meta?.total ?? 0;
   const publishedCount = books.filter((b) => (b.status || "published") === "published").length;
   const freeCount = books.filter((b) => b.isFree || b.price === 0).length;
   const paidCount = books.filter((b) => !b.isFree && b.price > 0).length;
 
   return (
     <div className="space-y-6">
+      {loadError && <p role="alert" className="p-3 rounded-xl bg-red-50 text-red-700">{loadError}</p>}
+      <Pagination meta={meta} onChange={setPage} loading={loading} />
       {/* Toast Notification */}
       {toastMessage && (
         <div className="fixed top-20 right-6 z-50 bg-[#0A1D3F] text-white px-4 py-3 rounded-2xl shadow-xl border border-[#FF8A00] flex items-center gap-2 animate-in slide-in-from-top duration-200">
@@ -215,19 +139,11 @@ export const AdminBooksPage = () => {
         </div>
 
         <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={handleResetCatalog}
-            className="px-3 py-2 bg-white border border-[#E6E8EC] hover:bg-gray-50 text-[#667085] hover:text-[#0A1D3F] rounded-xl text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer shadow-2xs"
-            title="Restore original 16 mock books"
-          >
-            <RotateCcw className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Reset Defaults</span>
-          </button>
+
 
           <button
             type="button"
-            onClick={handleOpenAddModal}
+            disabled={!can('learning.write')} onClick={handleOpenAddModal}
             className="px-4 py-2 bg-[#FF8A00] hover:bg-[#E67C00] text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-xs active:scale-95 cursor-pointer"
           >
             <Plus className="w-4 h-4" />
@@ -243,15 +159,15 @@ export const AdminBooksPage = () => {
           <span className="text-xl font-black text-[#0A1D3F] mt-1 block">{totalCount}</span>
         </div>
         <div className="p-4 bg-white rounded-2xl border border-[#E6E8EC] shadow-2xs">
-          <span className="text-[11px] font-semibold text-[#667085] block">Published</span>
+          <span className="text-[11px] font-semibold text-[#667085] block">Published (page)</span>
           <span className="text-xl font-black text-[#17B26A] mt-1 block">{publishedCount}</span>
         </div>
         <div className="p-4 bg-white rounded-2xl border border-[#E6E8EC] shadow-2xs">
-          <span className="text-[11px] font-semibold text-[#667085] block">Free Books</span>
+          <span className="text-[11px] font-semibold text-[#667085] block">Zero-priced (page)</span>
           <span className="text-xl font-black text-blue-600 mt-1 block">{freeCount}</span>
         </div>
         <div className="p-4 bg-white rounded-2xl border border-[#E6E8EC] shadow-2xs">
-          <span className="text-[11px] font-semibold text-[#667085] block">Paid Premium</span>
+          <span className="text-[11px] font-semibold text-[#667085] block">Paid (page)</span>
           <span className="text-xl font-black text-[#FF8A00] mt-1 block">{paidCount}</span>
         </div>
       </div>
@@ -301,7 +217,7 @@ export const AdminBooksPage = () => {
               className="w-full p-2 bg-[#F7F8FA] border border-[#E6E8EC] rounded-xl text-xs text-[#0A1D3F] focus:outline-none"
             >
               <option value="All">All Boards</option>
-              {mockBoards.map((b) => (
+              {taxonomyBoards.map((b) => (
                 <option key={b.id} value={b.id}>{b.name}</option>
               ))}
             </select>
@@ -317,7 +233,7 @@ export const AdminBooksPage = () => {
               className="w-full p-2 bg-[#F7F8FA] border border-[#E6E8EC] rounded-xl text-xs text-[#0A1D3F] focus:outline-none"
             >
               <option value="All">All Classes</option>
-              {mockClasses.map((c) => (
+              {taxonomyClasses.map((c) => (
                 <option key={c} value={c}>Class {c}</option>
               ))}
             </select>
@@ -333,7 +249,7 @@ export const AdminBooksPage = () => {
               className="w-full p-2 bg-[#F7F8FA] border border-[#E6E8EC] rounded-xl text-xs text-[#0A1D3F] focus:outline-none"
             >
               <option value="All">All Subjects</option>
-              {mockSubjects.map((s) => (
+              {taxonomySubjects.map((s) => (
                 <option key={s.id} value={s.id}>{s.name}</option>
               ))}
             </select>
@@ -440,7 +356,7 @@ export const AdminBooksPage = () => {
                           </span>
                         ) : (
                           <div>
-                            <span className="font-black text-sm text-[#0A1D3F]">₹{book.price}</span>
+                            <span className="font-black text-sm text-[#0A1D3F]">{book.price === undefined ? 'Not configured' : `₹${book.price}`}</span>
                             {book.originalPrice && (
                               <span className="text-[11px] text-[#667085] line-through block">
                                 ₹{book.originalPrice}
@@ -453,15 +369,15 @@ export const AdminBooksPage = () => {
                       {/* Specs */}
                       <td className="p-3.5 whitespace-nowrap text-[11px] text-[#667085]">
                         <div>{book.pages} pages</div>
-                        <div>{book.language || "English"}</div>
-                        <div>{book.fileSize || "10 MB"}</div>
+                        <div>{book.language || "Not supplied"}</div>
+                        <div>{book.fileSize || "Private PDF"}</div>
                       </td>
 
                       {/* Status Toggle */}
                       <td className="p-3.5 text-center whitespace-nowrap">
                         <button
                           type="button"
-                          onClick={() => handleTogglePublish(book.id)}
+                          disabled={!can('learning.publish') || book.status === 'archived'} onClick={() => handleTogglePublish(book.id)}
                           className={`px-2.5 py-1 rounded-full text-[10px] font-bold border transition cursor-pointer ${
                             isPublished
                               ? "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100"
@@ -469,7 +385,7 @@ export const AdminBooksPage = () => {
                           }`}
                           title="Click to toggle status"
                         >
-                          {isPublished ? "● Published" : "○ Draft"}
+                          {isPublished ? "● Published" : book.status === 'archived' ? 'Archived' : "○ Draft"}
                         </button>
                       </td>
 
@@ -486,7 +402,7 @@ export const AdminBooksPage = () => {
 
                           <button
                             type="button"
-                            onClick={() => handleOpenEditModal(book)}
+                            disabled={!can('learning.write') || book.status === 'archived'} onClick={() => handleOpenEditModal(book)}
                             className="p-1.5 rounded-lg text-blue-600 hover:bg-blue-50 transition cursor-pointer"
                             title="Edit Book"
                           >
@@ -495,9 +411,9 @@ export const AdminBooksPage = () => {
 
                           <button
                             type="button"
-                            onClick={() => setDeleteConfirmId(book.id)}
+                            disabled={!can('learning.write')} onClick={() => setDeleteConfirmId(book.id)}
                             className="p-1.5 rounded-lg text-red-600 hover:bg-red-50 transition cursor-pointer"
-                            title="Delete Book"
+                            title="Archive Book"
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
@@ -512,327 +428,7 @@ export const AdminBooksPage = () => {
         </div>
       </div>
 
-      {/* Add / Edit Book Modal */}
-      {modalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4">
-          <div
-            className="fixed inset-0 bg-[#0A1D3F]/70 backdrop-blur-xs transition-opacity"
-            onClick={() => setModalOpen(false)}
-          />
-
-          <div className="relative bg-white w-full max-w-2xl rounded-3xl shadow-2xl border border-[#E6E8EC] z-10 overflow-hidden flex flex-col max-h-[90vh] animate-in fade-in zoom-in-95 duration-200">
-            {/* Modal Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-[#E6E8EC]">
-              <div className="flex items-center gap-2">
-                <BookOpen className="w-5 h-5 text-[#FF8A00]" />
-                <h3 className="text-base font-extrabold text-[#0A1D3F]">
-                  {editingBook ? "Edit Digital Book" : "Add New Digital Book"}
-                </h3>
-              </div>
-              <button
-                type="button"
-                onClick={() => setModalOpen(false)}
-                className="p-1 rounded-lg text-gray-400 hover:text-gray-700 cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Modal Form */}
-            <form onSubmit={handleSaveBook} className="p-6 overflow-y-auto space-y-4 text-xs">
-              {/* Hierarchy Row: Board -> Class -> Subject */}
-              <div className="p-3 bg-[#F7F8FA] rounded-2xl border border-[#E6E8EC] space-y-2">
-                <span className="text-[10px] font-bold text-[#0A1D3F] uppercase tracking-wider block">
-                  Book Hierarchy (Board → Class → Subject)
-                </span>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <div>
-                    <label className="text-[11px] font-semibold text-[#667085] block mb-1">
-                      Board *
-                    </label>
-                    <select
-                      value={formData.board}
-                      onChange={(e) => setFormData({ ...formData, board: e.target.value })}
-                      className="w-full p-2 bg-white border border-[#E6E8EC] rounded-xl text-xs font-semibold text-[#0A1D3F]"
-                    >
-                      {mockBoards.map((b) => (
-                        <option key={b.id} value={b.id}>{b.name}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="text-[11px] font-semibold text-[#667085] block mb-1">
-                      Class *
-                    </label>
-                    <select
-                      value={formData.class}
-                      onChange={(e) => setFormData({ ...formData, class: e.target.value })}
-                      className="w-full p-2 bg-white border border-[#E6E8EC] rounded-xl text-xs font-semibold text-[#0A1D3F]"
-                    >
-                      {mockClasses.map((c) => (
-                        <option key={c} value={c}>Class {c}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="text-[11px] font-semibold text-[#667085] block mb-1">
-                      Subject *
-                    </label>
-                    <select
-                      value={formData.subject}
-                      onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
-                      className="w-full p-2 bg-white border border-[#E6E8EC] rounded-xl text-xs font-semibold text-[#0A1D3F]"
-                    >
-                      {mockSubjects.map((s) => (
-                        <option key={s.id} value={s.id}>{s.name}</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-              </div>
-
-              {/* Title & Subtitle */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="text-[11px] font-semibold text-[#667085] block mb-1">
-                    Book Title *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.title}
-                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                    placeholder="e.g. Mathematics: Concept Mastery & Exemplar"
-                    className="w-full p-2.5 bg-white border border-[#E6E8EC] rounded-xl text-xs text-[#0A1D3F]"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-[11px] font-semibold text-[#667085] block mb-1">
-                    Subtitle / Edition
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.subtitle}
-                    onChange={(e) => setFormData({ ...formData, subtitle: e.target.value })}
-                    placeholder="e.g. Class 10 (CBSE Standard)"
-                    className="w-full p-2.5 bg-white border border-[#E6E8EC] rounded-xl text-xs text-[#0A1D3F]"
-                  />
-                </div>
-              </div>
-
-              {/* Author & Description */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="text-[11px] font-semibold text-[#667085] block mb-1">
-                    Author / Editorial Team
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.author}
-                    onChange={(e) => setFormData({ ...formData, author: e.target.value })}
-                    className="w-full p-2.5 bg-white border border-[#E6E8EC] rounded-xl text-xs text-[#0A1D3F]"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-[11px] font-semibold text-[#667085] block mb-1">
-                    Language Medium
-                  </label>
-                  <select
-                    value={formData.language}
-                    onChange={(e) => setFormData({ ...formData, language: e.target.value })}
-                    className="w-full p-2.5 bg-white border border-[#E6E8EC] rounded-xl text-xs text-[#0A1D3F]"
-                  >
-                    <option value="English">English</option>
-                    <option value="Hindi">Hindi</option>
-                    <option value="Bilingual">Bilingual</option>
-                  </select>
-                </div>
-              </div>
-
-              <div>
-                <label className="text-[11px] font-semibold text-[#667085] block mb-1">
-                  Description
-                </label>
-                <textarea
-                  rows="2"
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  placeholder="Summary of syllabus covered, chapter structure..."
-                  className="w-full p-2.5 bg-white border border-[#E6E8EC] rounded-xl text-xs text-[#0A1D3F]"
-                />
-              </div>
-
-              {/* Pricing Section */}
-              <div className="p-3 bg-orange-50/40 rounded-2xl border border-orange-200/60 space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-bold text-[#0A1D3F] uppercase tracking-wider block">
-                    Pricing & Commercials
-                  </span>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={formData.isFree}
-                      onChange={(e) => setFormData({ ...formData, isFree: e.target.checked })}
-                      className="w-4 h-4 rounded text-[#FF8A00] focus:ring-0"
-                    />
-                    <span className="text-xs font-bold text-[#17B26A]">Make this book FREE</span>
-                  </label>
-                </div>
-
-                {!formData.isFree && (
-                  <div className="grid grid-cols-3 gap-3 pt-1">
-                    <div>
-                      <label className="text-[11px] font-semibold text-[#667085] block mb-1">
-                        Sale Price (₹) *
-                      </label>
-                      <input
-                        type="number"
-                        min="0"
-                        value={formData.price}
-                        onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                        className="w-full p-2 bg-white border border-[#E6E8EC] rounded-xl text-xs font-bold text-[#0A1D3F]"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="text-[11px] font-semibold text-[#667085] block mb-1">
-                        Original Price (₹)
-                      </label>
-                      <input
-                        type="number"
-                        min="0"
-                        value={formData.originalPrice}
-                        onChange={(e) => setFormData({ ...formData, originalPrice: e.target.value })}
-                        className="w-full p-2 bg-white border border-[#E6E8EC] rounded-xl text-xs text-[#667085]"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="text-[11px] font-semibold text-[#667085] block mb-1">
-                        Discount Tag
-                      </label>
-                      <input
-                        type="text"
-                        value={formData.discount}
-                        onChange={(e) => setFormData({ ...formData, discount: e.target.value })}
-                        placeholder="30% OFF"
-                        className="w-full p-2 bg-white border border-[#E6E8EC] rounded-xl text-xs text-[#17B26A] font-bold"
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Specifications: Pages & File Size */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <div>
-                  <label className="text-[11px] font-semibold text-[#667085] block mb-1">
-                    Number of Pages
-                  </label>
-                  <input
-                    type="number"
-                    value={formData.pages}
-                    onChange={(e) => setFormData({ ...formData, pages: e.target.value })}
-                    className="w-full p-2 bg-white border border-[#E6E8EC] rounded-xl text-xs text-[#0A1D3F]"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-[11px] font-semibold text-[#667085] block mb-1">
-                    File Size (MB)
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.fileSize}
-                    onChange={(e) => setFormData({ ...formData, fileSize: e.target.value })}
-                    placeholder="12.5 MB"
-                    className="w-full p-2 bg-white border border-[#E6E8EC] rounded-xl text-xs text-[#0A1D3F]"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-[11px] font-semibold text-[#667085] block mb-1">
-                    Publish Status
-                  </label>
-                  <select
-                    value={formData.status}
-                    onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                    className="w-full p-2 bg-white border border-[#E6E8EC] rounded-xl text-xs font-bold text-[#0A1D3F]"
-                  >
-                    <option value="published">Published</option>
-                    <option value="draft">Draft</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="text-[11px] font-semibold text-[#667085] block mb-1">
-                    Cover Color Theme
-                  </label>
-                  <select
-                    value={formData.coverColor}
-                    onChange={(e) => setFormData({ ...formData, coverColor: e.target.value })}
-                    className="w-full p-2 bg-white border border-[#E6E8EC] rounded-xl text-xs text-[#0A1D3F]"
-                  >
-                    {COLOR_PRESETS.map((p) => (
-                      <option key={p.value} value={p.value}>{p.label}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              {/* Chapters & Keywords */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="text-[11px] font-semibold text-[#667085] block mb-1">
-                    Chapters (one per line)
-                  </label>
-                  <textarea
-                    rows="3"
-                    value={formData.chapters}
-                    onChange={(e) => setFormData({ ...formData, chapters: e.target.value })}
-                    placeholder="1. Chapter One&#10;2. Chapter Two"
-                    className="w-full p-2.5 bg-white border border-[#E6E8EC] rounded-xl text-xs text-[#0A1D3F] font-mono"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-[11px] font-semibold text-[#667085] block mb-1">
-                    Keywords / Search Tags (comma separated)
-                  </label>
-                  <textarea
-                    rows="3"
-                    value={formData.keywords}
-                    onChange={(e) => setFormData({ ...formData, keywords: e.target.value })}
-                    placeholder="cbse, class 10, math, formulas, exemplar"
-                    className="w-full p-2.5 bg-white border border-[#E6E8EC] rounded-xl text-xs text-[#0A1D3F]"
-                  />
-                </div>
-              </div>
-
-              {/* Submit Buttons */}
-              <div className="pt-4 border-t border-[#E6E8EC] flex justify-end gap-2.5">
-                <button
-                  type="button"
-                  onClick={() => setModalOpen(false)}
-                  className="px-4 py-2 border border-[#E6E8EC] rounded-xl text-xs font-semibold text-[#667085] hover:bg-gray-50 transition cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2 bg-[#0A1D3F] hover:bg-[#133C8B] text-white rounded-xl text-xs font-bold transition shadow-xs cursor-pointer"
-                >
-                  {editingBook ? "Save Changes" : "Create Book"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      {modalOpen && <BookEditor book={editingBook} onClose={()=>setModalOpen(false)} onSaved={()=>{setModalOpen(false);showToast('Book draft saved in MongoDB');loadBooks();}} />}
 
       {/* Delete Confirmation Modal */}
       {deleteConfirmId && (
@@ -846,7 +442,7 @@ export const AdminBooksPage = () => {
               <AlertCircle className="w-6 h-6" />
             </div>
             <h3 className="text-sm font-bold text-[#0A1D3F]">
-              Confirm Delete Book?
+              Confirm Archive Book?
             </h3>
             <p className="text-xs text-[#667085]">
               Are you sure you want to remove this book from the catalog? This action will remove it for all students.
@@ -864,7 +460,7 @@ export const AdminBooksPage = () => {
                 onClick={() => handleDeleteBook(deleteConfirmId)}
                 className="px-4 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold transition cursor-pointer"
               >
-                Yes, Delete
+                Yes, Archive
               </button>
             </div>
           </div>

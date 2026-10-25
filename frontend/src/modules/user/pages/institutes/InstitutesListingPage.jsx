@@ -16,7 +16,7 @@ import {
   X
 } from "lucide-react";
 import { collegeService } from "../../services/collegeService";
-import { STATE_DISTRICT_MAP } from "../../data/mockColleges";
+import { Pagination } from '../../components/common/Pagination';
 import { EmptyState } from "../../components/common/EmptyState";
 import { AdmissionApplicationModal } from "../../components/college/AdmissionApplicationModal";
 import { CollegeDetailsModal } from "../../components/college/CollegeDetailsModal";
@@ -25,6 +25,9 @@ export const InstitutesListingPage = () => {
   const [institutes, setInstitutes] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  const [facets, setFacets] = useState({ states: [], districts: [], universities: [], categories: [] });
+  const [page, setPage] = useState(1), [meta, setMeta] = useState(null), [loadError, setLoadError] = useState('');
+  const pending = React.useRef();
   // Filters state
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedUniversity, setSelectedUniversity] = useState("All");
@@ -39,46 +42,25 @@ export const InstitutesListingPage = () => {
   const [detailsModalOpen, setDetailsModalOpen] = useState(false);
   const [selectedCollegeForDetails, setSelectedCollegeForDetails] = useState(null);
 
-  const universityOptions = [
-    { id: "All", name: "All University Tie-Ups" },
-    { id: "univ-amity", name: "Amity University (AU)" },
-    { id: "univ-du", name: "Delhi University (DU)" },
-    { id: "univ-mahe", name: "Manipal Academy of Higher Education (MAHE)" },
-    { id: "univ-lpu", name: "Lovely Professional University (LPU)" },
-    { id: "univ-cu", name: "Chandigarh University (CU)" }
-  ];
+  const universityOptions = [{ id: "All", name: "All University Tie-Ups" }, ...facets.universities];
 
-  const states = ["All", ...Object.keys(STATE_DISTRICT_MAP)];
+  const states = ["All", ...facets.states.map(value => value.label)];
 
   // Districts available based on selected state
-  const availableDistricts = useMemo(() => {
-    if (selectedState === "All") {
-      const all = Object.values(STATE_DISTRICT_MAP).flat();
-      return ["All", ...Array.from(new Set(all))];
-    }
-    return ["All", ...(STATE_DISTRICT_MAP[selectedState] || [])];
-  }, [selectedState]);
+  const availableDistricts = ["All", ...facets.districts];
 
   const fetchInstitutes = async () => {
+    pending.current?.abort(); const controller = new AbortController(); pending.current = controller;
+    setLoading(true); setLoadError('');
+    const filters = { search: searchQuery, universityId: selectedUniversity, state: selectedState, district: selectedDistrict, view: 'institutes', page };
     try {
-      setLoading(true);
-      const data = await collegeService.getInstitutes({
-        search: searchQuery,
-        universityId: selectedUniversity,
-        state: selectedState,
-        district: selectedDistrict,
-      });
-      setInstitutes(data);
-    } catch (err) {
-      console.error("Error fetching institutes:", err);
-    } finally {
-      setLoading(false);
-    }
+      const [result, options] = await Promise.all([collegeService.getCollegesPage(filters, controller.signal), collegeService.getFacets({ view: 'institutes', state: selectedState }, controller.signal)]);
+      if (!controller.signal.aborted) { setInstitutes(result.data); setMeta(result.meta); setFacets(options); }
+    } catch (error) { if (error.code !== 'ABORTED') { setInstitutes([]); setLoadError(error.message); } }
+    finally { if (!controller.signal.aborted) setLoading(false); }
   };
-
-  useEffect(() => {
-    fetchInstitutes();
-  }, [selectedUniversity, selectedState, selectedDistrict]);
+  useEffect(() => { fetchInstitutes(); return () => pending.current?.abort(); }, [selectedUniversity, selectedState, selectedDistrict, searchQuery, page]);
+  useEffect(() => { setPage(1); }, [selectedUniversity, selectedState, selectedDistrict, searchQuery]);
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
@@ -307,7 +289,7 @@ export const InstitutesListingPage = () => {
       {/* Result Count Header */}
       <div className="flex items-center justify-between px-1 gap-2 flex-wrap">
         <h2 className="text-xs sm:text-sm font-bold text-[#0A1D3F] uppercase tracking-wider truncate">
-          {loading ? "Searching Institutes..." : `Showing ${institutes.length} Verified Institutes`}
+          {loading ? "Searching Institutes..." : `Showing ${meta?.total ?? 0} Verified Institutes`}
         </h2>
         <span className="text-xs text-[#667085]">
           Authorized Franchise Network (Universities excluded)
@@ -401,13 +383,13 @@ export const InstitutesListingPage = () => {
                       </div>
                       <div className="text-xs font-bold text-[#0A1D3F] flex items-center gap-1 truncate">
                         <span>🏛️</span>
-                        <span className="truncate">{institute.parentUniversityName || "Delhi University"}</span>
+                        <span className="truncate">{institute.parentUniversityName || "University not supplied"}</span>
                       </div>
                     </div>
 
                     {/* Description */}
                     <p className="text-xs text-[#667085] line-clamp-2 leading-relaxed">
-                      {institute.description || institute.about || "Explore accredited courses, verified admissions, and dual certification pathways under partner university quota."}
+                      {institute.description || institute.about || "Further institution details have not been supplied."}
                     </p>
 
                     {/* Popular Courses Chips */}
@@ -463,7 +445,7 @@ export const InstitutesListingPage = () => {
             1. Franchise Form & Institutional Registration
           </h3>
           <p className="text-xs text-slate-600 max-w-xl leading-relaxed">
-            Apply for institutional franchise under an approved University & College partner to offer accredited degree programs, counseling centers, and admissions.
+            Submit an institutional franchise application for review. Approval criteria and any public affiliation remain pending.
           </p>
         </div>
 
@@ -476,6 +458,8 @@ export const InstitutesListingPage = () => {
         </Link>
       </div>
 
+      {loadError && <p role="alert" className="p-3 rounded-xl bg-red-50 text-red-700 text-sm">{loadError}</p>}
+      <Pagination meta={meta} onChange={setPage} loading={loading} />
       {/* Admission Application Modal */}
       <AdmissionApplicationModal
         isOpen={applyModalOpen}

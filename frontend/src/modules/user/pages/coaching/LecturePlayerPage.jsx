@@ -1,3 +1,5 @@
+import { LessonVideo } from '../../components/coaching/LessonVideo';
+import { PdfCanvas } from '../../components/coaching/PdfCanvas';
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate, useLocation, Link } from "react-router-dom";
 import {
@@ -22,16 +24,19 @@ export const LecturePlayerPage = () => {
   const [currentSubject, setCurrentSubject] = useState(location.state?.subjectName || "");
   const [student, setStudent] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
+    let active=true; const controller=new AbortController();
     const loadLectureData = async () => {
       try {
-        setLoading(true);
+        setLoading(true);setError('');setCurrentLecture(null);setCourse(null);
         const [courseData, profileData] = await Promise.all([
-          coachingService.getCourseById(courseId),
+          coachingService.getCourseById(courseId,controller.signal),
           coachingService.getStudentProfile(),
         ]);
 
+        if(!active)return;
         setCourse(courseData);
         setStudent(profileData);
 
@@ -48,27 +53,25 @@ export const LecturePlayerPage = () => {
           });
         });
 
-        // Fallback to first lecture if not found
-        if (!foundLecture && courseData.subjectsData?.[0]?.lectures?.[0]) {
-          foundLecture = courseData.subjectsData[0].lectures[0];
-          foundSubject = courseData.subjectsData[0].subjectName;
-        }
-
-        setCurrentLecture(foundLecture);
+        if (!foundLecture) throw new Error("Lesson not found in this course");
+        const resource=await coachingService.getLesson(courseId,lectureId,controller.signal);
+        if(!active)return;
+        if(courseData.isEnrolled&&!foundLecture.progress)await coachingService.updateLectureProgress(courseId,lectureId,"In Progress",0);
+        if(!active)return;
+        setCurrentLecture({...foundLecture,...resource,isCompleted:foundLecture.isCompleted});
         setCurrentSubject(foundSubject);
       } catch (err) {
-        console.error("Lecture player load error:", err);
+        if (active) setError(err.message || 'This lesson is unavailable. Please retry.');
       } finally {
-        setLoading(false);
+        if(active)setLoading(false);
       }
     };
 
-    loadLectureData();
+    loadLectureData();return()=>{active=false;controller.abort();};
   }, [courseId, lectureId]);
 
   const handleLectureSelect = (lec, subjectName) => {
-    setCurrentLecture(lec);
-    setCurrentSubject(subjectName);
+
     navigate(`/coaching/${courseId}/lecture/${lec.id}`, { replace: true });
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -77,7 +80,7 @@ export const LecturePlayerPage = () => {
     if (!currentLecture) return;
     const newStatus = currentLecture.isCompleted ? "In Progress" : "Completed";
 
-    await coachingService.updateLectureProgress(courseId, currentLecture.id, newStatus);
+    try { await coachingService.updateLectureProgress(courseId, currentLecture.id, newStatus); } catch (e) { showInfo(e.message); return; }
     setCurrentLecture({ ...currentLecture, isCompleted: !currentLecture.isCompleted });
 
     if (newStatus === "Completed") {
@@ -100,6 +103,7 @@ export const LecturePlayerPage = () => {
     return (
       <div className="max-w-md mx-auto p-10 text-center bg-white rounded-2xl border border-[#E6E8EC] card-shadow space-y-3">
         <h3 className="font-bold text-base text-[#0A1D3F]">Lecture Not Found</h3>
+        {error && <p role="alert" className="text-sm text-[#667085]">{error}</p>}
         <Link
           to={`/coaching/${courseId}/dashboard`}
           className="inline-flex items-center gap-2 text-xs font-bold text-[#FF8A00]"
@@ -111,7 +115,7 @@ export const LecturePlayerPage = () => {
   }
 
   // Course Subscription Expiry Lock Guard
-  if (course.isExpired) {
+  if (course.isExpired && !currentLecture.previewAllowed) {
     return (
       <div className="max-w-lg mx-auto my-12 p-8 text-center bg-white rounded-2xl border border-red-200 card-shadow space-y-4">
         <div className="w-16 h-16 rounded-2xl bg-red-50 border border-red-200 mx-auto flex items-center justify-center text-red-600">
@@ -221,6 +225,7 @@ export const LecturePlayerPage = () => {
 
   return (
     <div className="max-w-6xl mx-auto space-y-4 sm:space-y-5">
+      <nav className="flex flex-wrap gap-3 text-xs">{(()=>{const lessons=(course.subjectsData??[]).flatMap(s=>s.lectures??[]).filter(l=>!l.isLocked),index=lessons.findIndex(l=>l.id===lectureId);return <>{index>0&&<Link to={`/coaching/${courseId}/lecture/${lessons[index-1].id}`}>Previous lesson</Link>}{index>=0&&index<lessons.length-1&&<Link to={`/coaching/${courseId}/lecture/${lessons[index+1].id}`}>Next lesson</Link>}</>;})()}</nav>
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-[#E6E8EC]">
         <div className="flex items-center gap-3 min-w-0">
@@ -248,6 +253,7 @@ export const LecturePlayerPage = () => {
           <button
             type="button"
             onClick={handleToggleCompletion}
+            disabled={!course.isEnrolled}
             className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition cursor-pointer shadow-xs ${
               currentLecture.isCompleted
                 ? "bg-[#17B26A] text-white"
@@ -266,16 +272,12 @@ export const LecturePlayerPage = () => {
       */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6 items-start">
         <div className="lg:col-span-2 space-y-4 order-1">
-          <ProtectedVideoPlayer
-            lecture={currentLecture}
-            courseTitle={course.title}
-            subject={currentSubject}
-            studentName={student?.name || "Rohan Sharma"}
-            studentId={student?.id || "KITSS20261084"}
-            isCompleted={currentLecture.isCompleted}
-            onLectureComplete={handleToggleCompletion}
-            portraitPlaylist={renderPlaylistItems("dark")}
-          />
+          <section className="rounded-2xl border border-[#E6E8EC] bg-white p-4 sm:p-6 space-y-4">
+            <h2 className="font-bold text-[#0A1D3F]">{currentLecture.title}</h2>
+            {currentLecture.content&&<div className="whitespace-pre-wrap break-words text-sm leading-relaxed">{currentLecture.content}</div>}
+            {currentLecture.media&&<PdfCanvas title="Lesson document" url={currentLecture.media.url} pageCount={currentLecture.media.pageCount}/>}
+            {currentLecture.video&&<LessonVideo key={currentLecture.id + currentLecture.video.assetId} courseId={courseId} lesson={currentLecture} canSave={course.isEnrolled}/> }
+          </section>
 
           {/* Notes — desktop under video; on mobile after class list */}
           <div className="hidden lg:block bg-white rounded-2xl border border-[#E6E8EC] p-5 card-shadow space-y-3">
@@ -289,12 +291,12 @@ export const LecturePlayerPage = () => {
                 </h3>
               </div>
               <span className="text-xs font-semibold text-[#667085] bg-[#F7F8FA] px-2.5 py-1 rounded-full border border-[#E6E8EC] shrink-0">
-                Duration: {currentLecture.duration}
+                Duration: {currentLecture.video?.durationSeconds ? Math.ceil(currentLecture.video.durationSeconds) + ' seconds' : currentLecture.duration || 'Not provided'}
               </span>
             </div>
             <p className="text-xs sm:text-sm text-[#667085] leading-relaxed">
-              {currentLecture.summary ||
-                "In this class, we analyze fundamental laws, step-by-step mathematical reasoning, and high-yield board examination questions."}
+              {currentLecture.description || currentLecture.summary ||
+                "No lesson summary has been published."}
             </p>
             <div className="pt-3 border-t border-[#E6E8EC] flex items-center justify-between text-xs text-[#0A1D3F]">
               <span className="font-semibold text-[#667085]">
@@ -330,8 +332,8 @@ export const LecturePlayerPage = () => {
             <h3 className="font-black text-sm text-[#0A1D3F]">{currentLecture.title}</h3>
           </div>
           <p className="text-xs text-[#667085] leading-relaxed">
-            {currentLecture.summary ||
-              "In this class, we analyze fundamental laws, step-by-step mathematical reasoning, and high-yield board examination questions."}
+            {currentLecture.description || currentLecture.summary ||
+              "No lesson summary has been published."}
           </p>
         </div>
       </div>

@@ -1,0 +1,251 @@
+{
+  "database": "kitss_education_dev",
+  "applicationFixturesCreated": false,
+  "realProviderCalls": false,
+  "topologyOrCredentialsChanged": false,
+  "routes": [
+    {
+      "path": "/home",
+      "loaded": true,
+      "finalPath": "/home"
+    },
+    {
+      "path": "/about",
+      "loaded": true,
+      "finalPath": "/about"
+    },
+    {
+      "path": "/categories",
+      "loaded": true,
+      "finalPath": "/categories"
+    },
+    {
+      "path": "/institutes",
+      "loaded": true,
+      "finalPath": "/institutes"
+    },
+    {
+      "path": "/colleges",
+      "loaded": true,
+      "finalPath": "/colleges"
+    },
+    {
+      "path": "/books",
+      "loaded": true,
+      "finalPath": "/books"
+    },
+    {
+      "path": "/coaching",
+      "loaded": true,
+      "finalPath": "/coaching"
+    },
+    {
+      "path": "/coaching/select",
+      "loaded": true,
+      "finalPath": "/coaching/select"
+    },
+    {
+      "path": "/results",
+      "loaded": true,
+      "finalPath": "/results"
+    },
+    {
+      "path": "/register",
+      "loaded": true,
+      "finalPath": "/register"
+    },
+    {
+      "path": "/account/create",
+      "loaded": true,
+      "finalPath": "/account/create"
+    },
+    {
+      "path": "/account/verify",
+      "loaded": true,
+      "finalPath": "/account/verify"
+    },
+    {
+      "path": "/staff/accept",
+      "loaded": true,
+      "finalPath": "/staff/accept"
+    },
+    {
+      "path": "/forgot-password",
+      "loaded": true,
+      "finalPath": "/forgot-password"
+    },
+    {
+      "path": "/reset-password",
+      "loaded": true,
+      "finalPath": "/reset-password"
+    },
+    {
+      "path": "/login",
+      "loaded": true,
+      "finalPath": "/login"
+    },
+    {
+      "path": "/profile",
+      "loaded": true,
+      "finalPath": "/profile"
+    },
+    {
+      "path": "/orders",
+      "loaded": true,
+      "finalPath": "/login"
+    },
+    {
+      "path": "/admin",
+      "loaded": true,
+      "finalPath": "/login"
+    }
+  ],
+  "checks": {
+    "ready": true,
+    "frontendProxy": true,
+    "officialPublicationDisabled": true,
+    "paymentDisabled": true,
+    "sessionRequired": true,
+    "adminProtected": true,
+    "badOriginDenied": true,
+    "missingCsrfDenied": true,
+    "noRouteCrashes": true,
+    "noPageLoadWrites": true,
+    "schemasInitialized": true,
+    "restartReady": true,
+    "retainedPersistence": true
+  },
+  "applicationCollectionCount": 32,
+  "indexes": [
+    {
+      "collection": "siteSettings",
+      "count": 2
+    },
+    {
+      "collection": "sessions",
+      "count": 4
+    },
+    {
+      "collection": "resultHistory",
+      "count": 2
+    },
+    {
+      "collection": "auditlogs",
+      "count": 1
+    },
+    {
+      "collection": "banners",
+      "count": 2
+    },
+    {
+      "collection": "lessons",
+      "count": 2
+    },
+    {
+      "collection": "facultyProfiles",
+      "count": 2
+    },
+    {
+      "collection": "notificationReceipts",
+      "count": 3
+    },
+    {
+      "collection": "franchiseApplications",
+      "count": 4
+    },
+    {
+      "collection": "pageContents",
+      "count": 2
+    },
+    {
+      "collection": "notifications",
+      "count": 3
+    },
+    {
+      "collection": "coachingCourses",
+      "count": 2
+    },
+    {
+      "collection": "taxonomies",
+      "count": 3
+    },
+    {
+      "collection": "bookEntitlements",
+      "count": 3
+    },
+    {
+      "collection": "learningProgress",
+      "count": 3
+    },
+    {
+      "collection": "universities",
+      "count": 3
+    },
+    {
+      "collection": "mediaAssets",
+      "count": 5
+    },
+    {
+      "collection": "auththrottles",
+      "count": 2
+    },
+    {
+      "collection": "admissionApplications",
+      "count": 4
+    },
+    {
+      "collection": "resultRecords",
+      "count": 4
+    },
+    {
+      "collection": "resultIssuers",
+      "count": 2
+    },
+    {
+      "collection": "enrollments",
+      "count": 4
+    },
+    {
+      "collection": "books",
+      "count": 3
+    },
+    {
+      "collection": "exams",
+      "count": 2
+    },
+    {
+      "collection": "domainLocks",
+      "count": 1
+    },
+    {
+      "collection": "colleges",
+      "count": 5
+    },
+    {
+      "collection": "collegePrograms",
+      "count": 3
+    },
+    {
+      "collection": "users",
+      "count": 9
+    },
+    {
+      "collection": "orders",
+      "count": 8
+    },
+    {
+      "collection": "registrationApplications",
+      "count": 3
+    },
+    {
+      "collection": "jobs",
+      "count": 3
+    },
+    {
+      "collection": "coursePlans",
+      "count": 2
+    }
+  ],
+  "retainedDraftCount": 2,
+  "allPassed": true
+}

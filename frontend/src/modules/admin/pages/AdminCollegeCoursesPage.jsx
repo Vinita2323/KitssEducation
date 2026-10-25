@@ -11,11 +11,15 @@ import {
   X,
   Building2
 } from "lucide-react";
+import { Pagination } from '../../user/components/common/Pagination';
+import { useAuth } from '../../user/context/AuthContext';
 import { adminService } from "../services/adminService";
 import { useToast } from "../../user/context/ToastContext";
 import { PrimaryButton, SecondaryButton } from "../../user/components/common/PrimaryButton";
 
 export const AdminCollegeCoursesPage = () => {
+  const { can } = useAuth();
+  const [page, setPage] = useState(1), [meta, setMeta] = useState(null);
   const { collegeId } = useParams();
   const { showSuccess, showError } = useToast();
 
@@ -31,13 +35,13 @@ export const AdminCollegeCoursesPage = () => {
   const initialForm = {
     courseName: "",
     degreeType: "Undergraduate",
-    duration: "3 Years",
-    eligibility: "10+2 with minimum 50% aggregate",
-    fee: 90000,
+    duration: "",
+    eligibility: "",
+    fee: "",
     description: "",
-    availableSeats: 60,
+    availableSeats: "",
     admissionStatus: "Open",
-    status: "active",
+    status: "draft",
   };
 
   const [formData, setFormData] = useState(initialForm);
@@ -45,9 +49,9 @@ export const AdminCollegeCoursesPage = () => {
   const fetchCollegeAndCourses = async () => {
     try {
       setLoading(true);
-      const data = await adminService.getCourses(collegeId);
+      const data = await adminService.getCourses(collegeId, { page });
       setCollege(data.college);
-      setCourses(data.courses || []);
+      setCourses(data.courses || []); setMeta(data.meta);
     } catch (err) {
       showError("Failed to load college courses");
     } finally {
@@ -57,7 +61,7 @@ export const AdminCollegeCoursesPage = () => {
 
   useEffect(() => {
     fetchCollegeAndCourses();
-  }, [collegeId]);
+  }, [collegeId, page]);
 
   const handleOpenCreate = () => {
     setEditingCourse(null);
@@ -70,13 +74,13 @@ export const AdminCollegeCoursesPage = () => {
     setFormData({
       courseName: course.courseName || "",
       degreeType: course.degreeType || "Undergraduate",
-      duration: course.duration || "3 Years",
+      duration: course.duration || "",
       eligibility: course.eligibility || "",
-      fee: course.fee || 0,
+      fee: course.fee ?? "",
       description: course.description || "",
-      availableSeats: course.availableSeats || 60,
+      availableSeats: course.availableSeats ?? "",
       admissionStatus: course.admissionStatus || "Open",
-      status: course.status || "active",
+      status: course.status || "draft",
     });
     setModalOpen(true);
   };
@@ -84,10 +88,10 @@ export const AdminCollegeCoursesPage = () => {
   const handleToggleStatus = async (course) => {
     try {
       const crsId = course._id || course.id;
-      const updated = await adminService.toggleCourseStatus(crsId);
+      const updated = await adminService.toggleCourseStatus(crsId, course, collegeId);
       showSuccess(`Course marked as ${updated.status}`);
       setCourses((prev) =>
-        prev.map((c) => (String(c._id || c.id) === String(crsId) ? { ...c, status: updated.status } : c))
+        prev.map((c) => (String(c._id || c.id) === String(crsId) ? { ...c, ...updated } : c))
       );
     } catch (err) {
       showError(err.message || "Failed to toggle status");
@@ -99,8 +103,8 @@ export const AdminCollegeCoursesPage = () => {
     if (!window.confirm(`Delete course "${course.courseName}"?`)) return;
 
     try {
-      await adminService.deleteCourse(crsId);
-      showSuccess("Course deleted successfully");
+      await adminService.deleteCourse(crsId, course, collegeId);
+      showSuccess("Course archived successfully");
       setCourses((prev) => prev.filter((c) => String(c._id || c.id) !== String(crsId)));
     } catch (err) {
       showError(err.message || "Failed to delete course");
@@ -118,7 +122,7 @@ export const AdminCollegeCoursesPage = () => {
       setSaving(true);
       if (editingCourse) {
         const crsId = editingCourse._id || editingCourse.id;
-        const updated = await adminService.updateCourse(crsId, formData);
+        const updated = await adminService.updateCourse(crsId, { ...formData, expectedRevision: editingCourse.revision }, collegeId);
         showSuccess("Course updated successfully");
         setCourses((prev) =>
           prev.map((c) => (String(c._id || c.id) === String(crsId) ? { ...c, ...updated } : c))
@@ -137,7 +141,7 @@ export const AdminCollegeCoursesPage = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6"><Pagination meta={meta} onChange={setPage} loading={loading} />
       {/* Back Link & Title */}
       <div>
         <Link
@@ -161,7 +165,7 @@ export const AdminCollegeCoursesPage = () => {
             </p>
           </div>
 
-          <PrimaryButton variant="navy" size="sm" onClick={handleOpenCreate} icon={Plus}>
+          <PrimaryButton variant="navy" size="sm" disabled={!can('institutions.write')} onClick={handleOpenCreate} icon={Plus}>
             Add Course
           </PrimaryButton>
         </div>
@@ -226,7 +230,7 @@ export const AdminCollegeCoursesPage = () => {
 
                       <td className="py-3.5 px-4">
                         <div className="font-semibold text-[#0A1D3F]">
-                          {crs.availableSeats || 60} Seats
+                          {crs.availableSeats ?? "Not supplied"} Seats
                         </div>
                         <span className="inline-block mt-0.5 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
                           {crs.admissionStatus || "Open"}
@@ -235,7 +239,7 @@ export const AdminCollegeCoursesPage = () => {
 
                       <td className="py-3.5 px-4">
                         <button
-                          onClick={() => handleToggleStatus(crs)}
+                          aria-label="Toggle program status" disabled={!can('institutions.write')} onClick={() => handleToggleStatus(crs)}
                           className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full font-bold text-[11px] cursor-pointer transition ${
                             isActive
                               ? "bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100"
@@ -250,14 +254,14 @@ export const AdminCollegeCoursesPage = () => {
                       <td className="py-3.5 px-4 text-right">
                         <div className="flex items-center justify-end gap-1">
                           <button
-                            onClick={() => handleOpenEdit(crs)}
+                            aria-label="Edit program" disabled={!can('institutions.write')} onClick={() => handleOpenEdit(crs)}
                             className="p-1.5 rounded-lg text-gray-500 hover:text-[#FF8A00] hover:bg-orange-50 transition"
                             title="Edit Course"
                           >
                             <Edit2 className="w-4 h-4" />
                           </button>
                           <button
-                            onClick={() => handleDelete(crs)}
+                            aria-label="Archive program" disabled={!can('institutions.write')} onClick={() => handleDelete(crs)}
                             className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition"
                             title="Delete Course"
                           >
@@ -304,7 +308,7 @@ export const AdminCollegeCoursesPage = () => {
                 <input
                   type="text"
                   required
-                  value={formData.courseName}
+                  aria-label="Program courseName" value={formData.courseName}
                   onChange={(e) => setFormData({ ...formData, courseName: e.target.value })}
                   placeholder="e.g. B.Tech Computer Science & Engineering"
                   className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-[#E6E8EC] focus:border-[#FF8A00] focus:outline-none"
@@ -317,7 +321,7 @@ export const AdminCollegeCoursesPage = () => {
                     Degree Type
                   </label>
                   <select
-                    value={formData.degreeType}
+                    aria-label="Program degreeType" value={formData.degreeType}
                     onChange={(e) => setFormData({ ...formData, degreeType: e.target.value })}
                     className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-[#E6E8EC] focus:border-[#FF8A00] focus:outline-none"
                   >
@@ -334,7 +338,7 @@ export const AdminCollegeCoursesPage = () => {
                   </label>
                   <input
                     type="text"
-                    value={formData.duration}
+                    aria-label="Program duration" value={formData.duration}
                     onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
                     placeholder="e.g. 3 Years or 4 Years"
                     className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-[#E6E8EC] focus:border-[#FF8A00] focus:outline-none"
@@ -349,7 +353,7 @@ export const AdminCollegeCoursesPage = () => {
                   </label>
                   <input
                     type="number"
-                    value={formData.fee}
+                    aria-label="Program fee" value={formData.fee}
                     onChange={(e) => setFormData({ ...formData, fee: e.target.value })}
                     className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-[#E6E8EC] focus:border-[#FF8A00] focus:outline-none"
                   />
@@ -361,7 +365,7 @@ export const AdminCollegeCoursesPage = () => {
                   </label>
                   <input
                     type="number"
-                    value={formData.availableSeats}
+                    aria-label="Program availableSeats" value={formData.availableSeats}
                     onChange={(e) => setFormData({ ...formData, availableSeats: e.target.value })}
                     className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-[#E6E8EC] focus:border-[#FF8A00] focus:outline-none"
                   />
@@ -374,7 +378,7 @@ export const AdminCollegeCoursesPage = () => {
                 </label>
                 <input
                   type="text"
-                  value={formData.eligibility}
+                  aria-label="Program eligibility" value={formData.eligibility}
                   onChange={(e) => setFormData({ ...formData, eligibility: e.target.value })}
                   placeholder="e.g. 10+2 with Physics, Chem, Math (Min 50%)"
                   className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-[#E6E8EC] focus:border-[#FF8A00] focus:outline-none"
@@ -387,7 +391,7 @@ export const AdminCollegeCoursesPage = () => {
                 </label>
                 <textarea
                   rows={2}
-                  value={formData.description}
+                  aria-label="Program description" value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   placeholder="Brief curriculum overview..."
                   className="w-full text-xs px-3.5 py-2 rounded-xl border border-[#E6E8EC] focus:border-[#FF8A00] focus:outline-none resize-none"
@@ -400,13 +404,12 @@ export const AdminCollegeCoursesPage = () => {
                     Admission Status
                   </label>
                   <select
-                    value={formData.admissionStatus}
+                    aria-label="Program admissionStatus" value={formData.admissionStatus}
                     onChange={(e) => setFormData({ ...formData, admissionStatus: e.target.value })}
                     className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-[#E6E8EC] focus:border-[#FF8A00] focus:outline-none"
                   >
                     <option value="Open">Open</option>
                     <option value="Closed">Closed</option>
-                    <option value="Upcoming">Upcoming</option>
                   </select>
                 </div>
 
@@ -415,11 +418,11 @@ export const AdminCollegeCoursesPage = () => {
                     Visibility Status
                   </label>
                   <select
-                    value={formData.status}
+                    aria-label="Program status" value={formData.status}
                     onChange={(e) => setFormData({ ...formData, status: e.target.value })}
                     className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-[#E6E8EC] focus:border-[#FF8A00] focus:outline-none"
                   >
-                    <option value="active">Active (Visible)</option>
+                    <option value="draft">Draft</option><option value="active">Active (Visible)</option>
                     <option value="inactive">Inactive (Hidden)</option>
                   </select>
                 </div>

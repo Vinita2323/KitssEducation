@@ -13,7 +13,7 @@ import {
   X
 } from "lucide-react";
 import { collegeService } from "../../services/collegeService";
-import { STATE_DISTRICT_MAP } from "../../data/mockColleges";
+import { Pagination } from '../../components/common/Pagination';
 import { EmptyState, SkeletonLoader } from "../../components/common/EmptyState";
 import { PrimaryButton, SecondaryButton } from "../../components/common/PrimaryButton";
 import { AdmissionApplicationModal } from "../../components/college/AdmissionApplicationModal";
@@ -23,6 +23,9 @@ export const CollegesListingPage = () => {
   const [colleges, setColleges] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  const [facets, setFacets] = useState({ states: [], districts: [], universities: [], categories: [] });
+  const [page, setPage] = useState(1), [meta, setMeta] = useState(null), [loadError, setLoadError] = useState('');
+  const pending = React.useRef();
   // Filters state
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
@@ -37,38 +40,24 @@ export const CollegesListingPage = () => {
   const [detailsModalOpen, setDetailsModalOpen] = useState(false);
   const [selectedCollegeForDetails, setSelectedCollegeForDetails] = useState(null);
 
-  const categories = ["All", "University", "College", "School", "Institute"];
-  const states = ["All", ...Object.keys(STATE_DISTRICT_MAP)];
+  const categories = ["All", ...facets.categories];
+  const states = ["All", ...facets.states.map(value => value.label)];
 
   // Districts available based on selected state
-  const availableDistricts = React.useMemo(() => {
-    if (selectedState === "All") {
-      const all = Object.values(STATE_DISTRICT_MAP).flat();
-      return ["All", ...Array.from(new Set(all))];
-    }
-    return ["All", ...(STATE_DISTRICT_MAP[selectedState] || [])];
-  }, [selectedState]);
+  const availableDistricts = ["All", ...facets.districts];
 
   const fetchColleges = async () => {
+    pending.current?.abort(); const controller = new AbortController(); pending.current = controller;
+    setLoading(true); setLoadError('');
+    const filters = { search: searchQuery, category: selectedCategory, state: selectedState, district: selectedDistrict, view: 'colleges', page };
     try {
-      setLoading(true);
-      const data = await collegeService.getColleges({
-        search: searchQuery,
-        category: selectedCategory,
-        state: selectedState,
-        district: selectedDistrict,
-      });
-      setColleges(data);
-    } catch (err) {
-      console.error("Error fetching colleges:", err);
-    } finally {
-      setLoading(false);
-    }
+      const [result, options] = await Promise.all([collegeService.getCollegesPage(filters, controller.signal), collegeService.getFacets({ view: 'colleges', state: selectedState }, controller.signal)]);
+      if (!controller.signal.aborted) { setColleges(result.data); setMeta(result.meta); setFacets(options); }
+    } catch (error) { if (error.code !== 'ABORTED') { setColleges([]); setLoadError(error.message); } }
+    finally { if (!controller.signal.aborted) setLoading(false); }
   };
-
-  useEffect(() => {
-    fetchColleges();
-  }, [selectedCategory, selectedState, selectedDistrict]);
+  useEffect(() => { fetchColleges(); return () => pending.current?.abort(); }, [selectedCategory, selectedState, selectedDistrict, searchQuery, page]);
+  useEffect(() => { setPage(1); }, [selectedCategory, selectedState, selectedDistrict, searchQuery]);
 
   // Debounced or on-submit search
   const handleSearchSubmit = (e) => {
@@ -306,7 +295,7 @@ export const CollegesListingPage = () => {
       {/* Result Count Header */}
       <div className="flex items-center justify-between px-1 gap-2 flex-wrap">
         <h2 className="text-xs sm:text-sm font-bold text-[#0A1D3F] uppercase tracking-wider truncate">
-          {loading ? "Searching Colleges..." : `Showing ${colleges.length} Partner Institutions`}
+          {loading ? "Searching Colleges..." : `Showing ${meta?.total ?? 0} Partner Institutions`}
         </h2>
         <span className="text-xs text-[#667085]">
           Verified Franchise Network
@@ -387,7 +376,7 @@ export const CollegesListingPage = () => {
 
                     {/* Description */}
                     <p className="text-xs text-[#667085] line-clamp-2 leading-relaxed">
-                      {college.description || college.about || "Explore accredited undergraduate and postgraduate curriculum with 100% placement guidance."}
+                      {college.description || college.about || "Further institution details have not been supplied."}
                     </p>
 
                     {/* Popular Courses Chips */}
@@ -432,6 +421,8 @@ export const CollegesListingPage = () => {
         </div>
       )}
 
+      {loadError && <p role="alert" className="p-3 rounded-xl bg-red-50 text-red-700 text-sm">{loadError}</p>}
+      <Pagination meta={meta} onChange={setPage} loading={loading} />
       {/* Admission Application Modal */}
       <AdmissionApplicationModal
         isOpen={applyModalOpen}

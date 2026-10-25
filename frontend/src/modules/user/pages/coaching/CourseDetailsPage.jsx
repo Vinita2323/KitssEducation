@@ -74,123 +74,9 @@ export const CourseDetailsPage = () => {
     }
   };
 
-  const defaultPlans = [
-    {
-      id: "plan-12m",
-      name: "12 Months Full NEET Master Pass",
-      duration: "12 Months Access",
-      price: course?.price || 1499,
-      originalPrice: course?.originalPrice || 4999,
-      discount: course?.discountText || "70% OFF",
-      isPopular: true,
-      features: [
-        `All ${course?.lecturesCount || 95} Video Lectures`,
-        `All ${course?.booksCount || 14} Digital Handbooks`,
-        "Weekly NEET Assessments",
-        "Doubt Resolution Mentorship"
-      ]
-    },
-    {
-      id: "plan-6m",
-      name: "6 Months Semester Sprint",
-      duration: "6 Months Access",
-      price: 899,
-      originalPrice: 2999,
-      discount: "70% OFF",
-      isPopular: false,
-      features: [
-        `All ${course?.lecturesCount || 95} Video Lectures`,
-        "Digital Handbooks",
-        "Monthly Mock Tests"
-      ]
-    },
-    {
-      id: "plan-3m",
-      name: "3 Months Exam Crash Course",
-      duration: "3 Months Access",
-      price: 499,
-      originalPrice: 1499,
-      discount: "66% OFF",
-      isPopular: false,
-      features: [
-        "High-Yield Concept Lectures",
-        "Formula Sheets & Revision Handbooks"
-      ]
-    }
-  ];
-
-  const availablePlans =
-    course?.subscriptionPlans && course.subscriptionPlans.length > 0
-      ? course.subscriptionPlans
-      : defaultPlans;
-
-  const currentSelectedPlan =
-    availablePlans.find((p) => p.id === selectedPlanId) || availablePlans[0];
-
-  const handleRazorpayPayment = async () => {
-    if (!course) return;
-
-    try {
-      setJoining(true);
-      await openRazorpayCheckout({
-        amountInRupees: currentSelectedPlan.price,
-        course,
-        plan: currentSelectedPlan,
-        student: {
-          name: user?.name || "Rohan Sharma",
-          email: user?.email || "rohan.sharma@example.com",
-          phone: user?.phone || "+91 98765 43210",
-        },
-        onSuccess: async (razorpayResponse) => {
-          try {
-            await coachingService.joinCourse(course.id);
-
-            await orderService.createOrder({
-              productName: `${course.title} (${currentSelectedPlan.name})`,
-              type: "Course",
-              category: "Online Coaching",
-              amount: currentSelectedPlan.price,
-              originalAmount: currentSelectedPlan.originalPrice,
-              discountAmount: currentSelectedPlan.originalPrice - currentSelectedPlan.price,
-              paymentMethod: `Razorpay (${razorpayResponse.razorpay_payment_id})`,
-              transactionId: razorpayResponse.razorpay_payment_id,
-            });
-
-            if (markCourseSubscribed) {
-              markCourseSubscribed(course.id);
-            }
-
-            setPaymentDetails({
-              paymentId: razorpayResponse.razorpay_payment_id,
-              amount: currentSelectedPlan.price,
-              planName: currentSelectedPlan.name,
-            });
-            setJoinedSuccess(true);
-            setCourse((prev) => ({ ...prev, isEnrolled: true }));
-            showSuccess(`Payment Successful! Payment ID: ${razorpayResponse.razorpay_payment_id}`);
-          } catch (enrollErr) {
-            console.error("Post-payment enrollment error:", enrollErr);
-            showError("Payment received, error activating subscription. Please refresh.");
-          } finally {
-            setJoining(false);
-          }
-        },
-        onFailure: (err) => {
-          console.error("Razorpay error:", err);
-          showError(err.message || "Payment transaction could not be processed.");
-          setJoining(false);
-        },
-        onDismiss: () => {
-          showInfo("Razorpay checkout dismissed.");
-          setJoining(false);
-        },
-      });
-    } catch (err) {
-      console.error("Razorpay launch error:", err);
-      showError("Could not launch Razorpay checkout.");
-      setJoining(false);
-    }
-  };
+  const availablePlans=course?.subscriptionPlans??[];
+  const currentSelectedPlan=availablePlans.find(p=>p.id===selectedPlanId)??availablePlans[0]??{name:'No approved plan',features:[],price:null};
+  const handleRazorpayPayment=async()=>showError('Razorpay Test Mode is disabled. No enrollment is granted.');
 
   if (loading) {
     return (
@@ -221,6 +107,8 @@ export const CourseDetailsPage = () => {
 
   return (
     <div className="max-w-5xl mx-auto space-y-3 sm:space-y-4">
+      <section className="bg-white border border-[#E6E8EC] rounded-xl p-4 space-y-2"><h2 className="font-bold text-[#0A1D3F]">Course syllabus</h2>{course.syllabus?.lessons.map(lesson=><div key={lesson.id} className="p-2 border-b text-sm">{lesson.locked?<span>{lesson.title} ? Enrollment required</span>:<Link to={`/coaching/${course.id}/lecture/${lesson.id}`}>{lesson.title}{lesson.previewAllowed?' ? Public preview':''}</Link>}</div>)}</section>
+      <p role="status" className="p-3 bg-amber-50 border rounded-xl text-xs">Coaching purchases and renewals remain unavailable while Razorpay Test Mode is disabled. Renewals need separate approval.</p>
       {/* Top Breadcrumb & Share */}
       <div className="flex items-center justify-between">
         <Link
@@ -355,7 +243,7 @@ export const CourseDetailsPage = () => {
                   {course.teacher}
                 </h3>
                 <p className="text-[11px] text-[#FF8A00] font-semibold">
-                  {course.teacherRole || "Senior Subject Specialist"}
+                  {course.teacherRole || "Published instructor profile"}
                 </p>
                 <p className="text-xs text-[#667085] leading-tight line-clamp-2">
                   Dedicated educator guiding students toward concept mastery and top board percentiles.
@@ -445,6 +333,7 @@ export const CourseDetailsPage = () => {
                 <p className="text-[11px] text-[#667085] font-medium">
                   Selected Plan: <span className="font-bold text-[#0A1D3F]">{currentSelectedPlan.name}</span>
                 </p>
+                {currentSelectedPlan.features?.length > 0 && <ul aria-label="Selected plan benefits" className="list-disc pl-4 text-xs text-[#667085] space-y-1">{currentSelectedPlan.features.map((feature,index)=><li key={index}>{feature}</li>)}</ul>}
               </div>
             )}
 
@@ -481,7 +370,7 @@ export const CourseDetailsPage = () => {
                     onClick={() => setShowConfirmModal(true)}
                     className="w-full py-2.5 px-3 rounded-md bg-[#FF8A00] hover:bg-[#E67C00] text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 shadow-2xs transition active:scale-98 cursor-pointer"
                   >
-                    <span>Join Course • ₹{currentSelectedPlan.price}</span>
+                    <span>View approved plans</span>
                     <ArrowRight className="w-4 h-4" />
                   </button>
                   <div className="flex items-center justify-center gap-1.5 text-[10px] text-[#667085]">
@@ -650,14 +539,6 @@ export const CourseDetailsPage = () => {
 
                 {/* Price Breakdown */}
                 <div className="p-3 rounded-md bg-[#F7F8FA] border border-[#E6E8EC] space-y-1.5 text-xs text-[#0A1D3F]">
-                  <div className="flex justify-between text-[#667085]">
-                    <span>Original Price:</span>
-                    <span className="line-through">₹{currentSelectedPlan.originalPrice}</span>
-                  </div>
-                  <div className="flex justify-between text-[#17B26A] font-semibold">
-                    <span>Discount Applied:</span>
-                    <span>-₹{currentSelectedPlan.originalPrice - currentSelectedPlan.price}</span>
-                  </div>
                   <div className="flex justify-between pt-1.5 border-t border-[#E6E8EC] font-black text-sm">
                     <span className="text-[#0A1D3F]">Total Amount:</span>
                     <span className="text-[#FF8A00]">₹{currentSelectedPlan.price}</span>
@@ -690,7 +571,7 @@ export const CourseDetailsPage = () => {
                   <button
                     type="button"
                     onClick={handleRazorpayPayment}
-                    disabled={joining}
+                    disabled
                     className="flex-2 py-2.5 px-3 rounded-md bg-[#FF8A00] hover:bg-[#E67C00] text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-xs transition active:scale-98 cursor-pointer disabled:opacity-50"
                   >
                     {joining ? (
@@ -701,7 +582,7 @@ export const CourseDetailsPage = () => {
                     ) : (
                       <>
                         <CreditCard className="w-4 h-4" />
-                        <span>Pay ₹{currentSelectedPlan.price} with Razorpay</span>
+                        <span>Test payments unavailable</span>
                       </>
                     )}
                   </button>

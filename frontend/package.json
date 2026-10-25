@@ -6,7 +6,17 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "test:auth": "node --test tests/auth.browser.test.js",
+    "test:stage4": "node --test tests/institutions.browser.test.js",
+    "test:stage5": "node --test tests/publishing.browser.test.js",
+    "preview": "vite preview",
+    "test:stage6": "node --test tests/commerce.browser.test.js",
+    "test:stage7": "node --test tests/coaching.browser.test.js",
+    "test:stage8": "node --test tests/stage8.browser.test.js",
+    "test:stage9": "node --test tests/stage9.browser.test.js",
+    "test:stage10": "node --test tests/stage10.browser.test.js",
+    "test:video": "node --test tests/video.browser.test.js",
+    "test:completeness": "node --test tests/completeness.browser.test.js"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.3.3",
@@ -15,6 +25,7 @@
     "html2canvas": "^1.4.1",
     "jspdf": "^4.2.1",
     "lucide-react": "^1.39.0",
+    "pdfjs-dist": "6.4.299",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-router-dom": "^7.18.3",
@@ -24,6 +35,7 @@
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "@vitejs/plugin-react": "^4.3.4",
-    "vite": "^6.2.0"
+    "playwright-core": "1.64.1",
+    "vite": "6.4.5"
   }
 }

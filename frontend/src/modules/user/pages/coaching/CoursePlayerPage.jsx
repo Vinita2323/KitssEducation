@@ -1,5 +1,7 @@
+import { LessonVideo } from '../../components/coaching/LessonVideo';
+import { PdfCanvas } from '../../components/coaching/PdfCanvas';
 import React, { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import {
   ArrowLeft,
   Share2,
@@ -24,42 +26,21 @@ import { SkeletonLoader, ErrorState } from "../../components/common/EmptyState";
 export const CoursePlayerPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { isCourseEnrolled, completedLectureIds, toggleLectureCompletion } = useLibrary();
+  const [searchParams,setSearchParams]=useSearchParams();const selectedLessonId=searchParams.get("lesson");
+
   const { showSuccess, showInfo } = useToast();
 
   const [course, setCourse] = useState(null);
+  const [error,setError]=useState("");
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("lectures"); // 'overview' | 'lectures' | 'notes' | 'tests'
   const [currentLecture, setCurrentLecture] = useState(null);
 
-  useEffect(() => {
-    const fetchCourse = async () => {
-      try {
-        setLoading(true);
-        const data = await coachingService.getCourseById(id);
-        setCourse(data);
-        if (data.chapters?.[0]?.lectures?.[0]) {
-          setCurrentLecture(data.chapters[0].lectures[0]);
-        }
-      } catch (err) {
-        console.error("Course player fetch error:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchCourse();
-  }, [id]);
-
-  const handleSelectLecture = (lecture) => {
-    setCurrentLecture(lecture);
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  };
-
-  const handleMarkComplete = () => {
-    if (!currentLecture) return;
-    toggleLectureCompletion(currentLecture.id);
-    showSuccess(`"${currentLecture.title}" marked as completed!`);
-  };
+  useEffect(()=>{let active=true;const controller=new AbortController();setLoading(true);setCourse(null);setCurrentLecture(null);setError("");
+    (async()=>{try{const data=await coachingService.getCourseById(id,controller.signal);if(!active)return;data.chapters=data.subjectsData.map(s=>({id:s.id,title:s.subjectName,lectures:s.lectures}));setCourse(data);const selected=selectedLessonId??data.syllabus.lastLessonId;if(selected){const item=data.chapters.flatMap(c=>c.lectures).find(l=>l.id===selected);if(!item)throw new Error('Lesson does not belong to this course');const resource=await coachingService.getLesson(id,selected,controller.signal);if(!active)return;setCurrentLecture({...item,...resource});if(data.isEnrolled&&!item.progress)await coachingService.updateLectureProgress(id,selected,'In Progress',0);}}catch(e){if(active)setError(e.message);}finally{if(active)setLoading(false);}})();return()=>{active=false;controller.abort();};
+  },[id,selectedLessonId]);
+  const handleSelectLecture=lecture=>{if(!lecture.isLocked)setSearchParams({lesson:lecture.id});};
+  const handleMarkComplete=async()=>{if(!currentLecture||!course.isEnrolled)return;try{const result=await coachingService.updateLectureProgress(id,currentLecture.id,currentLecture.isCompleted?'In Progress':'Completed');setCurrentLecture(l=>({...l,isCompleted:result.status==='completed'}));setCourse(c=>({...c,chapters:c.chapters.map(ch=>({...ch,lectures:ch.lectures.map(l=>l.id===currentLecture.id?{...l,isCompleted:result.status==='completed'}:l)}))}));showSuccess('Learning progress saved.');}catch(e){showInfo(e.message);}};
 
   const handleShare = () => {
     if (navigator.share) {
@@ -87,10 +68,11 @@ export const CoursePlayerPage = () => {
     );
   }
 
-  const isCurrentCompleted = currentLecture && completedLectureIds.includes(currentLecture.id);
+  const isCurrentCompleted = currentLecture?.isCompleted===true;
 
   return (
     <div className="max-w-4xl mx-auto space-y-4">
+      {error&&<p role="alert" className="p-3 bg-amber-50 border rounded-xl text-sm">{error}</p>}
       {/* Top Header */}
       <div className="flex items-center justify-between">
         <button
@@ -115,12 +97,9 @@ export const CoursePlayerPage = () => {
       </div>
 
       {/* Video Player */}
-      <VideoPlayerView
-        lecture={currentLecture}
-        courseTitle={course.title}
-        onComplete={handleMarkComplete}
-        isCompleted={isCurrentCompleted}
-      />
+      <section className="bg-white border border-[#E6E8EC] rounded-2xl p-4 sm:p-5 space-y-3">
+        {!currentLecture?<p>Select an available lesson from the syllabus.</p>:<><h2 className="font-bold text-[#0A1D3F]">{currentLecture.title}</h2><div className="whitespace-pre-wrap break-words text-sm">{currentLecture.content}</div>{currentLecture.media&&<PdfCanvas title="Legacy player lesson PDF" url={currentLecture.media.url} pageCount={currentLecture.media.pageCount}/>}{currentLecture.video&&<LessonVideo key={currentLecture.id + currentLecture.video.assetId} courseId={id} lesson={currentLecture} canSave={course.isEnrolled}/>}</>}
+      </section>
 
       {/* Lecture Info Header */}
       <div className="bg-white p-4 sm:p-5 rounded-2xl border border-[#E6E8EC] shadow-2xs space-y-2">
@@ -138,12 +117,12 @@ export const CoursePlayerPage = () => {
           {currentLecture?.title}
         </h1>
         <p className="text-xs text-[#667085]">
-          {course.title} • Instructor: {course.instructor}
+          {course.title} • Instructor: {course.teacher}
         </p>
       </div>
 
       {/* Tabs */}
-      <div className="flex border-b border-[#E6E8EC] bg-white rounded-t-2xl px-2">
+      <div className="flex flex-wrap border-b border-[#E6E8EC] bg-white rounded-t-2xl px-2">
         {[
           { id: "lectures", label: "Lectures", icon: Video },
           { id: "overview", label: "Overview", icon: FileText },
@@ -158,7 +137,7 @@ export const CoursePlayerPage = () => {
               key={tab.id}
               type="button"
               onClick={() => setActiveTab(tab.id)}
-              className={`flex-1 py-3 text-center text-xs sm:text-sm font-bold flex items-center justify-center gap-2 border-b-2 transition duration-200 ${
+              className={`flex-1 py-3 text-center text-[10px] sm:text-sm min-w-0 font-bold flex items-center justify-center gap-1 sm:gap-2 border-b-2 transition duration-200 ${
                 isActive
                   ? "border-[#FF8A00] text-[#FF8A00]"
                   : "border-transparent text-[#667085] hover:text-[#0A1D3F]"
@@ -195,75 +174,17 @@ export const CoursePlayerPage = () => {
             <div>
               <h4 className="font-bold text-[#0A1D3F] mb-1">Lecture Synopsis</h4>
               <p className="text-[#667085] leading-relaxed">
-                {currentLecture?.notes || "In this session, the instructor covers the fundamental definitions, geometric representations, and board-level problem solving patterns."}
+                {currentLecture?.description || "Select a lesson to view its authored summary."}
               </p>
             </div>
 
-            <div className="p-3.5 bg-[#F7F8FA] rounded-2xl border border-[#E6E8EC] space-y-1.5">
-              <h5 className="font-bold text-xs text-[#0A1D3F]">Learning Outcomes:</h5>
-              <ul className="list-disc pl-4 text-xs text-[#667085] space-y-1">
-                <li>Understand algebraic expressions and standard equation forms</li>
-                <li>Master step-by-step substitution and elimination methods</li>
-                <li>Solve previous 5 years' board exam questions with complete justification</li>
-              </ul>
-            </div>
+
           </div>
         )}
 
-        {activeTab === "notes" && (
-          <div className="space-y-2.5">
-            <h4 className="text-xs font-bold text-[#0A1D3F] uppercase tracking-wider mb-2">
-              Downloadable Chapter Resources
-            </h4>
-            {currentLecture?.resources?.length > 0 ? (
-              currentLecture.resources.map((res, idx) => (
-                <div
-                  key={idx}
-                  className="flex items-center justify-between p-3 bg-[#F7F8FA] rounded-xl border border-[#E6E8EC]"
-                >
-                  <div className="flex items-center gap-2.5">
-                    <FileText className="w-5 h-5 text-[#FF8A00]" />
-                    <div>
-                      <h5 className="text-xs font-bold text-[#0A1D3F]">{res.name}</h5>
-                      <span className="text-[10px] text-[#667085]">{res.size}</span>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => showSuccess(`Downloading ${res.name}...`)}
-                    className="p-2 rounded-lg bg-white border border-[#E6E8EC] hover:bg-gray-50 text-[#0A1D3F] transition"
-                  >
-                    <Download className="w-4 h-4" />
-                  </button>
-                </div>
-              ))
-            ) : (
-              <p className="text-xs text-[#667085]">No additional PDF notes attached to this lecture.</p>
-            )}
-          </div>
-        )}
+        {activeTab === "notes" && <div className="space-y-3"><h4 className="font-bold text-sm">Lesson PDF</h4>{currentLecture?.media?<a className="text-[#FF8A00] underline" target="_blank" rel="noreferrer" href={currentLecture.media.url}>Open authorized lesson PDF</a>:<p className="text-xs text-[#667085]">No PDF is attached to the selected lesson.</p>}</div>}
+        {activeTab === "tests" && <p className="text-sm text-[#667085]">Assessments are not implemented. No test, ranking or certificate is issued.</p>}
 
-        {activeTab === "tests" && (
-          <div className="space-y-3">
-            <div className="p-4 bg-orange-50/50 rounded-2xl border border-orange-200/60 flex items-center justify-between gap-3">
-              <div>
-                <h5 className="text-xs sm:text-sm font-bold text-[#0A1D3F]">
-                  Chapter 1 MCQ Practice Test
-                </h5>
-                <p className="text-xs text-[#667085]">
-                  20 Questions • 30 Minutes • Instant Ranking
-                </p>
-              </div>
-              <PrimaryButton
-                variant="orange"
-                size="sm"
-                onClick={() => showInfo("Starting practice test session...")}
-              >
-                Start Test
-              </PrimaryButton>
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Bottom Completion Action Bar */}
@@ -271,6 +192,7 @@ export const CoursePlayerPage = () => {
         <button
           type="button"
           onClick={handleMarkComplete}
+          disabled={!currentLecture || !course.isEnrolled}
           className={`w-full py-3.5 px-4 rounded-2xl font-bold text-sm transition-all duration-200 flex items-center justify-center gap-2 shadow-md active:scale-[0.99] touch-target ${
             isCurrentCompleted
               ? "bg-[#17B26A] text-white hover:bg-[#0E9355]"

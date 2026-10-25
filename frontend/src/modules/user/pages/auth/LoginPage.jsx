@@ -7,14 +7,15 @@ import { useToast } from "../../context/ToastContext";
 export const LoginPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { login, lastRegisteredCredentials } = useAuth();
+  const { login } = useAuth();
   const { showSuccess, showError } = useToast();
 
   const stateUserId = location.state?.userId;
-  const statePassword = location.state?.password;
 
-  const [userId, setUserId] = useState(() => stateUserId || lastRegisteredCredentials?.userId || "KITSS20261084");
-  const [password, setPassword] = useState(() => statePassword || lastRegisteredCredentials?.password || "student123");
+
+  const [userId, setUserId] = useState(() => stateUserId || '');
+  const [password, setPassword] = useState(() => '');
+  const [staffLogin, setStaffLogin] = useState(Boolean(location.state?.returnTo?.startsWith('/admin')));
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
   const [loading, setLoading] = useState(false);
@@ -22,8 +23,8 @@ export const LoginPage = () => {
 
   useEffect(() => {
     if (stateUserId) setUserId(stateUserId);
-    if (statePassword) setPassword(statePassword);
-  }, [stateUserId, statePassword]);
+
+  }, [stateUserId]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -40,10 +41,11 @@ export const LoginPage = () => {
 
     try {
       setLoading(true);
-      const res = await login(userId, password, rememberMe);
+      const res = await login(userId, password, rememberMe, staffLogin ? 'admin' : 'student');
       if (res.success) {
         showSuccess(`Welcome back, ${res.user?.name || "Student"}!`);
-        navigate("/home");
+        const target = location.state?.returnTo;
+        navigate(typeof target === 'string' && target.startsWith('/') && !target.startsWith('//') ? target : staffLogin ? '/admin' : '/home');
       }
     } catch (err) {
       setErrorMessage(err.message || "Invalid credentials. Please check your User ID and Password.");
@@ -77,11 +79,11 @@ export const LoginPage = () => {
       )}
 
       {/* Form */}
-      <form onSubmit={handleSubmit} className="space-y-3">
+      <form onSubmit={handleSubmit} className="space-y-3"><label className="flex items-center gap-2 text-xs text-[#667085]"><input type="checkbox" checked={staffLogin} onChange={e => setStaffLogin(e.target.checked)} />Staff sign in</label>
         {/* User ID Field */}
         <div>
           <label className="block text-xs font-medium text-[#0A1D3F] mb-1">
-            Student User ID
+            Email or Student ID
           </label>
           <div className="relative">
             <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
@@ -154,10 +156,11 @@ export const LoginPage = () => {
         </div>
       </form>
 
+      <Link to="/account/verify" className="block text-center text-xs text-[#FF8A00] mt-3">Verify email / resend code</Link>
       {/* Register Link */}
       <div className="text-center pt-3 mt-3 border-t border-[#F0F2F5] text-xs text-[#667085]">
         Don't have an account?{" "}
-        <Link to="/register" className="font-semibold text-[#FF8A00] hover:underline">
+        <Link to="/account/create" className="font-semibold text-[#FF8A00] hover:underline">
           Register
         </Link>
       </div>

@@ -20,13 +20,7 @@ import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../context/ToastContext";
 import { PrimaryButton, SecondaryButton } from "../common/PrimaryButton";
 
-const QUALIFICATION_OPTIONS = [
-  "10th Standard / Matriculation",
-  "12th Standard / Intermediate",
-  "Diploma",
-  "Bachelor's Degree",
-  "Master's Degree",
-];
+
 
 const toDateInputValue = (value) => {
   if (!value) return "";
@@ -37,20 +31,7 @@ const toDateInputValue = (value) => {
   return "";
 };
 
-const qualificationFromRegistration = (profile) => {
-  if (!profile) return "";
-  if (QUALIFICATION_OPTIONS.includes(profile.educationalQualification)) {
-    return profile.educationalQualification;
-  }
-  const source = `${profile.applyCourseName || ""} ${profile.class || ""} ${profile.board || ""}`.toLowerCase();
-  if (!source.trim()) return "";
-  if (/master|m\.tech|m\.sc|mba|postgraduate/.test(source)) return "Master's Degree";
-  if (/diploma/.test(source)) return "Diploma";
-  if (/bachelor|b\.a|b\.sc|b\.com|bca|b\.tech|undergraduate/.test(source)) return "Bachelor's Degree";
-  if (/class\s*1[12]|12th|11th|intermediate/.test(source)) return "12th Standard / Intermediate";
-  if (/class\s*10|10th|matric|secondary/.test(source)) return "10th Standard / Matriculation";
-  return "";
-};
+const qualificationFromRegistration = profile => profile?.educationalQualification || '';
 
 const detailsFromRegistration = (profile) => ({
   fullName: profile?.name || "",
@@ -75,6 +56,9 @@ export const AdmissionApplicationModal = ({
 
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [submissionKey, setSubmissionKey] = useState(() => crypto.randomUUID());
+  const [qualifications, setQualifications] = useState([]);
+  useEffect(() => { if (isOpen) { setSubmissionKey(crypto.randomUUID()); collegeService.getTaxonomies('qualification').then(setQualifications).catch(error => showError(error.message)); } }, [isOpen]);
   const [submitting, setSubmitting] = useState(false);
 
   // Data lists
@@ -135,7 +119,7 @@ export const AdmissionApplicationModal = ({
       }
     };
     fetchColleges();
-  }, [isOpen, preselectedCollegeId, preselectedCourseId, user]);
+  }, [isOpen, preselectedCollegeId, preselectedCourseId, user?.id]);
 
   // Load courses whenever selectedCollegeId changes
   useEffect(() => {
@@ -147,7 +131,7 @@ export const AdmissionApplicationModal = ({
       try {
         setLoading(true);
         const college = await collegeService.getCollegeById(selectedCollegeId);
-        setCourses(college?.courses || []);
+        setCourses((college?.courses || []).filter(course => course.admissionStatus === 'Open'));
       } catch (err) {
         console.error("Error loading courses for selected college:", err);
       } finally {
@@ -224,11 +208,12 @@ export const AdmissionApplicationModal = ({
 
   const handleSubmitApplication = async () => {
     try {
+      if (!user) { showError("Sign in with a verified account before submitting an admission enquiry."); return; }
       setSubmitting(true);
       const payload = {
         collegeId: selectedCollegeId,
         courseId: selectedCourseId,
-        studentId: user?.id || "",
+        idempotencyKey: submissionKey,
         studentDetails,
       };
 
@@ -260,7 +245,7 @@ export const AdmissionApplicationModal = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 overscroll-contain">
+    <div role="dialog" aria-modal="true" aria-label="Admission application" className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 overscroll-contain">
       {/* Backdrop */}
       <div
         className="fixed inset-0 bg-[#0A1D3F]/60 backdrop-blur-xs transition-opacity"
@@ -475,7 +460,7 @@ export const AdmissionApplicationModal = ({
                                   </span>
                                   <span className="text-gray-300 text-[10px]">•</span>
                                   <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200 leading-none">
-                                    Seats: {crs.availableSeats || 60}
+                                    Seats: {crs.availableSeats ?? "Not supplied"}
                                   </span>
                                 </div>
                                 <h4 className="text-xs sm:text-sm font-bold text-[#0A1D3F] leading-snug">
@@ -528,7 +513,7 @@ export const AdmissionApplicationModal = ({
                       </label>
                       <input
                         type="text"
-                        value={studentDetails.fullName}
+                        aria-label="Admission fullName" value={studentDetails.fullName}
                         onChange={(e) => handleInputChange("fullName", e.target.value)}
                         placeholder="e.g. Rohan Sharma"
                         className="w-full text-xs sm:text-sm px-3.5 py-2.5 rounded-xl border border-[#E6E8EC] focus:border-[#FF8A00] focus:outline-none bg-white"
@@ -541,7 +526,7 @@ export const AdmissionApplicationModal = ({
                       </label>
                       <input
                         type="tel"
-                        value={studentDetails.mobileNumber}
+                        aria-label="Admission mobileNumber" value={studentDetails.mobileNumber}
                         onChange={(e) => handleInputChange("mobileNumber", e.target.value)}
                         placeholder="+91 98765 43210"
                         className="w-full text-xs sm:text-sm px-3.5 py-2.5 rounded-xl border border-[#E6E8EC] focus:border-[#FF8A00] focus:outline-none bg-white"
@@ -554,7 +539,7 @@ export const AdmissionApplicationModal = ({
                       </label>
                       <input
                         type="email"
-                        value={studentDetails.email}
+                        aria-label="Admission email" value={studentDetails.email}
                         onChange={(e) => handleInputChange("email", e.target.value)}
                         placeholder="student@example.com"
                         className="w-full text-xs sm:text-sm px-3.5 py-2.5 rounded-xl border border-[#E6E8EC] focus:border-[#FF8A00] focus:outline-none bg-white"
@@ -567,7 +552,7 @@ export const AdmissionApplicationModal = ({
                       </label>
                       <input
                         type="date"
-                        value={studentDetails.dob}
+                        aria-label="Admission dob" value={studentDetails.dob}
                         onChange={(e) => handleInputChange("dob", e.target.value)}
                         className="w-full text-xs sm:text-sm px-3.5 py-2.5 rounded-xl border border-[#E6E8EC] focus:border-[#FF8A00] focus:outline-none bg-white"
                       />
@@ -579,7 +564,7 @@ export const AdmissionApplicationModal = ({
                       </label>
                       <input
                         type="text"
-                        value={studentDetails.city}
+                        aria-label="Admission city" value={studentDetails.city}
                         onChange={(e) => handleInputChange("city", e.target.value)}
                         placeholder="e.g. Bangalore, Noida, Patna"
                         className="w-full text-xs sm:text-sm px-3.5 py-2.5 rounded-xl border border-[#E6E8EC] focus:border-[#FF8A00] focus:outline-none bg-white"
@@ -591,12 +576,12 @@ export const AdmissionApplicationModal = ({
                         Qualification
                       </label>
                       <select
-                        value={studentDetails.educationalQualification}
+                        aria-label="Admission educationalQualification" value={studentDetails.educationalQualification}
                         onChange={(e) => handleInputChange("educationalQualification", e.target.value)}
                         className="w-full text-xs sm:text-sm px-3.5 py-2.5 rounded-xl border border-[#E6E8EC] focus:border-[#FF8A00] focus:outline-none bg-white"
                       >
                         <option value="">Select qualification</option>
-                        {QUALIFICATION_OPTIONS.map((option) => (
+                        {qualifications.map(({ label: option }) => (
                           <option key={option} value={option}>
                             {option}
                           </option>
@@ -610,7 +595,7 @@ export const AdmissionApplicationModal = ({
                       </label>
                       <input
                         type="text"
-                        value={studentDetails.passingYear}
+                        aria-label="Admission passingYear" value={studentDetails.passingYear}
                         onChange={(e) => handleInputChange("passingYear", e.target.value)}
                         placeholder="e.g. 2024 or 2025"
                         className="w-full text-xs sm:text-sm px-3.5 py-2.5 rounded-xl border border-[#E6E8EC] focus:border-[#FF8A00] focus:outline-none bg-white"
@@ -623,7 +608,7 @@ export const AdmissionApplicationModal = ({
                       </label>
                       <textarea
                         rows={2}
-                        value={studentDetails.additionalInfo}
+                        aria-label="Admission additionalInfo" value={studentDetails.additionalInfo}
                         onChange={(e) => handleInputChange("additionalInfo", e.target.value)}
                         placeholder="Ask regarding scholarships, hostel facilities, or syllabus..."
                         className="w-full text-xs sm:text-sm px-3.5 py-2 rounded-xl border border-[#E6E8EC] focus:border-[#FF8A00] focus:outline-none bg-white resize-none"

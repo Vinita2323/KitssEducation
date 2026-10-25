@@ -14,6 +14,7 @@ export const LectureItem = ({
     <button
       type="button"
       onClick={onSelect}
+      disabled={lecture.isLocked}
       className={`w-full flex items-center justify-between p-3 rounded-xl transition text-left group ${
         isActive
           ? "bg-[#0A1D3F] text-white shadow-xs"

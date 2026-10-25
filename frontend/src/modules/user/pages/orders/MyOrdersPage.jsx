@@ -1,3 +1,4 @@
+import { useAuth } from '../../context/AuthContext';
 import React, { useState, useEffect } from "react";
 import { ShoppingBag, FileText, Download, CheckCircle2, AlertCircle, Clock, ExternalLink } from "lucide-react";
 import { orderService } from "../../services/orderService";
@@ -8,28 +9,31 @@ import { PrimaryButton, SecondaryButton } from "../../components/common/PrimaryB
 import { SkeletonLoader, EmptyState } from "../../components/common/EmptyState";
 
 export const MyOrdersPage = () => {
+  const { user } = useAuth();
+  const [error,setError] = useState(''), [page,setPage] = useState(1);
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const { showSuccess } = useToast();
 
   useEffect(() => {
+    const controller=new AbortController();setOrders([]);setSelectedOrder(null);
     const fetchOrders = async () => {
       try {
         setLoading(true);
-        const data = await orderService.getOrders();
-        setOrders(data);
+        const data = await orderService.getOrders({page},controller.signal);
+        if(!controller.signal.aborted)setOrders(data);
       } catch (err) {
-        console.error("Orders load error:", err);
+        if(!controller.signal.aborted)setError(err.message);
       } finally {
-        setLoading(false);
+        if(!controller.signal.aborted)setLoading(false);
       }
     };
-    fetchOrders();
-  }, []);
+    fetchOrders(); const timer=setInterval(fetchOrders,15000);return()=>{controller.abort();clearInterval(timer);};
+  }, [user?.id,page]);
 
-  const handleDownloadInvoice = (order) => {
-    showSuccess(`Downloading tax invoice for ${order.id}...`);
+  const handleDownloadInvoice = async order => {
+    try { const receipt=await orderService.receipt(order.id);const url=URL.createObjectURL(new Blob([JSON.stringify(receipt,null,2)],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download=order.reference+'-test-receipt.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000); } catch(e){setError(e.message);}
   };
 
   return (
@@ -40,10 +44,12 @@ export const MyOrdersPage = () => {
           My Orders
         </h1>
         <p className="text-xs sm:text-sm text-[#667085] mt-0.5">
-          View your purchase history, payment receipts, and digital invoices
+          View authoritative Test Mode orders and payment receipts. Official tax invoices are unavailable.
         </p>
       </div>
 
+      {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
+      <div className="flex gap-3 text-xs"><button disabled={page===1} onClick={()=>setPage(p=>p-1)}>Previous orders</button><span>Page {page}</span><button disabled={orders.length<20} onClick={()=>setPage(p=>p+1)}>Next orders</button></div>
       {/* Orders List */}
       {loading ? (
         <SkeletonLoader type="card" count={3} />
@@ -68,7 +74,7 @@ export const MyOrdersPage = () => {
                   <span className="text-xs text-[#667085]">• {order.date}</span>
                 </div>
 
-                <StatusBadge status={order.status} size="sm" />
+                <div className="text-xs">{order.simulated ? 'SIMULATED TEST' : 'Test Mode'} - {order.orderStatus}; fulfillment: {order.activationStatus}</div>
               </div>
 
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -107,7 +113,7 @@ export const MyOrdersPage = () => {
       <Modal
         isOpen={Boolean(selectedOrder)}
         onClose={() => setSelectedOrder(null)}
-        title="Payment Receipt & Tax Invoice"
+        title="Test Mode Order Details - Not a Tax Invoice"
       >
         {selectedOrder && (
           <div className="space-y-4 text-xs text-[#0A1D3F]">
@@ -131,7 +137,7 @@ export const MyOrdersPage = () => {
               </div>
               <div className="flex justify-between">
                 <span className="text-[#667085]">Status:</span>
-                <StatusBadge status={selectedOrder.status} />
+                <span>{selectedOrder.orderStatus}; payment: {selectedOrder.paymentStatus}; fulfillment: {selectedOrder.activationStatus}</span>
               </div>
             </div>
 
@@ -163,7 +169,7 @@ export const MyOrdersPage = () => {
                 </div>
               )}
               <div className="border-t border-[#E6E8EC] pt-1.5 flex justify-between font-bold text-sm text-[#0A1D3F]">
-                <span>Paid Total:</span>
+                <span>Order Amount:</span>
                 <span className="text-[#FF8A00]">₹{selectedOrder.amount}</span>
               </div>
             </div>
@@ -174,10 +180,11 @@ export const MyOrdersPage = () => {
                 variant="orange"
                 size="md"
                 fullWidth
+                disabled={selectedOrder.orderStatus !== 'captured'}
                 onClick={() => handleDownloadInvoice(selectedOrder)}
                 icon={Download}
               >
-                Download PDF Invoice
+                Download Test Payment Receipt (JSON)
               </PrimaryButton>
             </div>
           </div>

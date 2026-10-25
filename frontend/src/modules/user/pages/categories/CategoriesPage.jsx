@@ -1,3 +1,4 @@
+import { usePublishedContent, PublishedSections } from '../../components/common/PublishedContent';
 import React, { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
@@ -13,6 +14,7 @@ import {
 } from "lucide-react";
 
 export const CategoriesPage = () => {
+  const {data:categoryContent,error:categoryError} = usePublishedContent('categories');
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTab, setSelectedTab] = useState("all");
 
@@ -30,45 +32,45 @@ export const CategoriesPage = () => {
     {
       id: "coaching",
       title: "Coaching",
-      subtitle: "Live batches, JEE, NEET & CBSE 9th-12th interactive classes",
+      subtitle: "Browse published courses, plans and supported lessons",
       path: "/coaching",
       icon: Video,
       badge: null,
       themeColor: "text-[#FF8A00]",
       iconBg: "bg-gradient-to-br from-orange-500 to-amber-500 text-white shadow-orange-200/80 shadow-md",
       cardBg: "hover:border-[#FF8A00]/40 hover:bg-orange-50/20",
-      tags: ["CBSE 9-12", "JEE Entrance", "NEET Medical", "Test Series"]
+      tags: ["Courses", "Plans", "Lessons"]
     },
     {
       id: "franchise",
       title: "Institutes & Franchise Network",
-      subtitle: "Approved institutes with active University franchise tie-ups & verified seats",
+      subtitle: "Browse published institution information",
       path: "/institutes",
       icon: Building2,
-      badge: "VERIFIED TIE-UPS",
+      badge: null,
       badgeColor: "bg-blue-700 text-white",
       themeColor: "text-blue-700",
       iconBg: "bg-gradient-to-br from-blue-700 to-indigo-800 text-white shadow-blue-200/80 shadow-md",
       cardBg: "hover:border-blue-700/40 hover:bg-blue-50/20",
-      tags: ["Amity Univ", "Delhi Univ", "MAHE Manipal", "LPU Punjab", "CU"]
+      tags: ["Institutes", "Universities", "Information"]
     },
     {
       id: "results",
       title: "Examination Results",
-      subtitle: "Official board marksheets, roll number verification & scorecards",
+      subtitle: "View available examination information and authorized result access",
       path: "/results",
       icon: FileCheck,
-      badge: "2026 LIVE",
+      badge: null,
       badgeColor: "bg-teal-600 text-white",
       themeColor: "text-teal-600",
       iconBg: "bg-gradient-to-br from-teal-500 to-emerald-600 text-white shadow-teal-200/80 shadow-md",
       cardBg: "hover:border-teal-500/40 hover:bg-teal-50/20",
-      tags: ["CBSE Board", "ICSE & ISC", "State Boards", "University"]
+      tags: ["Examinations", "Results"]
     },
     {
       id: "books",
       title: "Digital Books & Library",
-      subtitle: "NCERT curriculum books, chapter solutions & smart PDF reader",
+      subtitle: "Browse published books and approved previews",
       path: "/books",
       icon: BookOpen,
       badge: "E-LIBRARY",
@@ -76,12 +78,12 @@ export const CategoriesPage = () => {
       themeColor: "text-blue-600",
       iconBg: "bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-blue-200/80 shadow-md",
       cardBg: "hover:border-blue-500/40 hover:bg-blue-50/20",
-      tags: ["NCERT Books", "Classes 6-12", "Solved Papers", "Revision Notes"]
+      tags: ["Books", "Previews", "Reading"]
     },
     {
       id: "colleges",
       title: "Partner Colleges & Admissions",
-      subtitle: "Accredited universities, direct counselling & verified campus seats",
+      subtitle: "Explore published college programs and admission enquiries",
       path: "/colleges",
       icon: GraduationCap,
       badge: "ADMISSIONS",
@@ -89,13 +91,17 @@ export const CategoriesPage = () => {
       themeColor: "text-[#0A1D3F]",
       iconBg: "bg-gradient-to-br from-slate-800 to-[#0A1D3F] text-white shadow-slate-300/80 shadow-md",
       cardBg: "hover:border-[#0A1D3F]/40 hover:bg-slate-50/60",
-      tags: ["Engineering", "Medical & Health", "Management MBA", "Direct Seat"]
+      tags: ["Colleges", "Programs", "Enquiries"]
     }
   ];
 
   // Filter categories by tab & search query
   const filteredTabs = useMemo(() => {
-    let list = categoryTabs;
+    let list = categoryTabs.map(cat => {
+      const key = cat.path.slice(1);
+      const item = categoryContent.sections?.flatMap(s => s.items || []).find(i => i.linkKey === key);
+      return item ? { ...cat, title: item.heading || cat.title, subtitle: item.body || cat.subtitle } : cat;
+    });
 
     if (selectedTab !== "all") {
       list = list.filter((cat) => cat.id === selectedTab);
@@ -112,7 +118,7 @@ export const CategoriesPage = () => {
     }
 
     return list;
-  }, [categoryTabs, selectedTab, searchQuery]);
+  }, [categoryTabs, categoryContent, selectedTab, searchQuery]);
 
   return (
     <motion.div
@@ -121,6 +127,8 @@ export const CategoriesPage = () => {
       transition={{ duration: 0.2 }}
       className="space-y-4 max-w-4xl mx-auto pb-8"
     >
+      {categoryError && <p role="status">Published category information is unavailable.</p>}
+      {categoryContent.sections?.length > 0 && <PublishedSections sections={categoryContent.sections} />}
       {/* Header & Search Bar */}
       <div className="space-y-3">
         <div>

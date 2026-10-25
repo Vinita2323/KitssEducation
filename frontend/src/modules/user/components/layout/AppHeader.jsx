@@ -1,12 +1,22 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
+import { notificationService } from "../../services/notificationService";
 import { Link, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Bell, Search, User } from "lucide-react";
+import { Bell, Search, User, Menu } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 
-export const AppHeader = ({ unreadCount = 2 }) => {
+export const AppHeader = ({ onOpenDrawer, brand }) => {
   const location = useLocation();
   const { user } = useAuth();
+  const [unreadCount, setUnreadCount] = useState(0);
+  useEffect(() => {
+    const controller = new AbortController(); let active = true;
+    setUnreadCount(0);
+    const refresh = () => { if (user) notificationService.list(1, controller.signal).then(r => { if (active) setUnreadCount(r.meta.unreadCount); }).catch(() => { if (active) setUnreadCount(0); }); };
+    refresh(); const timer = setInterval(refresh, 60000);
+    window.addEventListener('kitss:notifications-changed', refresh);
+    return () => { active = false; controller.abort(); clearInterval(timer); window.removeEventListener('kitss:notifications-changed', refresh); };
+  }, [user?.id]);
 
   const navLinks = [
     { name: "Home", path: "/home" },
@@ -25,8 +35,9 @@ export const AppHeader = ({ unreadCount = 2 }) => {
       <div className="max-w-7xl mx-auto px-3.5 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-15 sm:h-16">
           {/* Left: Brand Logo */}
-          <div className="flex items-center">
-            <Link to="/home" className="flex items-center gap-2 py-1 select-none group">
+          <div className="flex items-center min-w-0">
+            <button type="button" onClick={onOpenDrawer} aria-label="Open navigation menu" className="xl:hidden p-2 mr-1 rounded-xl text-[#0A1D3F] hover:bg-slate-100"><Menu className="w-5 h-5" /></button>
+            <Link to="/home" className="flex items-center gap-2 py-1 select-none group min-w-0 max-w-[calc(100vw-200px)] sm:max-w-[50vw] xl:max-w-[200px]">
               <img
                 src="/KitssLogo.png"
                 alt="KITSS EDUCATION"
@@ -35,19 +46,19 @@ export const AppHeader = ({ unreadCount = 2 }) => {
                   e.target.style.display = "none";
                 }}
               />
-              <div className="flex items-center gap-1 leading-none">
-                <span className="font-extrabold text-[#0A1D3F] text-xs sm:text-sm tracking-tight">
-                  KITSS
+              <div className="flex items-center gap-1 leading-none min-w-0">
+                <span className="font-extrabold text-[#0A1D3F] text-xs sm:text-sm tracking-tight truncate">
+                  {brand?.name ? brand.name.split(' ')[0] : 'KITSS'}
                 </span>
-                <span className="font-extrabold text-[#FF8A00] text-xs sm:text-sm tracking-tight">
-                  EDUCATION
+                <span className="font-extrabold text-[#FF8A00] text-xs sm:text-sm tracking-tight truncate">
+                  {brand?.name ? brand.name.split(' ').slice(1).join(' ') : 'EDUCATION'}
                 </span>
               </div>
             </Link>
           </div>
 
           {/* Center: Desktop Navigation Links */}
-          <nav className="hidden md:flex items-center gap-1">
+          <nav className="hidden xl:flex items-center gap-1">
             {navLinks.map((link) => {
               const isActive =
                 location.pathname === link.path ||
@@ -69,12 +80,12 @@ export const AppHeader = ({ unreadCount = 2 }) => {
           </nav>
 
           {/* Right: Actions (Search, Notification & Profile) */}
-          <div className="flex items-center gap-0.5 sm:gap-1">
+          <div className="flex items-center gap-0.5 sm:gap-1 shrink-0">
             {/* Mobile Quick Search Button */}
             <motion.div whileTap={{ scale: 0.9 }}>
               <Link
                 to="/books"
-                className="w-8 h-8 rounded-full text-slate-700 hover:bg-slate-100 transition lg:hidden flex items-center justify-center cursor-pointer"
+                className="w-8 h-8 rounded-full text-slate-700 hover:bg-slate-100 transition 2xl:hidden flex items-center justify-center cursor-pointer"
                 aria-label="Search"
               >
                 <Search className="w-5 h-5 text-slate-700 stroke-[2]" />
@@ -84,7 +95,7 @@ export const AppHeader = ({ unreadCount = 2 }) => {
             {/* Desktop Search Shortcut */}
             <Link
               to="/books"
-              className="hidden lg:flex items-center gap-2 px-3 py-1.5 bg-slate-50 border border-slate-200/80 rounded-xl text-xs text-slate-500 hover:border-slate-300 transition mr-1"
+              className="hidden 2xl:flex items-center gap-2 px-3 py-1.5 bg-slate-50 border border-slate-200/80 rounded-xl text-xs text-slate-500 hover:border-slate-300 transition mr-1"
             >
               <Search className="w-3.5 h-3.5" />
               <span>Search books & courses...</span>
@@ -96,6 +107,7 @@ export const AppHeader = ({ unreadCount = 2 }) => {
                 to="/notifications"
                 className="relative w-8 h-8 rounded-full text-slate-700 hover:bg-slate-100 transition flex items-center justify-center cursor-pointer"
                 aria-label="Notifications"
+                title={`${unreadCount} unread notifications`}
               >
                 <Bell className="w-5 h-5 stroke-[2] text-[#0A1D3F]" />
                 {unreadCount > 0 && (

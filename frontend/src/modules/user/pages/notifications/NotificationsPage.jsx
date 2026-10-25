@@ -11,6 +11,7 @@ import {
   ChevronRight,
   ArrowLeft
 } from "lucide-react";
+import { Pagination } from "../../components/common/Pagination";
 import { notificationService } from "../../services/notificationService";
 import { useToast } from "../../context/ToastContext";
 
@@ -27,45 +28,19 @@ export const NotificationsPage = () => {
   const { showSuccess } = useToast();
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(''), [page, setPage] = useState(1), [meta, setMeta] = useState(null), [busy, setBusy] = useState(false);
 
-  useEffect(() => {
-    const fetchNotifs = async () => {
-      try {
-        setLoading(true);
-        const data = await notificationService.getNotifications();
-        setNotifications(data);
-      } catch (err) {
-        console.error("Notifs load error:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchNotifs();
-  }, []);
+  const load = async signal => { const response = await notificationService.list(page, signal); setNotifications(response.data); setMeta(response.meta); };
+  useEffect(() => { const c = new AbortController(); setLoading(true); setError(''); notificationService.list(page,c.signal).then(r=>{if(!c.signal.aborted){setNotifications(r.data);setMeta(r.meta);}}).catch(e=>{if(!c.signal.aborted)setError(e.message);}).finally(()=>{if(!c.signal.aborted)setLoading(false);}); return()=>c.abort(); },[page]);
+  const handleMarkAllRead = async () => { setBusy(true); setError(''); try { await notificationService.markAllAsRead(meta?.through); await load(); showSuccess('All marked as read'); } catch(e){setError(e.message);} finally{setBusy(false);} };
+  const handleItemClick = async item => { if(busy)return;setBusy(true);setError('');try{if(!item.isRead)await notificationService.markAsRead(item.id);await load();if(item.link)navigate(item.link);}catch(e){setError(e.message);}finally{setBusy(false);} };
 
-  const handleMarkAllRead = async () => {
-    await notificationService.markAllAsRead();
-    const updated = await notificationService.getNotifications();
-    setNotifications(updated);
-    showSuccess("All marked as read");
-  };
-
-  const handleItemClick = async (item) => {
-    if (!item.isRead) {
-      await notificationService.markAsRead(item.id);
-      setNotifications((prev) =>
-        prev.map((n) => (n.id === item.id ? { ...n, isRead: true } : n))
-      );
-    }
-    if (item.link) {
-      navigate(item.link);
-    }
-  };
-
-  const unreadList = notifications.filter((n) => !n.isRead);
+  const unreadCount = meta?.unreadCount ?? 0;
 
   return (
     <div className="max-w-2xl mx-auto space-y-3 sm:space-y-4 pt-1 sm:pt-2">
+      {error && <p role="alert" className="border rounded-xl bg-amber-50 p-3">{error}</p>}
+      <Pagination meta={meta} onChange={setPage} loading={loading || busy} />
       {/* 1. Simple Clean Header */}
       <div className="flex items-center justify-between pb-1">
         <div className="flex items-center gap-2.5">
@@ -87,10 +62,10 @@ export const NotificationsPage = () => {
           </div>
         </div>
 
-        {unreadList.length > 0 && (
+        {unreadCount > 0 && (
           <button
             type="button"
-            onClick={handleMarkAllRead}
+            disabled={busy || loading} onClick={handleMarkAllRead}
             className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#FF8A00] hover:text-[#E67A00] transition cursor-pointer"
           >
             <Check className="w-3.5 h-3.5" />
@@ -112,7 +87,7 @@ export const NotificationsPage = () => {
             </div>
           ))}
         </div>
-      ) : notifications.length === 0 ? (
+      ) : error && notifications.length === 0 ? null : notifications.length === 0 ? (
         <div className="bg-white rounded-md border border-[#E6E8EC] p-8 text-center space-y-2">
           <div className="w-10 h-10 rounded-md bg-gray-100 text-[#667085] flex items-center justify-center mx-auto">
             <Bell className="w-5 h-5 opacity-60" />

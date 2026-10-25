@@ -18,11 +18,17 @@ import {
   Lock,
   ChevronRight
 } from "lucide-react";
+import { Pagination } from '../../user/components/common/Pagination';
+import { useAuth } from '../../user/context/AuthContext';
 import { adminService } from "../services/adminService";
 import { useToast } from "../../user/context/ToastContext";
 import { PrimaryButton, SecondaryButton } from "../../user/components/common/PrimaryButton";
 
 export const AdminFranchiseRequestsPage = () => {
+  const { can } = useAuth();
+  const [page, setPage] = useState(1);
+  const [meta, setMeta] = useState(null);
+  const [loadError, setLoadError] = useState('');
   const { showSuccess, showError } = useToast();
   const [franchises, setFranchises] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -35,18 +41,20 @@ export const AdminFranchiseRequestsPage = () => {
   const [selectedFranchise, setSelectedFranchise] = useState(null);
   const [rejectionReason, setRejectionReason] = useState("");
   const [adminNote, setAdminNote] = useState("");
+  const [noteKey, setNoteKey] = useState(() => crypto.randomUUID());
   const [processing, setProcessing] = useState(false);
 
   const fetchFranchises = async () => {
     try {
       setLoading(true);
-      const data = await adminService.getFranchiseRegistrations({
+      const result = await adminService.page('franchise-applications', { page,
         status: statusFilter,
         search,
-      });
+       });
+      const data = result.data; setMeta(result.meta); setLoadError('');
       setFranchises(data || []);
     } catch (err) {
-      showError("Failed to load franchise registrations");
+      setLoadError(err.message); setFranchises([]); showError(err.message);
     } finally {
       setLoading(false);
     }
@@ -54,17 +62,19 @@ export const AdminFranchiseRequestsPage = () => {
 
   useEffect(() => {
     fetchFranchises();
-  }, [statusFilter]);
+  }, [statusFilter, search, page]);
 
+  useEffect(() => { setPage(1); }, [statusFilter, search]);
   const handleSearchSubmit = (e) => {
     e.preventDefault();
     fetchFranchises();
   };
 
-  const handleOpenDetail = (fran) => {
+  const handleOpenDetail = async (fran) => {
+    try { fran = await adminService.getFranchise(fran.id); } catch (error) { showError(error.message); return; }
     setSelectedFranchise(fran);
     setRejectionReason(fran.rejectionReason || "");
-    setAdminNote("");
+    setAdminNote(""); setNoteKey(crypto.randomUUID());
   };
 
   const handleStatusChange = async (targetStatus, reason = "") => {
@@ -83,7 +93,7 @@ export const AdminFranchiseRequestsPage = () => {
         targetStatus,
         targetStatus === "Rejected" ? reason || rejectionReason : "",
         adminNote.trim() ? adminNote.trim() : null,
-        "Super Admin"
+        selectedFranchise.revision
       );
 
       setSelectedFranchise(updated);
@@ -98,6 +108,8 @@ export const AdminFranchiseRequestsPage = () => {
 
   const getStatusBadge = (status) => {
     switch (status) {
+      case "Draft":
+        return <span className="inline-flex px-2.5 py-0.5 rounded-full bg-gray-50 border text-gray-700 text-xs font-bold">Draft — not submitted</span>;
       case "Approved":
         return (
           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-bold">
@@ -125,6 +137,8 @@ export const AdminFranchiseRequestsPage = () => {
 
   return (
     <div className="space-y-6">
+      {loadError && <p role="alert" className="p-3 bg-red-50 text-red-700 rounded-xl">{loadError}</p>}
+      <Pagination meta={meta} onChange={setPage} loading={loading} />
       {/* Header Banner */}
       <div className="bg-white rounded-2xl border border-[#E6E8EC] p-5 sm:p-6 shadow-2xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
@@ -143,7 +157,7 @@ export const AdminFranchiseRequestsPage = () => {
 
         <div className="flex items-center gap-2 text-xs font-medium text-[#667085]">
           <span className="p-2 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0]">
-            Total Requests: <strong className="text-[#0A1D3F]">{franchises.length}</strong>
+            Total Requests: <strong className="text-[#0A1D3F]">{meta?.total ?? 0}</strong>
           </span>
         </div>
       </div>
@@ -164,7 +178,7 @@ export const AdminFranchiseRequestsPage = () => {
 
         {/* Status Filter Tabs */}
         <div className="flex items-center gap-1.5 p-1 bg-[#F7F8FA] rounded-xl border border-[#E6E8EC] self-start sm:self-auto">
-          {["All", "Pending", "Approved", "Rejected"].map((st) => (
+          {["All", "Draft", "Pending", "Approved", "Rejected"].map((st) => (
             <button
               key={st}
               onClick={() => setStatusFilter(st)}
@@ -220,7 +234,7 @@ export const AdminFranchiseRequestsPage = () => {
                     <tr
                       key={franId}
                       className="hover:bg-[#F8FAFC]/80 transition cursor-pointer"
-                      onClick={() => handleOpenDetail(fran)}
+                      aria-label={"Review franchise " + fran.reference} onClick={() => handleOpenDetail(fran)}
                     >
                       {/* Ref ID & Contact Person */}
                       <td className="py-3.5 px-4">
@@ -501,13 +515,14 @@ export const AdminFranchiseRequestsPage = () => {
               />
             </div>
 
+            <button type="button" disabled={processing || !adminNote.trim() || !can('franchises.review')} onClick={async () => { setProcessing(true); try { const updated = await adminService.addFranchiseNote(selectedFranchise.id, adminNote, noteKey); setSelectedFranchise(updated); setAdminNote(''); setNoteKey(crypto.randomUUID()); showSuccess('Note saved without changing status'); fetchFranchises(); } catch (error) { showError(error.message); } finally { setProcessing(false); } }} className="px-4 py-2 rounded-xl bg-[#0A1D3F] text-white text-xs">Save Note Only</button>
+            <p className="text-xs text-amber-700">Document-free review is permitted. Franchise approval remains blocked pending policy confirmation; no affiliation or account is granted.</p>
             {/* Approval / Rejection Action Buttons */}
             <div className="flex flex-col sm:flex-row items-center justify-between gap-2 pt-2">
               <div className="flex items-center gap-2 w-full sm:w-auto">
                 <button
                   type="button"
-                  disabled={processing}
-                  onClick={() => handleStatusChange("Approved")}
+                  disabled title="Franchise approval criteria are pending owner confirmation" onClick={() => handleStatusChange("Approved")}
                   className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs transition cursor-pointer shadow-xs disabled:opacity-50"
                 >
                   <CheckCircle2 className="w-4 h-4" />
@@ -516,7 +531,7 @@ export const AdminFranchiseRequestsPage = () => {
 
                 <button
                   type="button"
-                  disabled={processing}
+                  disabled={processing || !can('franchises.review')}
                   onClick={() => handleStatusChange("Rejected", adminNote || rejectionReason)}
                   className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-semibold text-xs transition cursor-pointer shadow-xs disabled:opacity-50"
                 >
