@@ -711,3 +711,23 @@ See [Stage 14 report](../../backend/STAGE14-BUSINESS-RULES-ACCEPTANCE-REPORT.md)
 - [ ] Stage 12 real Razorpay operator/capture/webhook acceptance; maintained real scanner/licensing and operational backup/capacity/runtime/device/deployment acceptance.
 
 Stop after Stage 14's local commit. No push, deployment, live payment, additional live SMTP or public tunnel is authorized.
+
+
+## Stage 15 real local media acceptance - 26 October 2026
+
+See [Stage 15 report](../../backend/STAGE15-MEDIA-OPERATIONAL-ACCEPTANCE-REPORT.md) and [local setup](../../backend/MEDIA-LOCAL-SETUP.md). Local operational evidence supersedes the earlier local scanner/tool blockers; business/legal/provider/production gates remain.
+
+- [x] Official portable ClamAV 1.4.6 LTS download and detached signature verification; FreshClam official database validation; loopback-only daemon; actual clean-file and harmless in-memory antivirus detection.
+- [x] Absolute configurable scanner deadline/input bound and fail-closed stream/socket cleanup; actual refusal/quarantine and real rescan recovery. Final task-owned daemon restart and clean scan confirmed signature-age startup enforcement.
+- [x] Installed FFmpeg/FFprobe 9.0 paths/version, actual synthetic video encoding, metadata and complete decode; invalid/corrupt/tool-unavailable/timeout rejection. Private MP4 architecture retained without unnecessary transcoding platform.
+- [x] Real-scanned HTTP PDF upload/checksum/page count, free/paid-lifetime book entitlement and protected exact bytes; actual admin browser PDF upload/publication and rendered canvas.
+- [x] Real-scanned admin video upload, preview, lesson/course attachment/publication, free UI enrollment, actual decoded playback/seek/resume/completion, mobile/touch and all eight requested widths.
+- [x] Real isolated MongoDB persistence/audit, private registration-document owner/reviewer controls, payment/expiry/revocation/unpublished/stale-reference denial, 206/416, failure/cleanup/retry and permission restrictions.
+- [x] Real-media focused 15 passed; real video HTTP 6 passed; real-tool browser 16 passed, all zero failed/skipped. Separate broad regression 198 passed/zero failed/four explicit skips. Overlapping focused cases are not added to full-run counts.
+- [x] Production builds passed; initial audits zero. Final current-tree audit: backend zero, frontend four high entries in separately added Firebase dependency chain, preserved outside this stage. Final unit rerun 5 passed; no additional regression claim for unrelated notification work.
+- [ ] Resolve the unrelated Firebase frontend audit findings before release.
+- [ ] Maintain actual scanner updates/health, approve any permanent service setup, verify production capacity/backup/restore/runtime/device acceptance.
+- [ ] Supply actual owner-licensed content and separately approve any existing application-data import. No synthetic evidence grants publication rights to third-party educational content.
+- [ ] Stage 14 business/legal/affiliation/tax/result-source and actual Razorpay operational gates remain open.
+
+Stop after Stage 15 local commit. No push, deployment, public tunnel, real Razorpay transaction, extra live SMTP delivery or existing application-record modification.

@@ -18,7 +18,7 @@ export class FakePaymentProvider {
   checkout(order) { return { keyId: 'rzp_test_isolatedFixture', providerOrderId: order.providerOrderId, amountMinor: order.amountMinor, currency: 'INR', paymentMode: 'test' }; }
 }
 export async function commerceFixture(dbName, options = {}) {
-  const f = await publishingFixture(dbName, { scanner: options.actual ? undefined : fakeCleanScanner, actual: options.actual, mail: options.mail });
+  const f = await publishingFixture(dbName, { scanner: options.actual ? undefined : options.scanner ?? fakeCleanScanner, actual: options.actual, mail: options.mail });
   const provider = options.provider ?? new FakePaymentProvider(dbName);
   let service; try { service = await createCommerceModule({ connection: f.connection, publishingModule: f, authService: f.auth, config: f.config, logger: f.logger, provider, hooks: options.hooks }); } catch (error) { if (!options.actual) await f.close(); else await f.connection.close(); throw error; }
   Object.assign(f.models, service.models);

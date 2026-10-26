@@ -4,12 +4,13 @@ import { randomUUID } from 'node:crypto';
 import { readFile, readdir } from 'node:fs/promises';
 import { Readable } from 'node:stream';
 import path from 'node:path';
+import { realMediaFixture, realMediaEnabled } from './real-media-fixture.js';
 import { coachingFixture } from './coaching-fixture.js';
 import { serve } from './helpers.js';
 import { createMediaService } from '../src/modules/media/media.service.js';
 
 test('Video real inspection, private range delivery, progress and replacement on isolated MongoDB', {skip: !process.env.KITSS_VIDEO_TEST_DB ? 'No isolated test database supplied' : false, timeout:240000}, async t => {
-  const f = await coachingFixture(process.env.KITSS_VIDEO_TEST_DB);t.after(()=>f.close());
+  const f = await (realMediaEnabled ? realMediaFixture : coachingFixture)(process.env.KITSS_VIDEO_TEST_DB);t.after(()=>f.close());
   const d = await f.seed(), L=f.learning;
   const url=await serve(t,f.app()), origin=f.config.corsOrigins[0];
   const proof=await fetch(url+'/api/v1/auth/csrf');const cookie=proof.headers.getSetCookie()[0].split(';')[0], csrf=(await proof.json()).data.csrfToken;

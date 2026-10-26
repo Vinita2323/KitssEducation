@@ -6,15 +6,18 @@ import { existsSync, mkdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright-core';
 import { createServer } from 'vite';
+import { realMediaFixture, realMediaEnabled } from '../../backend/tests/real-media-fixture.js';
+import { pdfBytes } from '../../backend/tests/publishing-fixture.js';
 import { coachingFixture } from '../../backend/tests/coaching-fixture.js';
 
 const name=process.env.KITSS_VIDEO_BROWSER_DB, chrome=process.env.CHROME_PATH||'C:/Program Files/Google/Chrome/Application/chrome.exe';
 const workflowsOnly = process.env.KITSS_VIDEO_WORKFLOWS_ONLY === 'true';
-test('Final video admin upload, playback/resume' + (workflowsOnly ? ' workflows (width loop intentionally omitted)' : ' and seven-width acceptance'), {skip:!name?'No isolated browser DB':!existsSync(chrome)?'Chrome unavailable':false,timeout:600000},async t=>{
-  const f=await coachingFixture(name);let backend,vite,browser;
+test('Final video admin upload, playback/resume' + (workflowsOnly ? ' workflows (width loop intentionally omitted)' : ' and eight-width acceptance'), {skip:!name?'No isolated browser DB':!existsSync(chrome)?'Chrome unavailable':false,timeout:600000},async t=>{
+  const f=await (realMediaEnabled ? realMediaFixture : coachingFixture)(name);let backend,vite,browser;
   t.after(async()=>{try{await browser?.close();await vite?.close();if(backend)await new Promise(r=>{backend.close(r);backend.closeAllConnections();});}finally{await f.close();}});
   const d=await f.seed();
   await f.learning.publish(d.course.id,{expectedRevision:d.course.revision,publish:false},d.admin.auth,f.ctx);
+  if(realMediaEnabled) { const plan=await f.models.CoursePlan.findById(d.plan.id); await f.learning.mutate('plans', d.plan.id, d.course.id, {expectedRevision:plan.revision,priceMinor:0},d.admin.auth,f.ctx); }
   backend=http.createServer();await new Promise(r=>backend.listen(0,'127.0.0.1',r));
   vite=await createServer({root:fileURLToPath(new URL('../',import.meta.url)),cacheDir:fileURLToPath(new URL('../test-artifacts/vite-'+name+'/',import.meta.url)),optimizeDeps:{noDiscovery:true,include:['react','react/jsx-runtime','react-dom/client','react-router-dom','lucide-react','framer-motion','html-to-image','html2canvas','jspdf']},server:{host:'127.0.0.1',port:0,hmr:false,watch:null,proxy:{'/api':{target:'http://127.0.0.1:'+backend.address().port,changeOrigin:true}}},logLevel:'error'});
   await vite.listen();const base='http://127.0.0.1:'+vite.httpServer.address().port;f.config.corsOrigins=[base];f.config.appPublicUrl=base;backend.on('request',f.app());
@@ -32,7 +35,7 @@ test('Final video admin upload, playback/resume' + (workflowsOnly ? ' workflows 
     await page.getByRole('row').filter({hasText:d.course.title}).getByRole('button',{name:'Manage lessons',exact:true}).click();
     await page.getByRole('button',{name:'Add lesson',exact:true}).click();
     await page.getByLabel('Lesson title',{exact:true}).fill('FINAL VIDEO BROWSER LESSON');await page.getByLabel('Syllabus section',{exact:true}).selectOption('section-1');
-    await page.getByLabel('Upload Lesson video',{exact:true}).setInputFiles(fileURLToPath(new URL('../../backend/tests/fixtures/lesson-generated.mp4',import.meta.url)));
+    await page.getByLabel('Upload Lesson video',{exact:true}).setInputFiles(process.env.KITSS_REAL_MEDIA_VIDEO || fileURLToPath(new URL('../../backend/tests/fixtures/lesson-generated.mp4',import.meta.url)));
     const uploaded=page.waitForResponse(r=>r.url().endsWith('/api/v1/media')&&r.request().method()==='POST');
     await page.locator('button').filter({hasText:/^Upload Lesson video$/}).click();const response=await uploaded;assert.equal(response.status(),201,await response.text());asset=(await response.json()).data;
     await page.waitForFunction(()=>{const v=document.querySelector('video[aria-label="Admin lesson video preview"]');return v?.readyState>=2;});
@@ -40,13 +43,37 @@ test('Final video admin upload, playback/resume' + (workflowsOnly ? ' workflows 
     await page.getByRole('button',{name:'Save lesson',exact:true}).click();await page.getByText('FINAL VIDEO BROWSER LESSON',{exact:true}).waitFor();
     lesson=await f.models.Lesson.findOne({title:'FINAL VIDEO BROWSER LESSON'});assert.equal(String(lesson.videoAssetId),asset.id);
     await page.getByRole('button',{name:'All courses',exact:true}).click();const row=page.getByRole('row').filter({hasText:d.course.title});await row.getByRole('button',{name:'Publish',exact:true}).click();await row.getByRole('cell',{name:'published',exact:true}).waitFor();
+    if(!realMediaEnabled) {
     const order=await f.service.create({product:{kind:'course_plan',id:d.plan.id},idempotencyKey:randomUUID()},d.student.auth,f.ctx);await f.service.startAttempt(order.id,{idempotencyKey:randomUUID()},d.student.auth,f.ctx);const stored=await f.models.Order.findById(order.id),payment=f.provider.pay(stored.providerOrderId);await f.service.observe(stored._id,payment.id,'isolated_video_browser',f.ctx);
+    }
+  });
+  if(realMediaEnabled) await t.test('real scanned PDF upload, free publication and rendered reader across eight widths',async()=>{
+    await identity(d.admin);await go('/admin/books');
+    let row=page.getByRole('row').filter({has:page.getByRole('heading',{name:d.book.title,exact:true})});
+    let response=page.waitForResponse(r=>r.url().endsWith('/publish')&&r.request().method()==='POST');await row.getByTitle('Click to toggle status').click();assert.equal((await response).status(),200);
+    await row.getByTitle('Edit Book').click();const form=page.getByRole('dialog',{name:'Book editor'});
+    await form.getByLabel('Book price',{exact:true}).fill('0');
+    const pdf=await pdfBytes(3,'Stage 15 self-generated browser PDF');
+    await form.getByLabel('Upload Full book PDF',{exact:true}).setInputFiles({name:'stage15-browser.pdf',mimeType:'application/pdf',buffer:pdf});
+    response=page.waitForResponse(r=>r.url().endsWith('/media')&&r.request().method()==='POST');
+    await form.locator('button').filter({hasText:/^Upload Full book PDF$/}).click();const uploaded=await response;assert.equal(uploaded.status(),201);const media=(await uploaded.json()).data;assert.equal(media.scan.status,'clean');
+    response=page.waitForResponse(r=>r.url().includes('/admin/books/')&&r.request().method()==='PATCH');await form.getByRole('button',{name:'Save Book Draft',exact:true}).click();assert.equal((await response).status(),200);
+    row=page.getByRole('row').filter({has:page.getByRole('heading',{name:d.book.title,exact:true})});response=page.waitForResponse(r=>r.url().endsWith('/publish')&&r.request().method()==='POST');await row.getByTitle('Click to toggle status').click();assert.equal((await response).status(),200);
+    await identity(d.student);await go('/books/'+d.book.id);await page.getByRole('button',{name:'Read Free PDF',exact:true}).click();await page.locator('canvas[data-rendered-page]').waitFor();
+    assert.equal(await page.locator('canvas[data-rendered-page]').getAttribute('data-rendered-page'),'1');
+    assert.equal(await page.locator('canvas[data-rendered-page]').evaluate(c=>{const a=c.getContext('2d').getImageData(0,0,c.width,c.height).data;for(let i=0;i<a.length;i+=4)if(a[i]<220&&a[i+1]<220&&a[i+2]<220)return true;return false;}),true);
+    for(const width of [320,375,390,414,768,1024,1280,1440]){await page.setViewportSize({width,height:950});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1),false,'PDF overflow at '+width);await page.getByRole('spinbutton',{name:'PDF page',exact:true}).focus();}
+    assert.equal(await f.models.Order.countDocuments(),0);assert.equal(f.provider.creates,0);
+    await identity(d.admin);await go('/admin/media');await page.getByRole('heading',{name:/Media/}).waitFor();
+    for(const width of [320,375,390,414,768,1024,1280,1440]){await page.setViewportSize({width,height:950});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1),false,'Media table overflow at '+width);}
+    const staff=await f.fixtureUser(['admin'],['books.read']);await identity(staff);await go('/admin/media');await page.getByText('You do not have permission to view this page.',{exact:true}).waitFor();
+    assert.ok(f.scans.length>0&&f.scans.every(s=>s==='clean'));
   });
   assert.ok(lesson, 'Admin setup must succeed before dependent playback checks');
   const route=()=>'/coaching/'+d.course.id+'/lecture/'+lesson._id;
   const ready=async()=>{await page.waitForFunction(()=>document.querySelector('video')?.readyState>=2);};
   await t.test('native video actually decodes, seeks, saves and resumes after reload in both players',async()=>{
-    await identity(d.student);await go(route());await ready();
+    await identity(d.student);if(realMediaEnabled){await go('/coaching/'+d.course.id);await page.getByRole('button',{name:/Open free course/}).click();await page.getByText('Current access is active.',{exact:true}).waitFor();}await go(route());await ready();
     await page.getByText('No lesson summary has been published.',{exact:true}).first().waitFor();
     await page.getByText('Duration: 20 seconds',{exact:true}).waitFor();
     await page.locator('video').evaluate(async v=>{v.muted=true;await v.play();});await page.waitForFunction(()=>document.querySelector('video')?.currentTime>1);
@@ -106,7 +133,7 @@ test('Final video admin upload, playback/resume' + (workflowsOnly ? ' workflows 
       assert.equal(writes,0);assert.equal((await f.models.LearningProgress.findById(before._id)).positionSeconds,before.positionSeconds);
     }finally{release();await page.unroute(pattern);page.off('request',observe);}
   });
-  for(const width of (workflowsOnly ? [] : [320,375,390,414,768,1024,1440]))await t.test('video player and admin editor fit '+width+'px',async()=>{
+  for(const width of (workflowsOnly ? [] : [320,375,390,414,768,1024,1280,1440]))await t.test('video player and admin editor fit '+width+'px',async()=>{
     await page.setViewportSize({width,height:900});await identity(d.student);await go(route());await ready();
     assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
     const bounds=await page.locator('video').boundingBox();assert.ok(bounds.width<=width&&bounds.width>100);

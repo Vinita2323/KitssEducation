@@ -26,10 +26,14 @@ export function createScanner(config = {}) {
     async scan(stream) {
       if (!config.enabled) { stream.destroy(); return 'pending'; }
       const socket = net.createConnection({ host: '127.0.0.1', port: config.port ?? 3310 });
-      let response = ''; let resolved = false;
+      let response = ''; let resolved = false, deadline;
+      const timeoutMs = config.scanTimeoutMs ?? 20000;
+      const maxBytes = Math.max(config.videoMaxBytes ?? 268435456, 52428800);
+      let bytes = 0;
       const result = new Promise(resolve => {
-        const finish = value => { if (resolved) return; resolved = true; resolve(value); socket.destroy(); };
-        socket.setTimeout(20000, () => finish('error'));
+        const finish = value => { if (resolved) return; resolved = true; clearTimeout(deadline); stream.destroy(); resolve(value); socket.destroy(); };
+        deadline = setTimeout(() => finish('error'), timeoutMs);
+        socket.setTimeout(timeoutMs, () => finish('error'));
         socket.on('error', () => finish('error'));
         socket.on('close', () => finish('error'));
         socket.on('data', chunk => { response += chunk.toString(); if (response.length > 4096) return finish('error'); if (response.includes('\0')) finish(/^stream: OK\0$/.test(response) ? 'clean' : response.includes(' FOUND\0') ? 'infected' : 'error'); });
@@ -37,9 +41,9 @@ export function createScanner(config = {}) {
       try {
         await Promise.race([once(socket, 'connect'), result.then(() => { throw new Error('Unavailable'); })]);
         socket.write('zINSTREAM\0');
-        for await (const chunk of stream) { const header = Buffer.alloc(4); header.writeUInt32BE(chunk.length); if (!socket.write(Buffer.concat([header, chunk]))) await Promise.race([once(socket, 'drain'), result.then(() => { throw new Error('Closed'); })]); }
+        for await (const chunk of stream) { bytes += chunk.length; if (bytes > maxBytes) throw new Error('Scan size limit'); const header = Buffer.alloc(4); header.writeUInt32BE(chunk.length); if (!socket.write(Buffer.concat([header, chunk]))) await Promise.race([once(socket, 'drain'), result.then(() => { throw new Error('Closed'); })]); }
         socket.write(Buffer.alloc(4)); return await result;
-      } catch { socket.destroy(); return 'error'; } finally { stream.destroy(); }
+      } catch { socket.destroy(); return await result; } finally { clearTimeout(deadline); stream.destroy(); }
     },
   };
 }

@@ -99,7 +99,7 @@ export function validateEnv(env) {
     storage: { provider: storageProvider, root: storageRoot, publicBaseUrl,
       minFreeBytes: integer('STORAGE_MIN_FREE_BYTES', 1073741824, 0, 107374182400),
       maxBytes: integer('UPLOAD_MAX_BYTES', 1073741824, 1, 10737418240) },
-    media: { ffprobe: text('MEDIA_FFPROBE_PATH', 'ffprobe'), ffmpeg: text('MEDIA_FFMPEG_PATH', 'ffmpeg'),
+    media: { scanTimeoutMs: integer('MEDIA_SCAN_TIMEOUT_MS', 20000, 1000, 600000), ffprobe: text('MEDIA_FFPROBE_PATH', 'ffprobe'), ffmpeg: text('MEDIA_FFMPEG_PATH', 'ffmpeg'),
       videoMaxBytes: integer('MEDIA_VIDEO_MAX_BYTES', 268435456, 1024, 1073741824),
       videoUploadTimeoutMs: integer('MEDIA_VIDEO_UPLOAD_TIMEOUT_MS', 120000, 1000, 600000),
       videoInspectionTimeoutMs: integer('MEDIA_VIDEO_INSPECTION_TIMEOUT_MS', 120000, 1000, 600000), enabled: boolean('MEDIA_CLAMAV_ENABLED', 'false'), port: integer('MEDIA_CLAMAV_PORT', 3310, 1, 65535) },

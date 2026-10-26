@@ -1,5 +1,17 @@
 # Final original-requirements matrix
 
+## Stage 15 superseding media evidence - 26 October 2026
+
+[Stage 15 operational report](STAGE15-MEDIA-OPERATIONAL-ACCEPTANCE-REPORT.md) supersedes prior scanner/tool acceptance blocks **for the isolated local environment only**. Original feature/API IDs and historical totals remain unchanged.
+
+| Existing traceability | Actual Stage 15 evidence | Remaining gate |
+|---|---|---|
+| F15/F16/F18; existing book/course/media/admin contracts | Official portable ClamAV 1.4.6 LTS with verified release signature and official FreshClam databases; actual clean and harmless antivirus detection tests. Installed FFmpeg/FFprobe 9.0 metadata/full decode and actual test-video encoding. Absolute scanner deadline closes stalled/trickle-input gap. | Maintain definitions, daemon/engine updates, monitoring and capacity. No permanent service or production deployment approved. |
+| A36/A47/A54-A58/G08; protected readers and media | Actual admin PDF/video uploads, clean/private persistence, licensed synthetic publication, zero-price enrollment/access, PDF canvas and native video playback/resume/range delivery at all eight requested widths. Real isolated MongoDB. | Owner-supplied licensed inventory and separately approved application-data import; real Razorpay acceptance unchanged. |
+| Private documents, media security and RBAC | Real scanned registration PDFs remain owner/document-reviewer restricted; anonymous/foreign/expired/revoked/unpublished/stale-reference access denied. Scanner refusal/rescan, malformed/oversize/interrupted uploads, tool failures/timeouts and cleanup evidenced. | Production backup/restore, durable scanner/process management and physical-device/accessibility acceptance remain separate. |
+
+Stage 15 counts distinguish actual scanning/video processing from synthetic payment and ordinary fake-scanner regression fixtures. Current unrelated Firebase notification changes are excluded from the media commit; its frontend dependency audit has four high entries requiring review before release. No real payment, live SMTP, public tunnel or application database changes.
+
 ## Stage 14 superseding business-rule evidence - 26 October 2026
 
 [Stage 14 report](STAGE14-BUSINESS-RULES-ACCEPTANCE-REPORT.md) records current software acceptance and explicit external gates. Historical 212-entry totals below are not recalculated operational acceptance.

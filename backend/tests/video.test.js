@@ -35,6 +35,8 @@ test('Actual FFprobe codec inspection and FFmpeg complete decode', {skip: !proce
   const storage = new LocalStorageProvider({root,minFreeBytes:0});await storage.initialize();
   const file = await storage.upload({stream:Readable.from(await videoBytes()),extension:'mp4'});
   const info = await inspectVideo(storage,file.key,videoTools());
+  await assert.rejects(inspectVideo(storage,file.key,{...videoTools(),ffmpeg:path.join(root,'absent-ffmpeg')}),{code:'VIDEO_INSPECTION_UNAVAILABLE'});
+  await assert.rejects(inspectVideo(storage,file.key,{...videoTools(),videoInspectionTimeoutMs:1}),{code:'INVALID_VIDEO'});
   const unsupported = path.join(root,'unsupported.mp4');
   await promisify(execFile)(process.env.MEDIA_FFMPEG_PATH,['-v','error','-i',fileURLToPath(new URL('./fixtures/lesson-generated.mp4',import.meta.url)),'-t','1','-an','-c:v','mpeg4','-movflags','+faststart',unsupported],{windowsHide:true});
   const wrong = await storage.upload({stream:Readable.from(await readFile(unsupported)),extension:'mp4'});
