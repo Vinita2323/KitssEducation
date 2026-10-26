@@ -1,0 +1,33 @@
+{
+  "smtpAuthenticated": true,
+  "acceptedMessages": [
+    {
+      "purpose": "verify",
+      "acceptedBySmtp": true
+    },
+    {
+      "purpose": "verify",
+      "acceptedBySmtp": true
+    },
+    {
+      "purpose": "reset",
+      "acceptedBySmtp": true
+    },
+    {
+      "purpose": "emailChange",
+      "acceptedBySmtp": true
+    },
+    {
+      "purpose": "invite",
+      "acceptedBySmtp": true
+    },
+    {
+      "purpose": "verify",
+      "acceptedBySmtp": true
+    }
+  ],
+  "inboxReceiptVerified": true,
+  "realPaymentExecuted": false,
+  "receiptVerificationSource": "Owner explicitly confirmed all six messages received in this conversation on 26 October 2026; no inbox API/read access was used.",
+  "credentialsRotated": false
+}

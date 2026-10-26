@@ -118,12 +118,14 @@ export function validateEnv(env) {
     smtp: {
       host: text('SMTP_HOST'), port: integer('SMTP_PORT', 587, 1, 65535),
       secure: boolean('SMTP_SECURE', 'false'), user: text('SMTP_USER'),
-      appPassword: String(env.SMTP_APP_PASSWORD ?? ''), from: text('SMTP_FROM'),
+      appPassword: String(env.SMTP_APP_PASSWORD ?? ''), from: text('SMTP_FROM'), fromName: text('SMTP_FROM_NAME'),
     },
   };
   if (config.auth.secret && config.auth.secret.length < 32) errors.push('AUTH_SECRET');
   if (nodeEnv === 'production' && !config.auth.secret) errors.push('AUTH_SECRET');
   if (config.smtp.host && (!/^[a-zA-Z0-9.-]+$/.test(config.smtp.host) || !config.smtp.user || !config.smtp.appPassword || !/^[^\s<>@]+@[^\s<>@]+\.[^\s<>@]+$/.test(config.smtp.from))) errors.push('SMTP_CONFIGURATION');
+  if (config.smtp.fromName.length > 100 || /[\r\n\x00-\x1f\x7f]/.test(config.smtp.fromName)) errors.push('SMTP_FROM_NAME');
+  if (config.smtp.host.toLowerCase() === 'smtp.gmail.com' && (config.smtp.port !== 587 || config.smtp.secure)) errors.push('SMTP_GMAIL_STARTTLS');
   if (errors.length) throw new ConfigurationError(errors);
   return config;
 }

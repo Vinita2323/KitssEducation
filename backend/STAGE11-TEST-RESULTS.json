@@ -1,0 +1,89 @@
+{
+  "runs": [
+    {
+      "scope": "offline-unit",
+      "tests": 25,
+      "pass": 25,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0
+    },
+    {
+      "scope": "isolated-mongodb-fake-adapters",
+      "tests": 63,
+      "pass": 63,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0
+    },
+    {
+      "scope": "real-smtp",
+      "tests": 4,
+      "pass": 4,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0
+    },
+    {
+      "scope": "live-smtp-default-skip",
+      "tests": 1,
+      "pass": 0,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 1
+    },
+    {
+      "scope": "initial-commerce-browser",
+      "tests": 7,
+      "pass": 5,
+      "fail": 2,
+      "cancelled": 0,
+      "skipped": 0
+    },
+    {
+      "scope": "final-commerce-browser",
+      "tests": 7,
+      "pass": 7,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0
+    },
+    {
+      "scope": "coaching-browser",
+      "tests": 7,
+      "pass": 7,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0
+    },
+    {
+      "scope": "auth-browser-http-double",
+      "tests": 16,
+      "pass": 16,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0
+    },
+    {
+      "scope": "final-smtp-safety",
+      "tests": 5,
+      "pass": 5,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0
+    }
+  ],
+  "build": {
+    "exitCode": 0,
+    "viteReportedTime": "1m 31s",
+    "existingLargeChunkWarning": true
+  },
+  "dependencyVulnerabilities": {
+    "backend": 0,
+    "frontend": 0
+  },
+  "realSmtpMessages": 6,
+  "receiptConfirmation": "Owner confirmed all six received",
+  "realRazorpayInteraction": "Read-only authentication only; no payment created or verified",
+  "additionalDiagnosticBlockedByExistingBudget": true
+}

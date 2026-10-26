@@ -1,0 +1,16 @@
+{
+  "observedOn": "2026-10-26",
+  "provider": "razorpay",
+  "paymentMode": "test",
+  "operation": "Read-only GET /v1/orders?count=1",
+  "authenticated": true,
+  "paymentsEnabled": false,
+  "credentialRotationConfirmed": false,
+  "webhookSecretConfigured": false,
+  "providerOrderCreated": false,
+  "providerPaymentVerified": false,
+  "realWebhookReceived": false,
+  "newRealBookEntitlement": false,
+  "newRealCoachingEnrollment": false,
+  "rawResponseRecorded": false
+}

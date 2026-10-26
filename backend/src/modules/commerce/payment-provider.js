@@ -31,6 +31,15 @@ export class RazorpayPaymentProvider extends PaymentProvider {
   assertReady() { if (!this.ready) throw unavailable(); }
   async request(endpoint, data) {
     this.assertReady();
+    return this.#request(endpoint, data);
+  }
+  // Explicit operator diagnostic only; it cannot approve checkout or settlement.
+  async verifyTestAuthentication() {
+    if (this.config.mode !== 'test' || !/^rzp_test_[A-Za-z0-9]+$/.test(this.config.keyId ?? '') || !this.config.keySecret) throw unavailable();
+    await this.#request('orders?count=1');
+    return { authenticated: true, paymentMode: 'test', paymentsEnabled: this.ready };
+  }
+  async #request(endpoint, data) {
     let response;
     try {
       response = await this.transport('https://api.razorpay.com/v1/' + endpoint, {

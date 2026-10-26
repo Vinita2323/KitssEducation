@@ -79,7 +79,11 @@ test('Stage 6 existing UI real API and standalone MongoDB with explicitly isolat
   await t.test('cross-account isolation and expired sessions do not retain order data', async () => {
     await identity(foreign); await goto('/orders'); await page.getByText('No Orders Yet', { exact: true }).waitFor();
     await goto('/books/' + book.id + '/checkout?order=' + orderId); await page.getByText('Order or application was not found', { exact: true }).waitFor();
-    await context.clearCookies(); await goto('/orders'); await page.waitForURL(/\/login/); assert.equal(await page.getByText(/SIMULATED TEST - captured/).count(), 0);
+    await context.clearCookies(); await goto('/orders');
+    await page.waitForURL(/\/login/, { waitUntil: 'domcontentloaded', timeout: 60000 });
+    await page.getByRole('button', { name: 'Login', exact: true }).waitFor();
+    assert.equal((await context.request.get(base + '/api/v1/auth/me')).status(), 401);
+    assert.equal(await page.getByText(/SIMULATED TEST - captured/).count(), 0);
   });
   for (const width of (process.env.KITSS_BROWSER_WORKFLOWS_ONLY ? [] : [320,375,390,414,768,1024,1440])) await t.test('commerce responsive layout at ' + width + 'px', async () => {
     await page.setViewportSize({ width, height: 950 }); await identity(admin);

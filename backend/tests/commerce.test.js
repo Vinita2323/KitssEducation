@@ -22,6 +22,22 @@ test('offline Razorpay HTTPS/signature contract uses exact stored-order HMAC, te
   const raw = Buffer.from('{ "event": "payment.captured" }'), webhook = createHmac('sha256', config.webhookSecret).update(raw).digest('hex'); assert.equal(provider.verifyWebhook(raw, webhook), true); assert.equal(provider.verifyWebhook(Buffer.from('{}'), webhook), false);
   assert.equal(JSON.stringify(provider.checkout({})).includes(config.keySecret), false);
 });
+
+test('read-only Test Mode authentication diagnostic cannot approve orders, signatures or fulfillment', async () => {
+  let calls = 0;
+  const config = { keyId: 'rzp_test_fixture', keySecret: 'synthetic-fixture-only', mode: 'test', rotated: false };
+  const transport = async (url, options) => {
+    calls++; assert.equal(url, 'https://api.razorpay.com/v1/orders?count=1');
+    assert.equal(options.method, 'GET'); assert.equal(options.body, undefined);
+    return new Response(JSON.stringify({ items: [] }));
+  };
+  const provider = new RazorpayPaymentProvider(config, { transport });
+  assert.deepEqual(await provider.verifyTestAuthentication(), { authenticated: true, paymentMode: 'test', paymentsEnabled: false });
+  await assert.rejects(provider.createOrder({}), { code: 'PAYMENTS_UNAVAILABLE' });
+  assert.throws(() => provider.verifyCheckout('order_fixture', 'pay_fixture', 'a'.repeat(64)), { code: 'PAYMENTS_UNAVAILABLE' });
+  for (const changes of [{ mode: 'live' }, { keyId: 'rzp_live_fixture' }, { keySecret: '' }]) await assert.rejects(new RazorpayPaymentProvider({ ...config, ...changes }, { transport }).verifyTestAuthentication());
+  assert.equal(calls, 1);
+});
 test('registration and fee policy validation preserves safe fields while rejecting identity uploads, roles and financial invention', () => {
   const user = { emailNormalized: 'fixture@example.invalid' };
   assert.equal(applicantInput('study', { studentName: 'Fixture', email: user.emailNormalized }, user).studentName, 'Fixture');

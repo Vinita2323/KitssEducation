@@ -7,7 +7,7 @@ import { PrimaryButton } from "../../components/common/PrimaryButton";
 
 export const ForgotPasswordPage = () => {
   const navigate = useNavigate();
-  const { showSuccess, showError } = useToast();
+  const { showInfo, showError } = useToast();
   const [identifier, setIdentifier] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -21,7 +21,9 @@ export const ForgotPasswordPage = () => {
     try {
       setLoading(true);
       const result = await authService.forgotPassword(identifier);
-      showSuccess(result.message);
+      // Recovery deliberately gives the same uncertain delivery response for
+      // absent accounts and SMTP failures; this is not a delivery success.
+      showInfo(result.message);
       navigate("/reset-password", { state: { challengeId: result.challengeId } });
     } catch (err) {
       showError(err.message || "Could not send reset code.");

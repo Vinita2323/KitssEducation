@@ -633,3 +633,20 @@ The [focused report](../../backend/FINAL-TWO-GAPS-REPORT.md) supersedes the earl
 - [ ] Existing business/provider/scanner/SMTP/runtime/deployment gates remain; unavailable payment-method rails and incidental zero-fee program validation are disclosed, not silently redefined.
 
 Stop after the focused local commit. No push, deployment or next stage is authorized.
+
+## Stage 11 - Gmail SMTP and Razorpay Test Mode, 26 October 2026
+
+Evidence and exact test outcomes: [Stage 11 report](../../backend/STAGE11-SMTP-RAZORPAY-REPORT.md). Historical blank/unverified SMTP descriptions are superseded only by the evidence here. Current primary matrix counts remain unchanged.
+
+- [x] Inspect existing backend env loading, SMTP/auth/account challenges, payment provider/order/verification/webhook/reconciliation/entitlement services and frontend auth/checkout; reuse the modular monolith.
+- [x] Preserve unrelated local environment fields; configure authorized Gmail identity, STARTTLS 587 and backend-only password, with structured display name and header-injection validation. No real env file or credential is committed.
+- [x] Real Gmail authentication and six accepted workflow messages: registration/verification, resend after actual cooldown, reset, email-change and staff invitation/following verification. Owner confirmed all six received; no inbox API inspection is claimed.
+- [x] Enforce an explicit live-test opt-in, recipient/budget/loopback guards and atomic reservation preventing blind repeat delivery. OTPs/tokens stay in memory, never browser responses or evidence.
+- [x] Actual read-only Razorpay Test Mode authentication through the existing provider boundary. No provider order/payment/approval created; existing payment activation gate remains closed.
+- [x] Offline SMTP/TLS/error/config/operator safety and Razorpay read-only gate tests; local fake-provider/mail MongoDB regressions; relevant browser/build/dependency/security checks, with exact final and failed counts in the report.
+- [x] Use informational feedback for non-enumerating, uncertain recovery delivery; preserve existing layouts and security boundaries.
+- [ ] Rotate the disclosed Gmail and Razorpay credentials, configure independently rotated webhook secret and complete existing operator approval. The owner's temporary credential-use instruction is not rotation evidence.
+- [ ] Real provider-connected book/coaching Checkout, capture, callback/webhook/reconciliation, exactly-once paid entitlement and admin financial acceptance. A real webhook testing endpoint/tunnel needs separate explicit exposure approval.
+- [ ] Real scanner/licensed-content/publication and existing business/runtime/operational/device gates remain unchanged. No live payments, deployment or next stage is authorized.
+
+Stage 11 final evidence: offline unit/config/HTTP/logging 25/0/0; isolated MongoDB with fake mail/provider 63/0/0; real Gmail workflow suite 4/0/0 with exactly six messages, owner-confirmed received; final book/coaching browser 7/0/0 each and auth HTTP-double desktop/mobile 16/0/0. Ordinary live-mail test invocation deliberately skips one test. Earlier book-browser 5 passed/2 failed due to login load timeout is disclosed and superseded by the verified rerun. Frontend build exit 0; both audits zero vulnerabilities. Local test MongoDB shut down, ignored synthetic data retained. These counts do not claim any real Razorpay payment or webhook acceptance.
