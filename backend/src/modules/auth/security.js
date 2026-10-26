@@ -1,3 +1,4 @@
+import { granularNames } from './granular-permissions.js';
 import { randomBytes, createHash, createHmac, timingSafeEqual } from 'node:crypto';
 import argon2 from 'argon2';
 import { AppError } from '../../utils/AppError.js';
@@ -30,7 +31,7 @@ export function email(value) {
 export const invalidProof = () => new AppError(400, 'INVALID_CHALLENGE', 'The code or link is invalid, expired or already used');
 export const invalidLogin = () => new AppError(401, 'INVALID_CREDENTIALS', 'Unable to sign in with these credentials');
 
-export const permissions = Object.freeze([
+export const permissions = Object.freeze([...granularNames,
   'dashboard.read', 'institutions.read', 'institutions.write', 'admissions.read', 'admissions.write',
   'franchises.read', 'franchises.write', 'admissions.review', 'franchises.review', 'registrations.read', 'registrations.write',
   'learning.read', 'learning.write', 'learning.publish', 'learning.grants.manage',

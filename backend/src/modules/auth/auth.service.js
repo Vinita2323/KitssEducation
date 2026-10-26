@@ -12,7 +12,7 @@ export async function createAuthService({ models, config, mail, logger, now = ()
     if (!user) return;
     for (const item of user.auditOutbox ?? []) {
       try {
-        await AuditLog.updateOne({ _id: item.id }, { $setOnInsert: { action: item.action, actorId: item.actorId, subjectId: user.publicId, requestId: item.requestId, at: item.at, ...(item.reason ? { reason: item.reason } : {}) } }, { upsert: true });
+        await AuditLog.updateOne({ _id: item.id }, { $setOnInsert: { action: item.action, actorId: item.actorId, subjectId: user.publicId, requestId: item.requestId, at: item.at, ...(item.reason ? { reason: item.reason } : {}), ...(item.permissionChange ? { permissionChange: item.permissionChange } : {}) } }, { upsert: true });
         await User.updateOne({ _id: user._id }, { $pull: { auditOutbox: { id: item.id } } });
       } catch { logger.error({ event: 'audit_outbox_pending' }, 'Security audit remains durably pending'); break; }
     }
@@ -145,7 +145,7 @@ export async function createAuthService({ models, config, mail, logger, now = ()
           { $set: { activeSessionId: result.session._id, activeSessionExpiresAt: result.session.expiresAt }, $unset: { 'challenges.transfer': 1 } }, 'login', ctx);
         if (!updated) { await Session.deleteOne({ _id: result.session._id }); throw new AppError(409, 'SESSION_CHANGED', 'Session changed; sign in again'); }
       } else {
-        const updated = await mutate({ _id: user._id, status: 'active', securityVersion: user.securityVersion }, { $set: { updatedAt: now() } }, 'staff_login', ctx);
+        const updated = await mutate({ _id: user._id, status: 'active', securityVersion: user.securityVersion }, { $set: { updatedAt: now(), lastLoginAt: now() } }, 'staff_login', ctx);
         if (!updated) { await Session.deleteOne({ _id: result.session._id }); throw invalidLogin(); }
       }
       return resultFor(user, result);
@@ -220,13 +220,13 @@ export async function createAuthService({ models, config, mail, logger, now = ()
       // Invitations create ordinary staff only. Super-admin promotion is a later,
       // separately reviewed role-change workflow; no last-super-admin race exists.
       const allowed = input.permissions ?? [];
-      if (allowed.some(p => !grantsFor(auth.user).includes(p) || p === 'accounts.roles.manage')) throw new AppError(422, 'INVALID_GRANTS', 'Invalid permission assignment');
+      if (allowed.some(p => !grantsFor(auth.user).includes(p) || ['accounts.roles.manage', 'results.publish'].includes(p))) throw new AppError(422, 'INVALID_GRANTS', 'Invalid permission assignment');
       let user = await User.findOne({ emailNormalized: identifier });
       if (!user) {
         try { user = await User.create({ publicId: `STAFF${randomUUID().replaceAll('-', '').slice(0, 16).toUpperCase()}`, name: input.name.trim(), emailNormalized: identifier, roles: ['admin'], permissions: allowed, status: 'pending', auditOutbox: [event('staff_invited', { ...ctx, actorId: auth.user.publicId })] }); }
         catch (error) { if (error.code === 11000) throw new AppError(409, 'IDENTITY_EXISTS', 'Invitation cannot be created'); throw error; }
       }
-      if (user.status !== 'pending' || user.roles.includes('student') || user.emailVerifiedAt) throw new AppError(409, 'IDENTITY_EXISTS', 'Invitation cannot be created');
+      if (user.status !== 'pending' || !user.roles.includes('admin') || user.roles.includes('super_admin') || user.emailVerifiedAt) throw new AppError(409, 'IDENTITY_EXISTS', 'Invitation cannot be created');
       const token = opaque(); const item = challenge('invite', token);
       const updated = await mutate({ _id: user._id, status: 'pending', passwordHash: { $exists: false }, $or: [{ 'challenges.invite.sentAt': { $exists: false } }, { 'challenges.invite.sentAt': { $lte: new Date(now().getTime() - config.auth.resendMs) } }] },
         { $set: { 'challenges.invite': item, permissions: allowed } }, 'staff_invitation_issued', { ...ctx, actorId: auth.user.publicId });

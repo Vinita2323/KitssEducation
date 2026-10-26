@@ -136,7 +136,7 @@ test('Stage 4 standalone institution/intake integration in fresh isolated MongoD
     const first = await service.submitFranchise(draft.id, input, student, draft.draftCapability, ctx); assert.equal(first.status, 'pending');
     const repeat = await service.submitFranchise(draft.id, input, student, draft.draftCapability, ctx); assert.equal(repeat.reference, first.reference);
     await assert.rejects(service.editDraft(draft.id, { expectedRevision: first.revision, programsOffered: ['Changed'] }, student, draft.draftCapability, ctx), { code: 'FINALIZED' });
-    await assert.rejects(service.review('franchise', draft.id, { status: 'approved', expectedRevision: first.revision }, ctx), { code: 'APPROVAL_POLICY_PENDING' });
+    await assert.rejects(service.review('franchise', draft.id, { status: 'approved', expectedRevision: first.revision }, ctx), { status: 422 });
     await assert.rejects(service.review('franchise', draft.id, { status: 'rejected', expectedRevision: first.revision }, ctx), { status: 422 });
     const note = await service.review('franchise', draft.id, { text: 'Review note only', idempotencyKey: randomUUID() }, ctx, true); assert.equal(note.status, 'pending');
     const rejected = await service.review('franchise', draft.id, { status: 'rejected', expectedRevision: note.revision, rejectionReason: 'Test review reason' }, ctx); assert.equal(rejected.status, 'rejected');

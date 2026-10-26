@@ -95,7 +95,7 @@ export function createCoachingModels(connection) {
     },
     priceMinor: {
       type: Number,
-      min: 1,
+      min: 0,
       max: 1000000000,
       validate: Number.isSafeInteger
     },
@@ -185,15 +185,10 @@ export function createCoachingModels(connection) {
       type: ref,
       required: true
     },
-    planId: {
-      type: ref,
-      required: true
-    },
-    orderId: {
-      type: ref,
-      required: true,
-      unique: true
-    },
+    planId: { type: ref },
+    orderId: { type: ref },
+    grantId: ref,
+    purchaseHistory: { type: [new Schema({ orderId: ref, planId: ref, startsAt: Date, expiresAt: Date }, { _id: false })], default: [] },
     startsAt: {
       type: Date,
       required: true
@@ -204,7 +199,7 @@ export function createCoachingModels(connection) {
     },
     source: {
       type: String,
-      enum: ['paid'],
+      enum: ['paid', 'free', 'manual'],
       required: true
     },
     simulated: Boolean,
@@ -217,10 +212,8 @@ export function createCoachingModels(connection) {
   }, {
     unique: true
   });
-  enrollment.index({
-    userId: 1,
-    expiresAt: 1
-  });
+  enrollment.index({ userId: 1, expiresAt: 1 });
+  enrollment.index({ orderId: 1 }, { unique: true, name: 'unique_paid_course_source', partialFilterExpression: { orderId: { $type: 'objectId' } } });
   const progress = new Schema({
     ...base,
     userId: {

@@ -148,9 +148,7 @@ export const coachingService = {
     }, 'PUT', true, {}, { signal, expectedIdentityEpoch });
   },
   getLinkedBook: (courseId, bookId, signal) => get('/coaching/courses/' + courseId + '/books/' + bookId, signal),
-  joinCourse: async () => {
-    throw new Error('Free enrollment is not approved. Razorpay Test Mode remains disabled.');
-  },
+  joinCourse: id => authenticatedWrite('/coaching/courses/' + id + '/enroll', { idempotencyKey: crypto.randomUUID() }),
   subscribeCourse: async () => {
     throw new Error('Razorpay Test Mode remains disabled.');
   },

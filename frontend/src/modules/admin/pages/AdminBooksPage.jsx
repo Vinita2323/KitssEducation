@@ -145,7 +145,7 @@ export const AdminBooksPage = () => {
 
           <button
             type="button"
-            disabled={!can('learning.write')} onClick={handleOpenAddModal}
+            disabled={!can('books.create')} onClick={handleOpenAddModal}
             className="px-4 py-2 bg-[#FF8A00] hover:bg-[#E67C00] text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-xs active:scale-95 cursor-pointer"
           >
             <Plus className="w-4 h-4" />
@@ -384,7 +384,7 @@ export const AdminBooksPage = () => {
                       <td className="p-3.5 text-center whitespace-nowrap">
                         <button
                           type="button"
-                          disabled={!can('learning.publish') || book.status === 'archived'} onClick={() => handleTogglePublish(book.id)}
+                          disabled={!can('books.publish') || book.status === 'archived'} onClick={() => handleTogglePublish(book.id)}
                           className={`px-2.5 py-1 rounded-full text-[10px] font-bold border transition cursor-pointer ${
                             isPublished
                               ? "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100"
@@ -409,7 +409,7 @@ export const AdminBooksPage = () => {
 
                           <button
                             type="button"
-                            disabled={!can('learning.write') || book.status === 'archived'} onClick={() => handleOpenEditModal(book)}
+                            disabled={!can('books.edit') || book.status === 'archived'} onClick={() => handleOpenEditModal(book)}
                             className="p-1.5 rounded-lg text-blue-600 hover:bg-blue-50 transition cursor-pointer"
                             title="Edit Book"
                           >
@@ -418,7 +418,7 @@ export const AdminBooksPage = () => {
 
                           <button
                             type="button"
-                            disabled={!can('learning.write')} onClick={() => setDeleteConfirmId(book.id)}
+                            disabled={!can('books.archive')} onClick={() => setDeleteConfirmId(book.id)}
                             className="p-1.5 rounded-lg text-red-600 hover:bg-red-50 transition cursor-pointer"
                             title="Archive Book"
                           >

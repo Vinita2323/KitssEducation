@@ -23,19 +23,21 @@ export const AdminLayout = () => {
   const { user, can, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
-  const isStage4 = location.pathname === "/admin" || /^\/admin\/(users|audit-logs|operations|universities|colleges|applications|franchise-requests|taxonomies|books|content|media|settings|orders|registrations|coaching|enrollments|results|notifications)(\/|$)/.test(location.pathname);
+  const isStage4 = location.pathname === "/admin" || /^\/admin\/(refunds|access-requests|users|audit-logs|operations|universities|colleges|applications|franchise-requests|taxonomies|books|content|media|settings|orders|registrations|coaching|enrollments|results|notifications)(\/|$)/.test(location.pathname);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const root = useRef(null);
   useAdminAccessibility(root,location.pathname);
   const drawer = useDialogFocus(sidebarOpen, () => setSidebarOpen(false));
 
   const navItems = [
+    { label: "Refund review", path: "/admin/refunds", icon: FileText, permission: "refunds.read" },
+    { label: "Exceptional access", path: "/admin/access-requests", icon: ShieldCheck, permission: "access.read" },
     { label: "User accounts", path: "/admin/users", icon: ShieldCheck, permission: "accounts.read" },
     { label: "Audit logs", path: "/admin/audit-logs", icon: FileText, permission: "audit.read" },
     { label: "Job monitoring", path: "/admin/operations", icon: FileText, permission: "operations.read" },
     { label: "Results", path: "/admin/results", icon: FileText, permission: "results.read" },
     { label: "Notifications", path: "/admin/notifications", icon: FileText, permission: "notifications.read" },
-    { label: "Coaching", path: "/admin/coaching", icon: GraduationCap, permission: "learning.read" },
+    { label: "Coaching", path: "/admin/coaching", icon: GraduationCap, permission: "coaching.read" },
     { label: "Enrollments", path: "/admin/enrollments", icon: BookOpen, permission: "learning.read" },
     { label: "Orders / Payments", path: "/admin/orders", icon: BookOpen, permission: "commerce.read" },
     { label: "Registration drafts", path: "/admin/registrations", icon: FileText, permission: "registrations.read" },
@@ -48,7 +50,7 @@ export const AdminLayout = () => {
     { label: "Colleges / Institutes", path: "/admin/colleges", icon: Building2, permission: "institutions.read" },
     { label: "Franchise Requests", path: "/admin/franchise-requests", icon: ShieldCheck, permission: "franchises.read" },
     { label: "Admission Applications", path: "/admin/applications", icon: FileText, permission: "admissions.read" },
-    { label: "Digital Books", path: "/admin/books", icon: BookOpen, permission: "learning.read" },
+    { label: "Digital Books", path: "/admin/books", icon: BookOpen, permission: "books.read" },
   ].filter(item => can(item.permission));
 
   const isActive = (item) => {

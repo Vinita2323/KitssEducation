@@ -50,6 +50,7 @@ export function createCoachingService({
     },
     async initialize() {
       for (const Model of Object.values(models)) await Model.createIndexes();
+      if ((await Enrollment.collection.indexes()).some(i => i.name === 'orderId_1' && i.unique)) await Enrollment.collection.dropIndex('orderId_1');
     },
     async maintenance() {
       for (const Model of Object.values(models)) for await (const row of Model.find({
@@ -93,7 +94,7 @@ export function createCoachingService({
       if (publishingNow && !data.content?.trim() && !data.documentAssetId && !data.videoAssetId) throw invalid('Publish authored text, an inspected document or validated video');
     },
     async validatePlan(data) {
-      if (data.status === 'active' && (!data.rulesApproved || !Number.isSafeInteger(data.priceMinor) || data.priceMinor <= 0 || !Number.isSafeInteger(data.durationDays) || data.durationDays < 1 || data.eligibility !== 'verified_account' || data.renewalApproved)) throw invalid('Active prepaid plans require explicit approved positive price, duration and verified-account eligibility; renewals remain disabled');
+      if (data.status === 'active' && (!data.rulesApproved || !Number.isSafeInteger(data.priceMinor) || data.priceMinor < 0 || !Number.isSafeInteger(data.durationDays) || data.durationDays < 1 || data.eligibility !== 'verified_account')) throw invalid('Active prepaid plans require explicit approved nonnegative price, duration and verified-account eligibility');
     },
     async adminList(kind, parent, query) {
       const {
@@ -334,8 +335,8 @@ export function createCoachingService({
         createdAt: 1
       })).map(p => ({
         ...dto(p),
-        purchasable: commerce.provider.ready && !commerce.provider.simulated,
-        renewalEnabled: false
+        purchasable: p.priceMinor === 0 || commerce.provider.ready && !commerce.provider.simulated,
+        free: p.priceMinor === 0, renewalEnabled: p.priceMinor > 0
       }));
     },
     async enrollment(value, auth, required = true) {
@@ -353,8 +354,11 @@ export function createCoachingService({
         'product.id': row.planId,
         simulated: row.simulated
       }));
+      let verifiedSource = source;
+      if (row?.source === 'free') { const plan = await CoursePlan.findById(row.planId); verifiedSource = plan?.status === 'active' && plan.rulesApproved && plan.priceMinor === 0 && plan.eligibility === 'verified_account'; }
+      if (row?.source === 'manual') verifiedSource = await commerce.business.manualValid(row);
       const owner = row && (await authService.models.User.findById(row.userId).select('status emailVerifiedAt'));
-      const active = owner?.status === 'active' && !!owner.emailVerifiedAt && !!row && !row.revokedAt && row.startsAt <= new Date() && row.expiresAt > new Date() && !!source;
+      const active = owner?.status === 'active' && !!owner.emailVerifiedAt && !!row && !row.revokedAt && row.startsAt <= new Date() && row.expiresAt > new Date() && !!verifiedSource;
       if (required && !active) throw denied();
       return row ? {
         ...dto(row),
@@ -376,7 +380,7 @@ export function createCoachingService({
       return { data: await Promise.all(rows.map(async row => {
         const book = await publishing.models.Book.findById(row.bookId).select('title');
         const verified = await commerce.models.Order.exists({ _id: row.orderId, userId: row.userId, status: 'captured', 'product.kind': 'book', 'product.id': row.bookId, 'fulfillment.state': 'applied' });
-        return { id: String(row._id), userId: String(row.userId), bookId: String(row.bookId), title: book?.title || 'Archived/unavailable book', orderId: String(row.orderId), grantedAt: row.grantedAt, state: row.revokedAt ? 'revoked' : 'active', sourceVerified: Boolean(verified), simulated: row.simulated };
+        return { id: String(row._id), revision: row.revision, source: row.source, revokeReason: row.revokeReason, expiresAt: row.expiresAt, userId: String(row.userId), bookId: String(row.bookId), title: book?.title || 'Archived/unavailable book', orderId: String(row.orderId), grantedAt: row.grantedAt, state: row.revokedAt ? 'revoked' : 'active', sourceVerified: Boolean(verified), simulated: row.simulated };
       })), meta: { page, pageSize, total, totalPages: Math.max(1, Math.ceil(total / pageSize)) } };
     },
     async enrollments(query, auth, admin = false) {
@@ -739,19 +743,37 @@ export function createCoachingService({
         'scan.status': 'clean'
       }))) throw new AppError(409, 'COURSE_DELIVERY_BLOCKED', 'Safe published lesson delivery is unavailable');
     },
+    async enrollFree(value, auth, ctx) {
+      commerce.eligible(auth);
+      return coordination.run(async () => {
+        const course = await service.course(value, true); await service.deliveryReady(course);
+        const plans = await CoursePlan.find({ courseId: course._id, status: 'active', rulesApproved: true, priceMinor: 0, eligibility: 'verified_account' }).sort({ sortOrder: 1, _id: 1 });
+        const plan = plans[0]; if (!plan) throw new AppError(409, 'PAID_ENROLLMENT_REQUIRED', 'No approved zero-priced plan is available'); await service.validatePlan(plan);
+        const prior = await Enrollment.findOne({ userId: auth.user._id, courseId: course._id });
+        if (prior?.revokedAt) throw new AppError(409, 'ENTITLEMENT_REVOKED', 'Revoked access requires review');
+        if (prior && (prior.source !== 'free' || prior.expiresAt <= new Date())) throw new AppError(409, 'EXISTING_ENROLLMENT', 'Existing access requires review; paid history is preserved');
+        const row = prior ?? await Enrollment.create({ userId: auth.user._id, courseId: course._id, planId: plan._id, source: 'free', startsAt: new Date(), expiresAt: new Date(Date.now() + plan.durationDays * 86400000), simulated: false, auditOutbox: [coordination.event('free_course_enrolled', ctx)] });
+        await coordination.flush(Enrollment, row); return service.enrollment(value, auth);
+      });
+    },
+    async issueManual(request, auth) {
+      const course = await service.course(String(request.resourceId), true); await service.deliveryReady(course);
+      const prior = await Enrollment.findOne({ userId: request.userId, courseId: course._id });
+      if (prior && !same(prior.grantId, request._id)) throw new AppError(409, 'EXISTING_ENROLLMENT', 'Exceptional grants cannot overwrite existing purchase rights');
+      return prior ?? Enrollment.create({ userId: request.userId, courseId: course._id, grantId: request._id, source: 'manual', startsAt: new Date(), expiresAt: request.expiresAt, simulated: false });
+    },
     async resolvePlan(value, auth) {
       const plan = await CoursePlan.findById(id(value));
       if (!plan || plan.status !== 'active') throw new AppError(409, 'PRODUCT_NOT_PURCHASABLE', 'Approved active plan required');
       await service.validatePlan(plan);
       const course = await service.course(String(plan.courseId), true);
       await service.deliveryReady(course);
-      if (await Enrollment.exists({
-        userId: auth.user._id,
-        courseId: course._id
-      })) throw new AppError(409, 'RENEWAL_POLICY_PENDING', 'Repeat purchases and renewals need separate approval');
-      if (await commerce.models.Order.exists({ userId: auth.user._id, 'product.kind': 'course_plan', 'product.courseId': course._id })) {
-        throw new AppError(409, 'EXISTING_COURSE_ORDER', 'Resume the existing course order; switching plans or creating another charge requires an approved policy');
-      }
+      if (!(plan.priceMinor > 0)) throw new AppError(409, 'FREE_PLAN', 'Use the free enrollment action for a zero-priced plan');
+      const existing = await Enrollment.findOne({ userId: auth.user._id, courseId: course._id });
+      if (existing && (existing.revokedAt || existing.expiresAt > new Date())) throw new AppError(409, 'ACTIVE_OR_REVOKED_ACCESS', 'Existing active or revoked access cannot be repurchased');
+      const purchaseSlot = existing ? String(existing._id) + ':' + existing.expiresAt.toISOString() : 'initial';
+      // Legacy first-purchase rows without a slot remain authoritative.
+      if (await commerce.models.Order.exists({ userId: auth.user._id, 'product.kind': 'course_plan', 'product.courseId': course._id, ...(existing ? { 'product.purchaseSlot': purchaseSlot } : {}) })) throw new AppError(409, 'EXISTING_COURSE_ORDER', 'Resume the existing order for this access period');
       return {
         product: {
           kind: 'course_plan',
@@ -760,7 +782,7 @@ export function createCoachingService({
           revision: plan.revision,
           courseId: course._id,
           durationDays: plan.durationDays,
-          eligibility: plan.eligibility
+          eligibility: plan.eligibility, purchaseSlot
         },
         amountMinor: plan.priceMinor,
         currency: 'INR'
@@ -774,31 +796,17 @@ export function createCoachingService({
       const duration = integer(order.product.durationDays, 1, 36500);
       const startsAt = order.capturedAt;
       if (!startsAt) throw denied();
-      let enrollment;
-      try {
-        enrollment = await Enrollment.findOneAndUpdate({
-          userId: order.userId,
-          courseId: course._id,
-          orderId: order._id
-        }, {
-          $setOnInsert: {
-            planId: order.product.id,
-            startsAt,
-            expiresAt: new Date(startsAt.getTime() + duration * 86400000),
-            source: 'paid',
-            simulated: order.simulated,
-            auditOutbox: [coordination.event('paid_enrollment_created', {
-              actorId: 'system'
-            })]
-          }
-        }, {
-          upsert: true,
-          returnDocument: 'after',
-          runValidators: true
-        });
-      } catch (e) {
-        if (e.code === 11000) throw new AppError(409, 'ENROLLMENT_CONFLICT', 'Existing enrollment or renewal requires investigation');
-        throw e;
+      let enrollment = await Enrollment.findOne({ userId: order.userId, courseId: course._id });
+      if (enrollment?.purchaseHistory.some(p => same(p.orderId, order._id))) return enrollment;
+      if (enrollment && !same(enrollment.orderId, order._id)) {
+        if (enrollment.revokedAt || enrollment.expiresAt > startsAt || order.product.purchaseSlot !== String(enrollment._id) + ':' + enrollment.expiresAt.toISOString() || enrollment.purchaseHistory.length >= 100) throw new AppError(409, 'ENROLLMENT_CONFLICT', 'Access period changed; investigate before repurchase fulfillment');
+        const history = enrollment.orderId ? [...enrollment.purchaseHistory.map(p => p.toObject()), { orderId: enrollment.orderId, planId: enrollment.planId, startsAt: enrollment.startsAt, expiresAt: enrollment.expiresAt }] : enrollment.purchaseHistory;
+        enrollment = await Enrollment.findOneAndUpdate({ _id: enrollment._id, revision: enrollment.revision, revokedAt: null, expiresAt: enrollment.expiresAt }, { $set: { orderId: order._id, planId: order.product.id, startsAt, expiresAt: new Date(startsAt.getTime() + duration * 86400000), source: 'paid', simulated: order.simulated, purchaseHistory: history }, $inc: { revision: 1 }, $push: { auditOutbox: coordination.event('paid_course_repurchased', { actorId: 'system' }) } }, { returnDocument: 'after', runValidators: true });
+        if (!enrollment) throw new AppError(409, 'ENROLLMENT_CONFLICT', 'Concurrent access-period change');
+      } else if (!enrollment) {
+        try {
+          enrollment = await Enrollment.findOneAndUpdate({ userId: order.userId, courseId: course._id, orderId: order._id }, { $setOnInsert: { planId: order.product.id, startsAt, expiresAt: new Date(startsAt.getTime() + duration * 86400000), source: 'paid', simulated: order.simulated, auditOutbox: [coordination.event('paid_enrollment_created', { actorId: 'system' })] } }, { upsert: true, returnDocument: 'after', runValidators: true });
+        } catch (e) { if (e.code !== 11000) throw e; enrollment = await Enrollment.findOne({ userId: order.userId, courseId: course._id, orderId: order._id }); if (!enrollment) throw new AppError(409, 'ENROLLMENT_CONFLICT', 'Concurrent enrollment source conflict'); }
       }
       if (enrollment.revokedAt) throw denied();
       await coordination.flush(Enrollment, enrollment);
@@ -806,7 +814,7 @@ export function createCoachingService({
     },
     async hasEffect(order) {
       return !!(await Enrollment.exists({
-        orderId: order._id,
+        $or: [{ orderId: order._id }, { 'purchaseHistory.orderId': order._id }],
         userId: order.userId,
         courseId: order.product.courseId,
         revokedAt: null
@@ -878,7 +886,8 @@ export function createCoachingService({
       return coordination.run(async () => {
         const row = await Model.findById(id(value));
         if (!row) throw missing();
-        if (input.kind === 'book') throw new AppError(409, 'BOOK_REVOCATION_POLICY_PENDING', 'Book revocation workflow requires separate policy');
+        if ((input.kind === 'book' || row.source === 'paid') && !(await commerce.business.settings()).value?.manualAccess?.paidRevocationApproved) throw new AppError(409, 'ACCESS_REVOCATION_POLICY_PENDING', 'Approved paid access revocation policy required');
+        if (input.kind === 'book') return dto(await coordination.update(Model, row, { revokedAt: new Date(), revokeReason: reason }, revision(input.expectedRevision), 'book_access_revoked', ctx));
         return dto(await coordination.update(Model, row, {
           revokedAt: new Date(),
           revokeReason: reason

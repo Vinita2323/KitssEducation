@@ -12,7 +12,7 @@ const expression = text => new RegExp(escapeRegex(text), 'i');
 const canonical = value => value && typeof value === 'object' && !Array.isArray(value) ? Object.fromEntries(Object.keys(value).sort().map(k => [k, canonical(value[k])])) : Array.isArray(value) ? value.map(canonical) : value;
 const hash = value => digest(JSON.stringify(canonical(value)));
 const stringId = value => String(value);
-export const policies = Object.freeze({ admission: 'verified_account', franchiseSubmission: 'documents_optional', franchiseApproval: 'blocked_pending_policy', attachments: 'unavailable' });
+export const policies = Object.freeze({ admission: 'verified_account', franchiseSubmission: 'documents_optional', franchiseApproval: 'manual_review_only_affiliation_blocked', attachments: 'unavailable' });
 export function dto(doc) {
   const value = typeof doc?.toObject === 'function' ? doc.toObject() : doc;
   if (!value) return value;
@@ -333,13 +333,13 @@ export function createInstitutionService({ models, authService, config, logger }
           return dto(await update(Model, doc, { notes }, doc.revision, `${kind}_note_added`, ctx));
         }
         const expectedRevision = revision(input.expectedRevision);
-        if (kind === 'franchise' && input.status === 'approved') throw new AppError(409, 'APPROVAL_POLICY_PENDING', 'Franchise approval criteria are not approved; no affiliation can be granted');
-        const allowed = kind === 'admission' ? { new: ['contacted', 'in_process', 'rejected'], contacted: ['in_process', 'rejected'], in_process: ['approved', 'rejected'], approved: [], rejected: [] } : { pending: ['rejected'], approved: [], rejected: [] };
+        if (kind === 'franchise' && input.status === 'approved' && !(input.reason ?? input.note)?.trim()) throw invalid('Manual review approval requires a recorded reason; official affiliation remains blocked');
+        const allowed = kind === 'admission' ? { new: ['contacted', 'in_process', 'rejected'], contacted: ['in_process', 'rejected'], in_process: ['approved', 'rejected'], approved: [], rejected: [] } : { pending: ['approved', 'rejected'], approved: [], rejected: [] };
         if (!(allowed[doc.status] ?? []).includes(input.status)) throw new AppError(409, 'INVALID_TRANSITION', 'This status transition is not allowed');
         const reason = input.rejectionReason ?? input.reason;
         if (kind === 'franchise' && input.status === 'rejected' && !reason) throw invalid('A rejection reason is required');
         const changes = { status: input.status, reviewedAt: new Date(), reviewedBy: ctx.actorId, statusHistory: [...doc.statusHistory.map(h => h.toObject()), { from: doc.status, to: input.status, actorId: ctx.actorId, at: new Date(), ...(reason ? { reason: noteText(reason) } : {}) }] };
-        if (kind === 'franchise' && reason) changes.rejectionReason = noteText(reason);
+        if (kind === 'franchise' && input.status === 'rejected' && reason) changes.rejectionReason = noteText(reason);
         if (input.note) changes.notes = [...doc.notes.map(n => n.toObject()), { id: randomUUID(), text: noteText(input.note), actorId: ctx.actorId, createdAt: new Date() }];
         return dto(await update(Model, doc, changes, expectedRevision, `${kind}_reviewed`, ctx));
       });

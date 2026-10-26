@@ -16,7 +16,7 @@ import { LocalStorageProvider } from '../src/storage/LocalStorageProvider.js';
 import { opaque, digest, hashPassword } from '../src/modules/auth/security.js';
 import { createApp } from '../src/app.js';
 
-export async function publishingFixture(dbName, { actual = false, scanner } = {}) {
+export async function publishingFixture(dbName, { actual = false, scanner, mail } = {}) {
   if (!actual && !/^kitss_stage(?:[5-9]|10)_(?:test|browser)_[a-f0-9]{16}$/.test(dbName)) throw new Error('Fresh publishing-family test DB name required');
   const config = loadConfig(), logger = createLogger({ level: 'silent' });
   if (actual && (config.nodeEnv !== 'development' || !/dev|development|local|test/i.test(config.mongo.dbName ?? new URL(config.mongo.uri).pathname))) throw new Error('Actual database is not clearly development');
@@ -29,7 +29,7 @@ export async function publishingFixture(dbName, { actual = false, scanner } = {}
   root = actual ? config.storage.root : await mkdtemp(path.join(os.tmpdir(), 'kitss-stage5-'));
   const storage = new LocalStorageProvider({ ...config.storage, root }); await storage.initialize();
   const authModels = createAuthModels(connection), institutionModels = createInstitutionModels(connection);
-  const auth = await createAuthService({ models: authModels, config, logger, mail: { configured: false, send: async () => { throw new Error('No real mail'); } } }); await auth.initialize();
+  const auth = await createAuthService({ models: authModels, config, logger, mail: mail ?? { configured: false, send: async () => { throw new Error('No real mail'); } } }); await auth.initialize();
   console.info('Stage 5 fixture: authentication indexes ready');
   const institutions = createInstitutionService({ models: institutionModels, authService: auth, config, logger }); await institutions.initialize();
   console.info('Stage 5 fixture: institution indexes ready');

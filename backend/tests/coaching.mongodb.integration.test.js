@@ -230,9 +230,9 @@ test('Stage 7 standalone coaching, commerce and reading integration', {
     const stream = await f.media.open(String(asset.documentAssetId), d.student.auth, 'bytes=0-3');
     for await (const chunk of stream.stream) assert.equal(chunk.toString(), '%PDF');
   });
-  await t.test('owned order status recognizes enrollment; renewals remain gated', async () => {
+  await t.test('owned order status recognizes enrollment; active access cannot be repurchased', async () => {
     assert.equal((await f.service.owned(String(order._id), d.student.auth)).fulfillment.state, 'applied');
-    await assert.rejects(() => L.resolvePlan(d.plan.id, d.student.auth), e => e.code === 'RENEWAL_POLICY_PENDING');
+    await assert.rejects(() => L.resolvePlan(d.plan.id, d.student.auth), e => e.code === 'ACTIVE_OR_REVOKED_ACCESS');
   });
   await t.test('progress explicit completion, bounded values, revision and account isolation', async () => {
     const p = await L.progressLesson(d.lesson.id, {
@@ -331,6 +331,7 @@ test('Stage 7 standalone coaching, commerce and reading integration', {
       }
     });
     e = await f.models.Enrollment.findById(e._id);
+    await f.service.business.save({ value: { manualAccess: { approved: false, paidRevocationApproved: true, description: 'Isolated support revocation policy' } }, expectedRevision: 0, reason: 'Explicit synthetic revocation acceptance' }, d.admin.auth, ctx);
     await L.revoke(String(e._id), {
       kind: 'course',
       reason: 'Isolated support test',

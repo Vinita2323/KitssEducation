@@ -1,3 +1,4 @@
+import { VerifiedCoursePurchase } from '../../components/coaching/VerifiedCoursePurchase';
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import {
@@ -70,7 +71,7 @@ export const CourseSubscribePage = () => {
 
   return (
     <div className="max-w-xl mx-auto space-y-5">
-      <p role="status" className="p-3 bg-amber-50 border rounded-xl text-xs">Coaching checkout and renewal unavailable: Razorpay Test Mode is disabled; renewal rules remain pending. No enrollment is granted.</p>
+      <VerifiedCoursePurchase course={course} onRefresh={async () => setCourse(await coachingService.getCourseById(id))} />
       {/* Top Back Link */}
       <div className="flex items-center justify-between">
         <button

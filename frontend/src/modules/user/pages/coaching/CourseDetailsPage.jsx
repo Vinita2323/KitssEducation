@@ -1,3 +1,4 @@
+import { VerifiedCoursePurchase } from '../../components/coaching/VerifiedCoursePurchase';
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import {
@@ -108,7 +109,7 @@ export const CourseDetailsPage = () => {
   return (
     <div className="max-w-5xl mx-auto space-y-3 sm:space-y-4">
       <section className="bg-white border border-[#E6E8EC] rounded-xl p-4 space-y-2"><h2 className="font-bold text-[#0A1D3F]">Course syllabus</h2>{course.syllabus?.lessons.map(lesson=><div key={lesson.id} className="p-2 border-b text-sm">{lesson.locked?<span>{lesson.title} ? Enrollment required</span>:<Link to={`/coaching/${course.id}/lecture/${lesson.id}`}>{lesson.title}{lesson.previewAllowed?' ? Public preview':''}</Link>}</div>)}</section>
-      <p role="status" className="p-3 bg-amber-50 border rounded-xl text-xs">Coaching purchases and renewals remain unavailable while Razorpay Test Mode is disabled. Renewals need separate approval.</p>
+      <VerifiedCoursePurchase course={course} onRefresh={async () => setCourse(await coachingService.getCourseById(id))} />
       {/* Top Breadcrumb & Share */}
       <div className="flex items-center justify-between">
         <Link

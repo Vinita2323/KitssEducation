@@ -1,7 +1,7 @@
 import express from 'express';
 import busboy from 'busboy';
 import { pipeline } from 'node:stream/promises';
-import { requirePermission } from '../auth/auth.routes.js';
+import { requirePermission, requireSession } from '../auth/auth.routes.js';
 import { AppError } from '../../utils/AppError.js';
 import { purposes } from '../media/media.service.js';
 
@@ -10,12 +10,12 @@ export function createPublishingRouter({ publishing, media }) {
   const ctx = req => ({ actorId: req.auth?.user.publicId, requestId: req.requestId, ip: req.ip });
   const reply = (req, res, data, status = 200) => res.status(status).json({ data, requestId: req.requestId });
   const list = (req, res, data) => res.json({ ...data, requestId: req.requestId });
-  for (const [kind, path, read, write, publish] of [['books', '/admin/books', 'learning.read', 'learning.write', 'learning.publish'], ['pages', '/admin/content/pages', 'content.read', 'content.write', 'content.publish'], ['banners', '/admin/content/banners', 'content.read', 'content.write', 'content.publish'], ['faculty', '/admin/content/faculty', 'content.read', 'content.write', 'content.publish']]) {
+  for (const [kind, path, read, write, publish] of [['books', '/admin/books', 'books.read', 'books.edit', 'books.publish'], ['pages', '/admin/content/pages', 'content.read', 'content.write', 'content.publish'], ['banners', '/admin/content/banners', 'content.read', 'content.write', 'content.publish'], ['faculty', '/admin/content/faculty', 'content.read', 'content.write', 'content.publish']]) {
     router.get(path, requirePermission(read), async (req, res) => list(req, res, await publishing.list(kind, req.query, true)));
     router.get(path + '/:id', requirePermission(read), async (req, res) => reply(req, res, await publishing.detail(kind, req.params.id, true)));
-    router.post(path, requirePermission(write), async (req, res) => reply(req, res, await publishing.create(kind, req.body, req.auth, ctx(req)), 201));
+    router.post(path, requirePermission(kind === 'books' ? 'books.create' : write), async (req, res) => reply(req, res, await publishing.create(kind, req.body, req.auth, ctx(req)), 201));
     router.patch(path + '/:id', requirePermission(write), async (req, res) => reply(req, res, await publishing.edit(kind, req.params.id, req.body, req.auth, ctx(req))));
-    router.delete(path + '/:id', requirePermission(write), async (req, res) => reply(req, res, await publishing.archive(kind, req.params.id, req.body, ctx(req))));
+    router.delete(path + '/:id', requirePermission(kind === 'books' ? 'books.archive' : write), async (req, res) => reply(req, res, await publishing.archive(kind, req.params.id, req.body, ctx(req))));
     router.post(path + '/:id/publish', requirePermission(publish), async (req, res) => reply(req, res, await publishing.publish(kind, req.params.id, req.body, req.auth, ctx(req))));
   }
   router.get('/books/facets', async (req, res) => reply(req, res, await publishing.facets(req.query)));
@@ -27,9 +27,9 @@ export function createPublishingRouter({ publishing, media }) {
   router.get('/public/settings', async (req, res) => reply(req, res, await publishing.settings()));
   router.get('/admin/settings', requirePermission('settings.read'), async (req, res) => reply(req, res, await publishing.settings(true)));
   router.patch('/admin/settings/:key', requirePermission('settings.write'), async (req, res) => reply(req, res, await publishing.setSetting(req.params.key, req.body, ctx(req))));
-  router.get('/admin/media', requirePermission('media.read'), async (req, res) => list(req, res, await media.list(req.query)));
-  router.post('/admin/media/:id/scan', requirePermission('media.write'), async (req, res) => reply(req, res, await media.rescan(req.params.id, req.body, ctx(req))));
-  router.post('/media', requirePermission('media.write'), async (req, res) => {
+  router.get('/admin/media', requirePermission('media.read'), async (req, res) => list(req, res, await media.list(req.query, req.auth)));
+  router.post('/admin/media/:id/scan', requirePermission('media.write'), async (req, res) => { await media.assertDocumentManagement(req.params.id, req.auth); reply(req, res, await media.rescan(req.params.id, req.body, ctx(req))); });
+  router.post('/media', requireSession, async (req, res) => {
     if (!req.is('multipart/form-data')) throw new AppError(415, 'MULTIPART_REQUIRED', 'Use multipart file upload');
     let parser; try { parser = busboy({ headers: req.headers, preservePath: true, limits: { files: 1, fields: 2, parts: 4, fieldSize: 160, fileSize: Math.max(50 * 1024 * 1024, media.maxUploadBytes) } }); } catch { throw new AppError(400, 'MALFORMED_UPLOAD', 'Invalid multipart request'); }
     let upload, bad, fileSeen = false;
@@ -44,6 +44,7 @@ export function createPublishingRouter({ publishing, media }) {
         const abort = () => file.destroy(new Error('Upload aborted'));
         req.once('aborted', abort);
         file.on('limit', () => { bad ??= new AppError(413, 'FILE_TOO_LARGE', 'File exceeds upload limit'); file.destroy(bad); });
+        if (fields.purpose !== 'registration_document' && !req.auth.user.roles.includes('super_admin') && !req.auth.user.permissions.includes('media.write')) { bad ??= new AppError(403, 'FORBIDDEN', 'Media upload permission required'); file.resume(); return; }
         upload = media.upload({ ...fields, originalName: info.filename, mime: info.mimeType, stream: file, auth: req.auth, ctx: ctx(req) }).then(data => { file.resume(); return { data }; }, error => { file.resume(); return { error }; }).finally(() => req.removeListener('aborted', abort));
       });
       parser.on('filesLimit', () => fail('Only one file is allowed')); parser.on('fieldsLimit', () => fail('Too many fields')); parser.on('partsLimit', () => fail('Too many parts'));
@@ -58,7 +59,7 @@ export function createPublishingRouter({ publishing, media }) {
     reply(req, res, result.data, 201);
   });
   router.get('/media/:id/metadata', async (req, res) => reply(req, res, await media.metadata(req.params.id, req.auth)));
-  router.delete('/media/:id', requirePermission('media.write'), async (req, res) => { await media.remove(req.params.id, req.body, ctx(req)); res.status(204).end(); });
+  router.delete('/media/:id', requirePermission('media.write'), async (req, res) => { await media.assertDocumentManagement(req.params.id, req.auth); await media.remove(req.params.id, req.body, ctx(req)); res.status(204).end(); });
   router.get('/media/:id/content', async (req, res) => {
     const result = await media.open(req.params.id, req.auth, req.get('Range'));
     res.status(result.range ? 206 : 200);

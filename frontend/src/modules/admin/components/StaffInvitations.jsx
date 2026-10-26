@@ -1,3 +1,4 @@
+import { PermissionSelector } from './PermissionSelector';
 import React, { useState } from 'react';
 import { useAuth } from '../../user/context/AuthContext';
 import { authService } from '../../user/services/authService';
@@ -24,7 +25,7 @@ export function StaffInvitations() {
     <form onSubmit={submit} className="space-y-3">
       <label className="block">Staff name<input className="block w-full border p-2 rounded-lg" value={name} onChange={e => setName(e.target.value)} maxLength={100} required /></label>
       <label className="block">Staff email<input type="email" className="block w-full border p-2 rounded-lg" value={email} onChange={e => setEmail(e.target.value)} required /></label>
-      <fieldset className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs"><legend>Assigned permissions (none by default)</legend>{user.permissions.filter(p => p !== 'accounts.roles.manage').map(p => <label key={p} className="flex gap-2"><input type="checkbox" checked={permissions.includes(p)} onChange={e => setPermissions(current => e.target.checked ? [...current, p] : current.filter(value => value !== p))} />{p}</label>)}</fieldset>
+      <PermissionSelector available={user.permissions} value={permissions} onChange={setPermissions} disabled={busy} />
       <button disabled={busy} className="px-4 py-2 rounded-lg bg-[#0A1D3F] text-white">Invite / resend</button>
     </form>
     {reference && <div className="mt-3"><label className="block">Pending invitation reference<input className="border p-2 rounded-lg w-full" value={reference} onChange={e => setReference(e.target.value)} /></label><button disabled={busy} onClick={revoke} className="text-red-700 p-2">Revoke invitation</button></div>}

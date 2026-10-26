@@ -25,7 +25,7 @@ export function createInstitutionModels(connection) {
     institution: { name: str(160), type: str(160), yearEstablished: { type: Number, min: 1, max: new Date().getFullYear(), validate: Number.isInteger }, website: str(2048) }, programsOffered: { type: [String], default: [] },
     contact: { person: str(160), designation: str(160), email: str(254), mobile: str(32), alternateMobile: str(32) }, location: { address: str(500), city: str(160), stateId: ref(), pincode: str(12), mapsUrl: str(2048) },
     pendingDocuments: [{ _id: false, purpose: str(80), name: str(160), size: { type: Number, min: 0, max: 5242880 }, contentType: str(100) }],
-    declaration: { version: str(80), acceptedAt: Date }, status: { type: String, enum: ['draft', 'pending', 'approved', 'rejected'], default: 'draft' }, rejectionReason: str(2000), submittedAt: Date, reviewedAt: Date, reviewedBy: String }, options);
+    affiliationState: { type: String, enum: ['blocked_pending_policy'], default: 'blocked_pending_policy' }, declaration: { version: str(80), acceptedAt: Date }, status: { type: String, enum: ['draft', 'pending', 'approved', 'rejected'], default: 'draft' }, rejectionReason: str(2000), submittedAt: Date, reviewedAt: Date, reviewedBy: String }, options);
   franchise.index({ ownerKey: 1, idempotencyKey: 1 }, { unique: true }); franchise.index({ status: 1, createdAt: -1 });
   // Necessary standalone coordination, not a business entity or expiring lease.
   // No TTL: a crashed writer leaves a fail-closed lock for operator recovery.

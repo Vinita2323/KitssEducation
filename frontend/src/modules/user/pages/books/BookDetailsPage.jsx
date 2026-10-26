@@ -1,3 +1,4 @@
+import { authenticatedWrite } from '../../services/authService';
 import { commerceService } from '../../services/commerceService';
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
@@ -276,7 +277,7 @@ export const BookDetailsPage = () => {
                 3. Paid book (unpurchased): [ Pay Now for ₹Price ] -> /books/:id/checkout
             */}
             <div className="pt-4 border-t border-[#E6E8EC] space-y-2">
-              <PrimaryButton variant="orange" size="lg" fullWidth disabled={isFree || !paymentAvailable} onClick={()=>navigate(`/books/${book.id}/checkout`)}>{isFree ? 'Full reading policy pending' : paymentAvailable ? 'Review Test Mode Checkout' : 'Test payments unavailable'}</PrimaryButton>
+              <PrimaryButton variant="orange" size="lg" fullWidth disabled={loading || (!isFree && !owned && !paymentAvailable)} onClick={async()=>{if(owned){navigate(`/books/${book.id}/read`);return;} if(!isFree){navigate(`/books/${book.id}/checkout`);return;}setLoading(true);try{await authenticatedWrite('/books/'+book.id+'/access',{});navigate(`/books/${book.id}/read`);}catch(e){setError(e.message);}finally{setLoading(false);}}}>{owned ? 'Read Book' : isFree ? 'Read Free PDF' : paymentAvailable ? 'Review Test Mode Checkout' : 'Test payments unavailable'}</PrimaryButton>
               <p className="text-xs text-[#667085]">Public samples are available below when approved. No payment or full-book access is granted here.</p>
             </div>
           </div>

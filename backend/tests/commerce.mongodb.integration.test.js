@@ -181,7 +181,7 @@ test('Stage 6 standalone commerce, real HTTP and crash recovery with isolated fa
     assert.equal((await api('/registration-applications', { method: 'POST', data: input })).body.data.id, application.id);
     assert.equal((await api('/registration-applications/' + application.id + '/status', { actor: foreign })).status, 404);
     assert.equal((await api('/registration-applications/' + application.id, { method: 'PATCH', data: { expectedRevision: application.revision, applicant: { fullName: 'Updated fixture', email: student.user.emailNormalized } } })).status, 200);
-    assert.equal((await api('/registration-applications/' + application.id + '/submit', { method: 'POST', data: { expectedRevision: 2 } })).status, 409);
+    assert.equal((await api('/registration-applications/' + application.id + '/submit', { method: 'POST', data: { expectedRevision: 2, declaration: true } })).status, 409);
     assert.equal((await api('/orders', { method: 'POST', data: { product: { kind: 'registration_fee', id: application.id }, idempotencyKey: randomUUID() } })).status, 409);
     assert.equal((await api('/registration-applications', { method: 'POST', data: { ...input, applicant: { aadharNumber: 'never-collected' } } })).status, 422);
     assert.deepEqual((await f.models.User.findById(student.user._id)).roles, ['student']);

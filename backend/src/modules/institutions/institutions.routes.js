@@ -41,7 +41,7 @@ export function createInstitutionRouter(service) {
   ]) {
     router.get(path, requirePermission(read), async (req, res) => list(req, res, await service.reviews(kind, req.query)));
     router.get(`${path}/:id`, requirePermission(read), async (req, res) => send(req, res, await service.reviewDetail(kind, req.params.id)));
-    router.patch(`${path}/:id/status`, requirePermission(review), async (req, res) => send(req, res, await service.review(kind, req.params.id, req.body, ctx(req))));
+    router.patch(`${path}/:id/status`, (req, res, next) => requirePermission(kind === 'franchise' && req.body?.status === 'approved' ? 'franchises.approve' : review)(req, res, next), async (req, res) => send(req, res, await service.review(kind, req.params.id, req.body, ctx(req))));
     router.post(`${path}/:id/notes`, requirePermission(review), async (req, res) => send(req, res, await service.review(kind, req.params.id, req.body, ctx(req), true)));
   }
   return router;

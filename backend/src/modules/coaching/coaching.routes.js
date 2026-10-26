@@ -31,11 +31,9 @@ export function createCoachingRouter(service) {
   router.get('/coaching/courses/:id/plans', async (req, res) => send(req, res, await service.plans(req.params.id)));
   router.get('/coaching/courses/:id/syllabus', async (req, res) => send(req, res, await service.syllabus(req.params.id, req.auth)));
   router.get('/coaching/courses/:id/lessons/:lessonId', async (req, res) => send(req, res, await service.lesson(req.params.id, req.params.lessonId, req.auth)));
-  router.post('/coaching/courses/:id/enroll', requireSession, async req => {
-    object(req.body, ['idempotencyKey'], ['idempotencyKey']);
-    key(req.body.idempotencyKey);
-    await service.course(req.params.id, true);
-    throw new AppError(409, 'PAID_ENROLLMENT_REQUIRED', 'No free enrollment policy is approved; use verified captured commerce. Razorpay remains disabled.');
+  router.post('/coaching/courses/:id/enroll', requireSession, async (req, res) => {
+    object(req.body, ['idempotencyKey'], ['idempotencyKey']); key(req.body.idempotencyKey);
+    send(req, res, await service.enrollFree(req.params.id, req.auth, ctx(req)));
   });
   router.get('/me/enrollments', requireSession, async (req, res) => page(req, res, await service.enrollments(req.query, req.auth)));
   router.get('/me/enrollments/:courseId', requireSession, async (req, res) => {
@@ -67,15 +65,15 @@ export function createCoachingRouter(service) {
   router.delete('/me/books/:id/bookmarks/:page', requireSession, async (req, res) => send(req, res, await service.bookProgress(req.params.id, req.body, req.auth, 'remove', req.params.page)));
   for (const kind of ['courses', 'lessons', 'plans']) {
     const base = kind === 'courses' ? '/admin/coaching/courses' : '/admin/coaching/courses/:courseId/' + kind;
-    const read = kind === 'plans' ? 'commerce.read' : 'learning.read',
-      write = kind === 'plans' ? 'commerce.plans.write' : 'learning.write';
+    const read = kind === 'plans' ? 'commerce.read' : 'coaching.read',
+      write = kind === 'plans' ? 'commerce.plans.write' : 'coaching.edit';
     router.get(base, requirePermission(read), async (req, res) => page(req, res, await service.adminList(kind, req.params.courseId, req.query)));
     router.get(base + '/:id', requirePermission(read), async (req, res) => send(req, res, await service.adminGet(kind, req.params.id, req.params.courseId)));
-    router.post(base, requirePermission(write), async (req, res) => send(req, res, await service.mutate(kind, null, req.params.courseId, req.body, req.auth, ctx(req)), 201));
+    router.post(base, requirePermission(kind === 'plans' ? write : 'coaching.create'), async (req, res) => send(req, res, await service.mutate(kind, null, req.params.courseId, req.body, req.auth, ctx(req)), 201));
     router.patch(base + '/:id', requirePermission(write), async (req, res) => send(req, res, await service.mutate(kind, req.params.id, req.params.courseId, req.body, req.auth, ctx(req))));
-    router.delete(base + '/:id', requirePermission(write), async (req, res) => send(req, res, await service.mutate(kind, req.params.id, req.params.courseId, req.body, req.auth, ctx(req), true)));
+    router.delete(base + '/:id', requirePermission(kind === 'plans' ? write : 'coaching.archive'), async (req, res) => send(req, res, await service.mutate(kind, req.params.id, req.params.courseId, req.body, req.auth, ctx(req), true)));
   }
-  router.post('/admin/coaching/courses/:id/publish', requirePermission('learning.publish'), async (req, res) => send(req, res, await service.publish(req.params.id, req.body, req.auth, ctx(req))));
+  router.post('/admin/coaching/courses/:id/publish', requirePermission('coaching.publish'), async (req, res) => send(req, res, await service.publish(req.params.id, req.body, req.auth, ctx(req))));
   router.get('/admin/enrollments', requirePermission('learning.read'), async (req, res) => {
     if (req.query.kind === 'book') { const { kind, ...query } = req.query; return page(req, res, await service.bookEntitlements(query)); }
     return page(req, res, await service.enrollments(req.query, req.auth, true));
@@ -83,6 +81,6 @@ export function createCoachingRouter(service) {
   router.post('/admin/entitlements', requirePermission('learning.grants.manage'), async () => {
     throw new AppError(409, 'MANUAL_GRANT_POLICY_PENDING', 'Manual grants are not approved and cannot change payment truth');
   });
-  router.post('/admin/entitlements/:id/revoke', requirePermission('learning.grants.manage'), async (req, res) => send(req, res, await service.revoke(req.params.id, req.body, ctx(req))));
+  router.post('/admin/entitlements/:id/revoke', requirePermission('access.revoke'), async (req, res) => send(req, res, await service.revoke(req.params.id, req.body, ctx(req))));
   return router;
 }

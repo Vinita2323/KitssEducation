@@ -22,18 +22,26 @@ export const orderDTO = order => ({
   providerOrderId: order.providerOrderId, capturedPaymentId: order.capturedPaymentId, attempts: order.attempts,
   creationStatus: order.creation.state, attemptId: order.creation.key, reconciliation: { state: order.reconcile.state, attempts: order.reconcile.attempts, lastError: order.reconcile.lastError },
   investigation: order.investigation, createdAt: order.createdAt, updatedAt: order.updatedAt, expiresAt: order.expiresAt,
-  receiptAvailable: order.status === 'captured', invoiceAvailable: false,
+  receiptAvailable: order.status === 'captured', invoiceAvailable: false, refundRequest: order.refundRequest ?? null,
 });
 
 export class PaymentService {
   constructor({ models, publishingModule, authService, provider, logger, hooks = {} }) {
     Object.assign(this, { models, publishingModule, authService, provider, logger, hooks });
   }
-  async initialize() { for (const Model of Object.values(this.models)) await Model.createIndexes(); }
+  async initialize() {
+    for (const Model of Object.values(this.models)) await Model.createIndexes();
+    // Install replacement constraints before removing only known obsolete indexes.
+    // No records are changed; repurchases/free grants need these precise refinements.
+    for (const [Model, names] of [[this.models.Order, ['userId_1_product.kind_1_product.id_1', 'userId_1_product.courseId_1']], [this.models.BookEntitlement, ['orderId_1']]]) {
+      const indexes = await Model.collection.indexes();
+      for (const name of names) if (indexes.some(i => i.name === name && i.unique)) await Model.collection.dropIndex(name);
+    }
+  }
   async owned(value, auth) {
     const order = await this.models.Order.findOne({ _id: id(value), userId: auth.user._id });
     if (!order) throw missing();
-    if (order.fulfillment.state === 'applied' && !(order.product.kind === 'course_plan' ? await this.learning?.hasEffect(order) : await this.models.BookEntitlement.exists({ orderId: order._id, userId: order.userId, bookId: order.product.id, revokedAt: null }))) order.fulfillment.state = 'pending';
+    if (order.fulfillment.state === 'applied' && !(order.product.kind === 'registration_fee' ? await this.models.RegistrationApplication.exists({ _id: order.product.id, orderId: order._id, paymentState: 'verified' }) : order.product.kind === 'course_plan' ? await this.learning?.hasEffect(order) : await this.models.BookEntitlement.exists({ orderId: order._id, userId: order.userId, bookId: order.product.id, revokedAt: null }))) order.fulfillment.state = 'pending';
     return order;
   }
   eligible(auth) { if (!auth?.user?.emailVerifiedAt || auth.user.status !== 'active') throw new AppError(403, 'INELIGIBLE_ACCOUNT', 'A verified active account is required'); }
@@ -56,6 +64,7 @@ export class PaymentService {
   }
   async resolve(product, auth) {
     object(product, ['kind', 'id'], ['kind', 'id']);
+    if (product.kind === 'registration_fee') return this.business.registrationQuote(product.id, auth);
     if (product.kind === 'course_plan' && this.learning) return this.learning.resolvePlan(product.id, auth);
     if (product.kind !== 'book') throw new AppError(409, 'PRODUCT_NOT_ENABLED', 'Registration and coaching charges require approved eligibility, documents, plans and renewal rules');
     const book = await this.publishingModule.models.Book.findById(id(product.id)).lean(), data = book?.publishedSnapshot;
@@ -66,7 +75,7 @@ export class PaymentService {
   }
   async create(input, auth, ctx) {
     this.eligible(auth); object(input, ['product', 'applicationId', 'idempotencyKey'], ['product', 'idempotencyKey']); key(input.idempotencyKey);
-    if (input.applicationId) throw registrationBlocked();
+    if (input.applicationId && (input.product?.kind !== 'registration_fee' || String(input.applicationId) !== String(input.product.id))) throw invalid('Application must match the registration fee product');
     object(input.product, ['kind', 'id'], ['kind', 'id']);
     const canonical = { kind: text(input.product.kind, 40), id: String(id(input.product.id)) }, requestHash = hash(canonical);
     await this.authService.limit(ctx, String(auth.user._id), 'order-create', 30);
@@ -155,6 +164,11 @@ export class PaymentService {
   async fulfill(orderId) {
     const order = await this.models.Order.findById(orderId);
     if (!order || order.status !== 'captured') return;
+    if (order.product.kind === 'registration_fee') {
+      const effect = await this.business.fulfillRegistration(order);
+      await this.change(orderId, 'registration_fee_applied', current => current.fulfillment.state === 'applied' ? null : { 'fulfillment.state': 'applied', 'fulfillment.effectId': effect._id, 'fulfillment.appliedAt': now() });
+      return;
+    }
     if (order.product.kind === 'course_plan' && this.learning) {
       await this.hooks.beforeEntitlement?.(order);
       const effect = await this.learning.fulfill(order);
@@ -186,11 +200,14 @@ export class PaymentService {
     await this.change(orderId, 'fulfillment_applied', current => current.fulfillment.state === 'applied' && String(current.fulfillment.effectId) === String(effect._id) ? null : { 'fulfillment.state': 'applied', 'fulfillment.effectId': effect._id, 'fulfillment.appliedAt': now() });
   }
   async canReadAsset(asset, auth) {
-    if (!auth || asset.purpose !== 'book_full' || asset.status !== 'ready' || asset.scan.status !== 'clean') return false;
-    const books = await this.publishingModule.models.Book.find({ status: 'published', 'publishedSnapshot.documentAssetId': String(asset._id), 'publishedSnapshot.rightsConfirmed': true }).select('_id').lean();
+    if (!auth || auth.user.status !== 'active' || !auth.user.emailVerifiedAt || asset.purpose !== 'book_full' || asset.status !== 'ready' || asset.scan.status !== 'clean') return false;
+    const books = await this.publishingModule.models.Book.find({ status: 'published', 'publishedSnapshot.documentAssetId': String(asset._id), 'publishedSnapshot.rightsConfirmed': true }).select('_id publishedSnapshot').lean();
     for (const book of books) {
+      if (!book.publishedSnapshot?.rightsNote) continue;
       const entitlement = await this.models.BookEntitlement.findOne({ userId: auth.user._id, bookId: book._id, revokedAt: null });
       if (!entitlement) continue;
+      if (entitlement.source === 'free' && book.publishedSnapshot?.pricingApproved && book.publishedSnapshot?.priceMinor === 0 && book.publishedSnapshot?.rightsNote) return true;
+      if (entitlement.source === 'manual' && await this.business.manualValid(entitlement)) return true;
       if (await this.models.Order.exists({ _id: entitlement.orderId, userId: auth.user._id, 'product.id': book._id, status: 'captured', simulated: entitlement.simulated, capturedPaymentId: { $type: 'string' } })) return true;
     } return false;
   }
@@ -204,13 +221,13 @@ export class PaymentService {
   }
   async receipt(value, auth) {
     const doc = await this.owned(value, auth); if (doc.status !== 'captured') throw new AppError(409, 'RECEIPT_PENDING', 'Receipt requires verified capture');
-    return { type: 'payment_receipt', label: doc.simulated ? 'SIMULATED TEST RECEIPT - NOT A TAX INVOICE' : 'RAZORPAY TEST MODE RECEIPT - NOT A TAX INVOICE', order: orderDTO(doc), capturedAt: doc.capturedAt, officialTaxInvoice: false };
+    return { type: 'payment_receipt', label: doc.simulated ? 'SIMULATED TEST RECEIPT - NOT A TAX INVOICE' : 'RAZORPAY TEST MODE RECEIPT - NOT A TAX INVOICE', order: orderDTO(doc), capturedAt: doc.capturedAt, officialTaxInvoice: false, invoiceDraft: await this.business.invoiceDraft(doc, auth) };
   }
   async list(query, auth, admin = false) {
     object(query, ['page', 'pageSize', 'status', 'type', 'sort', 'fulfillment', 'reconciliation']); const { page, pageSize } = pageInput(query);
     const filter = admin ? {} : { userId: auth.user._id };
     if (query.status) { if (!['pending', 'authorized', 'captured', 'failed'].includes(query.status)) throw invalid('Invalid payment state'); if (query.status === 'failed') { filter.status = { $ne: 'captured' }; filter.$expr = { $eq: [{ $arrayElemAt: ['$attempts.status', -1] }, 'failed'] }; } else filter.status = query.status; }
-    if (query.type) { if (!['book','course_plan'].includes(query.type)) throw invalid('Unsupported product'); filter['product.kind'] = query.type; }
+    if (query.type) { if (!['book','course_plan','registration_fee'].includes(query.type)) throw invalid('Unsupported product'); filter['product.kind'] = query.type; }
     if (query.fulfillment) { if (!['pending', 'applied', 'blocked'].includes(query.fulfillment)) throw invalid('Invalid fulfillment state'); filter['fulfillment.state'] = query.fulfillment; }
     if (query.reconciliation) { if (!['pending', 'leased', 'dead', 'done'].includes(query.reconciliation)) throw invalid('Invalid reconciliation state'); filter['reconcile.state'] = query.reconciliation; }
     if (query.sort && query.sort !== 'newest') throw invalid('Unsupported sort');
@@ -293,13 +310,28 @@ export class PaymentService {
       try { await this.processOrder(order); await Order.updateOne({ _id: order._id, 'reconcile.token': token }, { $set: { 'reconcile.state': 'done', 'reconcile.leaseUntil': null, 'reconcile.lastError': null } }); }
       catch (error) { await this.retry(Order, order, true, error); }
     }
-    for (const Model of [Order, this.models.RegistrationApplication]) for await (const doc of Model.find({ 'auditOutbox.0': { $exists: true } }).cursor()) await this.flush(Model, doc);
+    for (const Model of [Order, this.models.RegistrationApplication, this.models.AccessRequest, this.models.BookEntitlement]) for await (const doc of Model.find({ 'auditOutbox.0': { $exists: true } }).cursor()) await this.flush(Model, doc);
   }
   async registrationConfig() {
-    const fees = await this.publishingModule.models.SiteSettings.findOne({ key: 'registrationFees' }).lean();
-    return { kinds: Object.keys(registrationFields), fees: fees?.value ?? {}, submissionEnabled: false, paymentEnabled: false, reason: 'Document privacy, fee eligibility and activation rules require approval', requiredDocuments: documentRequirements };
+    const legacyFees = await this.publishingModule.models.SiteSettings.findOne({ key: 'registrationFees' }).lean();
+    const settings = await this.business.settings(), policies = settings.value?.registrations ?? {};
+    const enabled = {};
+    for (const kind of Object.keys(registrationFields)) { try { await this.business.policy(kind); enabled[kind] = true; } catch (e) { if (e.status !== 409) throw e; enabled[kind] = false; } }
+    return { kinds: Object.keys(registrationFields), policies, enabled, fees: { ...Object.fromEntries(Object.entries(legacyFees?.value ?? {}).map(([k, p]) => [k, { amountMinor: p.amountMinor, approved: false, legacyMetadataOnly: true }])), ...Object.fromEntries(Object.entries(policies).map(([kind, p]) => [kind, { amountMinor: p.amountMinor, approved: enabled[kind] }])) }, submissionEnabled: Object.values(enabled).some(Boolean), paymentEnabled: this.provider.ready && !this.provider.simulated, reason: 'Each category requires its own approved fee/document/privacy policy; activation requires review and applicable verified payment/guardian consent', requiredDocuments: Object.fromEntries(Object.entries(policies).map(([kind, p]) => [kind, p.documents?.map(d => d.key) ?? []])) };
   }
-  applicationDTO(row, admin = false) { return { id: String(row._id), reference: row.reference, kind: row.kind, applicant: row.applicant, revision: row.revision, status: row.status, paymentState: row.paymentState, requiredDocuments: row.requiredDocuments, ...(admin ? { notes: row.notes } : {}), submissionEnabled: false }; }
+  applicationDTO(row, admin = false) { return { id: String(row._id), reference: row.reference, kind: row.kind, applicant: row.applicant, revision: row.revision, status: row.status, paymentState: row.paymentState, requiredDocuments: row.requiredDocuments, documents: row.documents, guardianConsent: row.guardianConsent, feeSnapshot: row.feeSnapshot, orderId: row.orderId, submittedAt: row.submittedAt, activatedAt: row.activatedAt, personalDataDeletedAt: row.personalDataDeletedAt, ...(admin ? { notes: row.notes, history: row.history, legalHold: row.legalHold, userId: String(row.userId) } : { reviewFeedback: row.history?.filter(h => ['needs_changes', 'rejected'].includes(h.status)).map(h => ({ status: h.status, reason: h.reason, at: h.at })) }), submissionEnabled: true }; }
+  async freeBook(value, auth, ctx) {
+    this.eligible(auth);
+    return this.publishingModule.coordination.run(async () => {
+      const book = await this.publishingModule.models.Book.findById(id(value)), data = book?.publishedSnapshot;
+      if (book?.status !== 'published' || !data?.pricingApproved || data.priceMinor !== 0 || !data.rightsConfirmed || !data.rightsNote || !await this.publishingModule.models.MediaAsset.exists({ _id: data.documentAssetId, purpose: 'book_full', status: 'ready', 'scan.status': 'clean' })) throw new AppError(409, 'FREE_ACCESS_UNAVAILABLE', 'This book is not an eligible published free book');
+      const prior = await this.models.BookEntitlement.findOne({ userId: auth.user._id, bookId: book._id });
+      if (prior?.revokedAt) throw new AppError(409, 'ENTITLEMENT_REVOKED', 'Revoked access requires authorized review');
+      const effect = prior ?? await this.models.BookEntitlement.create({ userId: auth.user._id, bookId: book._id, source: 'free', grantedAt: now(), simulated: false, auditOutbox: [event('free_book_access', ctx)] });
+      await this.flush(this.models.BookEntitlement, effect);
+      return { id: String(effect._id), source: effect.source, contentUrl: '/api/v1/media/' + data.documentAssetId + '/content' };
+    });
+  }
   async createApplication(input, auth, ctx) {
     this.eligible(auth); object(input, ['kind', 'applicant', 'idempotencyKey'], ['kind', 'applicant', 'idempotencyKey']); key(input.idempotencyKey);
     const applicant = applicantInput(input.kind, input.applicant, auth.user), requestHash = hash({ kind: input.kind, applicant: Object.fromEntries(Object.entries(applicant).sort()) });
@@ -307,14 +339,15 @@ export class PaymentService {
     const fees = await this.publishingModule.models.SiteSettings.findOne({ key: 'registrationFees' }).lean();
     const fee = fees?.value?.[input.kind];
     try {
-      const doc = await this.models.RegistrationApplication.create({ reference: 'STAGE6-APP-' + randomUUID(), userId: auth.user._id, kind: input.kind, applicant, ...(fee?.approved ? { feeSnapshot: { amountMinor: fee.amountMinor, currency: 'INR', revision: fees.revision } } : {}), requiredDocuments: documentRequirements[input.kind], idempotencyKey: input.idempotencyKey, requestHash, auditOutbox: [event('registration_draft_created', ctx)] });
+      const doc = await this.models.RegistrationApplication.create({ reference: 'STAGE6-APP-' + randomUUID(), userId: auth.user._id, kind: input.kind, applicant, ...(fee?.approved ? { feeSnapshot: { amountMinor: fee.amountMinor, currency: 'INR', revision: fees.revision } } : {}), requiredDocuments: [], idempotencyKey: input.idempotencyKey, requestHash, auditOutbox: [event('registration_draft_created', ctx)] });
       await this.flush(this.models.RegistrationApplication, doc); return this.applicationDTO(doc);
     } catch (error) { if (error.code !== 11000) throw error; const prior = await this.models.RegistrationApplication.findOne({ userId: auth.user._id, idempotencyKey: input.idempotencyKey }); if (!prior || prior.requestHash !== requestHash) throw conflict(); return this.applicationDTO(prior); }
   }
   async application(value, auth) { const doc = await this.models.RegistrationApplication.findOne({ _id: id(value), userId: auth.user._id }); if (!doc) throw missing(); return doc; }
   async editApplication(value, input, auth, ctx) {
     object(input, ['applicant', 'expectedRevision'], ['applicant', 'expectedRevision']); const old = await this.application(value, auth), applicant = applicantInput(old.kind, input.applicant, auth.user);
-    const doc = await this.models.RegistrationApplication.findOneAndUpdate({ _id: old._id, revision: revision(input.expectedRevision), 'auditOutbox.999': { $exists: false } }, { $set: { applicant }, $inc: { revision: 1 }, $push: { auditOutbox: event('registration_draft_updated', ctx) } }, { returnDocument: 'after' });
+    if (!['draft', 'needs_changes'].includes(old.status)) throw new AppError(409, 'APPLICATION_LOCKED', 'Submitted applications cannot be edited without a request for changes');
+    const doc = await this.models.RegistrationApplication.findOneAndUpdate({ _id: old._id, status: old.status, revision: revision(input.expectedRevision), 'auditOutbox.999': { $exists: false } }, { $set: { applicant }, $inc: { revision: 1 }, $push: { auditOutbox: event('registration_draft_updated', ctx) } }, { returnDocument: 'after' });
     if (!doc) throw conflict(); await this.flush(this.models.RegistrationApplication, doc); return this.applicationDTO(doc);
   }
 }

@@ -38,7 +38,7 @@ test('all approved intake fields round-trip through actual owner HTTP, MongoDB a
     const ownerEdit = await request('/registration-applications/' + row.id, student, 'PATCH', { applicant: next, expectedRevision: note.body.data.revision });
     assert.equal(ownerEdit.status, 200); assert.equal(ownerEdit.body.data.notes, undefined);
     assert.equal((await request('/admin/registration-applications/' + row.id, admin)).body.data.notes[0].text, 'SYNTHETIC safe draft review');
-    assert.equal((await request('/registration-applications/' + row.id + '/submit', student, 'POST', { expectedRevision: saved.body.data.revision })).status, 409);
+    assert.equal((await request('/registration-applications/' + row.id + '/submit', student, 'POST', { expectedRevision: saved.body.data.revision, declaration: true })).status, 409);
     assert.equal((await request('/registration-applications', student, 'POST', { kind, applicant: { ...applicant, aadharNumber: 'SYNTHETIC_REJECTED' }, idempotencyKey: randomUUID() })).status, 422);
     const persisted = await f.models.RegistrationApplication.findById(row.id); assert.equal(persisted.status, 'draft'); assert.equal(persisted.paymentState, 'blocked');
   });

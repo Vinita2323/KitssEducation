@@ -1,3 +1,4 @@
+import { RefundRequest } from '../../components/common/RefundRequest';
 import { useAuth } from '../../context/AuthContext';
 import React, { useState, useEffect } from "react";
 import { ShoppingBag, FileText, Download, CheckCircle2, AlertCircle, Clock, ExternalLink } from "lucide-react";
@@ -174,6 +175,7 @@ export const MyOrdersPage = () => {
               </div>
             </div>
 
+            {selectedOrder.orderStatus === 'captured' && <RefundRequest key={selectedOrder.id} orderId={selectedOrder.id} existing={selectedOrder.refundRequest} />}
             {/* Action */}
             <div className="pt-2">
               <PrimaryButton

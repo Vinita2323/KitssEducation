@@ -2,12 +2,12 @@ import { escapeRegex } from '../../utils/escapeRegex.js';
 import express from 'express';
 import { randomUUID } from 'node:crypto';
 import { AppError } from '../../utils/AppError.js';
-import { requirePermission } from '../auth/auth.routes.js';
+import { requirePermission, requireRecentStaffAuthentication } from '../auth/auth.routes.js';
 import { permissions, userDTO } from '../auth/security.js';
 import { object, text, invalid } from '../publishing/validation.js';
 
 const conflict = () => new AppError(409, 'ACCOUNT_CHANGED', 'Refresh the account before changing it');
-const accountDTO = user => ({ ...userDTO(user), revision: user.adminRevision ?? 0, updatedAt: user.updatedAt });
+const accountDTO = user => ({ ...userDTO(user), revision: user.adminRevision ?? 0, updatedAt: user.updatedAt, lastLoginAt: user.lastLoginAt });
 function reference(value) {
   if (typeof value !== 'string' || !/^[A-Za-z0-9_-]{5,100}$/.test(value)) throw invalid('Invalid account reference');
   return value;
@@ -47,7 +47,7 @@ export function createOperationsService(authService) {
         const match = new RegExp(literal(query.q), 'i');
         filter.$or = [{ name: match }, { emailNormalized: match }, { publicId: match }];
       }
-      return page(User, filter, number, 'publicId name emailNormalized roles permissions status emailVerifiedAt phone profile createdAt updatedAt adminRevision', accountDTO);
+      return page(User, filter, number, 'publicId name emailNormalized roles permissions status emailVerifiedAt phone profile createdAt updatedAt adminRevision lastLoginAt', accountDTO);
     },
     async detail(value) {
       const user = await account(value);
@@ -55,6 +55,7 @@ export function createOperationsService(authService) {
       return { ...accountDTO(user), summary: { orders, enrollments, registrations } };
     },
     async change(value, input, auth, ctx, kind) {
+      if (kind === 'roles' && !auth.user.roles.includes('super_admin')) throw new AppError(403, 'FORBIDDEN', 'Only the main admin assigns staff permissions');
       object(input, ['expectedRevision', 'reason', ...(kind === 'status' ? ['status'] : ['roles', 'permissions'])], ['expectedRevision', 'reason']);
       if (!Number.isSafeInteger(input.expectedRevision) || input.expectedRevision < 0) throw invalid('Invalid revision');
       const reason = text(input.reason, 500);
@@ -64,11 +65,12 @@ export function createOperationsService(authService) {
       // boundary. Refusing every API change also prevents concurrent last-admin loss.
       if (String(user._id) === String(auth.user._id) || user.roles.includes('super_admin')) throw new AppError(403, 'PROTECTED_ACCOUNT', 'Self and super-admin changes are not allowed here');
       if (!user.emailVerifiedAt || !['active', 'suspended'].includes(user.status)) throw new AppError(409, 'ACTIVATION_REQUIRED', 'Pending or archived identities cannot be activated by account management');
+      if (user.roles.includes('admin') && !auth.user.roles.includes('super_admin')) throw new AppError(403, 'PROTECTED_STAFF', 'Only the main admin can manage staff accounts');
       const fields = { activeSessionId: null, activeSessionExpiresAt: null };
       if (kind === 'status') fields.status = choice(input.status, ['active', 'suspended']);
       else {
         if (!Array.isArray(input.roles) || input.roles.length !== 1 || input.roles[0] !== 'admin' || !user.roles.includes('admin')) throw invalid('Staff creation requires the invitation workflow; super-admin promotion is unavailable');
-        if (!Array.isArray(input.permissions) || input.permissions.length > permissions.length || input.permissions.some(p => !permissions.includes(p) || p === 'accounts.roles.manage')) throw invalid('Invalid permission assignment');
+        if (!Array.isArray(input.permissions) || input.permissions.length > permissions.length || input.permissions.some(p => !permissions.includes(p) || p === 'accounts.roles.manage' || p === 'results.publish' && !user.permissions.includes(p))) throw invalid('Invalid permission assignment');
         fields.roles = ['admin'];
         fields.permissions = [...new Set(input.permissions)];
       }
@@ -76,7 +78,7 @@ export function createOperationsService(authService) {
         ...(input.expectedRevision === 0 ? { $or: [{ adminRevision: 0 }, { adminRevision: { $exists: false } }] } : { adminRevision: input.expectedRevision }),
         'auditOutbox.999': { $exists: false } }, {
         $set: fields, $inc: { securityVersion: 1, adminRevision: 1 }, $unset: { challenges: 1 },
-        $push: { auditOutbox: { id: randomUUID(), action: 'account_' + kind + '_changed', actorId: ctx.actorId, requestId: ctx.requestId, reason, at: new Date() } }
+        $push: { auditOutbox: { id: randomUUID(), action: 'account_' + kind + '_changed', actorId: ctx.actorId, requestId: ctx.requestId, reason, ...(kind === 'roles' ? { permissionChange: { before: user.permissions, after: fields.permissions } } : {}), at: new Date() } }
       }, { returnDocument: 'after', runValidators: true });
       if (!changed) throw conflict();
       await authService.flushAudit(changed);
@@ -97,7 +99,7 @@ export function createOperationsService(authService) {
       }
       const total = await AuditLog.countDocuments(filter);
       const rows = await AuditLog.find(filter).sort({ at: -1, _id: -1 }).skip((number - 1) * 20).limit(20).lean();
-      return { data: rows.map(r => ({ id: r._id, action: r.action, actorId: r.actorId, resource: r.subjectId, at: r.at, requestId: r.requestId, reason: r.reason })), meta: { page: number, total, pageSize: 20, totalPages: Math.max(1, Math.ceil(total / 20)) } };
+      return { data: rows.map(r => ({ id: r._id, action: r.action, actorId: r.actorId, resource: r.subjectId, at: r.at, requestId: r.requestId, reason: r.reason, permissionChange: r.permissionChange })), meta: { page: number, total, pageSize: 20, totalPages: Math.max(1, Math.ceil(total / 20)) } };
     },
     async jobs(query) {
       const number = paging(query, ['kind', 'state']);
@@ -121,7 +123,7 @@ export function createOperationsRouter(service, authService) {
   const send = (req, res, result) => res.json({ ...result, requestId: req.requestId });
   router.get('/admin/users', requirePermission('accounts.read'), async (req, res) => send(req, res, await service.users(req.query)));
   router.get('/admin/users/:id', requirePermission('accounts.read'), async (req, res) => send(req, res, { data: await service.detail(req.params.id) }));
-  for (const kind of ['status', 'roles']) router.patch('/admin/users/:id/' + kind, requirePermission(kind === 'status' ? 'accounts.manage' : 'accounts.roles.manage'), async (req, res) => {
+  for (const kind of ['status', 'roles']) router.patch('/admin/users/:id/' + kind, requirePermission(kind === 'status' ? 'accounts.manage' : 'accounts.roles.manage'), requireRecentStaffAuthentication, async (req, res) => {
     const ctx = { actorId: req.auth.user.publicId, requestId: req.requestId, ip: req.ip };
     await authService.limit(ctx, ctx.actorId, 'account-management', 30);
     send(req, res, { data: await service.change(req.params.id, req.body, req.auth, ctx, kind) });

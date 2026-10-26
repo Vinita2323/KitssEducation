@@ -1,3 +1,4 @@
+import { AdminPolicyQueues } from '../pages/AdminPolicyQueues';
 import { AdminResultsPage } from '../pages/AdminResultsPage';
 import { AdminNotificationsPage } from '../pages/AdminNotificationsPage';
 import { AdminCoachingPage, AdminEnrollmentsPage } from '../pages/AdminCoachingPage';
@@ -24,12 +25,12 @@ export const AdminRoutes = () => {
   return (
     <Routes>
       <Route element={<RouteGuard staff><AdminLayout /></RouteGuard>}>
-        <Route path="users" element={<RouteGuard permission="accounts.read"><AdminUsersPage /></RouteGuard>} />
+        <Route path="refunds" element={<RouteGuard permission="refunds.read"><AdminPolicyQueues /></RouteGuard>} /><Route path="access-requests" element={<RouteGuard permission="access.read"><AdminPolicyQueues access /></RouteGuard>} /><Route path="users" element={<RouteGuard permission="accounts.read"><AdminUsersPage /></RouteGuard>} />
         <Route path="audit-logs" element={<RouteGuard permission="audit.read"><AdminOperationsPage audit /></RouteGuard>} />
         <Route path="operations" element={<RouteGuard permission="operations.read"><AdminOperationsPage /></RouteGuard>} />
         <Route path="results" element={<RouteGuard permission="results.read"><AdminResultsPage /></RouteGuard>} />
         <Route path="notifications" element={<RouteGuard permission="notifications.read"><AdminNotificationsPage /></RouteGuard>} />
-        <Route path="coaching" element={<RouteGuard permission="learning.read"><AdminCoachingPage /></RouteGuard>} />
+        <Route path="coaching" element={<RouteGuard permission="coaching.read"><AdminCoachingPage /></RouteGuard>} />
         <Route path="enrollments" element={<RouteGuard permission="learning.read"><AdminEnrollmentsPage /><AdminBookEntitlements /></RouteGuard>} />
         <Route path="orders" element={<RouteGuard permission="commerce.read"><AdminOrdersPage /></RouteGuard>} />
         <Route path="registrations" element={<RouteGuard permission="registrations.read"><AdminRegistrationsPage /></RouteGuard>} />
@@ -43,7 +44,7 @@ export const AdminRoutes = () => {
         <Route path="colleges/:collegeId/courses" element={<RouteGuard permission="institutions.read"><AdminCollegeCoursesPage /></RouteGuard>} />
         <Route path="franchise-requests" element={<RouteGuard permission="franchises.read"><AdminFranchiseRequestsPage /></RouteGuard>} />
         <Route path="applications" element={<RouteGuard permission="admissions.read"><AdminApplicationsPage /></RouteGuard>} />
-        <Route path="books" element={<RouteGuard permission="learning.read"><AdminBooksPage /></RouteGuard>} />
+        <Route path="books" element={<RouteGuard permission="books.read"><AdminBooksPage /></RouteGuard>} />
         <Route path="*" element={<Navigate to="/admin" replace />} />
       </Route>
     </Routes>

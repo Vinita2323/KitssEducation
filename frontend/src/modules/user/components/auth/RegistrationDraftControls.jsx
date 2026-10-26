@@ -1,3 +1,4 @@
+import { RegistrationSubmission } from './RegistrationSubmission';
 import React, { useEffect, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -30,7 +31,7 @@ export function RegistrationDraftControls({ kind, formData, setFormData }) {
       setSaved(data); const next = new URLSearchParams(params); next.set('application', data.id); if (kind !== 'coaching-profile') next.set('type', kind); setParams(next, { replace: true });
     } catch (e) { setError(e.message); } finally { setBusy(false); }
   };
-  return <aside className="m-3 p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs space-y-2 text-[#0A1D3F]"><p>Registration submission and payment are unavailable pending document privacy, eligibility and activation policies. No paid rights or teacher permissions are granted.</p><p>Document slots are retained. Files and identity numbers are not collected or saved; required evidence remains outstanding.</p>{error && <p role="alert">{error}</p>}{saved && <p role="status">Draft saved: {saved.reference}. Payment: blocked. Keep this page URL to resume your draft.</p>}{user?.emailVerified ? <button type="button" disabled={busy} onClick={save} className="bg-[#0A1D3F] text-white px-3 py-2 rounded-lg">{busy ? 'Saving draft...' : saved ? 'Update Registration Draft' : 'Save Registration Draft'}</button> : <Link to="/login" className="underline">Sign in with a verified account to save a draft</Link>}</aside>;
+  return <aside className="m-3 p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs space-y-2 text-[#0A1D3F]"><p>Save your application, then submit under the approved category policy. Admin review, applicable document/guardian verification and verified payment are required before business activation. Teacher applications grant no staff permissions.</p><p>Upload only the configured required documents after policy approval. Identity numbers are not collected.</p>{error && <p role="alert">{error}</p>}{saved && <p role="status">Draft saved: {saved.reference}. Payment: {saved.paymentState}. Keep this page URL to resume your draft.</p>}{saved && <RegistrationSubmission key={saved.id} application={saved} onChange={setSaved} />}{user?.emailVerified ? <button type="button" disabled={busy || saved && !['draft','needs_changes'].includes(saved.status)} onClick={save} className="bg-[#0A1D3F] text-white px-3 py-2 rounded-lg">{busy ? 'Saving draft...' : saved ? 'Update Registration Draft' : 'Save Registration Draft'}</button> : <Link to="/login" className="underline">Sign in with a verified account to save a draft</Link>}</aside>;
 }
 
 export function useRegistrationFee(kind) {

@@ -42,7 +42,7 @@ export function AuthProvider({ children }) {
   return <AuthContext.Provider value={{ user, loading, error, isAuthenticated: Boolean(user), deviceConflict,
     login, logout, register: authService.register, updateProfile: async data => { const ticket = epoch.current; const result = await authService.updateProfile(data); if (ticket === epoch.current) setUser(result.user); return result; },
     deviceInfo: { deviceName: 'Browser' }, lastRegisteredCredentials: null, setLastRegisteredCredentials: () => {},
-    can: permission => Boolean(user?.permissions?.includes(permission)), handleTransferDeviceSession: transfer }}>
+    can: permission => { const legacy = /^(books|coaching)\./.test(permission) ? (permission.endsWith('.read') ? 'learning.read' : permission.endsWith('.publish') ? 'learning.publish' : 'learning.write') : ({'learning.read':'access.read','access.revoke':'learning.grants.manage','registrations.review':'registrations.write','registrations.approve':'registrations.write'})[permission]; return Boolean(user?.permissions?.includes(permission) || legacy && user?.permissions?.includes(legacy)); }, handleTransferDeviceSession: transfer }}>
     {children}
     {error && <div role="status" className="fixed bottom-4 left-4 right-4 z-50 bg-amber-50 border rounded-xl p-3 text-sm text-[#0A1D3F]">{error}</div>}
     {deviceConflict && <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#0A1D3F]/80 backdrop-blur-sm">

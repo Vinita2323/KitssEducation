@@ -666,3 +666,26 @@ Exact evidence, commands and limitations: [Stage 12 report](../../backend/STAGE1
 - [ ] Actual Razorpay-delivered webhook acceptance; matching dashboard configuration and a separately approved reachable HTTPS testing method are required. Local signed-request tests are not provider delivery.
 
 Stop after the Stage 12 local commit. No push, deployment, live payments or next stage is authorized.
+
+
+## Stage 13 - Business policy workflows and granular staff permissions, 26 October 2026
+
+Owner authorization supersedes the former blanket blocks only for the configurable implemented software described in the [Stage 13 report](../../backend/STAGE13-BUSINESS-POLICIES-RBAC-REPORT.md). Historical counts/checkmarks retain their original scope; actual fees, live legal acceptance and provider payment acceptance are not inferred.
+
+- [x] Main-admin approved category policy configuration: explicit free/paid fee, amount/currency, effective status/dates, document/privacy approvals, optional versioned guardian wording and explicit retention, with revision/history/audit. No invented amounts or default free classification.
+- [x] Existing typed verified-owner registration drafts/submission/status and reviewer workflow: submitted, pending verification, under review, approved/rejected/changes and conditional activation; required clean verified evidence, guardian conditions and exact captured fee checks; business approval never grants staff roles or alters verified identities.
+- [x] Authenticated existing upload pipeline for private configured registration evidence; owner/purpose/reviewer restrictions, scan/integrity checks, rejection/reupload feedback, legal hold and resumable retention deletion. No full identity number collection, public document exposure or scanner trust override.
+- [x] Explicit zero-price free book/course grants with no fabricated paid orders, current published/licensed/clean delivery and source audit; existing reader/lesson UI integration.
+- [x] Expired paid course repurchase through the existing verified order/Checkout path, period uniqueness, fresh capture-based validity, prior purchase history, single current enrollment and replay-safe old/new fulfillment; active/revoked purchases denied.
+- [x] Permissioned manual franchise review approval/rejection and recorded reason/history. Official affiliation stays blocked; no college verification/public affiliation/account is inferred.
+- [x] Captured-owner refund request and paginated permissioned manual review, with explicit unexecuted provider status. Draft invoice foundation reuses real order/verified reference and optional seller metadata; no tax compliance claim.
+- [x] Separate exceptional request/issue/revoke permissions, explicit reason/expiry, approved policy gate, current source-bound access checks and audited rights changes; no arbitrary paid flag or overwrite of existing purchase rights.
+- [x] Main-admin existing staff invitation/password/email-verification flow; grouped individual module/action selectors and select-all; edit/revoke/disable/reactivate; protected owner/self/role escalation checks, recent staff sign-in, immediate version invalidation, last-login and before/after grant audit.
+- [x] Exact backend permissions and corresponding UI navigation/action checks; preserve legacy broad grants without expanding new granular grants; preserve official-results source/publication gates.
+- [x] Synthetic real HTTP/MongoDB/browser verification of workflows and denial paths, all eight requested staff-control widths/keyboard input, complete backend/shared client and existing purchase browser regressions. Exact successful and earlier failed counts are in the report.
+- [x] New source/test/docs only, environment unchanged, no additional real email or Razorpay calls; preserve existing application data through dedicated loopback-only test databases. Build/audit/diff/secret checks required before local commit.
+- [ ] Actual approved category fee amounts, eligibility/evidence/privacy/guardian/retention policy and live sensitive-data acceptance; engineering configuration does not supply legal approval.
+- [ ] Official franchise criteria/agreement/affiliation activation; real exceptional-grant/revocation policy; provider refunds/refund-access handling, tax/issuer/invoice compliance.
+- [ ] Stage 12 provider operator approval and real Test Mode acceptance, maintained real scanner/licensing, production capacity/backup/runtime/device acceptance; official result source/roles/correction/privacy/API provider.
+
+Stop after the Stage 13 local commit. No push, deployment, live payment, external result integration or later stage is authorized.

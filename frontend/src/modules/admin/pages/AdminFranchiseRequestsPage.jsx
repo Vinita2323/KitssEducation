@@ -518,13 +518,13 @@ export const AdminFranchiseRequestsPage = () => {
             </div>
 
             <button type="button" disabled={processing || !adminNote.trim() || !can('franchises.review')} onClick={async () => { setProcessing(true); try { const updated = await adminService.addFranchiseNote(selectedFranchise.id, adminNote, noteKey); setSelectedFranchise(updated); setAdminNote(''); setNoteKey(crypto.randomUUID()); showSuccess('Note saved without changing status'); fetchFranchises(); } catch (error) { showError(error.message); } finally { setProcessing(false); } }} className="px-4 py-2 rounded-xl bg-[#0A1D3F] text-white text-xs">Save Note Only</button>
-            <p className="text-xs text-amber-700">Document-free review is permitted. Franchise approval remains blocked pending policy confirmation; no affiliation or account is granted.</p>
+            <p className="text-xs text-amber-700">Authorized manual review approval is available with a reason. Official affiliation remains blocked pending criteria and agreement approval; no affiliation or account is granted.</p>
             {/* Approval / Rejection Action Buttons */}
             <div className="flex flex-col sm:flex-row items-center justify-between gap-2 pt-2">
               <div className="flex items-center gap-2 w-full sm:w-auto">
                 <button
                   type="button"
-                  disabled title="Franchise approval criteria are pending owner confirmation" onClick={() => handleStatusChange("Approved")}
+                  disabled={processing || !can('franchises.approve') || !adminNote.trim()} title="Manual review approval does not activate an official affiliation" onClick={() => handleStatusChange("Approved", adminNote)}
                   className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs transition cursor-pointer shadow-xs disabled:opacity-50"
                 >
                   <CheckCircle2 className="w-4 h-4" />

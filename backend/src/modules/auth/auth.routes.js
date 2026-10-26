@@ -1,3 +1,4 @@
+import { hasPermission } from './granular-permissions.js';
 import express from 'express';
 import { AppError } from '../../utils/AppError.js';
 import { opaque, mac, equal, userDTO, grantsFor } from './security.js';
@@ -24,16 +25,21 @@ export function body(req, allowed, required = []) {
   if ('rememberMe' in input && typeof input.rememberMe !== 'boolean') throw new AppError(422, 'INVALID_INPUT', 'Invalid remember-me preference');
   if ('deviceLabel' in input && (typeof input.deviceLabel !== 'string' || input.deviceLabel.length > 80)) throw new AppError(422, 'INVALID_INPUT', 'Invalid device label');
   if ('kind' in input && !['student', 'admin'].includes(input.kind)) throw new AppError(422, 'INVALID_INPUT', 'Invalid login kind');
-  if ('permissions' in input && (!Array.isArray(input.permissions) || input.permissions.length > 40 || input.permissions.some(p => typeof p !== 'string'))) throw new AppError(422, 'INVALID_INPUT', 'Invalid permissions');
+  if ('permissions' in input && (!Array.isArray(input.permissions) || input.permissions.length > 100 || input.permissions.some(p => typeof p !== 'string'))) throw new AppError(422, 'INVALID_INPUT', 'Invalid permissions');
   return input;
 }
 export function requireSession(req, res, next) {
   if (!req.auth) return next(new AppError(401, 'UNAUTHENTICATED', 'Please sign in again'));
   next();
 }
+export function requireRecentStaffAuthentication(req, res, next) {
+  const issued = req.auth?.session?.createdAt;
+  if (!issued || req.auth.session.kind !== 'admin' || Date.now() - new Date(issued).getTime() > 15 * 60000) return next(new AppError(403, 'REAUTH_REQUIRED', 'Sign in again before changing staff access'));
+  next();
+}
 export const requirePermission = permission => (req, res, next) => {
   if (!req.auth) return next(new AppError(401, 'UNAUTHENTICATED', 'Please sign in again'));
-  if (!grantsFor(req.auth.user).includes(permission)) return next(new AppError(403, 'FORBIDDEN', 'Permission denied'));
+  if (!hasPermission(req.auth.user, permission, grantsFor(req.auth.user))) return next(new AppError(403, 'FORBIDDEN', 'Permission denied'));
   next();
 };
 export function requireOwner(req, ownerId) {
@@ -107,8 +113,8 @@ export function createAuthRouter({ service, config }) {
     for (const kind of ['student', 'admin']) res.clearCookie(sessionCookie(kind), cookieOptions);
     reply(req, res, result);
   });
-  router.post('/admin/users/invitations', requirePermission('accounts.roles.manage'), async (req, res) => reply(req, res, await service.invite(req.auth, body(req, ['name', 'email', 'permissions'], ['name', 'email']), context(req)), 201));
-  router.delete('/admin/users/invitations/:id', requirePermission('accounts.roles.manage'), async (req, res) => {
+  router.post('/admin/users/invitations', requirePermission('accounts.roles.manage'), requireRecentStaffAuthentication, async (req, res) => reply(req, res, await service.invite(req.auth, body(req, ['name', 'email', 'permissions'], ['name', 'email']), context(req)), 201));
+  router.delete('/admin/users/invitations/:id', requirePermission('accounts.roles.manage'), requireRecentStaffAuthentication, async (req, res) => {
     if (!/^STAFF[A-F0-9]{16}$/.test(req.params.id)) throw new AppError(422, 'INVALID_INPUT', 'Invalid staff reference');
     body(req, []);
     reply(req, res, await service.revokeInvitation(req.auth, req.params.id, context(req)));

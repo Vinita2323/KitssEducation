@@ -52,7 +52,7 @@ const fields = {
     features: list(v => text(v, 500)),
     popular: bool,
     sortOrder: integer,
-    priceMinor: v => integer(v, 1, 1000000000),
+    priceMinor: v => integer(v, 0, 1000000000),
     durationDays: v => integer(v, 1, 36500),
     eligibility: choice(['verified_account']),
     rulesApproved: bool,

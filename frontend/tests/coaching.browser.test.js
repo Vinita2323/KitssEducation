@@ -400,6 +400,7 @@ test('Stage 7 coaching and readers with real HTTP/MongoDB; fake providers only i
     assert.equal((await f.models.Course.findById(draft._id)).status, 'archived');
   });
   await t.test('admin enrollment review and revocation preserve payment truth', async () => {
+    await f.service.business.save({ value: { manualAccess: { approved: false, paidRevocationApproved: true, description: 'Isolated browser support policy' } }, expectedRevision: 0, reason: 'Explicit synthetic browser revocation acceptance' }, d.admin.auth, f.ctx);
     await goto('/admin/enrollments');
     await page.getByRole('heading', {
       name: 'Enrollment Review',
