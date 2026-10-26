@@ -1,3 +1,4 @@
+import { accessExpiry, validDuration } from '../../utils/accessDuration.js';
 import { escapeRegex } from '../../utils/escapeRegex.js';
 import { AppError } from '../../utils/AppError.js';
 import { object, id, revision, text, invalid } from '../publishing/validation.js';
@@ -94,7 +95,7 @@ export function createCoachingService({
       if (publishingNow && !data.content?.trim() && !data.documentAssetId && !data.videoAssetId) throw invalid('Publish authored text, an inspected document or validated video');
     },
     async validatePlan(data) {
-      if (data.status === 'active' && (!data.rulesApproved || !Number.isSafeInteger(data.priceMinor) || data.priceMinor < 0 || !Number.isSafeInteger(data.durationDays) || data.durationDays < 1 || data.eligibility !== 'verified_account')) throw invalid('Active prepaid plans require explicit approved nonnegative price, duration and verified-account eligibility');
+      if (data.status === 'active' && (!data.rulesApproved || !Number.isSafeInteger(data.priceMinor) || data.priceMinor < 0 || !validDuration(data) || data.eligibility !== 'verified_account')) throw invalid('Active prepaid plans require explicit approved nonnegative price, duration and verified-account eligibility');
     },
     async adminList(kind, parent, query) {
       const {
@@ -752,7 +753,7 @@ export function createCoachingService({
         const prior = await Enrollment.findOne({ userId: auth.user._id, courseId: course._id });
         if (prior?.revokedAt) throw new AppError(409, 'ENTITLEMENT_REVOKED', 'Revoked access requires review');
         if (prior && (prior.source !== 'free' || prior.expiresAt <= new Date())) throw new AppError(409, 'EXISTING_ENROLLMENT', 'Existing access requires review; paid history is preserved');
-        const row = prior ?? await Enrollment.create({ userId: auth.user._id, courseId: course._id, planId: plan._id, source: 'free', startsAt: new Date(), expiresAt: new Date(Date.now() + plan.durationDays * 86400000), simulated: false, auditOutbox: [coordination.event('free_course_enrolled', ctx)] });
+        const row = prior ?? await Enrollment.create({ userId: auth.user._id, courseId: course._id, planId: plan._id, source: 'free', startsAt: new Date(), expiresAt: accessExpiry(new Date(), plan), simulated: false, auditOutbox: [coordination.event('free_course_enrolled', ctx)] });
         await coordination.flush(Enrollment, row); return service.enrollment(value, auth);
       });
     },
@@ -781,7 +782,7 @@ export function createCoachingService({
           title: course.publishedSnapshot.title + ' - ' + plan.name,
           revision: plan.revision,
           courseId: course._id,
-          durationDays: plan.durationDays,
+          durationDays: plan.durationDays, durationMonths: plan.durationMonths,
           eligibility: plan.eligibility, purchaseSlot
         },
         amountMinor: plan.priceMinor,
@@ -793,7 +794,7 @@ export function createCoachingService({
       if (!user?.emailVerifiedAt || user.status !== 'active') throw denied();
       const course = await service.course(String(order.product.courseId), true);
       await service.deliveryReady(course);
-      const duration = integer(order.product.durationDays, 1, 36500);
+      if (!validDuration(order.product)) throw invalid("Invalid captured access duration");
       const startsAt = order.capturedAt;
       if (!startsAt) throw denied();
       let enrollment = await Enrollment.findOne({ userId: order.userId, courseId: course._id });
@@ -801,11 +802,11 @@ export function createCoachingService({
       if (enrollment && !same(enrollment.orderId, order._id)) {
         if (enrollment.revokedAt || enrollment.expiresAt > startsAt || order.product.purchaseSlot !== String(enrollment._id) + ':' + enrollment.expiresAt.toISOString() || enrollment.purchaseHistory.length >= 100) throw new AppError(409, 'ENROLLMENT_CONFLICT', 'Access period changed; investigate before repurchase fulfillment');
         const history = enrollment.orderId ? [...enrollment.purchaseHistory.map(p => p.toObject()), { orderId: enrollment.orderId, planId: enrollment.planId, startsAt: enrollment.startsAt, expiresAt: enrollment.expiresAt }] : enrollment.purchaseHistory;
-        enrollment = await Enrollment.findOneAndUpdate({ _id: enrollment._id, revision: enrollment.revision, revokedAt: null, expiresAt: enrollment.expiresAt }, { $set: { orderId: order._id, planId: order.product.id, startsAt, expiresAt: new Date(startsAt.getTime() + duration * 86400000), source: 'paid', simulated: order.simulated, purchaseHistory: history }, $inc: { revision: 1 }, $push: { auditOutbox: coordination.event('paid_course_repurchased', { actorId: 'system' }) } }, { returnDocument: 'after', runValidators: true });
+        enrollment = await Enrollment.findOneAndUpdate({ _id: enrollment._id, revision: enrollment.revision, revokedAt: null, expiresAt: enrollment.expiresAt }, { $set: { orderId: order._id, planId: order.product.id, startsAt, expiresAt: accessExpiry(startsAt, order.product), source: 'paid', simulated: order.simulated, purchaseHistory: history }, $inc: { revision: 1 }, $push: { auditOutbox: coordination.event('paid_course_repurchased', { actorId: 'system' }) } }, { returnDocument: 'after', runValidators: true });
         if (!enrollment) throw new AppError(409, 'ENROLLMENT_CONFLICT', 'Concurrent access-period change');
       } else if (!enrollment) {
         try {
-          enrollment = await Enrollment.findOneAndUpdate({ userId: order.userId, courseId: course._id, orderId: order._id }, { $setOnInsert: { planId: order.product.id, startsAt, expiresAt: new Date(startsAt.getTime() + duration * 86400000), source: 'paid', simulated: order.simulated, auditOutbox: [coordination.event('paid_enrollment_created', { actorId: 'system' })] } }, { upsert: true, returnDocument: 'after', runValidators: true });
+          enrollment = await Enrollment.findOneAndUpdate({ userId: order.userId, courseId: course._id, orderId: order._id }, { $setOnInsert: { planId: order.product.id, startsAt, expiresAt: accessExpiry(startsAt, order.product), source: 'paid', simulated: order.simulated, auditOutbox: [coordination.event('paid_enrollment_created', { actorId: 'system' })] } }, { upsert: true, returnDocument: 'after', runValidators: true });
         } catch (e) { if (e.code !== 11000) throw e; enrollment = await Enrollment.findOne({ userId: order.userId, courseId: course._id, orderId: order._id }); if (!enrollment) throw new AppError(409, 'ENROLLMENT_CONFLICT', 'Concurrent enrollment source conflict'); }
       }
       if (enrollment.revokedAt) throw denied();

@@ -7,7 +7,7 @@ export function createCommerceModels(connection) {
   const attempt = new Schema({ paymentId: String, status: String, observedAt: Date, source: String }, { _id: false });
   const order = new Schema({
     reference: { type: String, unique: true, required: true }, userId: { type: Schema.Types.ObjectId, required: true },
-    product: { kind: String, id: Schema.Types.ObjectId, title: String, revision: Number, documentAssetId: Schema.Types.ObjectId, courseId: Schema.Types.ObjectId, durationDays: Number, eligibility: String, purchaseSlot: String },
+    product: { kind: String, id: Schema.Types.ObjectId, title: String, revision: Number, documentAssetId: Schema.Types.ObjectId, courseId: Schema.Types.ObjectId, durationDays: Number, durationMonths: Number, eligibility: String, purchaseSlot: String },
     amountMinor: { type: Number, required: true, min: 1, validate: Number.isSafeInteger }, currency: { type: String, enum: ['INR'], required: true },
     paymentMode: { type: String, enum: ['test'], required: true }, provider: { type: String, enum: ['razorpay', 'fake'], required: true }, providerScope: String, simulated: { type: Boolean, required: true },
     idempotencyKey: { type: String, required: true }, requestHash: String, revision: { type: Number, default: 1 },

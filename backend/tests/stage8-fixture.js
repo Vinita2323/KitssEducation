@@ -4,9 +4,9 @@ import { createResultService } from '../src/modules/results/results.service.js';
 import { createNotificationService } from '../src/modules/notifications/notifications.js';
 import { createAccountService } from '../src/modules/auth/account.service.js';
 import { createApp } from '../src/app.js';
-export async function stage8Fixture(name) {
+export async function stage8Fixture(name, options = {}) {
   if (!/^kitss_stage(?:[89]|10)_(?:test|browser)_[a-f0-9]{16}$/.test(name)) throw new Error('New isolated results-family database required');
-  const f = await coachingFixture(name);
+  const f = await coachingFixture(name, options);
   try {
     const messages = [],
       mail = {

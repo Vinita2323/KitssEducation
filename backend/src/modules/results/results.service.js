@@ -107,7 +107,7 @@ export async function createResultService({
       };
     },
     async list(kind, query = {}) {
-      object(query, ['page', 'pageSize', 'q', 'status', 'issuerId', 'examId', 'year']);
+      object(query, ['page', 'pageSize', 'q', 'status', 'issuerId', 'examId', 'year', 'reviewStatus']);
       const Model = {
           issuers: Issuer,
           exams: Exam,
@@ -119,6 +119,7 @@ export async function createResultService({
           pageSize
         } = paging(query);
       for (const field of ['issuerId', 'examId']) if (query[field]) filter[field] = id(query[field]);
+      if (query.reviewStatus) { if (kind !== "records" || !["draft", "submitted", "approved", "rejected"].includes(query.reviewStatus)) throw invalid("Invalid review filter"); filter["review.status"] = query.reviewStatus; }
       if (query.status) filter.status = text(query.status, 30);
       if (query.q) filter[kind === 'records' ? 'rollNormalized' : kind === 'issuers' ? 'name' : 'title'] = {
         $regex: escapeRegex(text(query.q, 80)),
@@ -399,13 +400,30 @@ export async function createResultService({
       });
     },
     async changeRecord(value, action, input, ctx) {
+      if (!["submit", "approve", "reject", "publish", "corrections", "withdraw"].includes(action)) throw invalid("Unknown result action");
       object(input, action === 'corrections' ? ['correctedFields', 'reason', 'source', 'expectedRevision'] : ['expectedRevision', 'sourceApproval', 'reason'], ['expectedRevision', ...(action === 'publish' ? [] : ['reason'])]);
       return coordination.run(async () => {
         const row = await get(Record, value),
           exam = await get(Exam, row.examId),
           issuer = await get(Issuer, exam.issuerId);
         if (integer(input.expectedRevision, 1, 1000000) !== row.__v + 1) throw new AppError(409, 'REVISION_CONFLICT', 'Refresh result revision');
+        if (['approve', 'reject', 'publish'].includes(action)) {
+          const actor = await authService.models.User.findOne({ publicId: ctx.actorId, status: 'active' });
+          if (!actor?.emailVerifiedAt || !actor.roles.includes('super_admin')) throw new AppError(403, 'MAIN_ADMIN_REQUIRED', 'Final result approval and publication require the main admin');
+        }
+        if (['submit', 'approve', 'reject'].includes(action)) {
+          if (!text(input.reason, 2000).trim()) throw invalid('Review reason required');
+          const status = row.review?.status ?? 'draft';
+          if (row.status !== 'draft' || (action === 'submit' ? !['draft', 'rejected'].includes(status) : status !== 'submitted')) throw new AppError(409, 'REVIEW_STATE_CONFLICT', 'Submit a current draft before final review');
+          if (!row.source?.checksum) throw invalid('Source provenance required for review');
+          const review = { status: action === 'submit' ? 'submitted' : action === 'approve' ? 'approved' : 'rejected', reason: text(input.reason, 2000), actorId: ctx.actorId, at: new Date(), academicRevision: row.revision };
+          const changed = await Record.findOneAndUpdate({ _id: row._id, __v: row.__v }, { $set: { review }, $inc: { __v: 1 }, $push: { auditOutbox: coordination.event('result_' + action, ctx) } }, { returnDocument: 'after', runValidators: true });
+          if (!changed) throw new AppError(409, 'REVISION_CONFLICT', 'Refresh result revision');
+          await coordination.flush(Record, changed);
+          return dto(changed);
+        }
         if (action === 'publish') {
+          if (row.review?.status !== 'approved' || row.review.academicRevision !== row.revision) throw new AppError(409, 'MAIN_ADMIN_APPROVAL_REQUIRED', 'Current academic revision needs final main-admin approval');
           if (row.status !== 'draft' || exam.status !== 'published' || issuer.status !== 'active' || !(await trustedSource(issuer))) throw new AppError(409, 'SOURCE_APPROVAL_REQUIRED', 'Official result publication is disabled without separately approved trusted-source evidence');
           if (!issuer.source?.authorizationReference || !row.source?.checksum) throw invalid('Source provenance required');
         } else if (!text(input.reason, 2000)) throw invalid('Reason required');
@@ -480,7 +498,7 @@ export async function createResultService({
         userId: auth.user._id,
         status: 'published'
       }).select('+verificationHash');
-      if (!row || !equal(row.verificationHash, proof(input.verificationFields, issuer))) throw absent();
+      if (!row || row.review?.status !== 'approved' || row.review.academicRevision !== row.revision || !equal(row.verificationHash, proof(input.verificationFields, issuer))) throw absent();
       await History.updateOne({
         userId: auth.user._id,
         resultRecordId: row._id
@@ -519,7 +537,7 @@ export async function createResultService({
       for (const record of records) {
         const exam = await get(Exam, record.examId),
           issuer = await get(Issuer, exam.issuerId);
-        if (exam.status === 'published' && issuer.status === 'active' && (await trustedSource(issuer))) available.push({
+        if (record.review?.status === 'approved' && record.review.academicRevision === record.revision && exam.status === 'published' && issuer.status === 'active' && (await trustedSource(issuer))) available.push({
           ...dto(record),
           issuerId: String(issuer._id),
           issuerName: issuer.name,

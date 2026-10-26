@@ -689,3 +689,25 @@ Owner authorization supersedes the former blanket blocks only for the configurab
 - [ ] Stage 12 provider operator approval and real Test Mode acceptance, maintained real scanner/licensing, production capacity/backup/runtime/device acceptance; official result source/roles/correction/privacy/API provider.
 
 Stop after the Stage 13 local commit. No push, deployment, live payment, external result integration or later stage is authorized.
+
+
+## Stage 14 superseding implementation and acceptance - 26 October 2026
+
+See [Stage 14 report](../../backend/STAGE14-BUSINESS-RULES-ACCEPTANCE-REPORT.md). These entries supersede historical blanket software blocks and the earlier stop-after-stage instruction; they do not approve external operations.
+
+- [x] Reuse Stage 13 category fee/free configuration, mandatory verified owner/admin approval, captured fee activation, private scanned evidence, guardian review, retention and revision/CAS/audit.
+- [x] Category enable/disable, optional policy version, required/optional document slots, narrowed accepted MIME/size settings, minor/all guardian applicability, availability reasons, bounded change history with new policy snapshots and editable suggestions for actual supported categories.
+- [x] Preserve captured paid-book lifetime rights and approved-zero free access without fabricated orders; alternate paid-book expiry is explicitly deferred.
+- [x] New paid course plans default to 12 UTC calendar months, clamped month-end/leap-year calculation, explicit month/day override, immutable order duration, existing day-plan/purchase preservation, expiry denial and fresh captured repurchase/history/idempotency.
+- [x] Approved effective refund settings: default seven-day capture-based course window, eligible category reasons/evidence, outside-window deny/manual-review exception, reasoned permissioned review and policy snapshot. Provider execution remains not_executed; no review-driven refund accounting/access changes.
+- [x] Independent joining/annual franchise fee configuration, approved version/effective date, requirements, annual due/grace projection and admin/applicant gated status. Fee collection and affiliation mutation remain closed.
+- [x] Result draft submit/review queue, main-admin-only final approval/rejection/publication enforcement, revision binding/CAS/audit, correction/resubmission and independent trusted-source/privacy gate.
+- [x] Configurable business/tax metadata with GSTIN format checks and explicit unresolved status; draft receipts/invoices remain noncompliant and automatic tax stays unavailable.
+- [x] Optional safe Content/Admission/Finance/Franchise/Support presets, individual edits and Custom selection; no sensitive privilege assignment or legacy grant migration.
+- [x] Full backend/shared-client regression: 197 passed, zero failed, three explicit skips; final affected-module rerun 30 passed/zero failed/skipped, and 47 browser entries passed/zero failed/skipped across the completed suites. All eight required widths covered by the expanded suite; overlapping focused reruns are not added to full-run counts.
+- [ ] Actual owner-approved category fees/privacy/guardian/document/retention and refund exception/legal policy configuration on the application database.
+- [ ] Franchise official eligibility, documents, agreement and activation approval, then separately controlled joining/renewal collection and verified extension.
+- [ ] Provider refund execution/completion/access handling, verified business/GST/tax-invoice compliance and trusted academic source/candidate privacy/correction/provider approval.
+- [ ] Stage 12 real Razorpay operator/capture/webhook acceptance; maintained real scanner/licensing and operational backup/capacity/runtime/device/deployment acceptance.
+
+Stop after Stage 14's local commit. No push, deployment, live payment, additional live SMTP or public tunnel is authorized.

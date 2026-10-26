@@ -35,6 +35,6 @@ export function createResultRouter(service) {
   }));
   router.get('/admin/results/records/:id', requirePermission('results.read'), async (req, res) => send(req, res, await service.detail('records', req.params.id)));
   router.post('/admin/results/imports', requirePermission('results.manage'), async (req, res) => send(req, res, await service.importRecords(req.body, req.auth, ctx(req))));
-  for (const action of ['publish', 'corrections', 'withdraw']) router.post('/admin/results/records/:id/' + action, requirePermission(action === 'corrections' ? 'results.manage' : 'results.publish'), async (req, res) => send(req, res, await service.changeRecord(req.params.id, action, req.body, ctx(req))));
+  for (const action of ['submit', 'approve', 'reject', 'publish', 'corrections', 'withdraw']) router.post('/admin/results/records/:id/' + action, requirePermission(['submit', 'approve', 'reject', 'corrections'].includes(action) ? 'results.manage' : 'results.publish'), async (req, res) => send(req, res, await service.changeRecord(req.params.id, action, req.body, ctx(req))));
   return router;
 }

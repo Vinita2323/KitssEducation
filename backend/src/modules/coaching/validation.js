@@ -54,6 +54,7 @@ const fields = {
     sortOrder: integer,
     priceMinor: v => integer(v, 0, 1000000000),
     durationDays: v => integer(v, 1, 36500),
+    durationMonths: v => integer(v, 1, 1200),
     eligibility: choice(['verified_account']),
     rulesApproved: bool,
     renewalApproved: value => {
@@ -81,6 +82,10 @@ export function inputFor(kind, body, creating) {
   for (const [name, value] of Object.entries(body)) if (name !== 'expectedRevision') fieldsOut[name] = fields[kind][name](value);
   if (['title', 'name', 'subjectKey'].some(k => k in fieldsOut && !fieldsOut[k])) throw invalid('Required text cannot be empty');
   if (fieldsOut.syllabus && new Set(fieldsOut.syllabus.map(s => s.key)).size !== fieldsOut.syllabus.length) throw invalid('Section keys must be unique');
+  if (kind === "plans") {
+    if (fieldsOut.durationDays != null && fieldsOut.durationMonths != null) throw invalid("Choose days or calendar months, not both");
+    if (creating && fieldsOut.priceMinor > 0 && fieldsOut.durationDays == null && fieldsOut.durationMonths == null) fieldsOut.durationMonths = 12;
+  }
   return {
     fields: fieldsOut,
     expectedRevision: creating ? undefined : revision(body.expectedRevision)

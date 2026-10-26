@@ -1,3 +1,4 @@
+import { FranchiseFeeStatus } from '../../user/components/common/FranchiseFeeStatus';
 import { useDialogFocus } from '../../../shared/ui/useDialogFocus';
 import React, { useState, useEffect } from "react";
 import {
@@ -137,7 +138,7 @@ export const AdminFranchiseRequestsPage = () => {
   };
   const editorDialog = useDialogFocus(Boolean(selectedFranchise), () => setSelectedFranchise(null));
   return (
-    <div className="space-y-6">
+    <div className="space-y-6"><FranchiseFeeStatus />
       {loadError && <p role="alert" className="p-3 bg-red-50 text-red-700 rounded-xl">{loadError}</p>}
       <Pagination meta={meta} onChange={setPage} loading={loading} />
       {/* Header Banner */}

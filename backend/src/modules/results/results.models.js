@@ -116,6 +116,7 @@ export function createResultModels(connection) {
     issueDate: Date,
     supersedesId: ref,
     correctionReason: String,
+    review: { type: Schema.Types.Mixed, default: () => ({ status: "draft" }) },
     withdrawalReason: String,
     status: {
       type: String,

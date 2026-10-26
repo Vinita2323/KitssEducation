@@ -23,7 +23,7 @@ test('Stage 8 real MongoDB results, recipient notices, profile and email securit
   const admin = await f.fixtureUser(),
     student = await f.fixtureUser(['student']),
     other = await f.fixtureUser(['student']);
-  const ctx = f.ctx,
+  const ctx = { ...f.ctx, actorId: admin.user.publicId },
     R = f.results,
     T = f.trusted,
     N = f.notifications,
@@ -193,7 +193,7 @@ test('Stage 8 real MongoDB results, recipient notices, profile and email securit
       expectedRevision: record.expectedRevision,
       sourceApproval: 'client-assertion'
     }, ctx), {
-      code: 'SOURCE_APPROVAL_REQUIRED'
+      code: 'MAIN_ADMIN_APPROVAL_REQUIRED'
     });
     await assert.rejects(() => T.lookup(lookup(), student.auth, ctx), {
       code: 'RESULT_NOT_FOUND'
@@ -201,6 +201,8 @@ test('Stage 8 real MongoDB results, recipient notices, profile and email securit
     assert.deepEqual((await R.history({}, student.auth)).data, []);
   });
   await t.test('isolated approved-source lookup exact ownership, proofs, marks and no secret DTO', async () => {
+    record = await T.changeRecord(record.id, 'submit', { expectedRevision: record.expectedRevision, reason: 'Synthetic submission' }, ctx);
+    record = await T.changeRecord(record.id, 'approve', { expectedRevision: record.expectedRevision, reason: 'Synthetic main admin approval' }, ctx);
     record = await T.changeRecord(record.id, 'publish', {
       expectedRevision: record.expectedRevision
     }, ctx);
@@ -229,6 +231,15 @@ test('Stage 8 real MongoDB results, recipient notices, profile and email securit
     });
     assert.equal((await T.history({}, student.auth)).data.length, 1);
     assert.equal(await f.models.ResultHistory.countDocuments(), 1);
+    // Legacy published data is preserved but cannot bypass the new final-approval rule.
+    const approved = (await f.models.ResultRecord.findById(record.id)).review;
+    await f.models.ResultRecord.updateOne({ _id: record.id }, { $unset: { review: 1 } });
+    await assert.rejects(() => T.lookup(lookup(), student.auth, ctx), { code: 'RESULT_NOT_FOUND' });
+    assert.deepEqual((await T.history({}, student.auth)).data, []);
+    await f.models.ResultRecord.updateOne({ _id: record.id }, { $set: { review: { ...approved, academicRevision: approved.academicRevision + 1 } } });
+    await assert.rejects(() => T.lookup(lookup(), student.auth, ctx), { code: 'RESULT_NOT_FOUND' });
+    await f.models.ResultRecord.updateOne({ _id: record.id }, { $set: { review: approved } });
+
   });
   await t.test('correction creates separate draft, original immutable; withdrawal audit revokes lookup', async () => {
     const correction = await T.changeRecord(record.id, 'corrections', {

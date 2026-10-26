@@ -45,6 +45,7 @@ const blank = {
     sortOrder: 0,
     priceMinor: '',
     durationDays: '',
+    durationMonths: '',
     eligibility: '',
     rulesApproved: false,
     status: 'draft'
@@ -136,7 +137,7 @@ export function AdminCoachingPage() {
       if (kind === 'plans') {
         payload.sortOrder = Number(payload.sortOrder);
         if (payload.priceMinor === '') delete payload.priceMinor;else payload.priceMinor = Number(payload.priceMinor);
-        if (payload.durationDays === '') delete payload.durationDays;else payload.durationDays = Number(payload.durationDays);
+        for (const unit of ['durationDays', 'durationMonths']) { if (payload[unit] === '' || payload[unit] == null) delete payload[unit]; else payload[unit] = Number(payload[unit]); }
         if (!payload.eligibility) delete payload.eligibility;
       }
       if (kind === 'lessons') payload.sortOrder = Number(payload.sortOrder);
@@ -216,7 +217,7 @@ export function AdminCoachingPage() {
             id: s.key,
             name: s.title
           })))}{field('sortOrder', 'Lesson order', 'number')}{field('description', 'Summary')}{select('linkedBookIds', 'Linked course books', choices.books.filter(b => (course.linkedBookIds ?? []).includes(b.id)), true)}<label className="block text-xs">Authored lesson content<textarea className={css} value={form.content} onChange={e => change('content', e.target.value)} /></label><MediaPicker purpose="lesson_document" label="Lesson PDF" value={form.documentAssetId} onChange={v => change('documentAssetId', v)} />{check('previewAllowed', 'Explicitly allow this lesson as a public preview')}<MediaPicker purpose="lesson_video" label="Lesson video" value={form.videoAssetId} onChange={v => change('videoAssetId', v)} /><p className="text-xs">MP4 H.264 with optional AAC audio. Uploads must pass inspection and scanning. Unpublish the course before replacing a lesson; existing referenced files remain protected.</p></>}
-      {kind === 'plans' && <>{field('name', 'Plan name')}{field('sortOrder', 'Plan display order', 'number')}<label className="block text-xs">Plan benefits (one per line)<textarea aria-label="Plan benefits" className={css} value={(form.features||[]).join('\n')} onChange={e=>change('features',e.target.value.split('\n'))}/></label>{check('popular','Highlight this plan')}{field('priceMinor', 'INR price in minor units', 'number')}{field('durationDays', 'Explicit access duration in days', 'number')}{select('eligibility', 'Approved eligibility', [{
+      {kind === 'plans' && <>{field('name', 'Plan name')}{field('sortOrder', 'Plan display order', 'number')}<label className="block text-xs">Plan benefits (one per line)<textarea aria-label="Plan benefits" className={css} value={(form.features||[]).join('\n')} onChange={e=>change('features',e.target.value.split('\n'))}/></label>{check('popular','Highlight this plan')}{field('priceMinor', 'INR price in minor units', 'number')}<p>New paid plans default to 12 calendar months when both duration fields are blank. Existing day plans keep their duration. Choose one unit; create a replacement plan to change units.</p>{field('durationDays', 'Explicit access duration in days', 'number')}{field('durationMonths', 'Access duration in calendar months', 'number')}{select('eligibility', 'Approved eligibility', [{
             id: 'verified_account',
             name: 'Verified active account'
           }])}{check('rulesApproved', 'I confirm price, duration and eligibility are approved')}<p className="text-xs">Prepaid access only. No recurring billing, free enrollment or renewal policy is enabled.</p></>}

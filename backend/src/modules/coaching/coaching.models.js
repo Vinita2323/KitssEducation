@@ -104,6 +104,7 @@ export function createCoachingModels(connection) {
       enum: ['INR'],
       default: 'INR'
     },
+    durationMonths: { type: Number, min: 1, max: 1200 },
     durationDays: {
       type: Number,
       min: 1,

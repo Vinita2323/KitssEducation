@@ -1,3 +1,4 @@
+import { refundPolicy, franchisePolicy, invoicePolicy, franchiseFeeStatus } from './policy-settings.js';
 import { randomUUID } from 'node:crypto';
 import { AppError } from '../../utils/AppError.js';
 import { object, text, id, revision, key, invalid } from '../publishing/validation.js';
@@ -15,20 +16,28 @@ const boolean = value => { if (typeof value !== 'boolean') throw invalid('Explic
 const amount = value => { if (!Number.isSafeInteger(value) || value < 0 || value > 1000000000) throw invalid('Invalid amount'); return value; };
 const date = value => { if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}T.*Z$/.test(value) || !Number.isFinite(Date.parse(value))) throw invalid('UTC date required'); return new Date(value); };
 export function registrationPolicy(input) {
-  object(input, ['status', 'feeRequired', 'amountMinor', 'currency', 'documents', 'privacyApproved', 'documentsApproved', 'effectiveFrom', 'effectiveTo', 'retentionDays', 'guardian'], ['status', 'feeRequired', 'currency', 'documents', 'privacyApproved', 'documentsApproved']);
+  object(input, ['status', 'feeRequired', 'amountMinor', 'currency', 'documents', 'privacyApproved', 'documentsApproved', 'effectiveFrom', 'effectiveTo', 'retentionDays', 'guardian', 'enabled', 'version', 'upload'], ['status', 'feeRequired', 'currency', 'documents', 'privacyApproved', 'documentsApproved']);
   if (!['draft', 'active', 'retired'].includes(input.status) || input.currency !== 'INR') throw invalid('Invalid policy status or currency');
+  if ("enabled" in input) boolean(input.enabled);
+  if (input.version != null && !text(input.version, 80).trim()) throw invalid("Policy version cannot be empty");
   const result = { ...input, feeRequired: boolean(input.feeRequired), privacyApproved: boolean(input.privacyApproved), documentsApproved: boolean(input.documentsApproved) };
   if ('amountMinor' in input) result.amountMinor = amount(input.amountMinor);
   if (input.status === 'active' && (!Number.isSafeInteger(result.amountMinor) || (input.feeRequired ? result.amountMinor <= 0 : result.amountMinor !== 0))) throw invalid('Active policies require an explicit positive paid fee or explicit zero free fee');
   if (!Array.isArray(input.documents) || input.documents.length > 10) throw invalid('At most ten approved document requirements');
-  result.documents = input.documents.map(d => { object(d, ['key', 'label'], ['key', 'label']); if (!/^[a-z][a-zA-Z0-9_-]{0,49}$/.test(d.key)) throw invalid('Invalid document key'); return { key: d.key, label: text(d.label, 100) }; });
+  result.documents = input.documents.map(d => { object(d, ['key', 'label', 'required'], ['key', 'label']); if ('required' in d) boolean(d.required); if (!/^[a-z][a-zA-Z0-9_-]{0,49}$/.test(d.key)) throw invalid('Invalid document key'); return { key: d.key, label: text(d.label, 100), ...(d.required == null ? {} : { required: d.required }) }; });
   if (new Set(result.documents.map(d => d.key)).size !== result.documents.length) throw invalid('Duplicate document requirement');
   for (const field of ['effectiveFrom', 'effectiveTo']) if (input[field]) result[field] = date(input[field]).toISOString();
   if (result.effectiveFrom && result.effectiveTo && result.effectiveFrom >= result.effectiveTo) throw invalid('Invalid effective range');
   if (input.retentionDays != null && (!Number.isSafeInteger(input.retentionDays) || input.retentionDays < 1 || input.retentionDays > 36500)) throw invalid('Retention must be an explicitly approved positive day count or unset');
+  if (input.upload) {
+    object(input.upload, ['mime', 'maxBytes'], ['mime', 'maxBytes']);
+    if (!Array.isArray(input.upload.mime) || !input.upload.mime.length || input.upload.mime.length > 3 || input.upload.mime.some(m => !['application/pdf','image/png','image/jpeg'].includes(m)) || !Number.isSafeInteger(input.upload.maxBytes) || input.upload.maxBytes < 1 || input.upload.maxBytes > 10485760) throw invalid('Registration upload settings must narrow the supported PDF/PNG/JPEG and 10 MiB limits');
+    result.upload = { mime: [...new Set(input.upload.mime)], maxBytes: input.upload.maxBytes };
+  }
   if (input.guardian) {
-    object(input.guardian, ['approved', 'version', 'text'], ['approved', 'version', 'text']);
-    result.guardian = { approved: boolean(input.guardian.approved), version: text(input.guardian.version, 80), text: text(input.guardian.text, 10000) };
+    object(input.guardian, ['approved', 'version', 'text', 'appliesTo'], ['approved', 'version', 'text']);
+    if (input.guardian.appliesTo != null && !['minors', 'all'].includes(input.guardian.appliesTo)) throw invalid('Guardian applicability must preserve the minor consent gate');
+    result.guardian = { ...(input.guardian.appliesTo ? { appliesTo: input.guardian.appliesTo } : {}), approved: boolean(input.guardian.approved), version: text(input.guardian.version, 80), text: text(input.guardian.text, 10000) };
     if (result.guardian.approved && (!result.guardian.version || !result.guardian.text)) throw invalid('Approved guardian workflow requires versioned consent wording');
   }
   return result;
@@ -51,7 +60,7 @@ export function createBusinessPolicyService(commerce) {
       if (!auth.user.roles.includes('super_admin')) throw new AppError(403, 'FORBIDDEN', 'Only the main admin can approve business policy configuration');
       object(input, ['value', 'expectedRevision', 'reason'], ['value', 'expectedRevision', 'reason']);
       if (!text(input.reason, 500).trim()) throw invalid('Policy change reason required');
-      object(input.value, ['registrations', 'manualAccess', 'invoice']);
+      object(input.value, ['registrations', 'manualAccess', 'invoice', 'refunds', 'franchise']);
       const value = {};
       if (input.value.registrations) {
         object(input.value.registrations, Object.keys(registrationFields));
@@ -62,23 +71,22 @@ export function createBusinessPolicyService(commerce) {
         value.manualAccess = { approved: boolean(input.value.manualAccess.approved), paidRevocationApproved: boolean(input.value.manualAccess.paidRevocationApproved), description: text(input.value.manualAccess.description, 2000) };
         if (value.manualAccess.approved && !value.manualAccess.description.trim()) throw invalid('Describe the approved exceptional grant policy');
       }
-      if (input.value.invoice) {
-        object(input.value.invoice, ['sellerName', 'sellerAddress', 'sellerTaxId', 'taxPolicyNote']);
-        value.invoice = Object.fromEntries(Object.entries(input.value.invoice).map(([k, v]) => [k, text(v, 2000)]));
-      }
+      if (input.value.invoice) value.invoice = invoicePolicy(input.value.invoice);
+      if (input.value.refunds) value.refunds = refundPolicy(input.value.refunds);
+      if (input.value.franchise) value.franchise = franchisePolicy(input.value.franchise);
       return coordination.run(async () => {
         let row = await Settings.findOne({ key: 'businessPolicies' });
         if (!row) {
           if (input.expectedRevision !== 0) throw invalid('Initial revision must be zero');
-          row = await Settings.create({ key: 'businessPolicies', value, revision: 1, policyHistory: [{ reason: input.reason, actorId: ctx.actorId, at: now(), revision: 1 }], auditOutbox: [event('business_policy_created', ctx)] });
+          row = await Settings.create({ key: 'businessPolicies', value, revision: 1, policyHistory: [{ reason: input.reason, actorId: ctx.actorId, at: now(), revision: 1, value }], auditOutbox: [event('business_policy_created', ctx)] });
           await commerce.flush(Settings, row);
-        } else row = await update(Settings, row, input.expectedRevision, { value, policyHistory: [...(row.policyHistory ?? []).map(plain), { reason: input.reason, actorId: ctx.actorId, at: now(), revision: row.revision + 1 }].slice(-100) }, 'business_policy_updated', ctx);
-        return { value: row.value, revision: row.revision };
+        } else row = await update(Settings, row, input.expectedRevision, { value, policyHistory: [...(row.policyHistory ?? []).map(plain), { reason: input.reason, actorId: ctx.actorId, at: now(), revision: row.revision + 1, value }].slice(-100) }, 'business_policy_updated', ctx);
+        return { value: row.value, revision: row.revision, history: row.policyHistory ?? [] };
       });
     },
     async policy(kind) {
       const settings = await api.settings(), policy = settings.value?.registrations?.[kind];
-      if (!policy || policy.status !== 'active' || !policy.privacyApproved || !policy.documentsApproved || policy.effectiveFrom && Date.parse(policy.effectiveFrom) > Date.now() || policy.effectiveTo && Date.parse(policy.effectiveTo) <= Date.now()) throw blocked('An active effective fee/document/privacy policy is required for this registration category');
+      if (!policy || policy.enabled === false || policy.status !== 'active' || !policy.privacyApproved || !policy.documentsApproved || policy.effectiveFrom && Date.parse(policy.effectiveFrom) > Date.now() || policy.effectiveTo && Date.parse(policy.effectiveTo) <= Date.now()) throw blocked('An active effective fee/document/privacy policy is required for this registration category');
       registrationPolicy(policy);
       return { ...policy, configRevision: settings.revision };
     },
@@ -103,6 +111,7 @@ export function createBusinessPolicyService(commerce) {
         if (!p.documents.some(d => d.key === input.key)) throw invalid('Select a configured document requirement');
         const asset = await publishing.media.linkable(input.assetId, 'registration_document', auth);
         if (!same(asset.ownerUserId, auth.user._id)) throw new AppError(403, 'FORBIDDEN', 'Only your own document can be attached');
+        if (p.upload && (!p.upload.mime.includes(asset.mime) || asset.bytes > p.upload.maxBytes)) throw invalid('Document does not meet the configured upload requirements');
         const documents = [...row.documents.filter(d => d.key !== input.key).map(plain), { key: input.key, assetId: asset._id, status: 'pending' }];
         return commerce.applicationDTO(await update(Application, row, input.expectedRevision, { documents }, 'registration_document_attached', ctx));
       });
@@ -113,12 +122,13 @@ export function createBusinessPolicyService(commerce) {
       if (policyContent(row.policySnapshot) !== policyContent(p)) throw blocked('Policy changed; request changes and resubmit for the current policy');
       for (const doc of p.documents) {
         const record = row.documents.find(d => d.key === doc.key);
-        if (!record || requireVerified && record.status !== 'verified' || !(await Media.exists({ _id: record?.assetId, purpose: 'registration_document', status: 'ready', 'scan.status': 'clean', ownerUserId: row.userId }))) throw blocked('Required documents must be attached, clean and verified where applicable');
+        if (!record && doc.required === false) continue;
+        if (!record || requireVerified && record.status !== 'verified' || !(await Media.exists({ _id: record?.assetId, purpose: 'registration_document', status: 'ready', 'scan.status': 'clean', ownerUserId: row.userId, ...(p.upload ? { mime: { $in: p.upload.mime }, bytes: { $lte: p.upload.maxBytes } } : {}) }))) throw blocked('Required documents must be attached, clean and verified where applicable');
       }
       const dob = row.applicant?.dob;
       if (typeof dob !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(dob) || !Number.isFinite(Date.parse(dob)) || new Date(dob).toISOString().slice(0, 10) !== dob || Date.parse(dob) > Date.now()) throw invalid('A valid date of birth is required to determine guardian-consent requirements');
       const adultAt = new Date(dob + 'T00:00:00Z'); adultAt.setUTCFullYear(adultAt.getUTCFullYear() + 18);
-      if (adultAt > now() && (!p.guardian?.approved || row.guardianConsent?.version !== p.guardian.version || !row.guardianConsent?.acceptedAt || !row.guardianConsent?.guardianName || requireVerified && !row.guardianConsent?.verifiedAt)) throw blocked('Minor registration requires the configured guardian consent and authorized verification workflow');
+      if ((adultAt > now() || p.guardian?.appliesTo === 'all') && (!p.guardian?.approved || row.guardianConsent?.version !== p.guardian.version || !row.guardianConsent?.acceptedAt || !row.guardianConsent?.guardianName || requireVerified && !row.guardianConsent?.verifiedAt)) throw blocked('Minor registration requires the configured guardian consent and authorized verification workflow');
       return p;
     },
     async submit(value, input, auth, ctx) {
@@ -136,7 +146,7 @@ export function createBusinessPolicyService(commerce) {
         }
         row.policySnapshot = p; row.guardianConsent = guardianConsent;
         await api.conditions(row);
-        const changed = await update(Application, row, input.expectedRevision, { policySnapshot: p, feeSnapshot: { amountMinor: p.amountMinor, currency: p.currency, configRevision: p.configRevision, feeRequired: p.feeRequired }, requiredDocuments: p.documents.map(d => d.key), guardianConsent: guardianConsent ?? null, submittedAt: now(), status: 'submitted', paymentState: p.feeRequired ? 'pending' : 'not_required' }, 'registration_submitted', ctx);
+        const changed = await update(Application, row, input.expectedRevision, { policySnapshot: p, feeSnapshot: { amountMinor: p.amountMinor, currency: p.currency, configRevision: p.configRevision, feeRequired: p.feeRequired }, requiredDocuments: p.documents.filter(d => d.required !== false).map(d => d.key), guardianConsent: guardianConsent ?? null, submittedAt: now(), status: 'submitted', paymentState: p.feeRequired ? 'pending' : 'not_required' }, 'registration_submitted', ctx);
         return commerce.applicationDTO(changed);
       });
     },
@@ -192,16 +202,31 @@ export function createBusinessPolicyService(commerce) {
       return update(Application, row, row.revision, { orderId: order._id, paymentState: 'verified' }, 'registration_fee_verified', { actorId: 'system' });
     },
     async refund(value, input, auth, ctx) {
-      object(input, ['reason', 'evidence', 'idempotencyKey'], ['reason', 'idempotencyKey']); key(input.idempotencyKey);
+      object(input, ['reason', 'evidence', 'idempotencyKey', 'reasonCategory'], ['reason', 'idempotencyKey']); key(input.idempotencyKey);
       const reason = text(input.reason, 2000), evidence = text(input.evidence ?? '', 2000); if (!reason.trim()) throw invalid('Refund reason required');
       const order = await commerce.owned(value, auth);
       if (order.status !== 'captured') throw blocked('Only captured orders accept refund requests');
+      const settings = await api.settings(), configured = settings.value?.refunds;
+      // Existing requests remain retryable after policy changes; new requests use current approved policy.
+      let eligibility;
+      if (!order.refundRequest) {
+        if (!configured?.approved || !configured.enabled || Date.parse(configured.effectiveFrom) > Date.now()) throw blocked('Refund requests require an enabled, approved effective refund policy');
+        const p = refundPolicy(configured), category = p.categories[order.product.kind];
+        if (!category?.enabled || !category.reasons.includes(input.reasonCategory)) throw blocked('Select an eligible configured refund reason category');
+        if ((category.evidenceRequired ?? p.evidenceRequired) && !evidence.trim()) throw invalid('Refund evidence is required by this policy');
+        if (!order.capturedAt || !order.capturedPaymentId) throw blocked('Verified payment capture evidence is required');
+        const age = Date.now() - new Date(order.capturedAt).getTime();
+        if (age < 0) throw blocked('Invalid capture timestamp');
+        const outsideWindow = order.product.kind === 'course_plan' && age > p.courseWindowDays * 86400000;
+        if (outsideWindow && p.outsideWindow === 'deny') throw blocked('Course refund request is outside the configured capture-based window');
+        eligibility = { policyVersion: p.version, configRevision: settings.revision, courseWindowDays: p.courseWindowDays, outsideWindow, reasonCategory: input.reasonCategory, accessAfterConfirmedRefund: p.accessAfterConfirmedRefund };
+      }
       const result = await commerce.change(order._id, 'refund_requested', current => {
         if (current.refundRequest) {
-          if (current.refundRequest.idempotencyKey !== input.idempotencyKey || current.refundRequest.reason !== reason || current.refundRequest.evidence !== evidence) throw blocked('An existing refund request must be reviewed first');
+          if (current.refundRequest.idempotencyKey !== input.idempotencyKey || current.refundRequest.reason !== reason || current.refundRequest.evidence !== evidence || current.refundRequest.eligibility?.reasonCategory !== input.reasonCategory) throw blocked('An existing refund request must be reviewed first');
           return null;
         }
-        return { refundRequest: { reason, evidence, idempotencyKey: input.idempotencyKey, status: 'pending', providerStatus: 'not_executed', requestedAt: now() } };
+        return { refundRequest: { reason, evidence, eligibility, idempotencyKey: input.idempotencyKey, status: 'pending', providerStatus: 'not_executed', requestedAt: now() } };
       }, ctx);
       return plain(result.refundRequest);
     },
@@ -214,6 +239,11 @@ export function createBusinessPolicyService(commerce) {
         return { refundRequest: { ...plain(current.refundRequest), status: input.status, reviewReason: input.reason, reviewedBy: ctx.actorId, reviewedAt: now(), providerStatus: 'not_executed' } };
       }, ctx);
       return plain(changed.refundRequest);
+    },
+    async franchiseFees() { return franchiseFeeStatus((await api.settings()).value?.franchise); },
+    async refundOptions() {
+      const p = (await api.settings()).value?.refunds;
+      return { available: Boolean(p?.approved && p.enabled && Date.parse(p.effectiveFrom) <= Date.now()), policy: p ? { version: p.version, courseWindowDays: p.courseWindowDays, outsideWindow: p.outsideWindow, evidenceRequired: p.evidenceRequired, categories: p.categories } : null };
     },
     async invoiceDraft(order, auth) {
       const settings = await api.settings();

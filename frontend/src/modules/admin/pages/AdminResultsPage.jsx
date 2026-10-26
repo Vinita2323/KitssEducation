@@ -12,12 +12,12 @@ const paths = {
 };
 export function AdminResultsPage() {
   const {
-    can
+    can, user
   } = useAuth();
   const [tab, setTab] = useState('issuers'),
     [rows, setRows] = useState([]),
     [meta, setMeta] = useState(null),
-    [page, setPage] = useState(1);
+    [page, setPage] = useState(1), [reviewStatus, setReviewStatus] = useState('');
   const [form, setForm] = useState(null),
     [values, setValues] = useState({}),
     [error, setError] = useState(''),
@@ -31,7 +31,7 @@ export function AdminResultsPage() {
     [reason, setReason] = useState(''),
     [source, setSource] = useState('');
   const refresh = async () => {
-    const r = await httpClient.request(paths[tab] + '?page=' + page);
+    const r = await httpClient.request(paths[tab] + '?page=' + page + (tab === 'records' && reviewStatus ? '&reviewStatus=' + reviewStatus : ''));
     setRows(r.data);
     setMeta(r.meta);
   };
@@ -39,7 +39,7 @@ export function AdminResultsPage() {
     const c = new AbortController();
     setError('');
     setRows([]);
-    httpClient.request(paths[tab] + '?page=' + page, {
+    httpClient.request(paths[tab] + '?page=' + page + (tab === 'records' && reviewStatus ? '&reviewStatus=' + reviewStatus : ''), {
       signal: c.signal
     }).then(r => {
       if (!c.signal.aborted) {
@@ -50,7 +50,7 @@ export function AdminResultsPage() {
       if (!c.signal.aborted) setError(e.message);
     });
     return () => c.abort();
-  }, [tab, page]);
+  }, [tab, page, reviewStatus]);
   const run = async work => {
     setBusy(true);
     setError('');
@@ -145,6 +145,7 @@ export function AdminResultsPage() {
         setForm(null);
         setDetail(null);
       }} className={'border p-2 rounded-xl ' + (tab === t ? 'bg-[#0A1D3F] text-white' : 'bg-white')}>{t}</button>)}{tab !== 'records' && can('results.manage') && <button disabled={busy} onClick={() => edit(null)} className="bg-[#0A1D3F] text-white p-2 rounded-xl">Add {tab === 'issuers' ? 'issuer' : 'exam'}</button>}</div>
+    {tab === 'records' && <label className="block">Review queue<select aria-label="Result review status" className="block border p-2 rounded-xl w-full" value={reviewStatus} onChange={e => { setReviewStatus(e.target.value); setPage(1); }}><option value="">All records</option>{['draft','submitted','approved','rejected'].map(s => <option key={s}>{s}</option>)}</select></label>}
     <div className="overflow-x-auto rounded-xl border bg-white"><table className="w-full text-sm"><thead><tr><th className="p-3 text-left">Record</th><th>Status</th><th>Revision</th><th>Actions</th></tr></thead><tbody>{rows.map(row => <tr className="border-t" key={row.id}><td className="p-3 break-words">{row.name ?? row.title ?? row.rollNormalized}<p className="text-xs">{row.id}</p></td><td>{row.status}</td><td>{row.revision}</td><td><div className="flex flex-wrap gap-2 p-2"><button disabled={busy} onClick={() => inspect(row)}>Review</button>{tab !== 'records' && can('results.manage') && <><button disabled={busy} onClick={() => edit(row)}>Edit</button><button disabled={busy} onClick={() => window.confirm('Archive this configuration?') && run(() => authenticatedWrite(paths[tab] + '/' + row.id, {
                     expectedRevision: row.revision
                   }, 'DELETE'))}>Archive</button></>}</div></td></tr>)}</tbody></table>{!rows.length && <p className="p-4 text-sm">No records.</p>}</div>
@@ -168,6 +169,6 @@ export function AdminResultsPage() {
         setDryRun(null);
         setImportKey(crypto.randomUUID());
       }} /><button disabled={busy || !assetId || !examId} onClick={() => importRows(false)} className="border p-2 rounded-xl">Validate import</button><button disabled={busy || !dryRun?.validationToken} onClick={() => importRows(true)} className="border p-2 rounded-xl ml-2">Import validated drafts</button>{dryRun && <pre role="status" className="overflow-auto text-xs p-2">{JSON.stringify(dryRun, null, 2)}</pre>}</section>}
-    {detail && <section className="bg-white border p-4 rounded-xl space-y-3"><h2 className="font-bold">Review record and audit history</h2><pre className="text-xs overflow-auto max-h-96">{JSON.stringify(detail, null, 2)}</pre>{tab === 'records' && <><label className="block text-sm">Reason<input aria-label="Result action reason" value={reason} onChange={e => setReason(e.target.value)} className="block w-full border rounded-xl p-2" /></label>{can('results.publish') && <><button disabled={busy} onClick={() => action('publish', detail)} className="border rounded-xl p-2">Request publication</button><button disabled={busy || !reason} onClick={() => window.confirm('Withdraw this result?') && action('withdraw', detail)} className="border rounded-xl p-2">Withdraw result</button></>}{can('results.manage') && <><label className="block text-sm">Correction source reference<input value={source} onChange={e => setSource(e.target.value)} className="w-full border p-2 rounded-xl" /></label><label className="block text-sm">Complete corrected row (kitss-results-v1 JSON)<textarea aria-label="Corrected result JSON" rows={8} value={correction} onChange={e => setCorrection(e.target.value)} className="block w-full border p-2 rounded-xl font-mono text-xs" /></label><button disabled={busy || !reason || !source || !correction} onClick={() => action('corrections', detail)} className="border rounded-xl p-2">Create correction draft</button></>}</>}</section>}
+    {detail && <section className="bg-white border p-4 rounded-xl space-y-3"><h2 className="font-bold">Review record and audit history</h2><pre className="text-xs overflow-auto max-h-96">{JSON.stringify(detail, null, 2)}</pre>{tab === 'records' && <><label className="block text-sm">Reason<input aria-label="Result action reason" value={reason} onChange={e => setReason(e.target.value)} className="block w-full border rounded-xl p-2" /></label>{can('results.manage') && <button disabled={busy || !reason || detail.status !== 'draft' || !['draft','rejected'].includes(detail.review?.status ?? 'draft')} onClick={() => action('submit', detail)} className="border rounded-xl p-2">Submit for main-admin review</button>}{user?.roles.includes('super_admin') && detail.review?.status === 'submitted' && <>{['approve','reject'].map(a => <button key={a} disabled={busy || !reason} onClick={() => action(a, detail)} className="border rounded-xl p-2">{a === 'approve' ? 'Approve official result revision' : 'Reject result with reason'}</button>)}</>}{can('results.publish') && user?.roles.includes('super_admin') && <><button disabled={busy} onClick={() => action('publish', detail)} className="border rounded-xl p-2">Request publication</button><button disabled={busy || !reason} onClick={() => window.confirm('Withdraw this result?') && action('withdraw', detail)} className="border rounded-xl p-2">Withdraw result</button></>}{can('results.manage') && <><label className="block text-sm">Correction source reference<input value={source} onChange={e => setSource(e.target.value)} className="w-full border p-2 rounded-xl" /></label><label className="block text-sm">Complete corrected row (kitss-results-v1 JSON)<textarea aria-label="Corrected result JSON" rows={8} value={correction} onChange={e => setCorrection(e.target.value)} className="block w-full border p-2 rounded-xl font-mono text-xs" /></label><button disabled={busy || !reason || !source || !correction} onClick={() => action('corrections', detail)} className="border rounded-xl p-2">Create correction draft</button></>}</>}</section>}
   </div>;
 }

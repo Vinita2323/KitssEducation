@@ -1,3 +1,4 @@
+import { FranchiseFeeStatus } from '../common/FranchiseFeeStatus';
 import React, { useState, useEffect } from "react";
 import {
   Building2,
@@ -419,7 +420,7 @@ export const CollegeFranchiseForm = ({ onBack }) => {
 
   if (successData) {
     return (
-      <div className="bg-white p-5 sm:p-7 rounded-md border border-[#E2E8F0] shadow-md max-w-xl mx-auto text-center space-y-5 animate-in zoom-in-95 duration-200">
+      <div className="bg-white p-5 sm:p-7 rounded-md border border-[#E2E8F0] shadow-md max-w-xl mx-auto text-center space-y-5 animate-in zoom-in-95 duration-200"><FranchiseFeeStatus />
         <div className="w-14 h-14 rounded-md bg-amber-500/10 text-amber-600 border border-amber-500/20 flex items-center justify-center mx-auto shadow-2xs">
           <ShieldCheck className="w-7 h-7 stroke-[2.2]" />
         </div>
@@ -541,6 +542,7 @@ export const CollegeFranchiseForm = ({ onBack }) => {
   // ========================================================
   return (
     <div className="bg-white p-4 sm:p-6 lg:p-7 rounded-md border border-[#E2E8F0] shadow-md max-w-2xl sm:max-w-3xl mx-auto text-left transition-all">
+      <FranchiseFeeStatus />
       <div className="mb-4 bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-[#0A1D3F] space-y-2"><p>Document-free review is permitted. Secure uploads and franchise approval are pending. Selecting a file does not upload it.</p>{draftMessage && <p role="status">{draftMessage}</p>}<button type="button" disabled={submitting || !selectedUniversity || !selectedCollege} onClick={saveDraft} className="px-3 py-2 rounded-lg bg-[#0A1D3F] text-white disabled:opacity-40">Save Draft</button>{draft && <button type="button" onClick={() => { const link = window.location.origin + '/register?type=franchise&draft=' + draft.id + '#' + (draft.draftCapability || ''); navigator.clipboard.writeText(link).then(() => showSuccess('Private recovery link copied. Keep it secret; guest links expire in 24 hours.')).catch(() => showError('Unable to copy link')); }} className="px-3 py-2">Copy private recovery link</button>}</div>
       {/* Top Header Navigation */}
       <div className="flex items-center justify-between border-b border-[#E2E8F0] pb-3.5 mb-4">

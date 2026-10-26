@@ -89,7 +89,7 @@ export const coachingService = {
         ...p,
         isPopular: p.popular === true,
         price: p.priceMinor / 100,
-        duration: p.durationDays + ' days'
+        duration: p.durationMonths ? p.durationMonths + ' calendar months' : p.durationDays + ' days'
       })),
       subjectsData: syllabus.sections.map(section => ({
         id: section.key,

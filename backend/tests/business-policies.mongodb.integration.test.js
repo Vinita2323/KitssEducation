@@ -118,8 +118,9 @@ test('Stage 13 policy workflows, private documents, free/paid access and granula
     assert.equal((await f.learning.enrollment(d.course.id, d.other.auth, false)).canAccess, false);
   });
   await t.test('refund request/review remains non-executed and preserves capture and access', async () => {
+    value.refunds = { approved: true, version: 'synthetic-v1', effectiveFrom: '2020-01-01T00:00:00Z', enabled: true, courseWindowDays: 7, outsideWindow: 'deny', evidenceRequired: false, categories: { course_plan: { enabled: true, reasons: ['technical_failure'] } }, accessAfterConfirmedRefund: 'separate_review' }; await save();
     const order = await f.models.Order.findOne({ userId: d.student.user._id, 'product.kind': 'course_plan' });
-    const r = await api('/me/orders/' + order._id + '/refund-requests', { actor: d.student, method: 'POST', data: { reason: 'Synthetic manual review', evidence: 'No real customer data', idempotencyKey: randomUUID() } }); assert.equal(r.status, 201);
+    const r = await api('/me/orders/' + order._id + '/refund-requests', { actor: d.student, method: 'POST', data: { reason: 'Synthetic manual review', reasonCategory: 'technical_failure', evidence: 'No real customer data', idempotencyKey: randomUUID() } }); assert.equal(r.status, 201);
     const updated = await f.models.Order.findById(order._id);
     const decision = await api('/admin/orders/' + order._id + '/refund-request', { method: 'PATCH', data: { expectedRevision: updated.revision, status: 'approved', reason: 'Review only' } }); assert.equal(decision.status, 200); assert.equal(decision.body.data.providerStatus, 'not_executed'); assert.equal((await f.models.Order.findById(order._id)).status, 'captured');
     const receipt = await f.service.receipt(String(order._id), d.student.auth); assert.equal(receipt.invoiceDraft.status, 'draft'); assert.equal(receipt.invoiceDraft.complianceApproved, false); assert.ok(receipt.invoiceDraft.verifiedPaymentReference);

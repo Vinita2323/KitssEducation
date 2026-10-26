@@ -114,10 +114,13 @@ test('Stage 8 real API/Mongo browser; synthetic source/mail only', {
     dryRun: false,
     validationToken: dry.validationToken
   }, admin.auth, ctx);
-  const record = (await f.results.list('records')).data[0];
+  let record = (await f.results.list('records')).data[0];
+  const approvalCtx = { ...ctx, actorId: admin.user.publicId };
+  record = await f.trusted.changeRecord(record.id, 'submit', { expectedRevision: record.expectedRevision, reason: 'Synthetic review submission' }, approvalCtx);
+  record = await f.trusted.changeRecord(record.id, 'approve', { expectedRevision: record.expectedRevision, reason: 'Synthetic main admin approval' }, approvalCtx);
   await f.trusted.changeRecord(record.id, 'publish', {
     expectedRevision: record.expectedRevision
-  }, ctx);
+  }, approvalCtx);
   backend = http.createServer();
   await new Promise(r => backend.listen(0, '127.0.0.1', r));
   vite = await createServer({

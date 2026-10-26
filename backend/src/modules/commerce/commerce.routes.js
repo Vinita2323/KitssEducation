@@ -19,8 +19,10 @@ export function createCommerceRouter(service, { operations } = {}) {
   const ctx = req => ({ actorId: req.auth?.user.publicId, requestId: req.requestId, ip: req.ip });
   const reply = (req, res, data, status = 200) => res.status(status).json({ data, requestId: req.requestId });
   router.get('/public/registration-config', async (req, res) => reply(req, res, await service.registrationConfig()));
+  router.get('/public/franchise-fees', async (req, res) => reply(req, res, await service.business.franchiseFees()));
+  router.get('/me/refund-policy', requireSession, async (req, res) => reply(req, res, await service.business.refundOptions()));
   router.get('/public/payment-config', (req, res) => reply(req, res, { paymentMode: 'test', available: service.provider.ready && !service.provider.simulated, reason: service.provider.ready ? null : 'Rotated credentials and operator validation pending', coachingEnabled: service.provider.ready && !service.provider.simulated, registrationEnabled: service.provider.ready && !service.provider.simulated }));
-  router.get('/admin/business-policies', requirePermission('settings.read'), async (req, res) => { const row = await service.business.settings(); reply(req, res, { value: row.value, revision: row.revision }); });
+  router.get('/admin/business-policies', requirePermission('settings.read'), async (req, res) => { const row = await service.business.settings(); reply(req, res, { value: row.value, revision: row.revision, history: row.policyHistory ?? [] }); });
   router.patch('/admin/business-policies', requirePermission('settings.write'), async (req, res) => reply(req, res, await service.business.save(req.body, req.auth, ctx(req))));
   router.post('/books/:id/access', requireSession, async (req, res) => { object(req.body, []); reply(req, res, await service.freeBook(req.params.id, req.auth, ctx(req))); });
   router.post('/me/orders/:id/refund-requests', requireSession, async (req, res) => reply(req, res, await service.business.refund(req.params.id, req.body, req.auth, ctx(req)), 201));

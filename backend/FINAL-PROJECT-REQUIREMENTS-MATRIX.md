@@ -1,5 +1,20 @@
 # Final original-requirements matrix
 
+## Stage 14 superseding business-rule evidence - 26 October 2026
+
+[Stage 14 report](STAGE14-BUSINESS-RULES-ACCEPTANCE-REPORT.md) records current software acceptance and explicit external gates. Historical 212-entry totals below are not recalculated operational acceptance.
+
+| Existing traceability | Stage 14 refinement | Remaining gate |
+|---|---|---|
+| F05-F07/F17; A15-A19/B10-B13 | Per-category disable/version, optional documents, narrower MIME/byte requirements, guardian applicability preserving minor gate, unavailable reasons and audited settings history/snapshots; existing captured-fee activation and review reused. | Actual approved fee/privacy/document/guardian/retention and eligibility configuration. |
+| F15/F16/F18; A36/A47/A54-A58/G08 | Paid books retain lifetime source-bound rights; new paid plans default to 12 UTC calendar months, explicit month/day overrides, immutable order snapshots and existing repurchase/history. | Optional paid-book expiry deferred; real provider/scanner/licensed delivery acceptance. |
+| A59-A61/B22-B24 | Approved effective refund policy with seven-day capture-based course default, reasons/evidence/exceptions and review-only state; business/tax metadata complement noncompliant draft invoice. | Actual policy/legal/business/GST decisions; provider refund completion/accounting/access handling and official tax invoices. |
+| F08; A28-A31/B06-B09 | Independent joining/annual fee configuration, versions/effective date/requirements and clamped anniversary/grace projection, gated admin/applicant status. | Official affiliation criteria/documents/agreement/activation and verified joining/renewal execution. |
+| F20/F21; existing result contracts | Draft submission/review queue, reason/CAS/audit, main-admin-only approval/rejection/publication and correction/resubmission. Legacy results.publish cannot bypass backend main-admin checks. | Trusted issuer/source/privacy/correction policy and third-party selection; approval never enables official publication alone. |
+| F04/F25; B14-B18 | Optional safe permission presets plus editable individual selections; existing staff invitation/session invalidation/direct-denial controls preserved and regression tested. | Live onboarding/operational acceptance unchanged; no legacy permission migration. |
+
+No new collection or application data/index migration. Real isolated MongoDB, synthetic adapters and browser evidence are distinguished from provider acceptance. No actual `.env` changes or additional emails/payments.
+
 ## Stage 13 superseding workflow evidence - 26 October 2026
 
 [Stage 13 report](STAGE13-BUSINESS-POLICIES-RBAC-REPORT.md) supersedes the older blanket-block descriptions in the rows below. The original 212-entry classification totals remain a historical baseline, not a recalculated Stage 13 operational-acceptance count. Configurable software success does not establish live privacy, financial or provider acceptance.

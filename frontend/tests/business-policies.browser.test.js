@@ -6,12 +6,12 @@ import { fileURLToPath } from 'node:url';
 import { randomUUID } from 'node:crypto';
 import { chromium } from 'playwright-core';
 import { createServer } from 'vite';
-import { coachingFixture } from '../../backend/tests/coaching-fixture.js';
+import { stage8Fixture } from '../../backend/tests/stage8-fixture.js';
 
 const db = process.env.KITSS_STAGE13_BROWSER_DB, chrome = 'C:/Program Files/Google/Chrome/Application/chrome.exe';
 test('Stage 13 real browser/HTTP/MongoDB policy, free content and keyboard granular staff UI (fake scanner/mail/payment only)', { skip: !db ? 'No KITSS_STAGE13_BROWSER_DB' : !existsSync(chrome) ? 'Chrome unavailable' : false, timeout: 600000 }, async t => {
   const messages = [];
-  const f = await coachingFixture(db, { mail: { configured: true, send: async m => messages.push(m) } });
+  const f = await stage8Fixture(db, { mail: { configured: true, send: async m => messages.push(m) } });
   let vite, backend, browser;
   t.after(async () => { await browser?.close(); await vite?.close(); if (backend) await new Promise(resolve => { backend.close(resolve); backend.closeAllConnections(); }); await f.close(); });
   const d = await f.seed();
@@ -39,6 +39,31 @@ test('Stage 13 real browser/HTTP/MongoDB policy, free content and keyboard granu
     await page.getByRole('button', { name: 'Save business policies', exact: true }).click(); const savedResponse = await saved; assert.equal(savedResponse.status(), 200, JSON.stringify(await savedResponse.json()));
     assert.equal((await f.service.business.settings()).value.registrations.study.amountMinor, 0);
   });
+  await t.test('main admin configures refund/franchise/tax metadata without enabling operational gates', async () => {
+    await page.getByLabel('Owner approved refund policy', { exact: true }).check();
+    await page.getByLabel('refund version', { exact: true }).fill('synthetic-browser-v1');
+    await page.getByLabel('refund effectiveFrom (UTC ISO date)', { exact: true }).fill('2020-01-01T00:00:00Z');
+    await page.getByLabel('Enable refund requests', { exact: true }).check();
+    await page.getByLabel('Enable course_plan refund review', { exact: true }).check();
+    await page.getByLabel('course_plan allowed reason categories (one per line)', { exact: true }).fill('technical_failure');
+    await page.getByLabel('Owner approved franchise policy', { exact: true }).check();
+    await page.getByLabel('franchise version', { exact: true }).fill('synthetic-franchise-v1');
+    await page.getByLabel('franchise effectiveFrom (UTC ISO date)', { exact: true }).fill('2020-01-01T00:00:00Z');
+    await page.getByLabel('Enable joining fee', { exact: true }).check();
+    await page.getByLabel('joining amount (INR minor units)', { exact: true }).fill('100');
+    await page.getByLabel('Enable renewal fee', { exact: true }).check();
+    await page.getByLabel('renewal amount (INR minor units)', { exact: true }).fill('200');
+    await page.getByLabel('Policy change reason').fill('Synthetic financial configuration only');
+    const response = page.waitForResponse(r => r.url().endsWith('/admin/business-policies') && r.request().method() === 'PATCH');
+    await page.getByRole('button', { name: 'Save business policies', exact: true }).click(); assert.equal((await response).status(), 200);
+    assert.equal((await f.service.business.settings()).value.refunds.courseWindowDays, 7);
+    assert.equal((await f.service.business.franchiseFees()).affiliationState, 'blocked_pending_policy');
+    for (const width of [320,375,390,414,768,1024,1280,1440]) {
+      await page.setViewportSize({ width, height: 950 });
+      await page.getByLabel('Course refund window (days)', { exact: true }).focus();
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1), false, 'Financial policy overflow at ' + width);
+    }
+  });
   await t.test('verified user submits saved registration and main admin reviews/activates it without changing identity roles', async () => {
     const row = await f.service.createApplication({ kind: 'study', applicant: { studentName: 'Browser applicant', dob: '1990-01-01' }, idempotencyKey: randomUUID() }, d.student.auth, f.ctx);
     await identity(d.student); await goto('/register?type=study&application=' + row.id);
@@ -55,10 +80,33 @@ test('Stage 13 real browser/HTTP/MongoDB policy, free content and keyboard granu
     assert.equal((await f.models.RegistrationApplication.findById(row.id)).status, 'activated');
     assert.deepEqual((await f.models.User.findById(d.student.user._id)).roles, ['student']);
   });
+  await t.test('result draft review queue, main-admin approval and source gate through browser', async () => {
+    const issuer = await f.models.ResultIssuer.create({ key: randomUUID(), type: 'school', name: 'Synthetic browser', fullName: 'Synthetic browser issuer', status: 'active', source: { authorizationReference: 'SYNTHETIC_ISOLATED_ONLY' } });
+    const exam = await f.models.Exam.create({ issuerId: issuer._id, key: randomUUID(), title: 'Synthetic exam', year: 2026, status: 'published' });
+    const record = await f.models.ResultRecord.create({ examId: exam._id, rollNormalized: 'SYNTHETIC-BROWSER', userId: d.student.user._id, revision: 1, source: { checksum: 'synthetic-source-only' }, __v: 0 });
+    await identity(d.admin); await goto('/admin/results');
+    await page.getByRole('button', { name: 'records', exact: true }).click();
+    await page.getByRole('button', { name: 'Review', exact: true }).click();
+    await page.getByLabel('Result action reason').fill('Synthetic reviewed source');
+    await page.getByRole('button', { name: 'Submit for main-admin review', exact: true }).click();
+    await page.getByRole('button', { name: 'Approve official result revision', exact: true }).click();
+    await page.getByRole('button', { name: 'Approve official result revision', exact: true }).waitFor({ state: 'detached' });
+    assert.equal((await f.models.ResultRecord.findById(record._id)).review.status, 'approved');
+    await page.getByRole('button', { name: 'Request publication', exact: true }).click();
+    await page.getByRole('alert').filter({ hasText: 'Official result publication is disabled' }).waitFor();
+    for (const width of [320,375,390,414,768,1024,1280,1440]) { await page.setViewportSize({ width, height: 950 }); assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1), false, 'Results overflow at ' + width); }
+    assert.equal((await f.models.ResultRecord.findById(record._id)).status, 'draft');
+  });
   await t.test('main admin creates a default-deny invitation using grouped individual permission controls', async () => {
     await identity(d.admin); await goto('/admin/users'); await page.getByText('Staff invitations', { exact: true }).click();
     const email = randomUUID() + '@example.invalid';
     await page.getByLabel('Staff name', { exact: true }).fill('Browser subadmin'); await page.getByLabel('Staff email', { exact: true }).fill(email);
+    await page.getByLabel('Permission preset', { exact: true }).selectOption('Content Manager');
+    assert.equal(await page.getByLabel('books.create', { exact: true }).isChecked(), true);
+    await page.getByLabel('Permission preset', { exact: true }).selectOption('Support Manager');
+    assert.equal(await page.getByLabel('books.create', { exact: true }).isChecked(), false);
+    await page.getByLabel('commerce.read', { exact: true }).uncheck();
+    await page.getByLabel('registrations.read', { exact: true }).uncheck();
     const read = page.getByLabel('books.read', { exact: true }); await read.focus(); await page.keyboard.press('Space');
     assert.equal(await read.isChecked(), true); assert.equal(await page.getByLabel('books.create', { exact: true }).isChecked(), false);
     const response = page.waitForResponse(r => r.url().endsWith('/admin/users/invitations') && r.request().method() === 'POST');
@@ -94,6 +142,7 @@ test('Stage 13 real browser/HTTP/MongoDB policy, free content and keyboard granu
     assert.equal(await f.models.Order.countDocuments(), 0);
     assert.equal(f.provider.creates, 0); assert.deepEqual(errors, []);
   });
+  { const row = await f.service.business.settings(); await f.service.business.save({ value: { ...row.value, refunds: { approved: true, version: 'synthetic-v1', effectiveFrom: '2020-01-01T00:00:00Z', enabled: true, courseWindowDays: 7, outsideWindow: 'deny', evidenceRequired: false, categories: { course_plan: { enabled: true, reasons: ['technical_failure'] } }, accessAfterConfirmedRefund: 'separate_review' } }, expectedRevision: row.revision, reason: 'Synthetic refund configuration' }, d.admin.auth, f.ctx); }
   await t.test('expired paid course repurchase uses a new verified simulated order through existing Checkout UI', async () => {
     let course = await f.models.Course.findById(d.course.id); await f.learning.publish(d.course.id, { expectedRevision: course.revision, publish: false }, d.admin.auth, f.ctx);
     const plan = await f.models.CoursePlan.findById(d.plan.id); await f.learning.mutate('plans', d.plan.id, d.course.id, { expectedRevision: plan.revision, priceMinor: 12345 }, d.admin.auth, f.ctx);
@@ -118,6 +167,7 @@ test('Stage 13 real browser/HTTP/MongoDB policy, free content and keyboard granu
     const rows = await f.models.Order.find({ userId: actor.user._id }); assert.equal(rows.length, 2); assert.ok(rows.every(r => r.status === 'captured' && r.simulated));
     const enrollment = await f.models.Enrollment.findOne({ userId: actor.user._id }); assert.equal(enrollment.purchaseHistory.length, 1); assert.notEqual(String(enrollment.orderId), first.id);
     await goto('/orders'); await page.getByRole('button', { name: 'View Receipt', exact: true }).first().click();
+    await page.getByLabel('Refund reason category', { exact: true }).selectOption('technical_failure');
     await page.getByLabel('Reason', { exact: true }).fill('Synthetic browser refund review');
     await page.getByLabel('Supporting explanation (no sensitive document data)', { exact: true }).fill('Test evidence only');
     const requested = page.waitForResponse(r => r.url().endsWith('/refund-requests') && r.request().method() === 'POST');
