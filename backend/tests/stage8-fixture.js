@@ -1,3 +1,4 @@
+import { createFcmService } from '../src/modules/notifications/fcm.service.js';
 import { coachingFixture } from './coaching-fixture.js';
 import { createResultModels } from '../src/modules/results/results.models.js';
 import { createResultService } from '../src/modules/results/results.service.js';
@@ -28,11 +29,14 @@ export async function stage8Fixture(name, options = {}) {
       ...args,
       trustedSource: issuer => issuer.source?.authorizationReference === 'SYNTHETIC_ISOLATED_ONLY'
     });
+    const fcm = options.notificationTransport ? await createFcmService({ connection: f.connection, config: f.config, logger: f.logger, authService: f.auth, coordination: f.coordination, transport: options.notificationTransport }) : undefined;
+    if (fcm) await fcm.initialize();
     const notifications = await createNotificationService({
       connection: f.connection,
       authService: f.auth,
       publishingModule: f,
-      coachingService: f.learning
+      coachingService: f.learning,
+      fcmService: fcm, businessEvents: options.businessEvents === true
     });
     const account = createAccountService({
       authService: f.auth,
@@ -40,7 +44,7 @@ export async function stage8Fixture(name, options = {}) {
       mail,
       institutions: f.institutions
     });
-    Object.assign(f.models, resultModels, notifications.models);
+    Object.assign(f.models, resultModels, notifications.models, fcm?.models);
     const app = (useTrusted = false) => createApp({
       config: f.config,
       logger: f.logger,

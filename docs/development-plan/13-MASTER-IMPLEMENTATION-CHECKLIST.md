@@ -731,3 +731,24 @@ See [Stage 15 report](../../backend/STAGE15-MEDIA-OPERATIONAL-ACCEPTANCE-REPORT.
 - [ ] Stage 14 business/legal/affiliation/tax/result-source and actual Razorpay operational gates remain open.
 
 Stop after Stage 15 local commit. No push, deployment, public tunnel, real Razorpay transaction, extra live SMTP delivery or existing application-record modification.
+
+
+## Stage 16 notifications and Firebase security - 26 October 2026
+
+See [Stage 16 report](../../backend/STAGE16-NOTIFICATIONS-FIREBASE-SECURITY-REPORT.md) and [notification operations](../../PUSH_NOTIFICATIONS_SOP.md). These entries supersede the Stage 15 Firebase audit blocker for the final lockfile only.
+
+- [x] Inspect/attribute pre-existing notification/Firebase work; obtain explicit owner approval to harden and include it, preserving unrelated work and private configuration.
+- [x] Retain Notification/NotificationReceipt, F23 / A66-A68 / G14 / B34, existing admin controls, audiences, preferences, read persistence and server permission checks.
+- [x] Consume committed business audit events with unique notice keys/processed markers; reuse existing jobs for bounded leased device delivery, retries and dead states. Failed notices cannot authorize/roll back business writes.
+- [x] Cover registration states, synthetic verified capture/paid/free access, franchise review, refund review, main-admin result approval, staff invitations/account changes; retain official affiliation/result/refund-provider gates.
+- [x] Enforce token account/session/security-version/idle/expiry/revocation eligibility, global uniqueness, takeover/removal restrictions, bounded rate/device limits and generic push payloads.
+- [x] Use authenticated CSRF-protected frontend writes, identity epochs, explicit consent, safe logout cleanup, listener disposal, bundled SDK worker, fixed internal navigation and keyboard list actions; preserve existing UI flows.
+- [x] Remediate four aggregate frontend audit findings via compatible pinned public Firebase 12.19.0 and targeted patched gRPC 1.14.6 override; pin Firebase Admin 14.5.0. Both npm audits zero; no forced audit fix or unrelated dependency upgrades.
+- [x] Real isolated loopback MongoDB acceptance: final focused 29 passed/zero failed/skipped; full backend 217 passed/zero failed/three explicit skips; shared client eight passed. Focused cases overlap the broad regression.
+- [x] Chrome notification/admin QA at all eight requested widths: 17 TAP entries passed; final public-package focused browser five passed. Parent entries/reruns overlap; 18 distinct child scenarios, no failures. Final production build passed with existing chunk warning.
+- [x] Preserve ignored .env files and Stage 15 scanner/media settings; keep live Firebase disabled, scan source/build/logs/staging and review the local commit without secrets.
+- [ ] Separately authorize and verify real Firebase project/device foreground/background receipt, delivery budget, least-privilege credentials and supported-device acceptance. No real FCM delivery was performed.
+- [ ] Review existing application DB collection capacity, legacy device session binding/unique-token conflicts and safe re-enrollment before rollout; no application data was modified.
+- [ ] Approve operational queue retention/backlog/replay/monitoring/index/capacity procedures and remaining provider/business/legal/source/licensing/production gates.
+
+Stop after Stage 16's local commit. No push, deployment, public tunnel, real SMTP/payment/FCM delivery, Firebase project settings change or automatic next stage.

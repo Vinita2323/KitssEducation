@@ -104,7 +104,7 @@ export function createOperationsService(authService) {
     async jobs(query) {
       const number = paging(query, ['kind', 'state']);
       const filter = {};
-      if (query.kind) filter.kind = choice(query.kind, ['payment_event', 'result_import']);
+      if (query.kind) filter.kind = choice(query.kind, ['payment_event', 'result_import', 'notification_event', 'notification_push']);
       if (query.state) filter.state = choice(query.state, ['pending', 'leased', 'done', 'dead']);
       const collection = connection.collection('jobs');
       const total = await collection.countDocuments(filter);

@@ -1,3 +1,4 @@
+import { unregisterFCMToken } from '../services/pushNotificationService';
 import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { authService, clearLegacyAuthStorage } from '../services/authService';
@@ -38,7 +39,7 @@ export function AuthProvider({ children }) {
     catch (failure) { setError(failure.message); setDeviceConflict(null); }
     finally { setTransferBusy(false); }
   };
-  const logout = async () => { epoch.current++; advanceIdentityEpoch(); await authService.logout(); clear(); setDeviceConflict(null); };
+  const logout = async () => { await unregisterFCMToken({ removeProvider: false }).catch(() => {}); epoch.current++; advanceIdentityEpoch(); await authService.logout(); clear(); setDeviceConflict(null); };
   return <AuthContext.Provider value={{ user, loading, error, isAuthenticated: Boolean(user), deviceConflict,
     login, logout, register: authService.register, updateProfile: async data => { const ticket = epoch.current; const result = await authService.updateProfile(data); if (ticket === epoch.current) setUser(result.user); return result; },
     deviceInfo: { deviceName: 'Browser' }, lastRegisteredCredentials: null, setLastRegisteredCredentials: () => {},

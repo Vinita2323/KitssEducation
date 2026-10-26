@@ -517,3 +517,12 @@ Reachability starts at App.jsx and resolves local JS/JSX imports. This is source
 ## Focused status supplement — 26 October 2026
 
 F25 and B01 are now IMPLEMENTED AND TESTED at the representative contract/workflow level defined above. Current denominator remains 212: 162 tested, 0 untested, 0 partial, 21 operationally gated, 28 policy-dependent, 0 missing and 1 outside scope. This is not operational release acceptance. [FINAL-TWO-GAPS-REPORT.md](FINAL-TWO-GAPS-REPORT.md) contains the 20-section review, native zoom/eight-width and keyboard evidence, exact run counts including earlier failures/exclusions, unavailable payment-method semantics and physical/assistive-technology limitations. Historical source hashes/interaction snapshots above describe the original audit read, not a rehash of changed source.
+
+
+## Stage 16 notification and Firebase security supplement - 26 October 2026
+
+F23 / A66-A68 / G14 / B34 retain their existing identifiers/contracts. [Stage 16 report](STAGE16-NOTIFICATIONS-FIREBASE-SECURITY-REPORT.md) adds committed business-event notices and durable jobs, idempotent in-app creation, session-bound optional device tokens, generic private-safe push, CSRF/identity-aware browser registration, keyboard read behavior and eight-width Chrome evidence. Existing outboxes/jobs/models and admin permissions are reused; payment, registration, refund, franchise and result authority remain unchanged. Course-expiry scheduling is not added.
+
+Final compatible public Firebase 12.19.0 plus patched gRPC 1.14.6 override resolves the four earlier aggregate audit entries; backend/frontend audits are zero. Full backend 217 passed/zero failed/three explicit skips; shared client eight passed; final focused acceptance 29 passed; eight-width browser 17 passed and final public-package focused browser five passed, all zero failed/skipped outside the stated broad skips. Focused cases and TAP parents overlap and are not added into one total. Final build passed.
+
+In-app software acceptance is supported; actual FCM delivery remains operationally gated, disabled and unexecuted. No real SMTP/payment/FCM delivery, application-data migration, deployment or push occurred. Existing requirements denominator/status history is not recounted by this supplement, and provider/legal/result-source/media-production gates remain open. See the report for exact test timing, runtime/package tradeoffs, legacy-token/capacity and production queue gates.

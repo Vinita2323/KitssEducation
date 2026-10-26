@@ -13,7 +13,7 @@ const name = process.env.KITSS_STAGE8_BROWSER_DB,
   chrome = process.env.CHROME_PATH || 'C:/Program Files/Google/Chrome/Application/chrome.exe';
 test('Stage 8 real API/Mongo browser; synthetic source/mail only', {
   skip: !name ? 'No isolated Stage 8 browser database' : !existsSync(chrome) ? 'Chrome unavailable' : false,
-  timeout: 360000
+  timeout: 900000
 }, async t => {
   const f = await stage8Fixture(name);
   let backend, vite, browser;
@@ -324,6 +324,49 @@ test('Stage 8 real API/Mongo browser; synthetic source/mail only', {
     await goto('/home');await page.locator('a[aria-label="Notifications"][title="0 unread notifications"]').waitFor();
     await page.reload();await page.locator('a[aria-label="Notifications"][title="0 unread notifications"]').waitFor();
   });
+  await check('long notification text is inert, keyboard readable and optional push never prompts', async () => {
+    await identity(student);
+    const draft = await f.notifications.mutate(null, { title: 'SYNTHETIC LONG NOTICE', message: '<script>window.__noticeXss = true</script> ' + 'Long content '.repeat(200), category: 'general', audience: { kind: 'users', userIds: [String(student.user._id)] }, link: '/notifications' }, ctx);
+    await f.notifications.publish(draft.id, { expectedRevision: draft.revision }, ctx);
+    await goto('/notifications');
+    const item = page.getByRole('button').filter({ hasText: 'SYNTHETIC LONG NOTICE' });
+    await item.waitFor(); await item.focus(); await page.keyboard.press('Enter');
+    await page.waitForFunction(() => !document.querySelector('[aria-disabled="true"]'));
+    assert.equal(await page.evaluate(() => window.__noticeXss), undefined);
+    assert.equal(await page.getByRole('button', { name: 'Enable Push', exact: true }).count(), 0);
+    assert.equal((await f.notifications.list({}, student.auth)).data.find(n => n.title === 'SYNTHETIC LONG NOTICE').isRead, true);
+  });
+  await check('denied or unavailable browser push leaves in-app notifications accessible', async () => {
+    await identity(student); await goto('/notifications');
+    await page.evaluate(() => { if ('Notification' in window) Object.defineProperty(Notification, 'permission', { configurable: true, get: () => 'denied' }); });
+    await page.getByRole('heading', { name: 'Notifications', exact: true }).waitFor();
+    assert.equal(await page.evaluate(async () => (await import('/src/modules/user/services/pushNotificationService.js')).getNotificationPermission()), 'denied');
+    assert.equal(await page.getByRole('button', { name: 'Enable Push', exact: true }).count(), 0);
+    await page.evaluate(() => { Object.defineProperty(window, 'Notification', { configurable: true, value: undefined }); });
+    assert.equal(await page.evaluate(async () => (await import('/src/modules/user/services/pushNotificationService.js')).getNotificationPermission()), 'unsupported');
+    await page.getByRole('heading', { name: 'Notifications', exact: true }).waitFor();
+  });
+  await check('existing registration book coaching and admin navigation remain usable', async () => {
+    await identity(student);
+    for (const path of ['/register', '/books', '/coaching', '/orders']) {
+      await goto(path); await page.locator('main').first().waitFor();
+      assert.equal(new URL(page.url()).pathname, path);
+      assert.equal(await page.getByRole('heading', { name: /Not found/i }).count(), 0);
+    }
+    await identity(admin); await goto('/admin/notifications');
+    await page.getByRole('button', { name: 'Compose notification', exact: true }).waitFor();
+    await goto('/admin/operations');
+    await page.getByLabel('Job kind').selectOption('notification_push');
+    const jobsResponse = page.waitForResponse(r => r.url().includes('/admin/jobs?') && r.url().includes('notification_push'));
+    await page.getByRole('button', { name: 'Apply filters', exact: true }).click();
+    assert.equal((await jobsResponse).status(), 200);
+    const logoutActor = await f.fixtureUser(['student']);
+    await identity(logoutActor); await goto('/profile');
+    await page.getByRole('button', { name: 'Logout', exact: true }).click();
+    await page.getByRole('dialog').getByRole('button', { name: 'Logout', exact: true }).click();
+    await page.waitForURL('**/login');
+    assert.equal(await f.auth.authenticate(logoutActor.token, 'student'), null);
+  });
   await check('notification errors do not claim All Caught Up', async () => {
     await identity(student);
     await context.route('**/api/v1/me/notifications?*', route => route.fulfill({status:503,contentType:'application/json',body:JSON.stringify({error:{code:'TEST_UNAVAILABLE',message:'Synthetic notice outage'}})}));
@@ -382,7 +425,7 @@ test('Stage 8 real API/Mongo browser; synthetic source/mail only', {
     });
     assert.equal(await page.getByRole('checkbox').first().isChecked(), false);
   });
-  for (const width of [375, 1440]) await check('mobile/desktop Stage 8 pages and admin forms at ' + width, async () => {
+  for (const width of [320, 375, 390, 414, 768, 1024, 1280, 1440]) await check('mobile/desktop Stage 8 pages and admin forms at ' + width, async () => {
     await page.setViewportSize({
       width,
       height: 950

@@ -1,0 +1,35 @@
+# KITSS notification operations
+
+Stage 16 reuses the existing MongoDB Notification/NotificationReceipt and permissioned admin announcement workflow. Firebase is optional device delivery; in-app notifications and transactional email do not require it. This run did not send real push or change a Firebase project.
+
+## Safe default
+
+Keep `FIREBASE_PUSH_ENABLED=false` in backend configuration and `VITE_FIREBASE_PUSH_ENABLED=false` in frontend configuration. Missing/invalid server credentials fail closed to in-app delivery. A Firebase key alone does not enable delivery. Never log device tokens, notification payloads, service account JSON or provider errors. There is no public test-send facility; its existing route returns an explicit authorization gate.
+
+After separate owner approval for real push acceptance, an operator may configure the existing project privately using `FIREBASE_SERVICE_ACCOUNT_PATH` (absolute or relative to backend), or server-only `FIREBASE_CONFIG` containing service account JSON. Prefer an ignored, access-restricted service account file outside public storage. Never use the same JSON in a Vite variable. Never commit private Firebase files. The project ignore patterns protect common service-account filenames, but operators must verify custom paths are also ignored.
+
+The browser requires the existing `VITE_FIREBASE_API_KEY`, `VITE_FIREBASE_AUTH_DOMAIN`, `VITE_FIREBASE_PROJECT_ID`, `VITE_FIREBASE_STORAGE_BUCKET`, `VITE_FIREBASE_MESSAGING_SENDER_ID`, `VITE_FIREBASE_APP_ID`, optional `VITE_FIREBASE_MEASUREMENT_ID`, and public `VITE_FIREBASE_VAPID_KEY`. These are public identifiers; restrict the project/domain/API settings appropriately before approved acceptance. HTTPS or a supported localhost secure context, service workers and browser Push API support are required. No project configuration is changed automatically.
+
+## Consent, sessions and privacy
+
+Enable Push explicitly checks backend availability before requesting permission. No login effect requests permission or registers a token. Enablement is never inferred from browser permission alone; a successful CSRF-protected server registration is required. The UI offers Disable after a successful enable operation. Reloading requires an explicit Enable action again; Firebase's browser SDK may retain its own device registration. Logout attempts server deregistration, then revokes the authenticated session without waiting on Firebase. Explicit Disable also deletes the SDK token. If deregistration fails, server session revocation still prevents subsequent sends. In-flight messages already accepted by FCM cannot be recalled.
+
+Tokens are globally unique and bound to an authenticated account, session and security version. Active account token takeover is rejected; revoked/expired/idle sessions and suspended accounts cannot receive new sends. A device can be rebound after its prior session becomes inactive. Up to ten devices per user are accepted, and registration is rate limited. Tokens are never included in HTTP DTOs, job summaries or logs. Push contains only a generic KITSS prompt, an opaque notification ID and fixed `/notifications` navigation. All private content must be fetched through the authenticated in-app API. The bundled worker never opens a payload-provided external URL. The legacy CDN worker has been retired.
+
+## Durable processing
+
+The existing business audit outboxes commit with domain changes and drain into AuditLog. The notification worker consumes eligible events after a persistent first-activation timestamp; no historical audit backfill occurs automatically. Idempotent source keys create one user-visible notification per event, with semantic capture/fulfillment keys preventing repeated payment observations from duplicating notices. Existing `jobs` records track processed events and leased device deliveries. Worker retries do not roll back commerce or approval state. Event scanning processes at most 100 eligible records per tick; push enumeration uses pages of 100 users, ten notices per tick, and at most 100 leased deliveries per tick. The existing 15-second maintenance loop drives processing independently of payment processing failures.
+
+Device delivery checks current audience, preferences, course eligibility and active session before sending. Only devices opted in before publication are considered; it does not replay old notices to newly registered devices. Pending jobs retry with bounded backoff (up to one hour), expire their lease after two minutes, and become dead after eight failed attempts. Invalid provider tokens are removed. Admin Operations Jobs already displays the safe kind/state/attempts projection; operations permission is required. Dead jobs require investigation; no unauthenticated retry or send endpoint exists. Queue/audit retention and production-scale indexing/capacity must be reviewed before release.
+
+In-app creation is idempotent; provider delivery is at least once. A process crash after FCM accepts a message but before the database acknowledgement can duplicate a push. The notification tag is stable to reduce repeated tray entries; exactly-once external delivery is not claimed. Disabling live delivery preserves in-app notices and pending work. Operators must review existing pending/leased/dead jobs and backlog before enabling real delivery.
+
+## Business semantics
+
+Registration submitted, changes required, approval/rejection and activation reflect committed policy-gated state. Verified synthetic payments are explicitly labeled SIMULATED TEST. Captured payment and applied entitlement are separate notices. Free book/course access uses the existing audited access workflow. Refund approval is only a review decision: provider completion is not implemented, so no refund-completed message is generated. Franchise review does not establish official affiliation. Result submission targets the main-admin review queue; review approval does not establish official publication. Staff invitations and account changes preserve the existing private email and session flows. No new course-expiry scheduler is introduced.
+
+## Acceptance and existing-data gates
+
+See [Stage 16 report](backend/STAGE16-NOTIFICATIONS-FIREBASE-SECURITY-REPORT.md) for exact test evidence. Synthetic push transport tests establish application behavior, not Firebase delivery. Real FCM credentials/project permission, approved device/recipient, explicit delivery budget and actual receipt confirmation remain required. Do not enable external push without approval.
+
+No existing application data was migrated in this stage. Older device rows lack session binding; they are ineligible. Existing duplicate tokens must be reviewed and safely re-enrolled before creating the global unique index; startup deliberately fails rather than deleting conflicting owner records. Existing MongoDB collection-limit/capacity issues must be resolved before starting this version against that database. No automatic cleanup or application-database modification was performed.

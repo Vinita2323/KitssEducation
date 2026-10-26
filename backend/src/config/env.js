@@ -120,6 +120,12 @@ export function validateEnv(env) {
       secure: boolean('SMTP_SECURE', 'false'), user: text('SMTP_USER'),
       appPassword: String(env.SMTP_APP_PASSWORD ?? ''), from: text('SMTP_FROM'), fromName: text('SMTP_FROM_NAME'),
     },
+    notifications: { businessEvents: boolean('NOTIFICATION_BUSINESS_EVENTS_ENABLED', 'true') },
+    firebase: {
+      pushEnabled: boolean('FIREBASE_PUSH_ENABLED', 'false'),
+      serviceAccountPath: text('FIREBASE_SERVICE_ACCOUNT_PATH'),
+      configJson: text('FIREBASE_CONFIG'),
+    },
   };
   if (config.auth.secret && config.auth.secret.length < 32) errors.push('AUTH_SECRET');
   if (nodeEnv === 'production' && !config.auth.secret) errors.push('AUTH_SECRET');

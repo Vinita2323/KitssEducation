@@ -22,3 +22,5 @@ frontend/test-artifacts/
 *.key
 *.p12
 *.pfx
+*firebase-adminsdk*.json
+*service-account*.json

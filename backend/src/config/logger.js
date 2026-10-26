@@ -1,6 +1,6 @@
 import pino from 'pino';
 
-const sensitiveKey = /password|secret|token|proof|challenge|authorization|cookie|otp|csrf|aadha?r|cardnumber|cvv|mongodb_uri|^uri$|^body$|^query$|^headers$/i;
+const sensitiveKey = /private_key|firebase_config|configJson|password|secret|token|proof|challenge|authorization|cookie|otp|csrf|aadha?r|cardnumber|cvv|mongodb_uri|^uri$|^body$|^query$|^headers$/i;
 
 export function createLogger({ level = 'info', secrets = [], destination } = {}) {
   const scrubText = value => {

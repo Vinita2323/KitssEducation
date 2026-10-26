@@ -457,3 +457,23 @@ Tests: `node --test backend/tests/stage14-business-rules.test.js`; set `KITSS_ST
 ## Stage 15 real media operations
 
 See [local media setup](MEDIA-LOCAL-SETUP.md) and [operational acceptance report](STAGE15-MEDIA-OPERATIONAL-ACCEPTANCE-REPORT.md). Local portable ClamAV and the installed FFmpeg/FFprobe now have real scanning/processing/admin-reader-playback acceptance on isolated synthetic MongoDB data. Media checks retain private storage, licensing, publication, ownership and entitlement gates. The local scanner is loopback-only and requires ongoing signature updates/restart management; no Windows service was installed. `MEDIA_SCAN_TIMEOUT_MS` bounds the entire scanner operation. Real-media tests require explicit opt-in and the task-only loopback database URI; ordinary regression scanner doubles are not operational evidence. No actual educational inventory, application database, Razorpay transaction or SMTP delivery was used.
+
+
+## Stage 16 notifications and optional device push
+
+See [Stage 16 acceptance report](STAGE16-NOTIFICATIONS-FIREBASE-SECURITY-REPORT.md) and [notification operations](../PUSH_NOTIFICATIONS_SOP.md). Existing in-app notices/receipts, preferences and permissioned announcements remain authoritative. Committed business audit events now produce durable, idempotent notices through the existing jobs collection. Optional Firebase delivery is disabled by default on both server and browser; credentials alone never enable it. Private credentials remain server-only. No real FCM acceptance or external delivery is claimed.
+
+The supported Node 22 runtime uses pinned Firebase Admin 14.5.0 and the public Firebase 12.19.0 browser entry points. Its App 0.16.2 / Messaging 0.13.3 components support Node 22. A targeted npm override pins @grpc/grpc-js 1.14.6 to fix the two advisory paths in unused server-side Firestore dependencies; the browser imports only App/Messaging. Internal component packages are not direct dependencies. The worker bundles the same messaging SDK as the application instead of fetching a separate CDN version.
+
+Focused database tests, from backend, require a fresh guarded database on a task-created loopback-only MongoDB instance. Never reuse application DB settings:
+
+```powershell
+$env:MONGODB_URI='mongodb://127.0.0.1:27246/kitss_stage16_local'
+$env:KITSS_NOTIFICATIONS_TEST_DB='kitss_stage10_test_'+[guid]::NewGuid().ToString('N').Substring(0,16)
+$env:FIREBASE_PUSH_ENABLED='false'
+node --test tests/fcm.test.js tests/notifications.mongodb.integration.test.js
+```
+
+The test suite creates two guarded synthetic database names and refuses occupied fixture databases; it cleans only synthetic records and its temporary media directory. The MongoDB process must be independently started with its own empty runtime dbpath on loopback port 27246. This port is only a test convention and does not change developer configuration. `npm test` runs all backend tests; optional integration files report skips unless their specific fresh database/tool opt-ins are supplied. `npm run test:client` runs the shared HTTP client tests. From frontend, `KITSS_STAGE8_BROWSER_DB=kitss_stage10_browser_<16 lowercase hex>` enables `npm run test:stage8`; the same explicit loopback MongoDB override and local Chrome are required. External browser traffic is blocked; mail/payment/scanner/push adapters are synthetic in that suite.
+
+Before selecting an existing application database, review legacy device rows/global-token index conflicts, collection capacity, notification queue retention and backlog. No application-data migration was performed. Real Firebase project/device permission, approved live acceptance and inbox/device receipt evidence remain external gates. Keep the Stage 15 scanner and media configuration in place.

@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { Pagination } from "../../components/common/Pagination";
 import { notificationService } from "../../services/notificationService";
+import { pushNotificationService } from "../../services/pushNotificationService";
 import { useToast } from "../../context/ToastContext";
 
 const iconMap = {
@@ -29,6 +30,20 @@ export const NotificationsPage = () => {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(''), [page, setPage] = useState(1), [meta, setMeta] = useState(null), [busy, setBusy] = useState(false);
+  const [pushStatus, setPushStatus] = useState(() => pushNotificationService.getPermission());
+  const [pushBusy, setPushBusy] = useState(false), [pushEnabled, setPushEnabled] = useState(false);
+  const handleEnablePush = async () => {
+    setPushBusy(true); setError('');
+    try { await pushNotificationService.register(); setPushEnabled(true); setPushStatus(pushNotificationService.getPermission()); showSuccess('Push enabled for this session'); }
+    catch (e) { setError(e.message || 'Could not enable push'); }
+    finally { setPushBusy(false); }
+  };
+  const handleDisablePush = async () => {
+    setPushBusy(true); setError('');
+    try { await pushNotificationService.unregister(); setPushEnabled(false); showSuccess('Push disabled for this device'); }
+    catch { setError('Could not disable push. Try again.'); }
+    finally { setPushBusy(false); }
+  };
 
   const load = async signal => { const response = await notificationService.list(page, signal); setNotifications(response.data); setMeta(response.meta); };
   useEffect(() => { const c = new AbortController(); setLoading(true); setError(''); notificationService.list(page,c.signal).then(r=>{if(!c.signal.aborted){setNotifications(r.data);setMeta(r.meta);}}).catch(e=>{if(!c.signal.aborted)setError(e.message);}).finally(()=>{if(!c.signal.aborted)setLoading(false);}); return()=>c.abort(); },[page]);
@@ -74,6 +89,15 @@ export const NotificationsPage = () => {
         )}
       </div>
 
+      {pushNotificationService.isConfigured && pushStatus !== 'unsupported' && (
+        <div className="border rounded-xl p-3 flex flex-wrap items-center gap-3 text-xs">
+          <span>Optional device push. In-app notifications remain available.</span>
+          <button type="button" disabled={pushBusy} onClick={pushEnabled ? handleDisablePush : handleEnablePush} className="px-3 py-2 border rounded-lg">
+            {pushBusy ? 'Please wait...' : pushEnabled ? 'Disable Push' : 'Enable Push'}
+          </button>
+        </div>
+      )}
+
       {/* 2. Simple Unified List (All Notifications) */}
       {loading ? (
         <div className="bg-white rounded-md border border-[#E6E8EC] divide-y divide-[#F0F2F5] overflow-hidden">
@@ -105,6 +129,8 @@ export const NotificationsPage = () => {
             return (
               <div
                 key={item.id}
+                role="button" tabIndex={0} aria-disabled={busy}
+                onKeyDown={event => { if (['Enter', ' '].includes(event.key)) { event.preventDefault(); handleItemClick(item); } }}
                 onClick={() => handleItemClick(item)}
                 className={`p-3 sm:p-3.5 flex items-start gap-3 cursor-pointer transition-colors ${
                   !item.isRead

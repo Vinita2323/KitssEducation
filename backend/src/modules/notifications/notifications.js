@@ -1,3 +1,5 @@
+import { randomUUID } from 'node:crypto';
+import { businessActions, businessNotice } from './business-events.js';
 import mongoose from 'mongoose';
 import express from 'express';
 import { AppError } from '../../utils/AppError.js';
@@ -7,7 +9,9 @@ export async function createNotificationService({
   connection,
   authService,
   publishingModule,
-  coachingService
+  coachingService,
+  fcmService,
+  businessEvents = false
 }) {
   const {
       Schema
@@ -32,6 +36,8 @@ export async function createNotificationService({
     _id: false
   });
   const schema = new Schema({
+    sourceEventId: String,
+    push: { type: Schema.Types.Mixed, default: () => ({ state: 'pending', cursor: null }) },
     title: String,
     message: String,
     category: {
@@ -60,6 +66,7 @@ export async function createNotificationService({
     auditOutbox: [event],
     updatedBy: String
   }, options);
+  schema.index({ sourceEventId: 1 }, { unique: true, partialFilterExpression: { sourceEventId: { $type: 'string' } }, name: 'unique_business_notice' });
   schema.index({
     status: 1,
     publishedAt: -1
@@ -97,7 +104,7 @@ export async function createNotificationService({
       _id,
       auditOutbox,
       __v,
-      updatedBy,
+      updatedBy, push, sourceEventId,
       ...rest
     } = row.toObject?.() ?? row;
     return {
@@ -176,6 +183,51 @@ export async function createNotificationService({
         }
       }).cursor()) await coordination.flush(Notification, row);
     },
+    async processBusinessEvents() {
+      if (!businessEvents) return;
+      const Job = connection.models.Job; if (!Job) return;
+      const activation = await Job.findOneAndUpdate({ key: 'notification-business-activation' }, { $setOnInsert: { kind: 'notification_event', state: 'done', resultSummary: { since: new Date() } } }, { upsert: true, returnDocument: 'after' });
+      const events = await authService.models.AuditLog.aggregate([
+        { $match: { action: { $in: businessActions }, at: { $gte: activation.resultSummary.since } } },
+        { $lookup: { from: Job.collection.name, let: { key: { $concat: ['notice-event:', '$_id'] } }, pipeline: [{ $match: { $expr: { $and: [{ $eq: ['$key','$$key'] }, { $eq: ['$state','done'] }] } } }], as: 'processed' } },
+        { $match: { 'processed.0': { $exists: false } } }, { $sort: { at: 1, _id: 1 } }, { $limit: 100 }
+      ]);
+      for (const event of events) {
+        const notice = await businessNotice(event, { connection, User: authService.models.User });
+        if (notice) try { await Notification.updateOne({ sourceEventId: notice.sourceEventId }, { $setOnInsert: notice }, { upsert: true, runValidators: true }); } catch (e) { if(e.code !== 11000) throw e; }
+        await Job.updateOne({ key: 'notice-event:' + event._id }, { $set: { state: 'done' }, $setOnInsert: { kind: 'notification_event' } }, { upsert: true });
+      }
+    },
+    async processPush() {
+      if (!fcmService?.isConfigured()) return;
+      const Job = connection.models.Job; if (!Job) return;
+      const notices = await Notification.find({ status: 'published', 'push.state': 'pending' }).sort({ _id: 1 }).limit(10);
+      for (const notice of notices) {
+        const users = await authService.models.User.find({ status: 'active', emailVerifiedAt: { $ne: null }, ...(notice.push.cursor ? { _id: { $gt: notice.push.cursor } } : {}) }).sort({ _id: 1 }).limit(100);
+        for (const user of users) {
+          try { await visible(String(notice._id), { user }); } catch (e) { if(e.status === 404) continue; throw e; }
+          for (const device of (await fcmService.tokensFor(user._id)).filter(device => device.lastSeenAt <= notice.publishedAt)) await Job.updateOne({ key: 'notice-push:' + notice._id + ':' + device._id + ':' + device.sessionId }, { $setOnInsert: { kind: 'notification_push', state: 'pending', resultSummary: { notificationId: String(notice._id), userId: String(user._id), deviceId: String(device._id), sessionId: device.sessionId } } }, { upsert: true });
+        }
+        await Notification.updateOne({ _id: notice._id, 'push.cursor': notice.push.cursor ?? null }, { $set: { push: { state: users.length < 100 ? 'queued' : 'pending', cursor: users.at(-1)?._id ?? notice.push.cursor } } });
+      }
+      for(let n=0;n<100;n++) {
+        const token = randomUUID(), now = new Date();
+        const job = await Job.findOneAndUpdate({ kind: 'notification_push', $or: [{ state: 'pending', availableAt: { $lte: now } }, { state: 'leased', leaseUntil: { $lte: now } }] }, { $set: { state: 'leased', token, leaseUntil: new Date(Date.now()+120000) }, $inc: { attempts: 1 } }, { returnDocument: 'after' });
+        if(!job) break;
+        try {
+          const user = await authService.models.User.findById(job.resultSummary.userId);
+          const device = await fcmService.models.FcmToken.findById(job.resultSummary.deviceId);
+          if(!user || !device || device.sessionId !== job.resultSummary.sessionId || String(device.userId) !== String(user._id)) throw new AppError(404,'NOT_FOUND','Recipient no longer eligible');
+          await visible(job.resultSummary.notificationId, { user });
+          const result = await fcmService.send(device._id,job.resultSummary.notificationId);
+          if(['retry','disabled'].includes(result.status)) throw new Error('Delivery retry');
+          await Job.updateOne({ _id:job._id,token }, { $set:{state:'done',lastError:null} });
+        } catch(e) {
+          await Job.updateOne({ _id:job._id,token }, { $set: { state:e.status===404?'done':job.attempts>=8?'dead':'pending',availableAt:new Date(Date.now()+Math.min(3600000,1000*2**job.attempts)),lastError:e.status===404?'RECIPIENT_INELIGIBLE':'PUSH_RETRY' } });
+        }
+      }
+    },
+    async tick() { await service.maintenance(); await service.processBusinessEvents(); await service.processPush(); },
     async list(query, auth, admin = false) {
       object(query, ['page', 'pageSize', ...(admin ? ['status', 'category'] : ['read'])]);
       const {
@@ -356,15 +408,19 @@ export async function createNotificationService({
         const row = await Notification.findById(id(value));
         if (!row) throw new AppError(404, 'NOT_FOUND', 'Notification was not found');
         if (row.status !== 'draft' || !row.title || !row.message || !row.audience?.kind) throw invalid('Complete draft required');
-        return dto(await coordination.update(Notification, row, {
+        const updated = await coordination.update(Notification, row, {
           status: 'published',
           publishedAt: new Date()
-        }, revision(input.expectedRevision), 'notification_published', ctx));
+        }, revision(input.expectedRevision), 'notification_published', ctx);
+
+        return dto(updated);
       });
     }
   };
+  service.fcm = fcmService;
   for (const Model of [Notification, Receipt]) await Model.createIndexes();
   await service.maintenance();
+  if (businessEvents) await service.processBusinessEvents();
   return service;
 }
 export function createNotificationRouter(service) {
@@ -396,5 +452,14 @@ export function createNotificationRouter(service) {
   router.patch('/admin/notifications/:id', requirePermission('notifications.write'), async (req, res) => send(req, res, await service.mutate(req.params.id, req.body, ctx(req))));
   router.delete('/admin/notifications/:id', requirePermission('notifications.write'), async (req, res) => send(req, res, await service.mutate(req.params.id, req.body, ctx(req), true)));
   router.post('/admin/notifications/:id/publish', requirePermission('notifications.publish'), async (req, res) => send(req, res, await service.publish(req.params.id, req.body, ctx(req))));
+
+  const ensureFcm = () => {
+    if (!service.fcm) throw new AppError(503, 'SERVICE_UNAVAILABLE', 'Push registration is unavailable; in-app notifications remain available');
+    return service.fcm;
+  };
+  router.get('/me/push-config', requireSession, async (req, res) => send(req, res, { enabled: Boolean(service.fcm?.isConfigured()), message: 'Push is optional; in-app notifications work independently' }));
+  for (const path of ['/me/fcm-tokens', '/fcm-tokens/save']) router.post(path, requireSession, async (req, res) => send(req, res, await ensureFcm().saveToken(req.auth, req.body, ctx(req))));
+  for (const path of ['/me/fcm-tokens', '/fcm-tokens/remove']) router.delete(path, requireSession, async (req, res) => { object(req.body, ['token'], ['token']); send(req, res, await ensureFcm().removeToken(req.auth, req.body.token)); });
+  for (const path of ['/me/fcm-tokens/test', '/fcm-tokens/test']) router.post(path, requireSession, async (req, res) => { object(req.body, []); send(req, res, await ensureFcm().sendTestNotification()); });
   return router;
 }

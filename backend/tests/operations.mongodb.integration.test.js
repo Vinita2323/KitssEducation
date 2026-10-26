@@ -83,6 +83,12 @@ test('Stage 10 persisted account operations and redacted operational visibility'
     const jobs = await get('/admin/jobs?kind=result_import&state=dead', admin);
     assert.equal(jobs.status, 200); assert.equal(jobs.body.meta.total, 1); assert.equal(jobs.body.data[0].attempts, 3);
     assert.doesNotMatch(JSON.stringify(jobs.body), /PRIVATE_|resultSummary|requestHash|token/);
+    for (const kind of ['notification_event', 'notification_push']) {
+      await f.models.Job.create({ key: randomUUID(), kind, state: 'dead', attempts: 2, token: 'PRIVATE_DEVICE_SENTINEL', resultSummary: { token: 'PRIVATE_PUSH_SENTINEL' } });
+      const noticeJobs = await get('/admin/jobs?kind=' + kind + '&state=dead', admin);
+      assert.equal(noticeJobs.status, 200); assert.equal(noticeJobs.body.meta.total, 1);
+      assert.doesNotMatch(JSON.stringify(noticeJobs.body), /PRIVATE_|resultSummary|token/);
+    }
     assert.equal((await get('/admin/jobs', student)).status, 401); // restored account cannot reuse its revoked session
     assert.equal((await get('/admin/audit-logs', student)).status, 401);
     assert.equal((await get('/admin/audit-logs?from=bad', admin)).status, 422);

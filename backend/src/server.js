@@ -2,6 +2,7 @@ import http from 'node:http';
 import { createResultModels } from './modules/results/results.models.js';
 import { createResultService } from './modules/results/results.service.js';
 import { createNotificationService } from './modules/notifications/notifications.js';
+import { createFcmService } from './modules/notifications/fcm.service.js';
 import { createAccountService } from './modules/auth/account.service.js';
 import { createCoachingModule } from './modules/coaching/index.js';
 import { createCommerceModule } from './modules/commerce/index.js';
@@ -45,10 +46,12 @@ export async function startServer({ config = loadConfig(), logger, database, sto
       commerceService = await createCommerceModule({ connection: database.connection, publishingModule, authService, config, logger, provider: commerceProvider });
       coachingService = await createCoachingModule({ connection: database.connection, publishingModule, commerce: commerceService, institutions: institutionService, authService });
       resultService = await createResultService({ models: createResultModels(database.connection), publishingModule, authService, commerceService, config });
-      notificationService = await createNotificationService({ connection: database.connection, publishingModule, authService, coachingService });
+      const fcmService = await createFcmService({ connection: database.connection, config, logger, authService, coordination: publishingModule.coordination });
+      await fcmService.initialize();
+      notificationService = await createNotificationService({ connection: database.connection, publishingModule, authService, coachingService, fcmService, businessEvents: config.notifications?.businessEvents });
       accountService = createAccountService({ authService, config, mail: createEmailService(config.smtp, logger), institutions: institutionService });
       let commerceRunning = false;
-      commerceTimer = setInterval(async () => { if (commerceRunning) return; commerceRunning = true; try { await commerceService.tick(); } catch { logger.error({ event: 'commerce_maintenance_failed' }, 'Commerce processing will retry'); } finally { commerceRunning = false; } }, 15000);
+      commerceTimer = setInterval(async () => { if (commerceRunning) return; commerceRunning = true; try { try { await commerceService.tick(); } catch { logger.error({ event: 'commerce_maintenance_failed' }, 'Commerce processing will retry'); } try { await notificationService.tick(); } catch { logger.error({ event: 'notification_maintenance_failed' }, 'Notification processing will retry'); } } finally { commerceRunning = false; } }, 15000);
       commerceTimer.unref();
       let maintaining = false;
       maintenanceTimer = setInterval(async () => {

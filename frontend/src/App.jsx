@@ -6,6 +6,7 @@ import { ToastProvider } from './modules/user/context/ToastContext'
 import { LibraryProvider } from './modules/user/context/LibraryContext'
 import { UserRoutes } from './modules/user/routes/UserRoutes'
 import { AdminRoutes } from './modules/admin/routes/AdminRoutes'
+import { PushNotificationManager } from './modules/user/components/notifications/PushNotificationManager'
 
 function SessionLibrary({ children }) {
   const { user, loading } = useAuth();
@@ -19,6 +20,7 @@ function App() {
     <BrowserRouter>
       <AuthProvider>
         <ToastProvider>
+          <PushNotificationManager />
           <SessionLibrary>
             <Routes>
               {/* Admin Portal Routes */}
