@@ -14,7 +14,13 @@ export async function createFcmService({ connection, config, logger, authService
   }
   return {
     models: { FcmToken }, isConfigured: () => provider.configured === true,
-    async initialize() { await FcmToken.createIndexes(); },
+    async initialize() {
+      try { await FcmToken.createIndexes(); }
+      catch(error) {
+        if([11000,85,86].includes(error.code)) throw new AppError(503,'PUSH_INDEX_COMPATIBILITY','Device index conflicts require a verified backup and restored-copy review; no records were removed');
+        throw error;
+      }
+    },
     async saveToken(auth, input, ctx) {
       object(input, ['token', 'platform', 'deviceLabel'], ['token']); const token = validToken(input.token);
       if (input.platform && input.platform !== 'web') throw invalid('Only browser devices are supported');

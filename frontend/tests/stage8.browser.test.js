@@ -425,6 +425,24 @@ test('Stage 8 real API/Mongo browser; synthetic source/mail only', {
     });
     assert.equal(await page.getByRole('checkbox').first().isChecked(), false);
   });
+  await check('operational diagnostics, queue controls, keyboard refresh and permission denial', async () => {
+    await identity(admin); await goto('/admin/operations');
+    const region = page.getByRole('region', { name: 'Operational readiness', exact: true });
+    await region.getByText('Database', { exact: true }).waitFor();
+    assert.doesNotMatch(await region.innerText(), /PRIVATE_|password|[A-Z]:\\/);
+    await page.getByLabel('Job kind').selectOption('notification_push');
+    const filtered = page.waitForResponse(r => r.url().includes('/admin/jobs?') && r.url().includes('notification_push'));
+    await page.getByRole('button', { name: 'Apply filters', exact: true }).focus(); await page.keyboard.press('Enter');
+    assert.equal((await filtered).status(), 200);
+    await context.route('**/api/v1/admin/operations/health', route => route.fulfill({ status: 503, contentType: 'application/json', body: JSON.stringify({ error: { code: 'TEST_UNAVAILABLE', message: 'Synthetic diagnostics outage' } }) }));
+    await page.reload(); await region.getByRole('alert').filter({ hasText: 'Synthetic diagnostics outage' }).waitFor();
+    await context.unroute('**/api/v1/admin/operations/health');
+    await page.getByRole('button', { name: 'Reset / refresh', exact: true }).focus(); await page.keyboard.press('Enter');
+    await region.getByText('Database', { exact: true }).waitFor();
+    const denied = await f.fixtureUser(['admin'], ['notifications.read']); await identity(denied);
+    assert.equal((await context.request.get(base + '/api/v1/admin/operations/health')).status(), 403);
+    await identity(admin);
+  });
   for (const width of [320, 375, 390, 414, 768, 1024, 1280, 1440]) await check('mobile/desktop Stage 8 pages and admin forms at ' + width, async () => {
     await page.setViewportSize({
       width,
@@ -438,7 +456,7 @@ test('Stage 8 real API/Mongo browser; synthetic source/mail only', {
       assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
     }
     await identity(admin);
-    for (const path of ['/admin/results', '/admin/notifications']) {
+    for (const path of ['/admin/results', '/admin/operations', '/admin/media', '/admin/registrations', '/admin/notifications']) {
       await goto(path);
       await page.locator('main').first().waitFor();
       assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));

@@ -1,4 +1,6 @@
 import http from 'node:http';
+import { createMaintenanceWorker } from './utils/maintenance-worker.js';
+import { createOperationalDiagnostics } from './modules/operations/diagnostics.js';
 import { createResultModels } from './modules/results/results.models.js';
 import { createResultService } from './modules/results/results.service.js';
 import { createNotificationService } from './modules/notifications/notifications.js';
@@ -26,8 +28,8 @@ export async function startServer({ config = loadConfig(), logger, database, sto
   storage ??= createStorageProvider(config.storage);
   const lifecycle = { draining: false };
   let server;
-  let maintenanceTimer;
-  let commerceTimer;
+  const workers=[];
+  const operationalDiagnostics=createOperationalDiagnostics({config,database,storage,workers:()=>workers.map(w=>w.state())});
   try {
     await storage.initialize();
     await database.connect(); // Fail closed: never listen before dependency validation.
@@ -50,20 +52,11 @@ export async function startServer({ config = loadConfig(), logger, database, sto
       await fcmService.initialize();
       notificationService = await createNotificationService({ connection: database.connection, publishingModule, authService, coachingService, fcmService, businessEvents: config.notifications?.businessEvents });
       accountService = createAccountService({ authService, config, mail: createEmailService(config.smtp, logger), institutions: institutionService });
-      let commerceRunning = false;
-      commerceTimer = setInterval(async () => { if (commerceRunning) return; commerceRunning = true; try { try { await commerceService.tick(); } catch { logger.error({ event: 'commerce_maintenance_failed' }, 'Commerce processing will retry'); } try { await notificationService.tick(); } catch { logger.error({ event: 'notification_maintenance_failed' }, 'Notification processing will retry'); } } finally { commerceRunning = false; } }, 15000);
-      commerceTimer.unref();
-      let maintaining = false;
-      maintenanceTimer = setInterval(async () => {
-        if (maintaining) return;
-        maintaining = true;
-        try { await authService.maintenance(); await institutionService.maintenance(); await publishingModule.maintenance(); await coachingService.maintenance(); await resultService.maintenance(); await notificationService.maintenance(); }
-        catch { logger.error({ event: 'auth_maintenance_failed' }, 'Authentication maintenance will retry'); }
-        finally { maintaining = false; }
-      }, 3600000);
-      maintenanceTimer.unref();
+      workers.push(createMaintenanceWorker({name:'commerce_notifications',intervalMs:15000,logger,tasks:[()=>commerceService.tick(),()=>notificationService.tick()]}));
+      workers.push(createMaintenanceWorker({name:'audit_media',intervalMs:3600000,logger,tasks:[()=>authService.maintenance(),()=>institutionService.maintenance(),()=>publishingModule.maintenance(),()=>coachingService.maintenance(),()=>resultService.maintenance(),()=>notificationService.maintenance()]}));
+      workers.forEach(worker=>worker.start());
     }
-    server = http.createServer(createApp({ config, logger, database, storage, lifecycle, authService, institutionService, publishingModule, commerceService, coachingService, resultService, notificationService, accountService }));
+    server = http.createServer(createApp({ config, logger, database, storage, lifecycle, authService, institutionService, publishingModule, commerceService, coachingService, resultService, notificationService, accountService, operationalDiagnostics }));
     server.requestTimeout = Math.max(config.requestTimeoutMs, config.media?.videoUploadTimeoutMs ?? 0);
     server.headersTimeout = Math.min(15000, config.requestTimeoutMs);
     server.keepAliveTimeout = 5000;
@@ -72,8 +65,8 @@ export async function startServer({ config = loadConfig(), logger, database, sto
       server.listen(port, config.host, () => { server.removeListener('error', reject); resolve(); });
     });
   } catch (error) {
-    clearInterval(maintenanceTimer);
-    clearInterval(commerceTimer);
+    workers.forEach(worker=>worker.stop());
+    await Promise.all(workers.map(worker=>worker.drain()));
     if (server?.listening) await new Promise(resolve => server.close(resolve));
     await database.disconnect().catch(() => {});
     throw error;
@@ -83,14 +76,13 @@ export async function startServer({ config = loadConfig(), logger, database, sto
   const close = () => {
     if (closing) return closing;
     lifecycle.draining = true;
-    clearInterval(maintenanceTimer);
-    clearInterval(commerceTimer);
+    workers.forEach(worker=>worker.stop());
     closing = (async () => {
       let timer;
       try {
         await Promise.race([
           (async () => {
-            await new Promise((resolve, reject) => server.close(error => error ? reject(error) : resolve()));
+            await Promise.all([new Promise((resolve, reject) => server.close(error => error ? reject(error) : resolve())),...workers.map(worker=>worker.drain())]);
             await database.disconnect();
           })(),
           new Promise((resolve, reject) => {
@@ -105,7 +97,7 @@ export async function startServer({ config = loadConfig(), logger, database, sto
     })();
     return closing;
   };
-  return { server, close, lifecycle };
+  return { server, close, lifecycle, workers };
 }
 
 export function installSignalHandlers(runtime, { processRef = process, logger }) {

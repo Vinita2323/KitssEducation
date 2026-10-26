@@ -24,7 +24,7 @@ function choice(value, allowed) {
 }
 function literal(value) { return escapeRegex(text(value, 100)); }
 
-export function createOperationsService(authService) {
+export function createOperationsService(authService, { diagnostics } = {}) {
   const { User, AuditLog } = authService.models;
   const connection = User.db;
   async function page(Model, filter, number, project, dto) {
@@ -38,6 +38,15 @@ export function createOperationsService(authService) {
     return user;
   }
   return {
+    async health() {
+      const queues = await connection.collection('jobs').aggregate([{ $match: { kind: { $in: ['payment_event','result_import','notification_event','notification_push'] }, state: { $in: ['pending','leased','done','dead'] } } }, { $group: { _id: { kind:'$kind',state:'$state' },count:{ $sum:1 } } }, { $project:{_id:0,kind:'$_id.kind',state:'$_id.state',count:1} }]).toArray();
+      let pendingAuditRecords=0;
+      const outboxCollections=new Set(Object.values(connection.models).filter(model=>model.schema.path('auditOutbox')).map(model=>model.collection.name));
+      for(const name of outboxCollections) pendingAuditRecords+=await connection.collection(name).countDocuments({'auditOutbox.0':{$exists:true}});
+      const expiredLeases=await connection.collection('jobs').countDocuments({state:'leased',leaseUntil:{$type:'date',$lte:new Date()}});
+      const reconciliation=await connection.collection('orders').aggregate([{$match:{'reconcile.state':{$in:['pending','leased','done','dead']}}},{$group:{_id:'$reconcile.state',count:{$sum:1}}},{$project:{_id:0,state:'$_id',count:1}}]).toArray();
+      return { ...(diagnostics ? await diagnostics() : { status:'diagnostics_unavailable' }), queues, pendingAuditRecords, expiredLeases, reconciliation };
+    },
     async users(query) {
       const number = paging(query, ['q', 'status', 'role']);
       const filter = {};
@@ -130,5 +139,6 @@ export function createOperationsRouter(service, authService) {
   });
   router.get('/admin/audit-logs', requirePermission('audit.read'), async (req, res) => send(req, res, await service.audit(req.query)));
   router.get('/admin/jobs', requirePermission('operations.read'), async (req, res) => send(req, res, await service.jobs(req.query)));
+  router.get('/admin/operations/health', requirePermission('operations.read'), async (req,res) => send(req,res,{data:await service.health()}));
   return router;
 }

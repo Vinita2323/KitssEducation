@@ -1,4 +1,5 @@
 import { accessExpiry, validDuration } from '../../utils/accessDuration.js';
+import { retireLegacyIndexes } from '../../utils/legacy-indexes.js';
 import { escapeRegex } from '../../utils/escapeRegex.js';
 import { AppError } from '../../utils/AppError.js';
 import { object, id, revision, text, invalid } from '../publishing/validation.js';
@@ -51,7 +52,7 @@ export function createCoachingService({
     },
     async initialize() {
       for (const Model of Object.values(models)) await Model.createIndexes();
-      if ((await Enrollment.collection.indexes()).some(i => i.name === 'orderId_1' && i.unique)) await Enrollment.collection.dropIndex('orderId_1');
+      await retireLegacyIndexes(Enrollment, [['orderId_1', { orderId: 1 }]]);
     },
     async maintenance() {
       for (const Model of Object.values(models)) for await (const row of Model.find({

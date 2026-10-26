@@ -1,4 +1,5 @@
 import express from 'express';
+import { createOperationalDiagnostics } from './modules/operations/diagnostics.js';
 import { createOperationsService, createOperationsRouter } from './modules/operations/operations.js';
 import { createResultRouter } from './modules/results/results.routes.js';
 import { createNotificationRouter } from './modules/notifications/notifications.js';
@@ -15,7 +16,7 @@ import { createAuthRouter } from './modules/auth/auth.routes.js';
 import { createInstitutionRouter } from './modules/institutions/institutions.routes.js';
 import { createPublishingRouter } from './modules/publishing/publishing.routes.js';
 
-export function createApp({ config, logger, database, storage, authService, institutionService, publishingModule, commerceService, coachingService, resultService, notificationService, accountService, lifecycle = { draining: false } }) {
+export function createApp({ config, logger, database, storage, authService, institutionService, publishingModule, commerceService, coachingService, resultService, notificationService, accountService, operationalDiagnostics, lifecycle = { draining: false } }) {
   const app = express();
   app.disable('x-powered-by');
   app.set('trust proxy', config.trustProxyHops === 0 ? false : config.trustProxyHops);
@@ -35,7 +36,7 @@ export function createApp({ config, logger, database, storage, authService, inst
   if (authService) api.use(createAuthRouter({ service: authService, config }));
   if (authService && institutionService) api.use(createInstitutionRouter(institutionService));
   if (authService && publishingModule) api.use(createPublishingRouter(publishingModule));
-  const operations = authService?.models?.User ? createOperationsService(authService) : null;
+  const operations = authService?.models?.User ? createOperationsService(authService, { diagnostics: operationalDiagnostics ?? createOperationalDiagnostics({config,database,storage}) }) : null;
   if (operations) api.use(createOperationsRouter(operations, authService));
   if (authService && commerceService) api.use(createCommerceRouter(commerceService, { operations }));
   if (authService && coachingService) api.use(createCoachingRouter(coachingService));

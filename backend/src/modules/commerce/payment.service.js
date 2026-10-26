@@ -4,6 +4,7 @@ import { id, key, object, revision, text, invalid } from '../publishing/validati
 import { providerId, unavailable } from './payment-provider.js';
 import { applicantInput, documentRequirements, registrationBlocked, registrationFields } from './registration.js';
 import { dashboardFilters } from './dashboard-filters.js';
+import { retireLegacyIndexes } from '../../utils/legacy-indexes.js';
 
 const hash = value => createHash('sha256').update(JSON.stringify(value)).digest('hex');
 const missing = () => new AppError(404, 'NOT_FOUND', 'Order or application was not found');
@@ -33,10 +34,11 @@ export class PaymentService {
     for (const Model of Object.values(this.models)) await Model.createIndexes();
     // Install replacement constraints before removing only known obsolete indexes.
     // No records are changed; repurchases/free grants need these precise refinements.
-    for (const [Model, names] of [[this.models.Order, ['userId_1_product.kind_1_product.id_1', 'userId_1_product.courseId_1']], [this.models.BookEntitlement, ['orderId_1']]]) {
-      const indexes = await Model.collection.indexes();
-      for (const name of names) if (indexes.some(i => i.name === name && i.unique)) await Model.collection.dropIndex(name);
-    }
+    await retireLegacyIndexes(this.models.Order, [
+      ['userId_1_product.kind_1_product.id_1', { userId: 1, 'product.kind': 1, 'product.id': 1 }],
+      ['userId_1_product.courseId_1', { userId: 1, 'product.courseId': 1 }, [undefined, { 'product.kind': 'course_plan' }]],
+    ]);
+    await retireLegacyIndexes(this.models.BookEntitlement, [['orderId_1', { orderId: 1 }]]);
   }
   async owned(value, auth) {
     const order = await this.models.Order.findOne({ _id: id(value), userId: auth.user._id });

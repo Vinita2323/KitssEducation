@@ -16,7 +16,7 @@ export async function clamCommand(command) {
   });
 }
 export async function realMediaFixture(name) {
-  if (!realMediaEnabled || !/^mongodb:\/\/127\.0\.0\.1:27245\/kitss_stage15_local$/.test(process.env.MONGODB_URI ?? '') || !/^kitss_stage10_(test|browser)_[a-f0-9]{16}$/.test(name ?? '')) throw new Error('Real media acceptance requires explicit opt-in and fresh guarded databases on the dedicated Stage 15 loopback instance');
+  if (!realMediaEnabled || !/^mongodb:\/\/127\.0\.0\.1:(?:27245\/kitss_stage15_local|27247\/kitss_stage17_local)$/.test(process.env.MONGODB_URI ?? '') || !/^kitss_stage10_(test|browser)_[a-f0-9]{16}$/.test(name ?? '')) throw new Error('Real media acceptance requires explicit opt-in and fresh guarded databases on the dedicated Stage 15/17 loopback instance');
   if (process.env.MEDIA_CLAMAV_ENABLED !== 'true' || Number(process.env.MEDIA_CLAMAV_PORT) !== 3315 || !existsSync(process.env.MEDIA_FFMPEG_PATH ?? '') || !existsSync(process.env.MEDIA_FFPROBE_PATH ?? '')) throw new Error('Installed real media tools and the task-local scanner must be explicitly configured');
   const version = await clamCommand('VERSION');
   if (!version.startsWith('ClamAV ') || !version.includes('/')) throw new Error('ClamAV with loaded official signatures is required');

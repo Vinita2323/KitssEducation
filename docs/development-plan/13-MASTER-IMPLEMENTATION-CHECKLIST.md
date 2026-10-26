@@ -752,3 +752,24 @@ See [Stage 16 report](../../backend/STAGE16-NOTIFICATIONS-FIREBASE-SECURITY-REPO
 - [ ] Approve operational queue retention/backlog/replay/monitoring/index/capacity procedures and remaining provider/business/legal/source/licensing/production gates.
 
 Stop after Stage 16's local commit. No push, deployment, public tunnel, real SMTP/payment/FCM delivery, Firebase project settings change or automatic next stage.
+
+
+## Stage 17 local database and operational readiness - 27 October 2026
+
+See [Stage 17 report](../../backend/STAGE17-OPERATIONAL-READINESS-REPORT.md) and [operations runbook](../../backend/LOCAL-OPERATIONS-RUNBOOK.md). These entries concern isolated synthetic acceptance, not actual application-database or production acceptance.
+
+- [x] Record baseline 5d4cbba/clean tree; classify configured application DB as non-loopback without printing credentials or connecting. Respect remote/shared/unknown exclusion despite development-data confirmation.
+- [x] Use task-created loopback MongoDB, fresh guarded fixture/restore namespaces, installed official Database Tools, quiesced database-only retained archives, streaming SHA-256, exact BSON/count/options/index and relationship comparisons.
+- [x] Reject corrupt archives, failed tools, unquiesced backup and occupied/partial restore destinations; preserve backups/partial evidence and require a new namespace rather than deleting original records.
+- [x] Verify restored startup twice, role/permission and unpaid/captured/entitlement/registration/result/token/job authority preservation, known legacy-index replacement and safe conflicts without silent record removal.
+- [x] Add definition-checked legacy-index retirement, safe push-index compatibility errors, explicit interval-worker/HTTP drain before database disconnect and actual task-MongoDB interruption/reconnect evidence.
+- [x] Verify leased job contention/expiry/retry/dead state, audit outage/driver reconnect and idempotent notice/commerce behavior; retain fail-closed unknown publication lock recovery.
+- [x] Verify actual existing ClamAV/FFmpeg/FFprobe, clean/detection/quarantine/rescan/private PDF/MP4 behavior; dry-run checksum/missing/orphan checks and destructive tests only on task-created copied media.
+- [x] Extend existing permissioned Operations diagnostics/panel with safe dependency, worker and queue information; test outage/keyboard/permission handling and affected admin screens at all eight requested widths.
+- [x] Full backend 239 passed/zero failed/three explicit skips; shared client eight passed; final recovery 12 passed/final lifecycle 13 passed; real-media backend 21 passed; operations browser 10 passed/real-media browser 16 passed. Overlap/parents are not added into one total. Build passed and audits zero.
+- [x] Preserve ignored .env/media configuration and existing scanner; keep backup/database/media/log/browser evidence outside Git; review source/staged secrets and make only the authorized local commit.
+- [ ] Separately authorize/identify the remote development application DB for actual inventory, backup and restored-copy compatibility/capacity review, or supply a positively identified local application copy.
+- [ ] Approve full-system media/config recovery, backup protection/retention/RPO/RTO/PITR/capacity, production services/schedules and native deployment signal/control acceptance.
+- [ ] Existing real payment/FCM/provider, business/legal/tax/refund/affiliation/result-source/privacy/licensing and deployment gates remain open. No actual application-storage cleanup is approved by a dry-run report.
+
+Stop after Stage 17's local commit. No push, deployment, public tunnel, real payment or external SMTP/FCM delivery.
