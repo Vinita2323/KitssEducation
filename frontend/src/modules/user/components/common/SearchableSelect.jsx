@@ -351,7 +351,7 @@ export const SearchableSelect = ({
       {error && <p className="text-[11px] text-red-500 mt-1 font-medium">{error}</p>}
 
       {typeof document !== "undefined"
-        ? createPortal(menuContent, document.body)
+        ? createPortal(menuContent, containerRef.current?.closest('[role="dialog"]') || document.body)
         : null}
     </div>
   );

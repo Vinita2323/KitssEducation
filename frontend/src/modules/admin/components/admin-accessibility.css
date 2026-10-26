@@ -1,0 +1,26 @@
+.kitss-admin { color: #0a1d3f; font-size: 1rem; line-height: 1.5; }
+.kitss-admin :where(p,span,label,button,a,input,select,textarea,th,td,legend) { font-size: max(0.875rem, 1em); }
+.kitss-admin :where(button,input:not([type=checkbox]):not([type=radio]),select) { min-height: 44px; }
+.kitss-admin :where(button,a[role=button]) { min-width: 44px; padding-inline: .6rem; }
+.kitss-admin :where(a:not(p a),label:has(input[type=checkbox]),label:has(input[type=radio])) { min-height: 44px; }
+.kitss-admin label:has(input[type=checkbox]),.kitss-admin label:has(input[type=radio]) { display: flex; align-items: center; gap: .5rem; }
+.kitss-admin :where(input[type=checkbox],input[type=radio]) { width: 20px; height: 20px; flex-shrink: 0; }
+.kitss-admin :where(input,select,textarea) { max-width: 100%; min-width: 0; color: #0a1d3f; }
+.kitss-admin :where(button,a,input,select,textarea,[tabindex]):focus-visible { outline: 3px solid #0d9488; outline-offset: 3px; box-shadow: 0 0 0 5px white; }
+.kitss-admin :where(button:disabled,input:disabled,select:disabled,textarea:disabled) { cursor: not-allowed; opacity: .7; }
+.kitss-admin :where(.text-gray-400,.text-slate-400,.text-gray-500,.text-slate-500,.text-emerald-400) { color: #475569; }
+.kitss-admin header .text-emerald-400 { color: #86efac; }
+.kitss-admin .text-emerald-600 { color: #047857; }
+.kitss-admin :where([class*="text-[#FF8A00]"],[class*="text-orange-"]) { color: #944000; }
+.kitss-admin header [class*="text-[#FF8A00]"] { color: #ffb45b; }
+.kitss-admin :where([class*="bg-[#FF8A00]"],.bg-orange-500) { color: #0a1d3f; }
+.kitss-admin :where([role=alert],[role=status],pre,p,label,h1,h2,h3) { overflow-wrap: anywhere; }
+.kitss-admin :where([role=dialog]) { max-height: calc(100dvh - 2rem); overflow-y: auto; overscroll-behavior: contain; scroll-padding: 1rem; }
+.kitss-admin :where(input,textarea,select,button) { scroll-margin-block: 6rem; }
+.kitss-admin .admin-scroll-region { max-width: 100%; overflow-x: auto; }
+.kitss-admin .admin-skip-link { position: fixed; top: .25rem; left: .25rem; transform: translateY(-200%); z-index: 1000; padding: .75rem; background: white; color: #0a1d3f; }
+.kitss-admin .admin-skip-link:focus { transform: none; }
+@media (max-width: 1023px) { .kitss-admin .admin-desktop-sidebar { display:none; } .kitss-admin .admin-menu-toggle { display:inline-flex; } }
+@media (min-width: 1024px) { .kitss-admin .admin-menu-toggle { display:none; } }
+@media (max-width: 480px) { .kitss-admin header > div { padding-inline:.5rem; } .kitss-admin .admin-header-subtitle { display:none; } }
+@media (prefers-reduced-motion: reduce) { .kitss-admin *, .kitss-admin *::before, .kitss-admin *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; scroll-behavior: auto !important; } }

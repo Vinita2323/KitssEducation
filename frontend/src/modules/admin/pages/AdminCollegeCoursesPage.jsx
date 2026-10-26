@@ -1,3 +1,4 @@
+import { useDialogFocus } from '../../../shared/ui/useDialogFocus';
 import React, { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import {
@@ -139,7 +140,7 @@ export const AdminCollegeCoursesPage = () => {
       setSaving(false);
     }
   };
-
+  const editorDialog = useDialogFocus(modalOpen, () => setModalOpen(false));
   return (
     <div className="space-y-6"><Pagination meta={meta} onChange={setPage} loading={loading} />
       {/* Back Link & Title */}
@@ -285,14 +286,14 @@ export const AdminCollegeCoursesPage = () => {
             className="fixed inset-0 bg-[#0A1D3F]/60 backdrop-blur-xs"
             onClick={() => setModalOpen(false)}
           />
-          <div className="relative bg-white w-full max-w-lg rounded-2xl sm:rounded-3xl shadow-2xl border border-[#E6E8EC] z-10 overflow-hidden flex flex-col max-h-[92vh] animate-in fade-in zoom-in-95 duration-200">
+          <div ref={editorDialog} role="dialog" aria-modal="true" aria-label="Program editor" tabIndex={-1} className="relative bg-white w-full max-w-lg rounded-2xl sm:rounded-3xl shadow-2xl border border-[#E6E8EC] z-10 overflow-hidden flex flex-col max-h-[92vh] animate-in fade-in zoom-in-95 duration-200">
             {/* Header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-[#E6E8EC] bg-white sticky top-0 z-10">
               <h3 className="text-base font-bold text-[#0A1D3F]">
                 {editingCourse ? "Edit Course" : "Add Course to College"}
               </h3>
               <button
-                onClick={() => setModalOpen(false)}
+                aria-label="Close program editor" onClick={() => setModalOpen(false)}
                 className="p-1.5 rounded-xl text-gray-400 hover:text-gray-700 hover:bg-gray-100"
               >
                 <X className="w-5 h-5" />
@@ -302,10 +303,11 @@ export const AdminCollegeCoursesPage = () => {
             {/* Form */}
             <form onSubmit={handleSubmit} className="p-6 overflow-y-auto space-y-4">
               <div>
-                <label className="block text-xs font-bold text-[#0A1D3F] mb-1">
+                <label htmlFor="admincollegecoursespage-field-1" className="block text-xs font-bold text-[#0A1D3F] mb-1">
                   Course / Program Name *
                 </label>
                 <input
+                  id="admincollegecoursespage-field-1"
                   type="text"
                   required
                   aria-label="Program courseName" value={formData.courseName}
@@ -317,10 +319,11 @@ export const AdminCollegeCoursesPage = () => {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-[#0A1D3F] mb-1">
+                  <label htmlFor="admincollegecoursespage-field-2" className="block text-xs font-bold text-[#0A1D3F] mb-1">
                     Degree Type
                   </label>
                   <select
+                    id="admincollegecoursespage-field-2"
                     aria-label="Program degreeType" value={formData.degreeType}
                     onChange={(e) => setFormData({ ...formData, degreeType: e.target.value })}
                     className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-[#E6E8EC] focus:border-[#FF8A00] focus:outline-none"
@@ -333,10 +336,11 @@ export const AdminCollegeCoursesPage = () => {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-[#0A1D3F] mb-1">
+                  <label htmlFor="admincollegecoursespage-field-3" className="block text-xs font-bold text-[#0A1D3F] mb-1">
                     Duration
                   </label>
                   <input
+                    id="admincollegecoursespage-field-3"
                     type="text"
                     aria-label="Program duration" value={formData.duration}
                     onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
@@ -348,10 +352,11 @@ export const AdminCollegeCoursesPage = () => {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-[#0A1D3F] mb-1">
+                  <label htmlFor="admincollegecoursespage-field-4" className="block text-xs font-bold text-[#0A1D3F] mb-1">
                     Annual Tuition Fee (₹)
                   </label>
                   <input
+                    id="admincollegecoursespage-field-4"
                     type="number"
                     aria-label="Program fee" value={formData.fee}
                     onChange={(e) => setFormData({ ...formData, fee: e.target.value })}
@@ -360,10 +365,11 @@ export const AdminCollegeCoursesPage = () => {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-[#0A1D3F] mb-1">
+                  <label htmlFor="admincollegecoursespage-field-5" className="block text-xs font-bold text-[#0A1D3F] mb-1">
                     Available Seats
                   </label>
                   <input
+                    id="admincollegecoursespage-field-5"
                     type="number"
                     aria-label="Program availableSeats" value={formData.availableSeats}
                     onChange={(e) => setFormData({ ...formData, availableSeats: e.target.value })}
@@ -373,10 +379,11 @@ export const AdminCollegeCoursesPage = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-[#0A1D3F] mb-1">
+                <label htmlFor="admincollegecoursespage-field-6" className="block text-xs font-bold text-[#0A1D3F] mb-1">
                   Eligibility Criteria
                 </label>
                 <input
+                  id="admincollegecoursespage-field-6"
                   type="text"
                   aria-label="Program eligibility" value={formData.eligibility}
                   onChange={(e) => setFormData({ ...formData, eligibility: e.target.value })}
@@ -386,10 +393,11 @@ export const AdminCollegeCoursesPage = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-[#0A1D3F] mb-1">
+                <label htmlFor="admincollegecoursespage-field-7" className="block text-xs font-bold text-[#0A1D3F] mb-1">
                   Description
                 </label>
                 <textarea
+                  id="admincollegecoursespage-field-7"
                   rows={2}
                   aria-label="Program description" value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
@@ -400,10 +408,11 @@ export const AdminCollegeCoursesPage = () => {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-[#0A1D3F] mb-1">
+                  <label htmlFor="admincollegecoursespage-field-8" className="block text-xs font-bold text-[#0A1D3F] mb-1">
                     Admission Status
                   </label>
                   <select
+                    id="admincollegecoursespage-field-8"
                     aria-label="Program admissionStatus" value={formData.admissionStatus}
                     onChange={(e) => setFormData({ ...formData, admissionStatus: e.target.value })}
                     className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-[#E6E8EC] focus:border-[#FF8A00] focus:outline-none"
@@ -414,10 +423,11 @@ export const AdminCollegeCoursesPage = () => {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-[#0A1D3F] mb-1">
+                  <label htmlFor="admincollegecoursespage-field-9" className="block text-xs font-bold text-[#0A1D3F] mb-1">
                     Visibility Status
                   </label>
                   <select
+                    id="admincollegecoursespage-field-9"
                     aria-label="Program status" value={formData.status}
                     onChange={(e) => setFormData({ ...formData, status: e.target.value })}
                     className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-[#E6E8EC] focus:border-[#FF8A00] focus:outline-none"

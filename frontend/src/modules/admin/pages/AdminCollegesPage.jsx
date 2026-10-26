@@ -1,3 +1,4 @@
+import { useDialogFocus } from '../../../shared/ui/useDialogFocus';
 import React, { useState, useEffect } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import {
@@ -249,7 +250,7 @@ export const AdminCollegesPage = () => {
       showError(err.message || "Failed to delete college");
     }
   };
-
+  const editorDialog = useDialogFocus(modalOpen, () => setModalOpen(false));
   return (
     <div className="space-y-6">
       {loadError && <p role="alert" className="p-3 bg-red-50 text-red-700 rounded-xl">{loadError}</p>}
@@ -288,7 +289,7 @@ export const AdminCollegesPage = () => {
           <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             type="text"
-            placeholder="Search colleges by name, code, or city..."
+            aria-label="Search colleges" placeholder="Search colleges by name, code, or city..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full pl-9 pr-4 py-2 text-xs sm:text-sm bg-[#F7F8FA] border border-[#E6E8EC] rounded-xl focus:outline-none focus:border-[#0A1D3F] transition"
@@ -302,7 +303,7 @@ export const AdminCollegesPage = () => {
               University:
             </span>
             <select
-              value={selectedUniFilter}
+              aria-label="Filter colleges by university" value={selectedUniFilter}
               onChange={(e) => handleUniFilterChange(e.target.value)}
               className="px-3 py-2 bg-[#F7F8FA] border border-[#E6E8EC] rounded-xl text-xs text-[#0A1D3F] font-semibold focus:outline-none focus:border-[#0A1D3F]"
             >
@@ -319,7 +320,7 @@ export const AdminCollegesPage = () => {
           <div className="flex items-center gap-1 p-1 bg-[#F7F8FA] rounded-xl border border-[#E6E8EC]">
             {["All", "active", "inactive"].map((st) => (
               <button
-                key={st}
+                key={st} aria-pressed={statusFilter === st}
                 onClick={() => setStatusFilter(st)}
                 className={`px-3 py-1.5 rounded-lg text-xs font-semibold capitalize transition cursor-pointer ${
                   statusFilter === st
@@ -363,7 +364,6 @@ export const AdminCollegesPage = () => {
             const uniName =
               college.universityId?.name || "University not supplied";
             const uniShort = college.universityId?.shortName || "";
-
             return (
               <div
                 key={cId}
@@ -481,7 +481,7 @@ export const AdminCollegesPage = () => {
          ======================================================== */}
       {modalOpen && (
         <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-white rounded-2xl border border-[#E6E8EC] shadow-2xl max-w-xl w-full p-5 sm:p-6 space-y-4 animate-in zoom-in-95 duration-150 text-left max-h-[90vh] overflow-y-auto">
+          <div ref={editorDialog} role="dialog" aria-modal="true" aria-label="College editor" tabIndex={-1} className="bg-white rounded-2xl border border-[#E6E8EC] shadow-2xl max-w-xl w-full p-5 sm:p-6 space-y-4 animate-in zoom-in-95 duration-150 text-left max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between pb-3 border-b border-[#E6E8EC]">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-lg bg-[#0A1D3F]/10 text-[#0A1D3F] flex items-center justify-center font-bold">
@@ -493,7 +493,7 @@ export const AdminCollegesPage = () => {
               </div>
               <button
                 type="button"
-                onClick={() => setModalOpen(false)}
+                aria-label="Close college editor" onClick={() => setModalOpen(false)}
                 className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition cursor-pointer"
               >
                 <X className="w-4 h-4" />
@@ -542,10 +542,11 @@ export const AdminCollegesPage = () => {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-[#0A1D3F] mb-1">
+                  <label htmlFor="admincollegespage-field-1" className="block text-xs font-bold text-[#0A1D3F] mb-1">
                     Code / Reg ID
                   </label>
                   <input
+                    id="admincollegespage-field-1"
                     type="text"
                     aria-label="College code" value={formData.code}
                     onChange={(e) =>
@@ -596,10 +597,11 @@ export const AdminCollegesPage = () => {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-[#0A1D3F] mb-1">
+                  <label htmlFor="admincollegespage-field-2" className="block text-xs font-bold text-[#0A1D3F] mb-1">
                     College Type
                   </label>
                   <select
+                    id="admincollegespage-field-2"
                     aria-label="College collegeType" value={formData.collegeType}
                     onChange={(e) =>
                       setFormData({ ...formData, collegeType: e.target.value })
@@ -621,10 +623,11 @@ export const AdminCollegesPage = () => {
               <label className="block text-xs font-bold">Verification evidence reference<input aria-label="Verification evidence reference" className="w-full p-2 border rounded-xl" value={formData.verification?.source || ''} onChange={e => setFormData({ ...formData, verification: { ...formData.verification, source: e.target.value } })} placeholder="Approved source/reference, required to publish" /></label>
               {/* Address */}
               <div>
-                <label className="block text-xs font-bold text-[#0A1D3F] mb-1">
+                <label htmlFor="admincollegespage-field-3" className="block text-xs font-bold text-[#0A1D3F] mb-1">
                   Campus Address
                 </label>
                 <input
+                  id="admincollegespage-field-3"
                   type="text"
                   aria-label="College address" value={formData.address}
                   onChange={(e) =>
@@ -637,10 +640,11 @@ export const AdminCollegesPage = () => {
 
               {/* Description */}
               <div>
-                <label className="block text-xs font-bold text-[#0A1D3F] mb-1">
+                <label htmlFor="admincollegespage-field-4" className="block text-xs font-bold text-[#0A1D3F] mb-1">
                   Brief Overview
                 </label>
                 <textarea
+                  id="admincollegespage-field-4"
                   rows={2}
                   aria-label="College description" value={formData.description}
                   onChange={(e) =>
@@ -653,10 +657,11 @@ export const AdminCollegesPage = () => {
 
               {/* Status */}
               <div>
-                <label className="block text-xs font-bold text-[#0A1D3F] mb-1">
+                <label htmlFor="admincollegespage-field-5" className="block text-xs font-bold text-[#0A1D3F] mb-1">
                   Status
                 </label>
                 <select
+                  id="admincollegespage-field-5"
                   aria-label="College status" value={formData.status}
                   onChange={(e) =>
                     setFormData({ ...formData, status: e.target.value })

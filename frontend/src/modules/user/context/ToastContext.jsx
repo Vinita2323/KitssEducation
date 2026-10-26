@@ -31,6 +31,8 @@ export const ToastProvider = ({ children }) => {
         {toasts.map((toast) => (
           <div
             key={toast.id}
+            role={toast.type === 'error' ? 'alert' : 'status'}
+            aria-atomic="true"
             className={`pointer-events-auto flex items-center gap-3 p-3.5 rounded-xl shadow-lg border text-sm font-medium transition-all duration-300 transform translate-y-0 ${
               toast.type === "success"
                 ? "bg-white border-[#17B26A]/30 text-[#0A1D3F]"
@@ -59,7 +61,7 @@ export const ToastProvider = ({ children }) => {
 
             <button
               onClick={() => removeToast(toast.id)}
-              className="p-1 text-gray-400 hover:text-gray-700 transition"
+              className="p-1 min-w-11 min-h-11 text-gray-600 hover:text-gray-700 transition focus-visible:outline-2 focus-visible:outline-offset-2"
               aria-label="Close Toast"
             >
               <X className="w-4 h-4" />

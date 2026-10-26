@@ -1,3 +1,4 @@
+import { useDialogFocus } from '../../../shared/ui/useDialogFocus';
 import React, { useEffect, useState } from 'react';
 import { bookService } from '../../user/services/bookService';
 import { collegeService } from '../../user/services/collegeService';
@@ -16,7 +17,8 @@ export function BookEditor({ book, onClose, onSaved }) {
     fields.previewAssetIds = form.previewAssetId ? [form.previewAssetId] : []; fields.toc = JSON.parse(form.toc); fields.keywords = form.keywords.split(',').map(x => x.trim()).filter(Boolean);
     const result = book ? await bookService.updateBook(book, fields) : await bookService.addBook(fields); onSaved(result);
   } catch (e) { setError(e.message); } finally { setBusy(false); } };
-  return <div className="fixed inset-0 z-50 bg-[#0A1D3F]/70 p-3 flex items-center justify-center"><form onSubmit={save} role="dialog" aria-modal="true" aria-label="Book editor" className="bg-white rounded-2xl p-4 sm:p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto space-y-4 text-[#0A1D3F]">
+  const editorDialog=useDialogFocus(true,onClose);
+  return <div className="fixed inset-0 z-50 bg-[#0A1D3F]/70 p-3 flex items-center justify-center"><form ref={editorDialog} tabIndex={-1} onSubmit={save} role="dialog" aria-modal="true" aria-label="Book editor" className="bg-white rounded-2xl p-4 sm:p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto space-y-4 text-[#0A1D3F]">
     <div className="flex justify-between"><h2 className="text-lg font-bold">{book ? 'Edit Book' : 'Add New Book'}</h2><button type="button" onClick={onClose}>Close</button></div>
     {error && <p role="alert" className="p-3 bg-red-50 text-red-700 rounded-lg">{error}</p>}
     <p className="text-xs text-[#667085]">Save a draft first. Publication requires clean media, licensing evidence and explicitly approved pricing. Purchasing and full reading are pending.</p>

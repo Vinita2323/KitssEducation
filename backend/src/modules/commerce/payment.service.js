@@ -3,6 +3,7 @@ import { AppError } from '../../utils/AppError.js';
 import { id, key, object, revision, text, invalid } from '../publishing/validation.js';
 import { providerId, unavailable } from './payment-provider.js';
 import { applicantInput, documentRequirements, registrationBlocked, registrationFields } from './registration.js';
+import { dashboardFilters } from './dashboard-filters.js';
 
 const hash = value => createHash('sha256').update(JSON.stringify(value)).digest('hex');
 const missing = () => new AppError(404, 'NOT_FOUND', 'Order or application was not found');
@@ -216,9 +217,13 @@ export class PaymentService {
     const total = await this.models.Order.countDocuments(filter);
     return { data: (await this.models.Order.find(filter).sort({ createdAt: -1, _id: -1 }).skip((page - 1) * pageSize).limit(pageSize)).map(orderDTO), meta: { page, pageSize, total, totalPages: Math.max(1, Math.ceil(total / pageSize)) } };
   }
-  async summary() {
-    const rows = await this.models.Order.aggregate([{ $group: { _id: { status: '$status', simulated: '$simulated', fulfilled: '$fulfillment.state' }, count: { $sum: 1 }, amountMinor: { $sum: '$amountMinor' } } }]);
-    return { paymentMode: 'test', currency: 'INR', eventQueue: await this.models.Job.aggregate([{ $match: { kind: 'payment_event' } }, { $group: { _id: { state: '$state', provider: '$provider' }, count: { $sum: 1 } } }]), label: 'Test Mode gross captured value; not net revenue, profit, settlement or tax', groups: rows, failedAttempts: await this.models.Order.aggregate([{ $unwind: '$attempts' }, { $match: { 'attempts.status': 'failed' } }, { $group: { _id: '$simulated', count: { $sum: 1 } } }]) };
+  async summary(query = {}) {
+    const f = dashboardFilters(query);
+    const aggregate = (model, pipeline) => model.aggregate(pipeline).option({maxTimeMS:10000});
+    const match = {...f.mode, ...(f.active ? {$or:[{status:'captured',capturedAt:f.range},{status:{$ne:'captured'},createdAt:f.range}]} : {})};
+    const rows = await aggregate(this.models.Order,[{$match:match}, { $group: { _id: { status: '$status', simulated: '$simulated', fulfilled: '$fulfillment.state' }, count: { $sum: 1 }, amountMinor: { $sum: '$amountMinor' } } }]);
+    const failed = await aggregate(this.models.Order,[{$match:{...f.mode,...(f.active?{'attempts.observedAt':f.range}:{})}},{$unwind:'$attempts'},{$match:{'attempts.status':'failed',...(f.active?{'attempts.observedAt':f.range}:{})}},{$group:{_id:'$simulated',count:{$sum:1}}}]);
+    return { paymentMode: 'test', currency: 'INR', filters:f.public, timestampBasis:{captured:'capturedAt',otherOrders:'createdAt',failedAttempts:'attempts.observedAt',eventQueue:'lifetime',operations:'lifetime'}, eventQueue: await aggregate(this.models.Job,[{ $match: { kind: 'payment_event' } }, { $group: { _id: { state: '$state', provider: '$provider' }, count: { $sum: 1 } } }]), label: 'Test Mode gross captured value; not net revenue, profit, settlement or tax', groups: rows, failedAttempts: failed };
   }
   async receiveWebhook(raw, signature, eventId) {
     const provider = this.provider; if (!provider.ready) throw unavailable();

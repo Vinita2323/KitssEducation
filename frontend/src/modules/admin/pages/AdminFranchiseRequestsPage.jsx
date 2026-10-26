@@ -1,3 +1,4 @@
+import { useDialogFocus } from '../../../shared/ui/useDialogFocus';
 import React, { useState, useEffect } from "react";
 import {
   ShieldCheck,
@@ -134,7 +135,7 @@ export const AdminFranchiseRequestsPage = () => {
         );
     }
   };
-
+  const editorDialog = useDialogFocus(Boolean(selectedFranchise), () => setSelectedFranchise(null));
   return (
     <div className="space-y-6">
       {loadError && <p role="alert" className="p-3 bg-red-50 text-red-700 rounded-xl">{loadError}</p>}
@@ -169,7 +170,7 @@ export const AdminFranchiseRequestsPage = () => {
           <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             type="text"
-            placeholder="Search by ID, applicant, university, college, phone..."
+            aria-label="Search franchise requests" placeholder="Search by ID, applicant, university, college, phone..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full pl-9 pr-4 py-2 text-xs sm:text-sm bg-[#F7F8FA] border border-[#E6E8EC] rounded-xl focus:outline-none focus:border-[#0A1D3F] transition"
@@ -180,7 +181,7 @@ export const AdminFranchiseRequestsPage = () => {
         <div className="flex items-center gap-1.5 p-1 bg-[#F7F8FA] rounded-xl border border-[#E6E8EC] self-start sm:self-auto">
           {["All", "Draft", "Pending", "Approved", "Rejected"].map((st) => (
             <button
-              key={st}
+              key={st} aria-pressed={statusFilter === st}
               onClick={() => setStatusFilter(st)}
               className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
                 statusFilter === st
@@ -229,12 +230,11 @@ export const AdminFranchiseRequestsPage = () => {
                   const uniName = fran.universityId?.name || "Unknown University";
                   const uniShort = fran.universityId?.shortName || "";
                   const colName = fran.collegeId?.name || "Unknown College";
-
                   return (
                     <tr
                       key={franId}
                       className="hover:bg-[#F8FAFC]/80 transition cursor-pointer"
-                      aria-label={"Review franchise " + fran.reference} onClick={() => handleOpenDetail(fran)}
+                      onClick={() => handleOpenDetail(fran)}
                     >
                       {/* Ref ID & Contact Person */}
                       <td className="py-3.5 px-4">
@@ -290,6 +290,7 @@ export const AdminFranchiseRequestsPage = () => {
                       <td className="py-3.5 px-4 text-right">
                         <button
                           type="button"
+                          aria-label={"Review franchise " + fran.reference}
                           onClick={(e) => {
                             e.stopPropagation();
                             handleOpenDetail(fran);
@@ -314,7 +315,7 @@ export const AdminFranchiseRequestsPage = () => {
          ======================================================== */}
       {selectedFranchise && (
         <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-white rounded-2xl border border-[#E6E8EC] shadow-2xl max-w-xl w-full p-5 sm:p-6 space-y-4 animate-in zoom-in-95 duration-150 text-left max-h-[90vh] overflow-y-auto">
+          <div ref={editorDialog} role="dialog" aria-modal="true" aria-label="Franchise application review" tabIndex={-1} className="bg-white rounded-2xl border border-[#E6E8EC] shadow-2xl max-w-xl w-full p-5 sm:p-6 space-y-4 animate-in zoom-in-95 duration-150 text-left max-h-[90vh] overflow-y-auto">
             {/* Modal Header */}
             <div className="flex items-start justify-between pb-3 border-b border-[#E6E8EC]">
               <div>
@@ -330,7 +331,7 @@ export const AdminFranchiseRequestsPage = () => {
               </div>
               <button
                 type="button"
-                onClick={() => setSelectedFranchise(null)}
+                aria-label="Close franchise review" onClick={() => setSelectedFranchise(null)}
                 className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition cursor-pointer"
               >
                 <X className="w-4 h-4" />
@@ -500,10 +501,11 @@ export const AdminFranchiseRequestsPage = () => {
 
             {/* Add Note or Rejection Reason Input */}
             <div className="space-y-2 pt-2 border-t border-[#EDF2F7]">
-              <label className="block text-xs font-bold text-[#0A1D3F]">
+              <label htmlFor="adminfranchiserequestspage-field-1" className="block text-xs font-bold text-[#0A1D3F]">
                 Add Admin Note / Rejection Reason
               </label>
               <textarea
+                id="adminfranchiserequestspage-field-1"
                 rows={2}
                 placeholder="Enter audit notes or specific reason if rejecting..."
                 value={adminNote}

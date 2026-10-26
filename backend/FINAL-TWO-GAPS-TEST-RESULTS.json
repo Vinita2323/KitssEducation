@@ -1,0 +1,258 @@
+{
+  "description": "Actual completed Node TAP totals, including parent tests. Earlier failures/exclusions are retained; final outcomes and coverage rollup are explained in FINAL-TWO-GAPS-REPORT.md.",
+  "runs": [
+    {
+      "scope": "dashboard-tests",
+      "counts": {
+        "tests": 2,
+        "pass": 2,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0
+      },
+      "failedTests": []
+    },
+    {
+      "scope": "dashboard-final",
+      "counts": {
+        "tests": 2,
+        "pass": 2,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0
+      },
+      "failedTests": []
+    },
+    {
+      "scope": "backend-full",
+      "counts": {
+        "tests": 123,
+        "pass": 119,
+        "fail": 2,
+        "cancelled": 0,
+        "skipped": 2,
+        "todo": 0
+      },
+      "failedTests": [
+        "Stage 3 real MongoDB atomic authentication (dedicated fresh database only)",
+        "Stage 4 standalone institution/intake integration in fresh isolated MongoDB"
+      ]
+    },
+    {
+      "scope": "backend-corrected",
+      "counts": {
+        "tests": 36,
+        "pass": 36,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0
+      },
+      "failedTests": []
+    },
+    {
+      "scope": "browser-first",
+      "counts": {
+        "tests": 31,
+        "pass": 24,
+        "fail": 7,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0
+      },
+      "failedTests": [
+        "automated semantics/contrast /admin/colleges",
+        "keyboard university validation, correction, save and focus return persist",
+        "keyboard modal Book editor",
+        "keyboard modal Taxonomy editor",
+        "keyboard modal College editor",
+        "inline result, notification, account and registration review keyboard workflows",
+        "F25/B01 real admin accessibility, keyboard, filters and responsive acceptance"
+      ]
+    },
+    {
+      "scope": "browser-second",
+      "counts": {
+        "tests": 32,
+        "pass": 29,
+        "fail": 3,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0
+      },
+      "failedTests": [
+        "inline result, notification, account and registration review keyboard workflows",
+        "book and course drafts, lesson and media editors preserve keyboard operation",
+        "F25/B01 real admin accessibility, keyboard, filters and responsive acceptance"
+      ]
+    },
+    {
+      "scope": "browser-focused",
+      "counts": {
+        "tests": 32,
+        "pass": 1,
+        "fail": 4,
+        "cancelled": 0,
+        "skipped": 27,
+        "todo": 0
+      },
+      "failedTests": [
+        "CMS keyboard save, long error preservation and native dropdown in dialog",
+        "inline result, notification, account and registration review keyboard workflows",
+        "book and course drafts, lesson and media editors preserve keyboard operation",
+        "F25/B01 real admin accessibility, keyboard, filters and responsive acceptance"
+      ]
+    },
+    {
+      "scope": "browser-final",
+      "counts": {
+        "tests": 33,
+        "pass": 30,
+        "fail": 3,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0
+      },
+      "failedTests": [
+        "book and course drafts, lesson and media editors preserve keyboard operation",
+        "native Chrome 200% zoom, dialog and keyboard scrolling",
+        "F25/B01 real admin accessibility, keyboard, filters and responsive acceptance"
+      ]
+    },
+    {
+      "scope": "browser-additional",
+      "counts": {
+        "tests": 34,
+        "pass": 1,
+        "fail": 2,
+        "cancelled": 0,
+        "skipped": 31,
+        "todo": 0
+      },
+      "failedTests": [
+        "admission, franchise and program review dialogs have named keyboard controls",
+        "F25/B01 real admin accessibility, keyboard, filters and responsive acceptance"
+      ]
+    },
+    {
+      "scope": "browser-zoom-review",
+      "counts": {
+        "tests": 34,
+        "pass": 1,
+        "fail": 2,
+        "cancelled": 0,
+        "skipped": 31,
+        "todo": 0
+      },
+      "failedTests": [
+        "admission, franchise and program review dialogs have named keyboard controls",
+        "F25/B01 real admin accessibility, keyboard, filters and responsive acceptance"
+      ]
+    },
+    {
+      "scope": "browser-review-final",
+      "counts": {
+        "tests": 34,
+        "pass": 0,
+        "fail": 2,
+        "cancelled": 0,
+        "skipped": 32,
+        "todo": 0
+      },
+      "failedTests": [
+        "admission, franchise and program review dialogs have named keyboard controls",
+        "F25/B01 real admin accessibility, keyboard, filters and responsive acceptance"
+      ]
+    },
+    {
+      "scope": "browser-review-corrected",
+      "counts": {
+        "tests": 34,
+        "pass": 2,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 32,
+        "todo": 0
+      },
+      "failedTests": []
+    },
+    {
+      "scope": "browser-acceptance",
+      "counts": {
+        "tests": 34,
+        "pass": 34,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0
+      },
+      "failedTests": []
+    },
+    {
+      "scope": "browser-archive",
+      "counts": {
+        "tests": 34,
+        "pass": 2,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 32,
+        "todo": 0
+      },
+      "failedTests": []
+    },
+    {
+      "scope": "institutions",
+      "counts": {
+        "tests": 6,
+        "pass": 6,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0
+      },
+      "failedTests": []
+    },
+    {
+      "scope": "publishing",
+      "counts": {
+        "tests": 5,
+        "pass": 5,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0
+      },
+      "failedTests": []
+    },
+    {
+      "scope": "shared-regression",
+      "counts": {
+        "tests": 5,
+        "pass": 5,
+        "fail": 0,
+        "cancelled": 0,
+        "skipped": 0,
+        "todo": 0
+      },
+      "failedTests": []
+    }
+  ],
+  "finalBuild": {
+    "exitCode": 0,
+    "seconds": 51.37,
+    "warning": "Existing Vite large-chunk warning"
+  },
+  "dependencyAuditVulnerabilities": {
+    "backend": 0,
+    "frontend": 0
+  },
+  "localTestMongoDB": {
+    "loopbackOnly": true,
+    "port": 27240,
+    "shutdownRequested": true,
+    "syntheticDataRetained": true,
+    "applicationHostContacted": false
+  }
+}

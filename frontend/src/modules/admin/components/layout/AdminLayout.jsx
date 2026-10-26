@@ -1,4 +1,7 @@
-import React, { useState } from "react";
+import '../admin-accessibility.css';
+import { useAdminAccessibility } from '../useAdminAccessibility';
+import { MotionConfig } from 'framer-motion';
+import React, { useState, useRef } from "react";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
@@ -22,6 +25,8 @@ export const AdminLayout = () => {
   const navigate = useNavigate();
   const isStage4 = location.pathname === "/admin" || /^\/admin\/(users|audit-logs|operations|universities|colleges|applications|franchise-requests|taxonomies|books|content|media|settings|orders|registrations|coaching|enrollments|results|notifications)(\/|$)/.test(location.pathname);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const root = useRef(null);
+  useAdminAccessibility(root,location.pathname);
   const drawer = useDialogFocus(sidebarOpen, () => setSidebarOpen(false));
 
   const navItems = [
@@ -52,7 +57,8 @@ export const AdminLayout = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#F7F8FA] flex flex-col">
+    <MotionConfig reducedMotion="user"><div ref={root} className="kitss-admin min-h-screen bg-[#F7F8FA] flex flex-col">
+      <a href="#admin-main" className="admin-skip-link">Skip to admin content</a>
       {/* Admin Top Header */}
       <header className="sticky top-0 z-40 bg-[#0A1D3F] text-white border-b border-[#133C8B] shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -62,7 +68,7 @@ export const AdminLayout = () => {
               <button
                 aria-label="Open admin navigation"
                 onClick={() => setSidebarOpen(!sidebarOpen)}
-                className="md:hidden p-2 rounded-xl text-white hover:bg-white/10 transition"
+                className="admin-menu-toggle p-2 rounded-xl text-white hover:bg-white/10 transition"
               >
                 {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
               </button>
@@ -75,7 +81,7 @@ export const AdminLayout = () => {
                   <span className="font-extrabold text-sm tracking-tight text-white block leading-tight">
                     KITSS <span className="text-[#FF8A00]">ADMIN</span>
                   </span>
-                  <span className="text-[10px] text-blue-200/70 font-medium">
+                  <span className="admin-header-subtitle text-[10px] text-blue-200/70 font-medium">
                     Education Franchise Management
                   </span>
                 </div>
@@ -110,7 +116,7 @@ export const AdminLayout = () => {
       {/* Body with Sidebar & Content */}
       <div className="flex-1 flex max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 gap-6">
         {/* Desktop Sidebar */}
-        <aside className="hidden md:flex flex-col w-64 shrink-0 space-y-4">
+        <aside className="admin-desktop-sidebar hidden lg:flex flex-col w-64 shrink-0 space-y-4">
           <div className="bg-white rounded-2xl border border-[#E6E8EC] p-3 shadow-2xs space-y-1">
             <div className="px-3 py-2 text-[10px] font-bold text-[#667085] uppercase tracking-wider">
               Navigation
@@ -122,6 +128,7 @@ export const AdminLayout = () => {
                 <Link
                   key={item.label}
                   to={item.path}
+                  aria-current={active ? "page" : undefined}
                   className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all ${
                     active
                       ? "bg-[#0A1D3F] text-white shadow-xs"
@@ -139,14 +146,14 @@ export const AdminLayout = () => {
           <div className="bg-white rounded-2xl border border-[#E6E8EC] p-4 text-xs shadow-2xs space-y-2">
             <h4 className="font-bold text-[#0A1D3F]">Franchise Quick Tip</h4>
             <p className="text-[#667085] leading-relaxed">
-              Active colleges immediately show up on the Student Home page under "Find Your College". Inactive colleges are hidden from students.
+              Published verified institutions appear in the student directory. Inactive institutions are hidden from public listings.
             </p>
           </div>
         </aside>
 
         {/* Mobile Drawer Overlay */}
         {sidebarOpen && (
-          <div className="fixed inset-0 z-50 flex md:hidden">
+          <div className="fixed inset-0 z-50 flex lg:hidden">
             <div
               className="fixed inset-0 bg-[#0A1D3F]/60 backdrop-blur-xs"
               onClick={() => setSidebarOpen(false)}
@@ -172,6 +179,7 @@ export const AdminLayout = () => {
                       <Link
                         key={item.label}
                         to={item.path}
+                  aria-current={active ? "page" : undefined}
                         onClick={() => setSidebarOpen(false)}
                         className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all ${
                           active
@@ -202,12 +210,12 @@ export const AdminLayout = () => {
         )}
 
         {/* Main Content Viewport */}
-        <main className="flex-1 min-w-0">
+        <main id="admin-main" tabIndex={-1} className="flex-1 min-w-0">
           <StaffInvitations />
           {!isStage4 && <p role="status" className="mb-4 p-3 bg-amber-50 border rounded-xl text-xs text-[#0A1D3F]">Preview data only. Business management APIs are pending integration; changes are disabled.</p>}
           <fieldset disabled={!isStage4} className="min-w-0"><Outlet /></fieldset>
         </main>
       </div>
-    </div>
+    </div></MotionConfig>
   );
 };

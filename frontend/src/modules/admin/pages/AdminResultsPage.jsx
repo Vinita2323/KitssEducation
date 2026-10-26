@@ -1,3 +1,4 @@
+import { useEditorFocus } from '../components/useAdminAccessibility';
 import React, { useEffect, useState } from 'react';
 import { httpClient } from '../../../shared/api/httpClient';
 import { authenticatedWrite } from '../../user/services/authService';
@@ -135,9 +136,10 @@ export function AdminResultsPage() {
     const result = await authenticatedWrite('/admin/results/records/' + row.id + '/' + name, input);
     setDetail(result);
   });
+  const inlineEditor=useEditorFocus(Boolean(form));
   return <div className="space-y-4 min-w-0"><h1 className="text-xl font-bold text-[#0A1D3F]">Academic results</h1><p className="p-3 border rounded-xl bg-amber-50 text-sm">Official publication is disabled until trusted source authorization is separately approved. Source references entered here do not enable publication.</p>
     {error && <p role="alert" className="p-3 bg-red-50 border rounded-xl">{error}</p>}
-    <div className="flex flex-wrap gap-2">{Object.keys(paths).map(t => <button key={t} disabled={busy} onClick={() => {
+    <div className="flex flex-wrap gap-2">{Object.keys(paths).map(t => <button aria-pressed={tab === t} key={t} disabled={busy} onClick={() => {
         setTab(t);
         setPage(1);
         setForm(null);
@@ -147,7 +149,7 @@ export function AdminResultsPage() {
                     expectedRevision: row.revision
                   }, 'DELETE'))}>Archive</button></>}</div></td></tr>)}</tbody></table>{!rows.length && <p className="p-4 text-sm">No records.</p>}</div>
     <Pagination meta={meta} onChange={setPage} loading={busy} />
-    {form && <form onSubmit={save} className="p-4 bg-white rounded-xl border space-y-3"><h2 className="font-bold">{form.id ? 'Edit' : 'Add'} {tab === 'issuers' ? 'issuer' : 'exam'}</h2>{Object.keys(values).map(k => <label className="block text-sm" key={k}>{k}{['fieldSchema', 'source'].includes(k) ? <textarea aria-label={k} rows={5} value={values[k]} onChange={e => setValues(p => ({
+    {form && <form onSubmit={save} ref={inlineEditor} aria-label="Result definition editor" className="p-4 bg-white rounded-xl border space-y-3"><h2 className="font-bold">{form.id ? 'Edit' : 'Add'} {tab === 'issuers' ? 'issuer' : 'exam'}</h2>{Object.keys(values).map(k => <label className="block text-sm" key={k}>{k}{['fieldSchema', 'source'].includes(k) ? <textarea aria-label={k} rows={5} value={values[k]} onChange={e => setValues(p => ({
           ...p,
           [k]: e.target.value
         }))} className="block w-full border rounded-xl p-2 font-mono text-xs" /> : ['status', 'type'].includes(k) ? <select aria-label={k} value={values[k]} onChange={e => setValues(p => ({

@@ -1,3 +1,4 @@
+import { useDialogFocus } from '../../../shared/ui/useDialogFocus';
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import {
@@ -150,7 +151,7 @@ export const AdminUniversitiesPage = () => {
       showError(err.message || "Failed to delete university");
     }
   };
-
+  const editorDialog = useDialogFocus(modalOpen, () => setModalOpen(false));
   return (
     <div className="space-y-6">
       {loadError && <p role="alert" className="p-3 bg-red-50 text-red-700 rounded-xl">{loadError}</p>}
@@ -189,7 +190,7 @@ export const AdminUniversitiesPage = () => {
           <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             type="text"
-            placeholder="Search universities by name or acronym..."
+            aria-label="Search universities" placeholder="Search universities by name or acronym..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full pl-9 pr-4 py-2 text-xs sm:text-sm bg-[#F7F8FA] border border-[#E6E8EC] rounded-xl focus:outline-none focus:border-[#0A1D3F] transition"
@@ -200,7 +201,7 @@ export const AdminUniversitiesPage = () => {
         <div className="flex items-center gap-1.5 p-1 bg-[#F7F8FA] rounded-xl border border-[#E6E8EC] self-start sm:self-auto">
           {["All", "active", "inactive"].map((st) => (
             <button
-              key={st}
+              key={st} aria-pressed={statusFilter === st}
               onClick={() => setStatusFilter(st)}
               className={`px-3 py-1.5 rounded-lg text-xs font-semibold capitalize transition cursor-pointer ${
                 statusFilter === st
@@ -343,7 +344,7 @@ export const AdminUniversitiesPage = () => {
          ======================================================== */}
       {modalOpen && (
         <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-white rounded-2xl border border-[#E6E8EC] shadow-2xl max-w-md w-full p-5 sm:p-6 space-y-4 animate-in zoom-in-95 duration-150">
+          <div ref={editorDialog} role="dialog" aria-modal="true" aria-label="University editor" tabIndex={-1} className="bg-white rounded-2xl border border-[#E6E8EC] shadow-2xl max-w-md w-full p-5 sm:p-6 space-y-4 animate-in zoom-in-95 duration-150">
             <div className="flex items-center justify-between pb-3 border-b border-[#E6E8EC]">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-lg bg-[#0A1D3F]/10 text-[#0A1D3F] flex items-center justify-center font-bold">
@@ -355,7 +356,7 @@ export const AdminUniversitiesPage = () => {
               </div>
               <button
                 type="button"
-                onClick={() => setModalOpen(false)}
+                aria-label="Close university editor" onClick={() => setModalOpen(false)}
                 className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition cursor-pointer"
               >
                 <X className="w-4 h-4" />
@@ -402,10 +403,11 @@ export const AdminUniversitiesPage = () => {
 
               {/* Logo URL */}
               <div>
-                <label className="block text-xs font-bold text-[#0A1D3F] mb-1">
+                <label htmlFor="adminuniversitiespage-field-1" className="block text-xs font-bold text-[#0A1D3F] mb-1">
                   Logo URL (Optional)
                 </label>
                 <input
+                  id="adminuniversitiespage-field-1"
                   type="text"
                   aria-label="University logo" value={formData.logo}
                   onChange={(e) =>
@@ -418,10 +420,11 @@ export const AdminUniversitiesPage = () => {
 
               {/* Status */}
               <div>
-                <label className="block text-xs font-bold text-[#0A1D3F] mb-1">
+                <label htmlFor="adminuniversitiespage-field-2" className="block text-xs font-bold text-[#0A1D3F] mb-1">
                   Status
                 </label>
                 <select
+                  id="adminuniversitiespage-field-2"
                   aria-label="University status" value={formData.status}
                   onChange={(e) =>
                     setFormData({ ...formData, status: e.target.value })

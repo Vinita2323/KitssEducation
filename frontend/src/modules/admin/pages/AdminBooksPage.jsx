@@ -1,3 +1,4 @@
+import { useDialogFocus } from '../../../shared/ui/useDialogFocus';
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import {
@@ -114,13 +115,14 @@ export const AdminBooksPage = () => {
   const freeCount = books.filter((b) => b.isFree || b.price === 0).length;
   const paidCount = books.filter((b) => !b.isFree && b.price > 0).length;
 
+  const archiveDialog=useDialogFocus(Boolean(deleteConfirmId),()=>setDeleteConfirmId(null));
   return (
     <div className="space-y-6">
       {loadError && <p role="alert" className="p-3 rounded-xl bg-red-50 text-red-700">{loadError}</p>}
       <Pagination meta={meta} onChange={setPage} loading={loading} />
       {/* Toast Notification */}
       {toastMessage && (
-        <div className="fixed top-20 right-6 z-50 bg-[#0A1D3F] text-white px-4 py-3 rounded-2xl shadow-xl border border-[#FF8A00] flex items-center gap-2 animate-in slide-in-from-top duration-200">
+        <div role="status" className="fixed top-20 right-6 left-6 sm:left-auto z-50 bg-[#0A1D3F] text-white px-4 py-3 rounded-2xl shadow-xl border border-[#FF8A00] flex items-center gap-2 animate-in slide-in-from-top duration-200">
           <CheckCircle2 className="w-4 h-4 text-[#17B26A]" />
           <span className="text-xs font-bold">{toastMessage}</span>
         </div>
@@ -208,10 +210,11 @@ export const AdminBooksPage = () => {
         {/* Dropdown Filters Grid */}
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 pt-1 border-t border-[#E6E8EC]/80 text-xs">
           <div>
-            <label className="text-[10px] font-bold text-[#667085] uppercase tracking-wider block mb-1">
+            <label htmlFor="adminbookspage-field-1" className="text-[10px] font-bold text-[#667085] uppercase tracking-wider block mb-1">
               Board
             </label>
             <select
+              id="adminbookspage-field-1"
               value={filterBoard}
               onChange={(e) => setFilterBoard(e.target.value)}
               className="w-full p-2 bg-[#F7F8FA] border border-[#E6E8EC] rounded-xl text-xs text-[#0A1D3F] focus:outline-none"
@@ -224,10 +227,11 @@ export const AdminBooksPage = () => {
           </div>
 
           <div>
-            <label className="text-[10px] font-bold text-[#667085] uppercase tracking-wider block mb-1">
+            <label htmlFor="adminbookspage-field-2" className="text-[10px] font-bold text-[#667085] uppercase tracking-wider block mb-1">
               Class
             </label>
             <select
+              id="adminbookspage-field-2"
               value={filterClass}
               onChange={(e) => setFilterClass(e.target.value)}
               className="w-full p-2 bg-[#F7F8FA] border border-[#E6E8EC] rounded-xl text-xs text-[#0A1D3F] focus:outline-none"
@@ -240,10 +244,11 @@ export const AdminBooksPage = () => {
           </div>
 
           <div>
-            <label className="text-[10px] font-bold text-[#667085] uppercase tracking-wider block mb-1">
+            <label htmlFor="adminbookspage-field-3" className="text-[10px] font-bold text-[#667085] uppercase tracking-wider block mb-1">
               Subject
             </label>
             <select
+              id="adminbookspage-field-3"
               value={filterSubject}
               onChange={(e) => setFilterSubject(e.target.value)}
               className="w-full p-2 bg-[#F7F8FA] border border-[#E6E8EC] rounded-xl text-xs text-[#0A1D3F] focus:outline-none"
@@ -256,10 +261,11 @@ export const AdminBooksPage = () => {
           </div>
 
           <div>
-            <label className="text-[10px] font-bold text-[#667085] uppercase tracking-wider block mb-1">
+            <label htmlFor="adminbookspage-field-4" className="text-[10px] font-bold text-[#667085] uppercase tracking-wider block mb-1">
               Pricing
             </label>
             <select
+              id="adminbookspage-field-4"
               value={filterType}
               onChange={(e) => setFilterType(e.target.value)}
               className="w-full p-2 bg-[#F7F8FA] border border-[#E6E8EC] rounded-xl text-xs text-[#0A1D3F] focus:outline-none"
@@ -271,10 +277,11 @@ export const AdminBooksPage = () => {
           </div>
 
           <div>
-            <label className="text-[10px] font-bold text-[#667085] uppercase tracking-wider block mb-1">
+            <label htmlFor="adminbookspage-field-5" className="text-[10px] font-bold text-[#667085] uppercase tracking-wider block mb-1">
               Status
             </label>
             <select
+              id="adminbookspage-field-5"
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
               className="w-full p-2 bg-[#F7F8FA] border border-[#E6E8EC] rounded-xl text-xs text-[#0A1D3F] focus:outline-none"
@@ -437,7 +444,7 @@ export const AdminBooksPage = () => {
             className="fixed inset-0 bg-black/50 backdrop-blur-xs"
             onClick={() => setDeleteConfirmId(null)}
           />
-          <div className="relative bg-white w-full max-w-sm rounded-2xl shadow-xl border border-[#E6E8EC] z-10 p-5 text-center space-y-3 animate-in fade-in zoom-in-95 duration-150">
+          <div ref={archiveDialog} role="dialog" aria-modal="true" aria-label="Archive book confirmation" tabIndex={-1} className="relative bg-white w-full max-w-sm rounded-2xl shadow-xl border border-[#E6E8EC] z-10 p-5 text-center space-y-3 animate-in fade-in zoom-in-95 duration-150">
             <div className="w-12 h-12 rounded-full bg-red-50 text-red-600 flex items-center justify-center mx-auto">
               <AlertCircle className="w-6 h-6" />
             </div>

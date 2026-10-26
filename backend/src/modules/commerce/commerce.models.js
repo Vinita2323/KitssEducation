@@ -20,6 +20,10 @@ export function createCommerceModels(connection) {
     investigation: String, auditOutbox: { type: [event], default: [] },
   }, options);
   order.index({ userId: 1, idempotencyKey: 1 }, { unique: true });
+  // Dates also remain indexable when the optional environment filter is absent.
+  order.index({ status: 1, capturedAt: 1, paymentMode: 1 });
+  order.index({ createdAt: 1, paymentMode: 1 });
+  order.index({ 'attempts.observedAt': 1, paymentMode: 1 });
   order.index({ provider: 1, paymentMode: 1, providerOrderId: 1 }, { unique: true, partialFilterExpression: { providerOrderId: { $type: 'string' } } });
   order.index({ provider: 1, paymentMode: 1, paymentReferences: 1 }, { unique: true, partialFilterExpression: { 'paymentReferences.0': { $exists: true } } });
   order.index({ userId: 1, 'product.kind': 1, 'product.id': 1 }, { unique: true }); // one permanent book purchase aggregate per owner/product

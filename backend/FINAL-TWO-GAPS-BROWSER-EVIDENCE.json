@@ -1,0 +1,238 @@
+{
+  "purpose": "Actual axe findings and final browser scope totals; keyboard/zoom/reflow details and limits are in FINAL-TWO-GAPS-REPORT.md.",
+  "focus": "complete",
+  "sectionManifest": [
+    "/admin",
+    "/admin/users",
+    "/admin/audit-logs",
+    "/admin/operations",
+    "/admin/results",
+    "/admin/notifications",
+    "/admin/coaching",
+    "/admin/enrollments",
+    "/admin/orders",
+    "/admin/registrations",
+    "/admin/content",
+    "/admin/media",
+    "/admin/settings",
+    "/admin/taxonomies",
+    "/admin/universities",
+    "/admin/colleges",
+    "/admin/colleges/6adec43dcb78ae36c4255332/courses",
+    "/admin/franchise-requests",
+    "/admin/applications",
+    "/admin/books"
+  ],
+  "responsiveWidthManifest": [
+    320,
+    375,
+    390,
+    414,
+    768,
+    1024,
+    1280,
+    1440
+  ],
+  "axeVersion": "4.14.0",
+  "checks": [
+    {
+      "label": "/admin",
+      "violations": []
+    },
+    {
+      "label": "/admin/users",
+      "violations": []
+    },
+    {
+      "label": "/admin/audit-logs",
+      "violations": []
+    },
+    {
+      "label": "/admin/operations",
+      "violations": []
+    },
+    {
+      "label": "/admin/results",
+      "violations": []
+    },
+    {
+      "label": "/admin/notifications",
+      "violations": []
+    },
+    {
+      "label": "/admin/coaching",
+      "violations": []
+    },
+    {
+      "label": "/admin/enrollments",
+      "violations": []
+    },
+    {
+      "label": "/admin/orders",
+      "violations": []
+    },
+    {
+      "label": "/admin/registrations",
+      "violations": []
+    },
+    {
+      "label": "/admin/content",
+      "violations": []
+    },
+    {
+      "label": "/admin/media",
+      "violations": []
+    },
+    {
+      "label": "/admin/settings",
+      "violations": []
+    },
+    {
+      "label": "/admin/taxonomies",
+      "violations": []
+    },
+    {
+      "label": "/admin/universities",
+      "violations": []
+    },
+    {
+      "label": "/admin/colleges",
+      "violations": []
+    },
+    {
+      "label": "/admin/colleges/6adec43dcb78ae36c4255332/courses",
+      "violations": []
+    },
+    {
+      "label": "/admin/franchise-requests",
+      "violations": []
+    },
+    {
+      "label": "/admin/applications",
+      "violations": []
+    },
+    {
+      "label": "/admin/books",
+      "violations": []
+    },
+    {
+      "label": "University editor",
+      "violations": []
+    },
+    {
+      "label": "Book editor",
+      "violations": []
+    },
+    {
+      "label": "Content editor",
+      "violations": []
+    },
+    {
+      "label": "Coaching editor",
+      "violations": []
+    },
+    {
+      "label": "Taxonomy editor",
+      "violations": []
+    },
+    {
+      "label": "College editor",
+      "violations": []
+    },
+    {
+      "label": "result editor",
+      "violations": []
+    },
+    {
+      "label": "notification editor",
+      "violations": []
+    },
+    {
+      "label": "account details",
+      "violations": []
+    },
+    {
+      "label": "registration review",
+      "violations": []
+    },
+    {
+      "label": "Book editor",
+      "violations": []
+    },
+    {
+      "label": "Coaching editor",
+      "violations": []
+    },
+    {
+      "label": "Coaching editor",
+      "violations": []
+    },
+    {
+      "label": "media controls",
+      "violations": []
+    },
+    {
+      "label": "Admission application review",
+      "violations": []
+    },
+    {
+      "label": "Franchise application review",
+      "violations": []
+    },
+    {
+      "label": "Program editor",
+      "violations": []
+    },
+    {
+      "label": "320px long validation alert",
+      "violations": []
+    },
+    {
+      "label": "Native Chrome 200% CMS editor",
+      "violations": []
+    },
+    {
+      "label": "Content editor",
+      "violations": []
+    },
+    {
+      "label": "Admin navigation",
+      "violations": []
+    }
+  ],
+  "pageErrors": [],
+  "zoom": "Native Chrome 200% page zoom verified by devicePixelRatio=2 and <730 CSS-pixel viewport on all 20 sections; additional 720px equivalent reflow check",
+  "virtualKeyboard": "390x400 reduced viewport emulation; physical keyboard/IME not independently tested",
+  "supplementalArchiveChecks": [
+    {
+      "label": "Book editor",
+      "violations": []
+    },
+    {
+      "label": "Archive book confirmation",
+      "violations": []
+    },
+    {
+      "label": "Coaching editor",
+      "violations": []
+    },
+    {
+      "label": "Coaching editor",
+      "violations": []
+    },
+    {
+      "label": "media controls",
+      "violations": []
+    }
+  ],
+  "finalAcceptance": {
+    "passed": 34,
+    "failed": 0,
+    "skipped": 0
+  },
+  "supplementalArchiveRun": {
+    "passed": 2,
+    "failed": 0,
+    "excluded": 32
+  }
+}

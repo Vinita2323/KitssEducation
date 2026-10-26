@@ -1,3 +1,4 @@
+import { useDialogFocus } from '../../../shared/ui/useDialogFocus';
 import React, { useState, useEffect } from "react";
 import {
   FileText,
@@ -130,7 +131,7 @@ export const AdminApplicationsPage = () => {
   };
 
   const statuses = ["All", "New", "Contacted", "In Process", "Approved", "Rejected"];
-
+  const editorDialog = useDialogFocus(Boolean(selectedApp), () => setSelectedApp(null));
   return (
     <div className="space-y-6">
       {loadError && <p role="alert" className="p-3 bg-red-50 text-red-700 rounded-xl">{loadError}</p>}
@@ -154,7 +155,7 @@ export const AdminApplicationsPage = () => {
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search by student name, email, phone, college, or application ID..."
+              aria-label="Search admission applications" placeholder="Search by student name, email, phone, college, or application ID..."
               className="w-full pl-10 pr-4 py-2 bg-[#F7F8FA] border border-[#E6E8EC] rounded-xl text-xs sm:text-sm focus:outline-none focus:border-[#FF8A00]"
             />
           </div>
@@ -167,7 +168,7 @@ export const AdminApplicationsPage = () => {
           <span className="text-xs font-bold text-[#667085] mr-1">Status:</span>
           {statuses.map((st) => (
             <button
-              key={st}
+              key={st} aria-pressed={statusFilter === st}
               onClick={() => setStatusFilter(st)}
               className={`px-3 py-1 rounded-lg text-xs font-bold transition whitespace-nowrap ${
                 statusFilter === st
@@ -220,7 +221,6 @@ export const AdminApplicationsPage = () => {
                         year: "numeric",
                       })
                     : "Recent";
-
                   return (
                     <tr key={appId} className="hover:bg-gray-50/70 transition">
                       <td className="py-3.5 px-4">
@@ -298,7 +298,7 @@ export const AdminApplicationsPage = () => {
             className="fixed inset-0 bg-[#0A1D3F]/60 backdrop-blur-xs"
             onClick={() => setSelectedApp(null)}
           />
-          <div className="relative bg-white w-full max-w-2xl rounded-2xl sm:rounded-3xl shadow-2xl border border-[#E6E8EC] z-10 overflow-hidden flex flex-col max-h-[92vh] animate-in fade-in zoom-in-95 duration-200">
+          <div ref={editorDialog} role="dialog" aria-modal="true" aria-label="Admission application review" tabIndex={-1} className="relative bg-white w-full max-w-2xl rounded-2xl sm:rounded-3xl shadow-2xl border border-[#E6E8EC] z-10 overflow-hidden flex flex-col max-h-[92vh] animate-in fade-in zoom-in-95 duration-200">
             {/* Header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-[#E6E8EC] bg-white sticky top-0 z-10">
               <div>
@@ -310,7 +310,7 @@ export const AdminApplicationsPage = () => {
                 </h3>
               </div>
               <button
-                onClick={() => setSelectedApp(null)}
+                aria-label="Close admission review" onClick={() => setSelectedApp(null)}
                 className="p-1.5 rounded-xl text-gray-400 hover:text-gray-700 hover:bg-gray-100"
               >
                 <X className="w-5 h-5" />
@@ -398,7 +398,7 @@ export const AdminApplicationsPage = () => {
                 <div className="flex flex-wrap gap-2">
                   {["New", "Contacted", "In Process", "Approved", "Rejected"].map((st) => (
                     <button
-                      key={st}
+                      key={st} aria-pressed={newStatus === st}
                       type="button"
                       disabled={!can('admissions.review')} onClick={() => setNewStatus(st)}
                       className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition border ${
@@ -447,7 +447,7 @@ export const AdminApplicationsPage = () => {
                 <div className="space-y-2">
                   <textarea
                     rows={2}
-                    value={newNote}
+                    aria-label="Admission internal note" value={newNote}
                     onChange={(e) => setNewNote(e.target.value)}
                     placeholder="Add an internal note (e.g., 'Called student, scheduled counseling session on Friday')..."
                     className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-[#E6E8EC] focus:border-[#FF8A00] focus:outline-none resize-none"

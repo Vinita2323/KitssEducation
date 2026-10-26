@@ -607,8 +607,8 @@ The original checklist and earlier stage evidence are historical and retain thei
 - [x] Implement course outcomes/benefits and plan benefits/highlight/order with schema/validation/admin/public projections; no financial policy invented.
 - [x] Actual protected selectable PDF text and accessible current-page expansion, image-only limitation and original-file alternative; enable viewport zoom.
 - [x] Shared modal/drawer focus management and searchable-selector keyboard semantics; focused real browser check passed.
-- [ ] Full bespoke-editor accessibility, 44px targets, contrast/text sizing, all 200% zoom/virtual-keyboard/physical-device acceptance. F25 remains partial.
-- [ ] Original optional B01 dashboard date-range/payment-mode query controls; current verified totals are explicitly all-time grouped records.
+- [x] F25 software accessibility acceptance superseded by the 26 October focused stage: all 20 sections, native 200% Chrome zoom/eight widths, axe and representative keyboard saves. Physical-device/real virtual-keyboard/assistive-technology acceptance remains independently unverified; no WCAG certification.
+- [x] B01 optional UTC date/environment filters on the existing API/UI; current stored mode is Test Mode, not a verified payment-method breakdown. Captured versus other order/attempt timestamps, lifetime counts and gross-value labels remain explicit.
 - [ ] Registration activation/sensitive documents/consent/fees, franchise approval, free/manual rights/book revocation/renewals, official invoice/tax/refund and official result-source policies.
 - [ ] Actual SMTP app-password delivery, real scanner/signatures/licensed publication, rotated Razorpay credentials plus authorized Test Mode provider acceptance, pinned-runtime/operational recovery acceptance.
 - [ ] Optional avatar purpose/privacy/upload policy and reserved publicFeatures operational semantics.
@@ -619,3 +619,17 @@ The final report records the actual complete and rerun test results, exclusions 
 - [x] Final browser scopes: institutions 6, publishing 5, completeness 5, commerce 7, final editorial coaching 7, results/account 10, Stage 10 operations 13, complete route/eight-width matrix 14, full video/seven-width 14, final video-copy workflows 7, auth HTTP-double desktop/mobile 16 passed; unchanged width omissions and earlier failures are explicitly recorded in final evidence.
 - [x] Final frontend build native exit 0 (1m 59s; existing large-chunk warning); backend/frontend dependency audits 0 vulnerabilities; source/build secret scan and diff checks passed.
 - [x] Guarded private backup/readback/cleanup removed 19 disposable host test databases / 446 collections. All 32 application collection document/index counts match the Stage 10 baseline; zero guarded host test databases remain. Dedicated loopback-only local test MongoDB shut down gracefully; its ignored test data is retained.
+
+## Focused F25/B01 closure — 26 October 2026
+
+The [focused report](../../backend/FINAL-TWO-GAPS-REPORT.md) supersedes the earlier F25/B01 partial classifications and records exact final/failed/skipped runs. Current primary matrix: 162 implemented/tested, 0 partial, 49 gated, 0 missing, 1 outside scope (212 entries). Representative software acceptance does not mean production or assistive-technology certification.
+
+- [x] Existing B01 API: validate UTC from/to/test environment, inclusive end day, correct per-metric timestamps, indexed/time-bounded groups, lifetime count distinction, protected financial access and no captured-order double counting.
+- [x] Existing dashboard summary: labelled Apply/Clear, URL/reload persistence, loading/empty/errors, active filters, abort/stale-response protection and mobile reflow.
+- [x] Review all 20 admin sections; named modal/inline editors, focus isolation/trapping/return, labels/native validation, status announcements, contrast/text/targets, current navigation/skip link, reduced motion and keyboard-scrollable tables.
+- [x] Verify all eight widths, native Chrome 200% page zoom, reduced-height viewport emulation, axe and real persisted keyboard workflows; run relevant existing institution/publishing/shared regressions and backend tests. Exact counts and earlier failures are in the report.
+- [x] Build frontend, audit both dependency trees, review diff/source/build for configured secrets and preserve the application database by using loopback-only isolated synthetic databases.
+- [ ] Physical-device, actual mobile keyboard/IME and screen-reader/switch/cross-browser assistive-technology acceptance. No WCAG certification is claimed.
+- [ ] Existing business/provider/scanner/SMTP/runtime/deployment gates remain; unavailable payment-method rails and incidental zero-fee program validation are disclosed, not silently redefined.
+
+Stop after the focused local commit. No push, deployment or next stage is authorized.

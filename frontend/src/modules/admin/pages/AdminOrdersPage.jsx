@@ -4,11 +4,7 @@ import { authenticatedWrite } from '../../user/services/authService';
 import { useAuth } from '../../user/context/AuthContext';
 import { Pagination } from '../../user/components/common/Pagination';
 
-export function FinancialSummary() {
-  const [data,setData]=useState(null),[error,setError]=useState('');
-  useEffect(()=>{const c=new AbortController();httpClient.request('/admin/dashboard',{signal:c.signal}).then(r=>setData(r.data)).catch(e=>{if(e.code!=='ABORTED')setError(e.message);});return()=>c.abort();},[]);
-  return <section className="space-y-3"><h1 className="text-xl font-extrabold text-[#0A1D3F]">Test Mode Financial Summary</h1><p className="text-xs text-[#667085]">Gross captured value is not net revenue, profit, tax or settlement. Simulated records are separate.</p>{error&&<p role="alert">{error}</p>}{!data&&!error&&<p role="status">Loading verified records...</p>}<div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">{data?.groups?.map((g,i)=><div key={i} className="bg-white border border-[#E6E8EC] rounded-2xl p-4"><p className="text-xs">{g._id.simulated?'SIMULATED TEST':'Razorpay Test Mode'}</p><h2 className="font-bold text-[#0A1D3F]">{g._id.status}; fulfillment {g._id.fulfilled}</h2><p>{g.count} orders; INR {(g.amountMinor/100).toFixed(2)}</p></div>)}</div>{data&&!data.groups?.length&&<p>No verified commerce records yet.</p>}{data?.failedAttempts?.map((g,i)=><p key={i} className="text-xs">{g._id?'Simulated':'Razorpay Test Mode'} failed attempts: {g.count}</p>)}{data?.eventQueue?.map((g,i)=><p key={'event'+i} className="text-xs">{g._id.provider === 'fake' ? 'Simulated' : 'Razorpay Test Mode'} event queue {g._id.state}: {g.count}</p>)}</section>;
-}
+export { FinancialSummary } from '../components/DashboardSummary';
 export function AdminOrdersPage() {
   const {can}=useAuth();const [page,setPage]=useState(1),[status,setStatus]=useState(''),[queue,setQueue]=useState(''),[data,setData]=useState({data:[]}),[error,setError]=useState(''),[version,setVersion]=useState(0),[selected,setSelected]=useState(null);
   useEffect(()=>{const c=new AbortController();setSelected(null);const q=new URLSearchParams({page:String(page),...(status?{status}:{}),...(queue?{reconciliation:queue}:{})});httpClient.request('/admin/orders?'+q,{signal:c.signal}).then(setData).catch(e=>{if(e.code!=='ABORTED')setError(e.message);});return()=>c.abort();},[page,status,queue,version]);
