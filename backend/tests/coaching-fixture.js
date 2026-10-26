@@ -4,8 +4,8 @@ import { createApp } from '../src/app.js';
 import { Readable } from 'node:stream';
 import { imageBytes, pdfBytes } from './publishing-fixture.js';
 import { randomUUID } from 'node:crypto';
-export async function coachingFixture(name) {
-  const f = await commerceFixture(name);
+export async function coachingFixture(name, options = {}) {
+  const f = await commerceFixture(name, options);
   try {
     const learning = await createCoachingModule({
       connection: f.connection,

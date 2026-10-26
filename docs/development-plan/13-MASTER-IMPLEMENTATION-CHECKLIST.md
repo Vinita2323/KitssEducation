@@ -650,3 +650,19 @@ Evidence and exact test outcomes: [Stage 11 report](../../backend/STAGE11-SMTP-R
 - [ ] Real scanner/licensed-content/publication and existing business/runtime/operational/device gates remain unchanged. No live payments, deployment or next stage is authorized.
 
 Stage 11 final evidence: offline unit/config/HTTP/logging 25/0/0; isolated MongoDB with fake mail/provider 63/0/0; real Gmail workflow suite 4/0/0 with exactly six messages, owner-confirmed received; final book/coaching browser 7/0/0 each and auth HTTP-double desktop/mobile 16/0/0. Ordinary live-mail test invocation deliberately skips one test. Earlier book-browser 5 passed/2 failed due to login load timeout is disclosed and superseded by the verified rerun. Frontend build exit 0; both audits zero vulnerabilities. Local test MongoDB shut down, ignored synthetic data retained. These counts do not claim any real Razorpay payment or webhook acceptance.
+
+## Stage 12 — Razorpay independent integration verification, 26 October 2026
+
+Exact evidence, commands and limitations: [Stage 12 report](../../backend/STAGE12-RAZORPAY-ACCEPTANCE-REPORT.md). Primary requirement classifications/counts remain unchanged. This stage does not complete real-payment operational acceptance.
+
+- [x] Inspect/reuse existing payment architecture and configured Test Mode API credentials; successful real read-only authentication, separately recorded from payment acceptance.
+- [x] Configure a cryptographically random local webhook secret only in ignored backend environment; preserve SMTP settings and send zero additional live emails.
+- [x] Preserve the false rotation flag and missing approval record honestly; verify unapproved local HTTP webhook returns 503 with zero provider transport calls.
+- [x] Test actual Razorpay adapter HMAC/HTTPS response handling through synthetic HTTP transport responses, real Express/MongoDB, book/course capture-to-fulfillment, current private access, duplicate callbacks/webhooks, reconciliation and protected simulated admin totals. Final 6 passed, 0 failed/skipped; intermediate assertion failure is disclosed.
+- [x] Existing provider/commerce/coaching/dashboard tests: 39 passed, 0 failed/skipped. Book/coaching browser workflows: 14 passed, 0 failed/skipped using mocked Checkout and blocked external traffic; unchanged width loops deliberately omitted.
+- [x] Frontend build passed; both dependency audits zero vulnerabilities. Review source/build/staged content for secrets, keep private files excluded, gracefully stop the verified dedicated synthetic MongoDB and preserve existing application data.
+- [ ] Existing operator approval prerequisite: rotation flag remains false and approval record absent. No approval was fabricated and no gate bypassed.
+- [ ] Real Test Mode positive-priced book/course provider orders, Checkout/capture, authoritative persisted payment/entitlements, admin totals and provider reconciliation acceptance remain unexecuted.
+- [ ] Actual Razorpay-delivered webhook acceptance; matching dashboard configuration and a separately approved reachable HTTPS testing method are required. Local signed-request tests are not provider delivery.
+
+Stop after the Stage 12 local commit. No push, deployment, live payments or next stage is authorized.
