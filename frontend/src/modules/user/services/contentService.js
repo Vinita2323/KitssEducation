@@ -10,6 +10,7 @@ export const contentService = {
   edit: (path, row, input) => authenticatedWrite(path + '/' + row.id, { ...input, expectedRevision: row.revision }, 'PATCH'),
   publish: (path, row, publish) => authenticatedWrite(path + '/' + row.id + '/publish', { publish, expectedRevision: row.revision }),
   archive: (path, row) => authenticatedWrite(path + '/' + row.id, { expectedRevision: row.revision }, 'DELETE'),
+  deleteBanner: row => authenticatedWrite('/admin/content/banners/' + row.id, { expectedRevision: row.revision, remove: true }, 'DELETE'),
   async upload(file, purpose, key = crypto.randomUUID(), onState) {
     const data = new FormData(); data.append('purpose', purpose); data.append('idempotencyKey', key); data.append('file', file);
     onState?.('Uploading and validating…');

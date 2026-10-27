@@ -140,7 +140,7 @@ export const HeroBannerCarousel = () => {
             </div>
 
             {/* Right Graphic / Floating Badge */}
-            <div className="hidden xs:flex">{activeBanner.graphic}</div>
+            <div className="flex shrink-0">{activeBanner.graphic}</div>
           </div>
         </motion.div>
       </AnimatePresence>

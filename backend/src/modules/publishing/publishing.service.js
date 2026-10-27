@@ -9,7 +9,7 @@ const escaped = value => new RegExp(escapeRegex(value), 'i');
 export function createPublishingService({ models, taxonomy, coordination, media }) {
   const Model = kind => models[modelNames[kind]];
   const notFound = () => new AppError(404, 'NOT_FOUND', 'The requested content was not found');
-  const find = async (kind, value) => { const doc = await Model(kind).findById(id(value)); if (!doc) throw notFound(); return doc; };
+  const find = async (kind, value) => { const doc = await Model(kind).findById(id(value)); if (!doc || (kind === 'banners' && doc.deletedAt)) throw notFound(); return doc; };
   async function validate(kind, data, publishing, auth) {
     if (kind === 'books') {
       for (const [field, taxKind] of [['boardId', 'board'], ['classId', 'class'], ['subjectId', 'subject'], ['languageId', 'language']]) if (data[field] && !await taxonomy.exists({ _id: data[field], kind: taxKind, status: 'active', deletedAt: null })) throw invalid('Select an active ' + taxKind);
@@ -46,13 +46,22 @@ export function createPublishingService({ models, taxonomy, coordination, media 
     async create(kind, input, auth, ctx) { const { fields } = contentInput(kind, input, true); return coordination.run(async () => { await validate(kind, fields, false, auth); const doc = await Model(kind).create({ ...fields, ...(kind === 'books' ? { publicId: 'BOOK-' + randomUUID() } : {}), createdBy: ctx.actorId, updatedBy: ctx.actorId, auditOutbox: [coordination.event(kind + '_created', ctx)] }); await coordination.flush(Model(kind), doc); return cleanDTO(doc); }); },
     async edit(kind, value, input, auth, ctx) { const { fields, expectedRevision } = contentInput(kind, input); return coordination.run(async () => { const doc = await find(kind, value); if (doc.status === 'archived') throw invalid('Archived content cannot be edited'); if (kind === 'pages' && fields.key && fields.key !== doc.key) throw invalid('Page key is immutable'); const merged = { ...doc.toObject(), ...fields }; await validate(kind, merged, false, auth); return cleanDTO(await coordination.update(Model(kind), doc, { ...fields, ...(merged.pageCount ? { pageCount: merged.pageCount } : {}) }, expectedRevision, kind + '_edited', ctx)); }); },
     async publish(kind, value, input, auth, ctx) { object(input, ['expectedRevision', 'publish'], ['expectedRevision', 'publish']); revision(input.expectedRevision); if (typeof input.publish !== 'boolean') throw invalid('Choose publication state'); return coordination.run(async () => { const doc = await find(kind, value); if (doc.status === 'archived') throw invalid('Archived content cannot be published'); const data = doc.toObject(); if (input.publish) await validate(kind, data, true, auth); return cleanDTO(await coordination.update(Model(kind), doc, { status: input.publish ? 'published' : 'draft', publishedSnapshot: input.publish ? snapshotOf(data) : null, publishedAt: input.publish ? new Date() : null, ...(data.pageCount ? { pageCount: data.pageCount } : {}) }, input.expectedRevision, kind + (input.publish ? '_published' : '_unpublished'), ctx)); }); },
-    async archive(kind, value, input, ctx) { object(input, ['expectedRevision'], ['expectedRevision']); return coordination.run(async () => { const doc = await find(kind, value); return cleanDTO(await coordination.update(Model(kind), doc, { status: 'archived', publishedSnapshot: null }, revision(input.expectedRevision), kind + '_archived', ctx)); }); },
+    async archive(kind, value, input, ctx) {
+      object(input, kind === 'banners' ? ['expectedRevision', 'remove'] : ['expectedRevision'], ['expectedRevision']);
+      if (input.remove !== undefined && typeof input.remove !== 'boolean') throw invalid('Choose a valid removal action');
+      const remove = kind === 'banners' && input.remove === true;
+      return coordination.run(async () => {
+        const doc = await find(kind, value);
+        return cleanDTO(await coordination.update(Model(kind), doc, { status: 'archived', publishedSnapshot: null, ...(remove ? { deletedAt: new Date() } : {}) }, revision(input.expectedRevision), kind + (remove ? '_deleted' : '_archived'), ctx));
+      });
+    },
     async detail(kind, value, admin = false) { const doc = await find(kind, value); if (!admin && (doc.status !== 'published' || !doc.publishedSnapshot)) throw notFound(); const data = admin ? cleanDTO(doc) : publicData(kind, doc); if (kind === 'books') for (const [field, label] of [['boardId','board'],['classId','class'],['subjectId','subject'],['languageId','language']]) if (data[field]) data[label] = (await taxonomy.findById(data[field]).select('label').lean())?.label ?? ''; return data; },
     async list(kind, query = {}, admin = false) {
       object(query, ['page', 'pageSize', 'q', 'status', 'sort', 'boardId', 'classId', 'subjectId', 'languageId', 'board', 'class', 'subject', 'language', 'category', 'type', 'minPriceMinor', 'maxPriceMinor', 'placement']);
       for (const v of Object.values(query)) if (typeof v !== 'string' || v.length > 160) throw invalid('Invalid query');
       const positive = (v, fallback, max) => { if (v !== undefined && !/^\d+$/.test(v)) throw invalid('Invalid pagination'); const n = Number(v ?? fallback); if (n < 1 || n > max) throw invalid('Invalid pagination'); return n; };
       const page = positive(query.page, 1, 100000), pageSize = positive(query.pageSize, 20, 100), filter = admin ? {} : { status: 'published', publishedSnapshot: { $ne: null } }, prefix = admin ? '' : 'publishedSnapshot.';
+      if (kind === 'banners') filter.deletedAt = null;
       if (query.status) { if (!admin || !['draft', 'published', 'archived'].includes(query.status)) throw invalid('Invalid publication status'); filter.status = query.status; }
       if (query.q) filter.$or = (kind === 'books' ? ['title', 'subtitle', 'author', 'keywords', 'toc.title'] : kind === 'faculty' ? ['name', 'role'] : ['title', 'key', 'sections.heading']).map(k => ({ [prefix + k]: escaped(query.q) }));
       if (kind === 'books' && query.q) { const matches = await taxonomy.find({ label: escaped(query.q), status: 'active', deletedAt: null }).select('_id').lean(); const ids = matches.map(t => admin ? t._id : String(t._id)); filter.$or.push(...['boardId','classId','subjectId','languageId'].map(field => ({ [prefix + field]: { $in: ids } }))); }

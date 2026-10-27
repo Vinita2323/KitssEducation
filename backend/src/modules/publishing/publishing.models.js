@@ -10,6 +10,7 @@ export function createPublishingModels(connection) {
   book.index({ status: 1, languageId: 1, boardId: 1, classId: 1, subjectId: 1 });
   const page = new Schema({ ...base, key: { type: String, enum: ['home', 'about', 'categories', 'navigation'], unique: true, required: true }, sections: [{ _id: false, key: text(80), type: { type: String, enum: ['text', 'cards', 'stats', 'founder', 'contact'] }, heading: text(), body: text(10000), items: [{ _id: false, heading: text(), body: text(2000), linkKey: text(80) }], mediaAssetIds: [Schema.Types.ObjectId] }] }, options);
   const banner = new Schema({ ...base, placement: { type: String, enum: ['home', 'my_courses', 'results_top', 'results_bottom'] }, title: text(), subtitle: text(1000), tag: text(80), ctaText: text(80), imageAssetId: Schema.Types.ObjectId, link: { type: { type: String, enum: ['internal', 'external'] }, target: text(2048) }, variant: { type: String, enum: ['navy', 'orange', 'teal'], default: 'navy' }, sortOrder: { type: Number, default: 0 }, startsAt: Date, endsAt: Date }, options);
+  banner.add({ deletedAt: Date });
   banner.index({ placement: 1, status: 1, sortOrder: 1 });
   const faculty = new Schema({ ...base, name: text(), role: text(), qualifications: text(1000), experience: text(1000), specialty: text(1000), badge: text(80), trackTags: [String], portraitAssetId: Schema.Types.ObjectId, sourceNote: text(1000), sortOrder: { type: Number, default: 0 } }, options);
   faculty.index({ status: 1, sortOrder: 1 });

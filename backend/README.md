@@ -498,3 +498,11 @@ See the [runbook](LOCAL-OPERATIONS-RUNBOOK.md) for the separately gated remote b
 The [Stage 19 final report](STAGE19-FINAL-PROJECT-ACCEPTANCE-REPORT.md) and [definitive requirements matrix](FINAL-PROJECT-REQUIREMENTS-MATRIX.md) supersede historical readiness statements. Overall readiness is **CONDITIONAL**: the supported local software slice is tested, and wrong-product resumed Checkout is fixed, but actual business/content/credential/provider/production gates remain. Orders now expose their existing course binding to authorized clients, and resumed course Checkout displays the saved order price.
 
 The smallest proposed launch is licensed, explicitly zero-priced learning with verified accounts, private media/progress, profile, in-app notices and permissioned administration after the owner/operator checklist is satisfied. Paid public launch is unavailable: Test Mode is enforced and real Razorpay capture/webhook acceptance remains blocked. Stage 18's protected archive/original remote data were not accessed in Stage 19. No new development-stage series, push or deployment is authorized.
+
+## Banner deletion
+
+Admin > Content & communication > Content > Banners includes separate Archive and Delete actions. Delete requires confirmation and existing content.write permission. It removes a banner from public placements and all normal admin lists, clears its published snapshot, and retains its audit record and uploaded image. Existing banners need no data migration.
+
+The existing DELETE /api/v1/admin/content/banners/:id contract accepts { expectedRevision, remove: true } for deletion. Omitting remove preserves the existing archive behavior; other content types reject the removal option. The server validates the revision, serializes the mutation and records banners_deleted. Deleted banners cannot be edited or republished through normal APIs. No image is automatically deleted.
+
+Verification: 17 publishing/API/browser TAP entries passed, zero failures/skips, against fresh synthetic local MongoDB data; frontend build passed. Coverage includes read-only/anonymous denial, CSRF, stale revisions, invalid removal input, confirmation cancellation/Escape, keyboard deletion, public/admin exclusion, preserved media/audit evidence, duplicate deletion and separate archive behavior. No application records were deleted during implementation.
