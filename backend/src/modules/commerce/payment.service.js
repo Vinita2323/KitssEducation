@@ -17,7 +17,7 @@ const pageInput = query => {
   return { page, pageSize };
 };
 export const orderDTO = order => ({
-  id: String(order._id), reference: order.reference, product: { kind: order.product.kind, id: String(order.product.id), title: order.product.title, revision: order.product.revision },
+  id: String(order._id), reference: order.reference, product: { kind: order.product.kind, id: String(order.product.id), title: order.product.title, revision: order.product.revision, ...(order.product.courseId ? { courseId: String(order.product.courseId) } : {}) },
   amountMinor: order.amountMinor, currency: order.currency, paymentMode: order.paymentMode, simulated: order.simulated,
   orderStatus: order.status, paymentStatus: order.status === 'captured' ? 'captured' : order.attempts.at(-1)?.status ?? order.status, activationStatus: order.fulfillment.state, revision: order.revision,
   providerOrderId: order.providerOrderId, capturedPaymentId: order.capturedPaymentId, attempts: order.attempts,

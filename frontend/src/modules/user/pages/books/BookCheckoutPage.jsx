@@ -27,13 +27,15 @@ export const BookCheckoutPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const actingIdentity = useRef(user?.id); actingIdentity.current = user?.id;
+  const checkoutContext = `${user?.id}:${id}`;
+  const actingIdentity = useRef(checkoutContext); actingIdentity.current = checkoutContext;
   const [params,setParams] = useSearchParams();
   const [availability,setAvailability] = useState(null), [order,setOrder] = useState(null), [paymentMessage,setPaymentMessage] = useState('');
+  const [invalidOrder, setInvalidOrder] = useState(false);
   const creationKey = useRef(crypto.randomUUID()), attemptKey = useRef(crypto.randomUUID());
-  useEffect(() => { const c = new AbortController(); setOrder(null); commerceService.config(c.signal).then(setAvailability).catch(e=>{if(e.code!=='ABORTED')setPaymentMessage(e.message);}); return ()=>c.abort(); }, [user?.id]);
+  useEffect(() => { const c = new AbortController(); setOrder(null); setInvalidOrder(false); setPaymentMessage(''); setShowSuccessModal(false); setCompletedOrder(null); setProcessing(false); creationKey.current=crypto.randomUUID(); attemptKey.current=crypto.randomUUID(); commerceService.config(c.signal).then(value=>{if(!c.signal.aborted)setAvailability(value);}).catch(e=>{if(!c.signal.aborted)setPaymentMessage(e.message);}); return ()=>c.abort(); }, [user?.id,id]);
   const orderId = params.get('order');
-  useEffect(() => { if (!orderId) return; const c = new AbortController(); let count=0; const refresh=()=>commerceService.status(orderId,c.signal).then(row=>{setOrder(row); if(row.orderStatus==='captured'&&row.activationStatus==='applied'){setCompletedOrder({...row,amount:row.amountMinor/100});setShowSuccessModal(true);}}).catch(e=>{if(e.code!=='ABORTED')setPaymentMessage(e.message);});refresh();const timer=setInterval(()=>{if(++count<=40)refresh();},3000);return()=>{c.abort();clearInterval(timer);};},[orderId,user?.id]);
+  useEffect(() => { setOrder(null); setInvalidOrder(false); if (!orderId) return; const c = new AbortController(); let count=0; const refresh=()=>commerceService.status(orderId,c.signal).then(row=>{if(c.signal.aborted)return; if(row.product?.kind!=='book'||row.product.id!==id){setInvalidOrder(true);setOrder(null);setPaymentMessage('This order does not belong to this book. Open the correct purchase from order history.');return;} setOrder(row); if(row.orderStatus==='captured'&&row.activationStatus==='applied'){setCompletedOrder({...row,amount:row.amountMinor/100});setShowSuccessModal(true);}}).catch(e=>{if(!c.signal.aborted)setPaymentMessage(e.message);});refresh();const timer=setInterval(()=>{if(++count<=40)refresh();},3000);return()=>{c.abort();clearInterval(timer);};},[orderId,user?.id,id]);
   const { markBookPurchased, isBookOwned } = useLibrary();
   const { showSuccess, showError } = useToast();
 
@@ -48,27 +50,31 @@ export const BookCheckoutPage = () => {
     const fetchBook = async () => {
       try {
         setLoading(true);
-        const data = await bookService.getBookById(id);
-        setBook(data);
+        const data = await bookService.getBookById(id, controller.signal);
+        if (!controller.signal.aborted) setBook(data);
       } catch (err) {
-        console.error("Book fetch error:", err);
+        if (!controller.signal.aborted) setBook(null);
       } finally {
-        setLoading(false);
+        if (!controller.signal.aborted) setLoading(false);
       }
     };
+    const controller = new AbortController();
     fetchBook();
+    return () => controller.abort();
   }, [id]);
 
   const handlePayNow = async () => {
-    if (!book || !availability?.available) { setPaymentMessage('Payments unavailable until rotated Test Mode credentials and operator validation are ready.'); return; }
-    const checkoutIdentity = user?.id;
+    if (invalidOrder || (orderId && order?.id !== orderId)) return;
+    if (!book || book.id !== id || !availability?.available) { setPaymentMessage('Payments unavailable until rotated Test Mode credentials and operator validation are ready.'); return; }
+    const checkoutIdentity = checkoutContext;
     setProcessing(true);
     try {
       const current = order || await commerceService.create({kind:'book',id:book.id},creationKey.current);
       if (actingIdentity.current !== checkoutIdentity) return;
+      if(current.product?.kind!=='book'||current.product.id!==id) { setInvalidOrder(true); setPaymentMessage('This order does not belong to this book. Open the correct purchase from order history.'); return; }
       setOrder(current);const next=new URLSearchParams(params);next.set('order',current.id);setParams(next,{replace:true});
       await openRazorpayCheckout({orderId:current.id,attemptKey:current.attemptId || attemptKey.current,onSuccess:state=>{if(actingIdentity.current !== checkoutIdentity)return;setOrder(state);setPaymentMessage(state.orderStatus==='captured'?'Capture verified; checking fulfillment.':state.paymentStatus==='failed'?'Payment attempt failed. No access granted; check order status before retry.':'Payment pending capture.');},onDismiss:()=>{if(actingIdentity.current === checkoutIdentity)setPaymentMessage('Checkout dismissed. Payment status remains pending until provider verification.');},onFailure:e=>{if(actingIdentity.current === checkoutIdentity)setPaymentMessage(e.message);}});
-    } catch(e){setPaymentMessage(e.message);} finally{setProcessing(false);}
+    } catch(e){if(actingIdentity.current===checkoutIdentity)setPaymentMessage(e.message);} finally{if(actingIdentity.current===checkoutIdentity)setProcessing(false);}
   };
 
   if (loading) {
@@ -266,7 +272,7 @@ export const BookCheckoutPage = () => {
             fullWidth
             onClick={handlePayNow}
             loading={processing}
-            disabled={!availability?.available || isFree || order?.creationStatus === 'unknown'}
+            disabled={!availability?.available || isFree || invalidOrder || (orderId && order?.id !== orderId) || order?.creationStatus === 'unknown'}
           >
             Pay ₹{displayPrice} & Access Book
           </PrimaryButton>
@@ -292,7 +298,7 @@ export const BookCheckoutPage = () => {
             Thank You for Your Order!
           </h3>
           <p className="text-xs text-[#667085]">
-            Backend verification confirmed capture and an entitlement. The full reading experience follows in a later stage.
+            Your payment and book access are verified. Open your library to read the book.
           </p>
 
           {completedOrder && (

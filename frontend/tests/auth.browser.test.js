@@ -9,14 +9,16 @@ const executablePath = process.env.CHROME_PATH || 'C:/Program Files/Google/Chrom
 for (const [name, viewport] of [['desktop', { width: 1440, height: 1000 }], ['mobile', { width: 390, height: 844 }]]) {
   if (process.env.KITSS_AUTH_BROWSER_VIEWPORT && process.env.KITSS_AUTH_BROWSER_VIEWPORT !== name) continue;
   test(`auth browser interactions and route guards (${name}; mocked HTTP only)`, { skip: !existsSync(executablePath) ? 'No Chrome available; set CHROME_PATH' : false, timeout: 300000 }, async t => {
-    const server = await createServer({ root: fileURLToPath(new URL('../', import.meta.url)), server: { host: '127.0.0.1', port: 0 }, logLevel: 'error' });
+    const server = await createServer({ root: fileURLToPath(new URL('../', import.meta.url)), server: { host: '127.0.0.1', port: 0, hmr: false, watch: null }, logLevel: 'error' });
     await server.listen();
     const base = `http://127.0.0.1:${server.httpServer.address().port}`;
     const browser = await chromium.launch({ executablePath, headless: true });
     t.after(async () => { await browser.close(); await server.close(); });
     const context = await browser.newContext({ viewport });
     const page = await context.newPage();
-    const goto = url => page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60000 });
+    // Cold Vite compilation on the local QA host may exceed one minute. Keep
+    // the actual redirect, permission and form assertions unchanged.
+    const goto = url => page.goto(url, { waitUntil: 'domcontentloaded', timeout: 120000 });
     t.afterEach(async child => { if (child.passed === false) { mkdirSync('frontend/test-artifacts', { recursive:true }); await page.screenshot({path:'frontend/test-artifacts/stage8-auth-failure-'+name+'.png',fullPage:true}); } });
     const errors = [];
     page.on('pageerror', error => errors.push(error.message));

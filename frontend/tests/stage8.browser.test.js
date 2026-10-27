@@ -349,7 +349,10 @@ test('Stage 8 real API/Mongo browser; synthetic source/mail only', {
   await check('existing registration book coaching and admin navigation remain usable', async () => {
     await identity(student);
     for (const path of ['/register', '/books', '/coaching', '/orders']) {
-      await goto(path); await page.locator('main').first().waitFor();
+      await goto(path);
+      await page.locator('main').first().waitFor({ timeout: 60000 }).catch(error => {
+        throw new Error('Expected main content on ' + path, { cause: error });
+      });
       assert.equal(new URL(page.url()).pathname, path);
       assert.equal(await page.getByRole('heading', { name: /Not found/i }).count(), 0);
     }
