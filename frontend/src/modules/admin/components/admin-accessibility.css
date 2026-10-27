@@ -20,6 +20,7 @@
 .kitss-admin .admin-scroll-region { max-width: 100%; overflow-x: auto; }
 .kitss-admin .admin-skip-link { position: fixed; top: .25rem; left: .25rem; transform: translateY(-200%); z-index: 1000; padding: .75rem; background: white; color: #0a1d3f; }
 .kitss-admin .admin-skip-link:focus { transform: none; }
+.kitss-admin .admin-navigation-drawer { max-height: 100dvh; }
 @media (max-width: 1023px) { .kitss-admin .admin-desktop-sidebar { display:none; } .kitss-admin .admin-menu-toggle { display:inline-flex; } }
 @media (min-width: 1024px) { .kitss-admin .admin-menu-toggle { display:none; } }
 @media (max-width: 480px) { .kitss-admin header > div { padding-inline:.5rem; } .kitss-admin .admin-header-subtitle { display:none; } }

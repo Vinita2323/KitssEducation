@@ -1,3 +1,4 @@
+import { AdminField, AdminInput, AdminSelect, AdminTextarea } from '../components/AdminFields';
 import { useDialogFocus } from '../../../shared/ui/useDialogFocus';
 import React, { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
@@ -303,11 +304,11 @@ export const AdminCollegeCoursesPage = () => {
             {/* Form */}
             <form onSubmit={handleSubmit} className="p-6 overflow-y-auto space-y-4">
               <div>
-                <label htmlFor="admincollegecoursespage-field-1" className="block text-xs font-bold text-[#0A1D3F] mb-1">
+                <AdminField htmlFor="admincollegecoursespage-field-1" className="block text-xs font-bold text-[#0A1D3F] mb-1">
                   Course / Program Name *
-                </label>
-                <input
-                  id="admincollegecoursespage-field-1"
+                </AdminField>
+                <AdminInput
+                  helpLabel="Course / Program Name" id="admincollegecoursespage-field-1"
                   type="text"
                   required
                   aria-label="Program courseName" value={formData.courseName}
@@ -319,11 +320,11 @@ export const AdminCollegeCoursesPage = () => {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label htmlFor="admincollegecoursespage-field-2" className="block text-xs font-bold text-[#0A1D3F] mb-1">
+                  <AdminField htmlFor="admincollegecoursespage-field-2" className="block text-xs font-bold text-[#0A1D3F] mb-1">
                     Degree Type
-                  </label>
-                  <select
-                    id="admincollegecoursespage-field-2"
+                  </AdminField>
+                  <AdminSelect
+                    helpLabel="Degree Type" id="admincollegecoursespage-field-2"
                     aria-label="Program degreeType" value={formData.degreeType}
                     onChange={(e) => setFormData({ ...formData, degreeType: e.target.value })}
                     className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-[#E6E8EC] focus:border-[#FF8A00] focus:outline-none"
@@ -332,15 +333,15 @@ export const AdminCollegeCoursesPage = () => {
                     <option value="Postgraduate">Postgraduate</option>
                     <option value="Diploma">Diploma</option>
                     <option value="Doctorate">Doctorate</option>
-                  </select>
+                  </AdminSelect>
                 </div>
 
                 <div>
-                  <label htmlFor="admincollegecoursespage-field-3" className="block text-xs font-bold text-[#0A1D3F] mb-1">
+                  <AdminField htmlFor="admincollegecoursespage-field-3" className="block text-xs font-bold text-[#0A1D3F] mb-1">
                     Duration
-                  </label>
-                  <input
-                    id="admincollegecoursespage-field-3"
+                  </AdminField>
+                  <AdminInput
+                    helpLabel="Duration" id="admincollegecoursespage-field-3"
                     type="text"
                     aria-label="Program duration" value={formData.duration}
                     onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
@@ -352,11 +353,11 @@ export const AdminCollegeCoursesPage = () => {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label htmlFor="admincollegecoursespage-field-4" className="block text-xs font-bold text-[#0A1D3F] mb-1">
+                  <AdminField htmlFor="admincollegecoursespage-field-4" className="block text-xs font-bold text-[#0A1D3F] mb-1">
                     Annual Tuition Fee (₹)
-                  </label>
-                  <input
-                    id="admincollegecoursespage-field-4"
+                  </AdminField>
+                  <AdminInput
+                    helpLabel="Annual Tuition Fee (₹)" id="admincollegecoursespage-field-4"
                     type="number"
                     aria-label="Program fee" value={formData.fee}
                     onChange={(e) => setFormData({ ...formData, fee: e.target.value })}
@@ -365,11 +366,11 @@ export const AdminCollegeCoursesPage = () => {
                 </div>
 
                 <div>
-                  <label htmlFor="admincollegecoursespage-field-5" className="block text-xs font-bold text-[#0A1D3F] mb-1">
+                  <AdminField htmlFor="admincollegecoursespage-field-5" className="block text-xs font-bold text-[#0A1D3F] mb-1">
                     Available Seats
-                  </label>
-                  <input
-                    id="admincollegecoursespage-field-5"
+                  </AdminField>
+                  <AdminInput
+                    helpLabel="Available Seats" id="admincollegecoursespage-field-5"
                     type="number"
                     aria-label="Program availableSeats" value={formData.availableSeats}
                     onChange={(e) => setFormData({ ...formData, availableSeats: e.target.value })}
@@ -379,11 +380,11 @@ export const AdminCollegeCoursesPage = () => {
               </div>
 
               <div>
-                <label htmlFor="admincollegecoursespage-field-6" className="block text-xs font-bold text-[#0A1D3F] mb-1">
+                <AdminField htmlFor="admincollegecoursespage-field-6" className="block text-xs font-bold text-[#0A1D3F] mb-1">
                   Eligibility Criteria
-                </label>
-                <input
-                  id="admincollegecoursespage-field-6"
+                </AdminField>
+                <AdminInput
+                  helpLabel="Eligibility Criteria" id="admincollegecoursespage-field-6"
                   type="text"
                   aria-label="Program eligibility" value={formData.eligibility}
                   onChange={(e) => setFormData({ ...formData, eligibility: e.target.value })}
@@ -393,11 +394,11 @@ export const AdminCollegeCoursesPage = () => {
               </div>
 
               <div>
-                <label htmlFor="admincollegecoursespage-field-7" className="block text-xs font-bold text-[#0A1D3F] mb-1">
+                <AdminField htmlFor="admincollegecoursespage-field-7" className="block text-xs font-bold text-[#0A1D3F] mb-1">
                   Description
-                </label>
-                <textarea
-                  id="admincollegecoursespage-field-7"
+                </AdminField>
+                <AdminTextarea
+                  helpLabel="Description" id="admincollegecoursespage-field-7"
                   rows={2}
                   aria-label="Program description" value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
@@ -408,33 +409,33 @@ export const AdminCollegeCoursesPage = () => {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label htmlFor="admincollegecoursespage-field-8" className="block text-xs font-bold text-[#0A1D3F] mb-1">
+                  <AdminField htmlFor="admincollegecoursespage-field-8" className="block text-xs font-bold text-[#0A1D3F] mb-1">
                     Admission Status
-                  </label>
-                  <select
-                    id="admincollegecoursespage-field-8"
+                  </AdminField>
+                  <AdminSelect
+                    helpLabel="Admission Status" id="admincollegecoursespage-field-8"
                     aria-label="Program admissionStatus" value={formData.admissionStatus}
                     onChange={(e) => setFormData({ ...formData, admissionStatus: e.target.value })}
                     className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-[#E6E8EC] focus:border-[#FF8A00] focus:outline-none"
                   >
                     <option value="Open">Open</option>
                     <option value="Closed">Closed</option>
-                  </select>
+                  </AdminSelect>
                 </div>
 
                 <div>
-                  <label htmlFor="admincollegecoursespage-field-9" className="block text-xs font-bold text-[#0A1D3F] mb-1">
+                  <AdminField htmlFor="admincollegecoursespage-field-9" className="block text-xs font-bold text-[#0A1D3F] mb-1">
                     Visibility Status
-                  </label>
-                  <select
-                    id="admincollegecoursespage-field-9"
+                  </AdminField>
+                  <AdminSelect
+                    helpLabel="Visibility Status" id="admincollegecoursespage-field-9"
                     aria-label="Program status" value={formData.status}
                     onChange={(e) => setFormData({ ...formData, status: e.target.value })}
                     className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-[#E6E8EC] focus:border-[#FF8A00] focus:outline-none"
                   >
                     <option value="draft">Draft</option><option value="active">Active (Visible)</option>
                     <option value="inactive">Inactive (Hidden)</option>
-                  </select>
+                  </AdminSelect>
                 </div>
               </div>
 

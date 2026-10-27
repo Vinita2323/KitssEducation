@@ -1,3 +1,4 @@
+import { AdminField, AdminInput, AdminSelect } from '../components/AdminFields';
 import { useDialogFocus } from '../../../shared/ui/useDialogFocus';
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
@@ -180,7 +181,7 @@ export const AdminBooksPage = () => {
           {/* Search */}
           <div className="relative flex-1">
             <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-            <input
+            <AdminInput
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -210,11 +211,11 @@ export const AdminBooksPage = () => {
         {/* Dropdown Filters Grid */}
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 pt-1 border-t border-[#E6E8EC]/80 text-xs">
           <div>
-            <label htmlFor="adminbookspage-field-1" className="text-[10px] font-bold text-[#667085] uppercase tracking-wider block mb-1">
+            <AdminField htmlFor="adminbookspage-field-1" className="text-[10px] font-bold text-[#667085] uppercase tracking-wider block mb-1">
               Board
-            </label>
-            <select
-              id="adminbookspage-field-1"
+            </AdminField>
+            <AdminSelect
+              helpLabel="Board" id="adminbookspage-field-1"
               value={filterBoard}
               onChange={(e) => setFilterBoard(e.target.value)}
               className="w-full p-2 bg-[#F7F8FA] border border-[#E6E8EC] rounded-xl text-xs text-[#0A1D3F] focus:outline-none"
@@ -223,15 +224,15 @@ export const AdminBooksPage = () => {
               {taxonomyBoards.map((b) => (
                 <option key={b.id} value={b.id}>{b.name}</option>
               ))}
-            </select>
+            </AdminSelect>
           </div>
 
           <div>
-            <label htmlFor="adminbookspage-field-2" className="text-[10px] font-bold text-[#667085] uppercase tracking-wider block mb-1">
+            <AdminField htmlFor="adminbookspage-field-2" className="text-[10px] font-bold text-[#667085] uppercase tracking-wider block mb-1">
               Class
-            </label>
-            <select
-              id="adminbookspage-field-2"
+            </AdminField>
+            <AdminSelect
+              helpLabel="Class" id="adminbookspage-field-2"
               value={filterClass}
               onChange={(e) => setFilterClass(e.target.value)}
               className="w-full p-2 bg-[#F7F8FA] border border-[#E6E8EC] rounded-xl text-xs text-[#0A1D3F] focus:outline-none"
@@ -240,15 +241,15 @@ export const AdminBooksPage = () => {
               {taxonomyClasses.map((c) => (
                 <option key={c} value={c}>Class {c}</option>
               ))}
-            </select>
+            </AdminSelect>
           </div>
 
           <div>
-            <label htmlFor="adminbookspage-field-3" className="text-[10px] font-bold text-[#667085] uppercase tracking-wider block mb-1">
+            <AdminField htmlFor="adminbookspage-field-3" className="text-[10px] font-bold text-[#667085] uppercase tracking-wider block mb-1">
               Subject
-            </label>
-            <select
-              id="adminbookspage-field-3"
+            </AdminField>
+            <AdminSelect
+              helpLabel="Subject" id="adminbookspage-field-3"
               value={filterSubject}
               onChange={(e) => setFilterSubject(e.target.value)}
               className="w-full p-2 bg-[#F7F8FA] border border-[#E6E8EC] rounded-xl text-xs text-[#0A1D3F] focus:outline-none"
@@ -257,15 +258,15 @@ export const AdminBooksPage = () => {
               {taxonomySubjects.map((s) => (
                 <option key={s.id} value={s.id}>{s.name}</option>
               ))}
-            </select>
+            </AdminSelect>
           </div>
 
           <div>
-            <label htmlFor="adminbookspage-field-4" className="text-[10px] font-bold text-[#667085] uppercase tracking-wider block mb-1">
+            <AdminField htmlFor="adminbookspage-field-4" className="text-[10px] font-bold text-[#667085] uppercase tracking-wider block mb-1">
               Pricing
-            </label>
-            <select
-              id="adminbookspage-field-4"
+            </AdminField>
+            <AdminSelect
+              helpLabel="Pricing" id="adminbookspage-field-4"
               value={filterType}
               onChange={(e) => setFilterType(e.target.value)}
               className="w-full p-2 bg-[#F7F8FA] border border-[#E6E8EC] rounded-xl text-xs text-[#0A1D3F] focus:outline-none"
@@ -273,15 +274,15 @@ export const AdminBooksPage = () => {
               <option value="all">All Types</option>
               <option value="free">Free Only</option>
               <option value="paid">Paid Only</option>
-            </select>
+            </AdminSelect>
           </div>
 
           <div>
-            <label htmlFor="adminbookspage-field-5" className="text-[10px] font-bold text-[#667085] uppercase tracking-wider block mb-1">
+            <AdminField htmlFor="adminbookspage-field-5" className="text-[10px] font-bold text-[#667085] uppercase tracking-wider block mb-1">
               Status
-            </label>
-            <select
-              id="adminbookspage-field-5"
+            </AdminField>
+            <AdminSelect
+              helpLabel="Status" id="adminbookspage-field-5"
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
               className="w-full p-2 bg-[#F7F8FA] border border-[#E6E8EC] rounded-xl text-xs text-[#0A1D3F] focus:outline-none"
@@ -289,7 +290,7 @@ export const AdminBooksPage = () => {
               <option value="all">All Statuses</option>
               <option value="published">Published</option>
               <option value="draft">Draft</option>
-            </select>
+            </AdminSelect>
           </div>
         </div>
       </div>

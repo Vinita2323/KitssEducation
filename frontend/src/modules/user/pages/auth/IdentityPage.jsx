@@ -20,7 +20,7 @@ export function IdentityPage({ invitation = false, verify = false }) {
     try {
       if (mode === 'verify') {
         const result = await authService.activate({ challengeId, otp });
-        setOtp(''); navigate('/login', { state: { userId: result.user.email } });
+        setOtp(''); navigate(result.user.roles?.some(role => ['admin', 'super_admin'].includes(role)) || invitation || location.state?.staff ? '/admin/login' : '/login', { state: { userId: result.user.email } });
       } else {
         const result = invitation ? await authService.acceptInvitation({ challengeId: invite[0] ?? '', token: invite[1] ?? '', newPassword: password }) : await authService.createAccount({ name, email, password });
         setChallengeId(result.challengeId); setPassword(''); setMode('verify'); setMessage(result.message);
@@ -44,6 +44,6 @@ export function IdentityPage({ invitation = false, verify = false }) {
       <button disabled={busy} className="w-full bg-[#0A1D3F] text-white rounded-xl p-3 disabled:opacity-50">{busy ? 'Please wait…' : mode === 'verify' ? 'Verify email' : invitation ? 'Set password' : 'Create account'}</button>
     </form>
     {mode === 'verify' && <button disabled={busy || !email} onClick={resend} className="text-xs text-[#FF8A00]">Resend code (60-second cooldown)</button>}
-    <Link to="/login" className="block text-sm text-[#FF8A00]">Back to login</Link>
+    <Link to={invitation || location.state?.staff ? '/admin/login' : '/login'} className="block text-sm text-[#FF8A00]">Back to login</Link>
   </div>;
 }

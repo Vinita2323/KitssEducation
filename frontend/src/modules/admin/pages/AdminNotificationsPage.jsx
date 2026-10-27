@@ -1,3 +1,4 @@
+import { AdminField, AdminInput, AdminSelect } from '../components/AdminFields';
 import { useEditorFocus } from '../components/useAdminAccessibility';
 import React, { useEffect, useState } from 'react';
 import { httpClient } from '../../../shared/api/httpClient';
@@ -85,20 +86,20 @@ export function AdminNotificationsPage() {
                     expectedRevision: row.revision
                   }, 'DELETE'))}>Archive</button></>}{can('notifications.publish') && <button disabled={busy || row.status !== 'draft'} onClick={() => window.confirm('Publish to the selected recipients?') && run(() => authenticatedWrite('/admin/notifications/' + row.id + '/publish', {
                   expectedRevision: row.revision
-                }))}>Publish</button>}</div></td></tr>)}</tbody></table>{!rows.length && <p className="p-3">No notifications.</p>}</div><Pagination meta={meta} loading={busy} onChange={setPage} />{form && <form onSubmit={save} ref={inlineEditor} aria-label="Notification editor" className="bg-white border rounded-xl p-4 space-y-3"><h2 className="font-bold">{form.id ? 'Edit' : 'Compose'} notification</h2>{['title', 'message', 'link'].map(k => <label key={k} className="block text-sm">{k}<input aria-label={'Notification ' + k} required={k !== 'link'} value={form[k]} onChange={e => setForm(p => ({
+                }))}>Publish</button>}</div></td></tr>)}</tbody></table>{!rows.length && <p className="p-3">No notifications.</p>}</div><Pagination meta={meta} loading={busy} onChange={setPage} />{form && <form onSubmit={save} ref={inlineEditor} aria-label="Notification editor" className="bg-white border rounded-xl p-4 space-y-3"><h2 className="font-bold">{form.id ? 'Edit' : 'Compose'} notification</h2>{['title', 'message', 'link'].map(k => <AdminField key={k} className="block text-sm">{k}<AdminInput aria-label={'Notification ' + k} required={k !== 'link'} value={form[k]} onChange={e => setForm(p => ({
           ...p,
           [k]: e.target.value
-        }))} className="block w-full border rounded-xl p-2" /></label>)}<label className="block text-sm">Category<select aria-label="Notification category" value={form.category} onChange={e => setForm(p => ({
+        }))} className="block w-full border rounded-xl p-2" /></AdminField>)}<AdminField className="block text-sm">Category<AdminSelect aria-label="Notification category" value={form.category} onChange={e => setForm(p => ({
           ...p,
           category: e.target.value
-        }))} className="block w-full border rounded-xl p-2">{['general', 'exam', 'course', 'promotion'].map(v => <option key={v}>{v}</option>)}</select></label><label className="block text-sm">Audience<select aria-label="Notification audience" value={form.kind} onChange={e => setForm(p => ({
+        }))} className="block w-full border rounded-xl p-2">{['general', 'exam', 'course', 'promotion'].map(v => <option key={v}>{v}</option>)}</AdminSelect></AdminField><AdminField className="block text-sm">Audience<AdminSelect aria-label="Notification audience" value={form.kind} onChange={e => setForm(p => ({
           ...p,
           kind: e.target.value
-        }))} className="block w-full border rounded-xl p-2">{['all_students', 'users', 'course'].map(v => <option key={v}>{v}</option>)}</select></label>{form.kind === 'users' && <label className="block text-sm">User database IDs (comma separated)<input aria-label="Notification recipients" value={form.recipients} onChange={e => setForm(p => ({
+        }))} className="block w-full border rounded-xl p-2">{['all_students', 'users', 'course'].map(v => <option key={v}>{v}</option>)}</AdminSelect></AdminField>{form.kind === 'users' && <AdminField className="block text-sm">User database IDs (comma separated)<AdminInput aria-label="Notification recipients" value={form.recipients} onChange={e => setForm(p => ({
           ...p,
           recipients: e.target.value
-        }))} className="block w-full border p-2 rounded-xl" /></label>}{form.kind === 'course' && <label className="block text-sm">Course ID<input value={form.courseId} onChange={e => setForm(p => ({
+        }))} className="block w-full border p-2 rounded-xl" /></AdminField>}{form.kind === 'course' && <AdminField className="block text-sm">Course ID<AdminInput value={form.courseId} onChange={e => setForm(p => ({
           ...p,
           courseId: e.target.value
-        }))} className="block w-full border p-2 rounded-xl" /></label>}<p className="text-xs">Optional links use approved internal routes only. Publication requires a separate permission.</p><button disabled={busy} className="p-3 bg-[#0A1D3F] text-white rounded-xl">Save notification draft</button><button type="button" onClick={() => setForm(null)} className="p-3">Cancel</button></form>}</div>;
+        }))} className="block w-full border p-2 rounded-xl" /></AdminField>}<p className="text-xs">Optional links use approved internal routes only. Publication requires a separate permission.</p><button disabled={busy} className="p-3 bg-[#0A1D3F] text-white rounded-xl">Save notification draft</button><button type="button" onClick={() => setForm(null)} className="p-3">Cancel</button></form>}</div>;
 }

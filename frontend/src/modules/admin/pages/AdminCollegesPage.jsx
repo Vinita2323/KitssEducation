@@ -1,3 +1,4 @@
+import { AdminField, AdminInput, AdminSelect, AdminTextarea } from '../components/AdminFields';
 import { useDialogFocus } from '../../../shared/ui/useDialogFocus';
 import React, { useState, useEffect } from "react";
 import { Link, useSearchParams } from "react-router-dom";
@@ -287,7 +288,7 @@ export const AdminCollegesPage = () => {
         {/* Search */}
         <form onSubmit={handleSearchSubmit} className="relative flex-1 max-w-md">
           <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
-          <input
+          <AdminInput
             type="text"
             aria-label="Search colleges" placeholder="Search colleges by name, code, or city..."
             value={search}
@@ -302,7 +303,7 @@ export const AdminCollegesPage = () => {
             <span className="text-xs font-bold text-[#64748B] hidden sm:inline">
               University:
             </span>
-            <select
+            <AdminSelect
               aria-label="Filter colleges by university" value={selectedUniFilter}
               onChange={(e) => handleUniFilterChange(e.target.value)}
               className="px-3 py-2 bg-[#F7F8FA] border border-[#E6E8EC] rounded-xl text-xs text-[#0A1D3F] font-semibold focus:outline-none focus:border-[#0A1D3F]"
@@ -313,7 +314,7 @@ export const AdminCollegesPage = () => {
                   {uni.shortName} - {uni.name}
                 </option>
               ))}
-            </select>
+            </AdminSelect>
           </div>
 
           {/* Status Filter */}
@@ -503,10 +504,10 @@ export const AdminCollegesPage = () => {
             <form onSubmit={handleSave} className="space-y-3.5">
               {/* Parent University Selection */}
               <div>
-                <label className="block text-xs font-bold text-[#0A1D3F] mb-1">
+                <AdminField className="block text-xs font-bold text-[#0A1D3F] mb-1">
                   Parent University / Franchise Provider <span className="text-red-500">*</span>
-                </label>
-                <select
+                </AdminField>
+                <AdminSelect
                   disabled={Boolean(editingCollege)} aria-label="College universityId" value={formData.universityId}
                   onChange={(e) =>
                     setFormData({ ...formData, universityId: e.target.value })
@@ -520,16 +521,16 @@ export const AdminCollegesPage = () => {
                       {uni.name} ({uni.shortName})
                     </option>
                   ))}
-                </select>
+                </AdminSelect>
               </div>
 
               {/* College Name & Code */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div className="sm:col-span-2">
-                  <label className="block text-xs font-bold text-[#0A1D3F] mb-1">
+                  <AdminField className="block text-xs font-bold text-[#0A1D3F] mb-1">
                     College / Institute Name <span className="text-red-500">*</span>
-                  </label>
-                  <input
+                  </AdminField>
+                  <AdminInput
                     type="text"
                     aria-label="College name" value={formData.name}
                     onChange={(e) =>
@@ -542,11 +543,11 @@ export const AdminCollegesPage = () => {
                 </div>
 
                 <div>
-                  <label htmlFor="admincollegespage-field-1" className="block text-xs font-bold text-[#0A1D3F] mb-1">
+                  <AdminField htmlFor="admincollegespage-field-1" className="block text-xs font-bold text-[#0A1D3F] mb-1">
                     Code / Reg ID
-                  </label>
-                  <input
-                    id="admincollegespage-field-1"
+                  </AdminField>
+                  <AdminInput
+                    helpLabel="Code / Reg ID" id="admincollegespage-field-1"
                     type="text"
                     aria-label="College code" value={formData.code}
                     onChange={(e) =>
@@ -561,10 +562,10 @@ export const AdminCollegesPage = () => {
               {/* City, State, Type */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-[#0A1D3F] mb-1">
+                  <AdminField className="block text-xs font-bold text-[#0A1D3F] mb-1">
                     City <span className="text-red-500">*</span>
-                  </label>
-                  <input
+                  </AdminField>
+                  <AdminInput
                     type="text"
                     aria-label="College city" value={formData.city}
                     onChange={(e) =>
@@ -577,10 +578,10 @@ export const AdminCollegesPage = () => {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-[#0A1D3F] mb-1">
+                  <AdminField className="block text-xs font-bold text-[#0A1D3F] mb-1">
                     State <span className="text-red-500">*</span>
-                  </label>
-                  <select
+                  </AdminField>
+                  <AdminSelect
                     aria-label="College stateId" value={formData.stateId}
                     onChange={(e) =>
                       setFormData({ ...formData, stateId: e.target.value, district: "" })
@@ -593,15 +594,15 @@ export const AdminCollegesPage = () => {
                         {st.label}
                       </option>
                     ))}
-                  </select>
+                  </AdminSelect>
                 </div>
 
                 <div>
-                  <label htmlFor="admincollegespage-field-2" className="block text-xs font-bold text-[#0A1D3F] mb-1">
+                  <AdminField htmlFor="admincollegespage-field-2" className="block text-xs font-bold text-[#0A1D3F] mb-1">
                     College Type
-                  </label>
-                  <select
-                    id="admincollegespage-field-2"
+                  </AdminField>
+                  <AdminSelect
+                    helpLabel="College Type" id="admincollegespage-field-2"
                     aria-label="College collegeType" value={formData.collegeType}
                     onChange={(e) =>
                       setFormData({ ...formData, collegeType: e.target.value })
@@ -613,21 +614,21 @@ export const AdminCollegesPage = () => {
                     <option value="Autonomous College">Autonomous College</option>
                     <option value="Faculty / School">Faculty / School</option>
                     <option value="Institute">Institute</option>
-                  </select>
+                  </AdminSelect>
                 </div>
               </div>
 
-              <label className="block text-xs font-bold">District<select className="w-full p-2 border rounded-xl" aria-label="College district" value={formData.district} onChange={e => setFormData({ ...formData, district: e.target.value })} required><option value="">Select district</option>{districts.map(d => <option key={d.id} value={d.label}>{d.label}</option>)}</select></label>
-              <label className="block text-xs font-bold">Directory category<select className="w-full p-2 border rounded-xl" aria-label="College category" value={formData.category} onChange={e => setFormData({ ...formData, category: e.target.value })}>{['University','College','School','Institute'].map(value => <option key={value}>{value}</option>)}</select></label>
-              <label className="block text-xs"><input type="checkbox" checked={formData.verification?.state === 'verified'} onChange={e => setFormData({ ...formData, verification: { ...formData.verification, state: e.target.checked ? 'verified' : 'unverified' } })} /> Relationship verified by authorized reviewer</label>
-              <label className="block text-xs font-bold">Verification evidence reference<input aria-label="Verification evidence reference" className="w-full p-2 border rounded-xl" value={formData.verification?.source || ''} onChange={e => setFormData({ ...formData, verification: { ...formData.verification, source: e.target.value } })} placeholder="Approved source/reference, required to publish" /></label>
+              <AdminField className="block text-xs font-bold">District<AdminSelect className="w-full p-2 border rounded-xl" aria-label="College district" value={formData.district} onChange={e => setFormData({ ...formData, district: e.target.value })} required><option value="">Select district</option>{districts.map(d => <option key={d.id} value={d.label}>{d.label}</option>)}</AdminSelect></AdminField>
+              <AdminField className="block text-xs font-bold">Directory category<AdminSelect className="w-full p-2 border rounded-xl" aria-label="College category" value={formData.category} onChange={e => setFormData({ ...formData, category: e.target.value })}>{['University','College','School','Institute'].map(value => <option key={value}>{value}</option>)}</AdminSelect></AdminField>
+              <AdminField className="block text-xs"><AdminInput type="checkbox" checked={formData.verification?.state === 'verified'} onChange={e => setFormData({ ...formData, verification: { ...formData.verification, state: e.target.checked ? 'verified' : 'unverified' } })} /> Relationship verified by authorized reviewer</AdminField>
+              <AdminField className="block text-xs font-bold">Verification evidence reference<AdminInput aria-label="Verification evidence reference" className="w-full p-2 border rounded-xl" value={formData.verification?.source || ''} onChange={e => setFormData({ ...formData, verification: { ...formData.verification, source: e.target.value } })} placeholder="Approved source/reference, required to publish" /></AdminField>
               {/* Address */}
               <div>
-                <label htmlFor="admincollegespage-field-3" className="block text-xs font-bold text-[#0A1D3F] mb-1">
+                <AdminField htmlFor="admincollegespage-field-3" className="block text-xs font-bold text-[#0A1D3F] mb-1">
                   Campus Address
-                </label>
-                <input
-                  id="admincollegespage-field-3"
+                </AdminField>
+                <AdminInput
+                  helpLabel="Campus Address" id="admincollegespage-field-3"
                   type="text"
                   aria-label="College address" value={formData.address}
                   onChange={(e) =>
@@ -640,11 +641,11 @@ export const AdminCollegesPage = () => {
 
               {/* Description */}
               <div>
-                <label htmlFor="admincollegespage-field-4" className="block text-xs font-bold text-[#0A1D3F] mb-1">
+                <AdminField htmlFor="admincollegespage-field-4" className="block text-xs font-bold text-[#0A1D3F] mb-1">
                   Brief Overview
-                </label>
-                <textarea
-                  id="admincollegespage-field-4"
+                </AdminField>
+                <AdminTextarea
+                  helpLabel="Brief Overview" id="admincollegespage-field-4"
                   rows={2}
                   aria-label="College description" value={formData.description}
                   onChange={(e) =>
@@ -657,11 +658,11 @@ export const AdminCollegesPage = () => {
 
               {/* Status */}
               <div>
-                <label htmlFor="admincollegespage-field-5" className="block text-xs font-bold text-[#0A1D3F] mb-1">
+                <AdminField htmlFor="admincollegespage-field-5" className="block text-xs font-bold text-[#0A1D3F] mb-1">
                   Status
-                </label>
-                <select
-                  id="admincollegespage-field-5"
+                </AdminField>
+                <AdminSelect
+                  helpLabel="Status" id="admincollegespage-field-5"
                   aria-label="College status" value={formData.status}
                   onChange={(e) =>
                     setFormData({ ...formData, status: e.target.value })
@@ -670,7 +671,7 @@ export const AdminCollegesPage = () => {
                 >
                   <option value="draft">Draft</option><option value="active">Active (Visible in Franchise Selection)</option>
                   <option value="inactive">Inactive (Hidden)</option>
-                </select>
+                </AdminSelect>
               </div>
 
               {/* Modal Actions */}

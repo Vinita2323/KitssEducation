@@ -21,9 +21,11 @@ import { RouteGuard } from '../../../shared/auth/RouteGuard';
 import { AdminContentPage } from '../pages/AdminContentPage';
 import { AdminMediaPage } from '../pages/AdminMediaPage';
 import { AdminSiteSettingsPage } from '../pages/AdminSiteSettingsPage';
+import { LoginPage } from '../../user/pages/auth/LoginPage';
 export const AdminRoutes = () => {
   return (
     <Routes>
+      <Route path="login" element={<main className="kitss-admin admin-login-page min-h-screen bg-[#F9FAFB] flex items-center justify-center p-4"><LoginPage staff /></main>} />
       <Route element={<RouteGuard staff><AdminLayout /></RouteGuard>}>
         <Route path="refunds" element={<RouteGuard permission="refunds.read"><AdminPolicyQueues /></RouteGuard>} /><Route path="access-requests" element={<RouteGuard permission="access.read"><AdminPolicyQueues access /></RouteGuard>} /><Route path="users" element={<RouteGuard permission="accounts.read"><AdminUsersPage /></RouteGuard>} />
         <Route path="audit-logs" element={<RouteGuard permission="audit.read"><AdminOperationsPage audit /></RouteGuard>} />

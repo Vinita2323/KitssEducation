@@ -1,3 +1,4 @@
+import { AdminInput, AdminTextarea } from '../components/AdminFields';
 import { useDialogFocus } from '../../../shared/ui/useDialogFocus';
 import React, { useState, useEffect } from "react";
 import {
@@ -151,7 +152,7 @@ export const AdminApplicationsPage = () => {
         <form onSubmit={handleSearchSubmit} className="flex gap-2">
           <div className="relative flex-1">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#667085]" />
-            <input
+            <AdminInput
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -445,7 +446,7 @@ export const AdminApplicationsPage = () => {
 
                 {/* Add Note Input */}
                 <div className="space-y-2">
-                  <textarea
+                  <AdminTextarea
                     rows={2}
                     aria-label="Admission internal note" value={newNote}
                     onChange={(e) => setNewNote(e.target.value)}

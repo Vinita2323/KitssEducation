@@ -1,0 +1,59 @@
+/* Admin-only presentation. Student screens and API behavior are unaffected. */
+.kitss-admin { --admin-ink:#162b4d; --admin-muted:#53647c; --admin-border:#dce4ef; background:#f3f6fb; color:var(--admin-ink); }
+.kitss-admin #admin-main { background:radial-gradient(ellipse at top right,#eaf0fa 0,transparent 42%),#f3f6fb; scrollbar-gutter:stable; }
+.kitss-admin #admin-main > fieldset { max-width:1600px; margin-inline:auto; border:0; padding:0; }
+.kitss-admin #admin-main h1 { font-size:clamp(1.45rem,2vw,1.9rem); letter-spacing:-.035em; line-height:1.25; font-weight:750; }
+.kitss-admin #admin-main h2 { letter-spacing:-.02em; line-height:1.35; }
+.kitss-admin #admin-main :where(p.text-xs,p.text-sm) { color:var(--admin-muted); line-height:1.65; }
+.kitss-admin #admin-main :where([class~="bg-white"][class*="border"]) { border-color:var(--admin-border); box-shadow:0 3px 16px -10px #1d35574d; }
+.kitss-admin #admin-main :where(input:not([type=checkbox]):not([type=radio]),select,textarea) { width:100%; border:1px solid #cbd6e5; border-radius:10px; background:#fff; padding:.65rem .8rem; font-size:.9375rem; line-height:1.5; box-shadow:0 1px 2px #162b4d05; transition:border-color .15s,box-shadow .15s; }
+.kitss-admin #admin-main :where(input,select,textarea):hover:not(:disabled) { border-color:#8c9fba; }
+.kitss-admin #admin-main :where(input,select,textarea):focus-visible { border-color:#0d9488; }
+.kitss-admin #admin-main :where(input,select,textarea)[aria-invalid=true] { border-color:#b91c1c; background:#fff7f7; }
+.kitss-admin #admin-main input::placeholder,.kitss-admin #admin-main textarea::placeholder { color:#64748b; opacity:1; }
+.kitss-admin #admin-main .relative:has(>svg) input { padding-left:2.5rem; }
+.kitss-admin #admin-main .relative:has(> .admin-control-field) > svg.absolute { top:22px; }
+.kitss-admin #admin-main textarea { min-height:100px; resize:vertical; }
+.kitss-admin #admin-main input[type=file] { padding:.5rem; }
+.kitss-admin #admin-main input[type=file]::file-selector-button { border:0; background:#eef3fa; color:var(--admin-ink); border-radius:7px; padding:.45rem .65rem; margin-right:.6rem; cursor:pointer; }
+.kitss-admin #admin-main :where(label,legend) { font-size:.875rem; font-weight:650; color:var(--admin-ink); }
+.kitss-admin .admin-field { min-width:0; width:100%; }
+.kitss-admin .admin-field > label { display:block; }
+.kitss-admin .admin-field > label:has(input[type=checkbox]),.kitss-admin .admin-field > label:has(input[type=radio]) { display:flex; align-items:flex-start; }
+.kitss-admin .admin-field input[type=checkbox],.kitss-admin .admin-field input[type=radio] { margin-top:.15rem; }
+.kitss-admin .admin-control-field { min-width:0; max-width:100%; flex:1 1 12rem; }
+.kitss-admin .admin-control-label { display:block; margin-bottom:.35rem; }
+.kitss-admin #admin-main .admin-field-help { font-size:.875rem; font-weight:400; color:var(--admin-muted); line-height:1.5; margin:.45rem 0 0; text-transform:none; letter-spacing:normal; overflow-wrap:anywhere; }
+.kitss-admin #admin-main :where(form,fieldset)[class*="space-y-"] > .admin-field + .admin-field { margin-top:1.1rem; }
+.kitss-admin #admin-main fieldset:not(:first-child) { border-color:var(--admin-border); }
+.kitss-admin #admin-main legend { padding-inline:.5rem; }
+.kitss-admin #admin-main :where(button:not([class*="bg-"])) { border:1px solid #cbd6e5; border-radius:10px; background:#fff; padding:.55rem .8rem; font-weight:600; }
+.kitss-admin #admin-main :where(button:not([class*="bg-"])):hover:not(:disabled) { background:#edf3fa; border-color:#8c9fba; }
+.kitss-admin #admin-main :where(button[class*="bg-[#0A1D3F]"],button[class*="bg-[#FF8A00]"]) { border-radius:10px; box-shadow:0 3px 8px #162b4d12; }
+.kitss-admin #admin-main table { border-collapse:separate; border-spacing:0; }
+.kitss-admin #admin-main thead { background:#f1f5fb; color:#41536e; }
+.kitss-admin #admin-main th { font-size:.875rem; font-weight:700; padding:.85rem 1rem; border-bottom:1px solid var(--admin-border); }
+.kitss-admin #admin-main td { padding:1rem; border-bottom:1px solid #edf1f7; vertical-align:top; }
+.kitss-admin #admin-main tbody tr:last-child td { border-bottom:0; }
+.kitss-admin #admin-main tbody tr:hover { background:#f8faff; }
+.kitss-admin #admin-main [role=alert] { color:#991b1b; background:#fff1f2; border:1px solid #fecdd3; border-radius:10px; padding:.8rem 1rem; }
+.kitss-admin #admin-main [role=status] { line-height:1.6; }
+.kitss-admin .admin-desktop-sidebar { width:280px; box-shadow:3px 0 20px -12px #162b4d33; }
+.kitss-admin .admin-desktop-sidebar nav > section { padding-block:.15rem; }
+.kitss-admin .admin-desktop-sidebar nav button { font-size:.875rem; }
+.kitss-admin .admin-desktop-sidebar nav a { font-size:.875rem; }
+.kitss-admin .admin-page-guide { max-width:1600px; margin:0 auto 1.25rem; display:flex; justify-content:space-between; align-items:flex-start; gap:.75rem; flex-wrap:wrap; }
+.kitss-admin .admin-breadcrumb { display:flex; gap:.5rem; align-items:center; color:var(--admin-muted); font-size:.875rem; min-height:44px; }
+.kitss-admin .admin-breadcrumb a { display:inline-flex; align-items:center; color:var(--admin-ink); font-weight:600; }
+.kitss-admin .admin-page-help { max-width:540px; border:1px solid var(--admin-border); background:#fff; border-radius:10px; font-size:.875rem; }
+.kitss-admin .admin-page-help summary { min-height:44px; display:flex; align-items:center; gap:.5rem; padding:.6rem .85rem; cursor:pointer; color:#41536e; font-weight:600; }
+.kitss-admin .admin-page-help[open] summary { border-bottom:1px solid var(--admin-border); }
+.kitss-admin .admin-page-help > div { padding:.85rem 1rem; }
+.kitss-admin .admin-page-help p { margin-top:.35rem; color:var(--admin-muted); line-height:1.6; }
+.kitss-admin .admin-financial-help { font-size:.875rem; color:var(--admin-muted); }
+.kitss-admin .admin-financial-help summary { cursor:pointer; width:fit-content; min-height:44px; align-content:center; font-weight:600; color:var(--admin-ink); }
+.kitss-admin :where(.admin-financial-help,.admin-page-help) summary:focus-visible { outline:3px solid #0d9488; outline-offset:3px; border-radius:6px; }
+.kitss-admin.admin-login-page { background:radial-gradient(ellipse at top,#dfe9fa 0,transparent 60%),#f3f6fb; }
+.kitss-admin.admin-login-page > div { border-radius:20px; padding:2rem; box-shadow:0 15px 60px -20px #162b4d44; }
+.kitss-admin.admin-login-page input:not([type=checkbox]) { min-height:48px; font-size:1rem; }
+@media(max-width:480px) { .kitss-admin .admin-page-guide { gap:.25rem; } .kitss-admin .admin-page-help { width:100%; max-width:none; } .kitss-admin #admin-main th,.kitss-admin #admin-main td { padding:.75rem; } }

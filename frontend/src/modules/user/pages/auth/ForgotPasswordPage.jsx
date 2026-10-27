@@ -7,6 +7,7 @@ import { PrimaryButton } from "../../components/common/PrimaryButton";
 
 export const ForgotPasswordPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { showInfo, showError } = useToast();
   const [identifier, setIdentifier] = useState("");
   const [loading, setLoading] = useState(false);
@@ -24,7 +25,7 @@ export const ForgotPasswordPage = () => {
       // Recovery deliberately gives the same uncertain delivery response for
       // absent accounts and SMTP failures; this is not a delivery success.
       showInfo(result.message);
-      navigate("/reset-password", { state: { challengeId: result.challengeId } });
+      navigate("/reset-password", { state: { challengeId: result.challengeId, staff: location.state?.staff === true } });
     } catch (err) {
       showError(err.message || "Could not send reset code.");
     } finally {
@@ -82,7 +83,7 @@ export const ForgotPasswordPage = () => {
 
       <div className="text-center pt-5 text-xs text-[#667085]">
         Remember your password?{" "}
-        <Link to="/login" className="font-bold text-[#FF8A00] hover:underline">
+        <Link to={location.state?.staff ? '/admin/login' : '/login'} className="font-bold text-[#FF8A00] hover:underline">
           Back to Login
         </Link>
       </div>
@@ -119,7 +120,7 @@ export const ResetPasswordPage = () => {
       setLoading(true);
       await authService.resetPassword({ challengeId: location.state?.challengeId || '', otp, newPassword });
       showSuccess("Password reset successfully! Please login with your new password.");
-      navigate("/login");
+      navigate(location.state?.staff ? '/admin/login' : '/login');
     } catch (err) {
       showError(err.message || "Failed to reset password.");
     } finally {

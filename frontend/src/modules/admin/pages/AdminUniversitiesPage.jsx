@@ -1,3 +1,4 @@
+import { AdminField, AdminInput, AdminSelect } from '../components/AdminFields';
 import { useDialogFocus } from '../../../shared/ui/useDialogFocus';
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
@@ -188,7 +189,7 @@ export const AdminUniversitiesPage = () => {
         {/* Search */}
         <form onSubmit={handleSearchSubmit} className="relative flex-1 max-w-md">
           <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
-          <input
+          <AdminInput
             type="text"
             aria-label="Search universities" placeholder="Search universities by name or acronym..."
             value={search}
@@ -366,10 +367,10 @@ export const AdminUniversitiesPage = () => {
             <form onSubmit={handleSave} className="space-y-3.5 text-left">
               {/* University Name */}
               <div>
-                <label className="block text-xs font-bold text-[#0A1D3F] mb-1">
+                <AdminField className="block text-xs font-bold text-[#0A1D3F] mb-1">
                   University Name <span className="text-red-500">*</span>
-                </label>
-                <input
+                </AdminField>
+                <AdminInput
                   type="text"
                   aria-label="University name" value={formData.name}
                   onChange={(e) =>
@@ -383,10 +384,10 @@ export const AdminUniversitiesPage = () => {
 
               {/* Short Name / Acronym */}
               <div>
-                <label className="block text-xs font-bold text-[#0A1D3F] mb-1">
+                <AdminField className="block text-xs font-bold text-[#0A1D3F] mb-1">
                   Short Name / Acronym <span className="text-red-500">*</span>
-                </label>
-                <input
+                </AdminField>
+                <AdminInput
                   type="text"
                   aria-label="University shortName" value={formData.shortName}
                   onChange={(e) =>
@@ -403,11 +404,11 @@ export const AdminUniversitiesPage = () => {
 
               {/* Logo URL */}
               <div>
-                <label htmlFor="adminuniversitiespage-field-1" className="block text-xs font-bold text-[#0A1D3F] mb-1">
+                <AdminField htmlFor="adminuniversitiespage-field-1" className="block text-xs font-bold text-[#0A1D3F] mb-1">
                   Logo URL (Optional)
-                </label>
-                <input
-                  id="adminuniversitiespage-field-1"
+                </AdminField>
+                <AdminInput
+                  helpLabel="Logo URL (Optional)" id="adminuniversitiespage-field-1"
                   type="text"
                   aria-label="University logo" value={formData.logo}
                   onChange={(e) =>
@@ -420,11 +421,11 @@ export const AdminUniversitiesPage = () => {
 
               {/* Status */}
               <div>
-                <label htmlFor="adminuniversitiespage-field-2" className="block text-xs font-bold text-[#0A1D3F] mb-1">
+                <AdminField htmlFor="adminuniversitiespage-field-2" className="block text-xs font-bold text-[#0A1D3F] mb-1">
                   Status
-                </label>
-                <select
-                  id="adminuniversitiespage-field-2"
+                </AdminField>
+                <AdminSelect
+                  helpLabel="Status" id="adminuniversitiespage-field-2"
                   aria-label="University status" value={formData.status}
                   onChange={(e) =>
                     setFormData({ ...formData, status: e.target.value })
@@ -433,7 +434,7 @@ export const AdminUniversitiesPage = () => {
                 >
                   <option value="draft">Draft</option><option value="active">Active (Visible in Registration)</option>
                   <option value="inactive">Inactive (Hidden)</option>
-                </select>
+                </AdminSelect>
               </div>
 
               {/* Actions */}

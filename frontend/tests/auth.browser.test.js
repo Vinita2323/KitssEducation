@@ -52,18 +52,24 @@ for (const [name, viewport] of [['desktop', { width: 1440, height: 1000 }], ['mo
       await route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(status === 401 ? { error: { code: 'UNAUTHENTICATED', message: 'Please sign in' }, requestId: 'browser-test' } : { data, requestId: 'browser-test' }) });
     });
     const login = async (staff = false) => {
-      await page.locator('input[placeholder="e.g. KITSS20261084"]').fill('student@example.invalid');
+      const path = staff ? '/admin/login' : '/login';
+      if (new URL(page.url()).pathname !== path) await goto(`${base}${path}`);
+      await page.getByLabel(staff ? 'Staff email' : 'Email or Student ID', { exact: true }).fill('student@example.invalid');
       await page.locator('input[placeholder="Enter your password"]').fill('a long test password');
-      if (staff) await page.getByLabel('Staff sign in').check();
       const response = page.waitForResponse(r => new URL(r.url()).pathname === '/api/v1/auth/login' && r.request().method() === 'POST');
       await page.getByRole('button', { name: 'Login', exact: true }).click();
       await response;
     };
     await t.test('guest routes redirect; login fields have no credential defaults', async () => {
       await goto(`${base}/admin/books`);
-      await page.waitForURL('**/login');
+      await page.waitForURL('**/admin/login');
+      await page.getByRole('heading', { name: 'Admin sign in' }).waitFor();
+      assert.equal(await page.getByText('Register', { exact: true }).count(), 0);
       assert.equal(await page.locator('input[placeholder="Enter your password"]').inputValue(), '');
       assert.equal(await page.getByText('Digital Books', { exact: true }).count(), 0);
+      await goto(`${base}/login`);
+      await page.getByText('Sign in to your student account', { exact: true }).waitFor();
+      assert.equal(await page.getByText('Staff sign in', { exact: true }).count(), 0);
     });
     await t.test('account creation -> OTP verification, no authenticated session', async () => {
       await goto(`${base}/account/create`);
@@ -107,9 +113,11 @@ for (const [name, viewport] of [['desktop', { width: 1440, height: 1000 }], ['mo
       await page.waitForURL('**/login'); conflict = false;
     });
     await t.test('staff guards/nav honor permissions; preview writes disabled; logout', async () => {
-      await login(true);
-      await page.waitForURL('**/profile');
       await goto(`${base}/admin/universities`);
+      await page.waitForURL('**/admin/login');
+      await login(true);
+      await page.waitForURL('**/admin/universities');
+      assert.equal(writes.filter(write => write.path === '/auth/login').at(-1).input.kind, 'admin');
       await page.getByRole('heading', { name: 'University Management' }).waitFor();
       assert.equal(await page.locator('a[href="/admin/books"]').count(), 0);
       assert.equal(await page.getByRole('button', { name: 'Add University', exact: true }).isDisabled(), true);
@@ -118,7 +126,7 @@ for (const [name, viewport] of [['desktop', { width: 1440, height: 1000 }], ['mo
       await page.getByRole('alert').filter({ hasText: 'You do not have permission' }).waitFor();
       await goto(`${base}/admin/universities`);
       await page.getByRole('button', { name: 'Sign out' }).click();
-      await page.waitForURL('**/login'); assert.equal(user, null);
+      await page.waitForURL('**/admin/login'); assert.equal(user, null);
       assert.equal(await page.evaluate(() => localStorage.getItem('kitss_auth_token')), null);
     });
     await t.test('super-admin invitation form invokes real contracts outside preview controls', async () => {

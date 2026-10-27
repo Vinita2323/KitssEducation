@@ -1,3 +1,4 @@
+import { AdminField, AdminInput } from './AdminFields';
 import { PermissionSelector } from './PermissionSelector';
 import React, { useState } from 'react';
 import { useAuth } from '../../user/context/AuthContext';
@@ -23,12 +24,12 @@ export function StaffInvitations() {
     <summary className="font-bold cursor-pointer text-[#0A1D3F]">Staff invitations</summary>
     <p className="text-xs text-[#667085] my-3">Invite or resend to an unactivated staff account. Resending replaces the previous link after a 60-second cooldown. Staff must set a password and verify email.</p>
     <form onSubmit={submit} className="space-y-3">
-      <label className="block">Staff name<input className="block w-full border p-2 rounded-lg" value={name} onChange={e => setName(e.target.value)} maxLength={100} required /></label>
-      <label className="block">Staff email<input type="email" className="block w-full border p-2 rounded-lg" value={email} onChange={e => setEmail(e.target.value)} required /></label>
+      <AdminField className="block">Staff name<AdminInput className="block w-full border p-2 rounded-lg" value={name} onChange={e => setName(e.target.value)} maxLength={100} required /></AdminField>
+      <AdminField className="block">Staff email<AdminInput type="email" className="block w-full border p-2 rounded-lg" value={email} onChange={e => setEmail(e.target.value)} required /></AdminField>
       <PermissionSelector available={user.permissions} value={permissions} onChange={setPermissions} disabled={busy} />
       <button disabled={busy} className="px-4 py-2 rounded-lg bg-[#0A1D3F] text-white">Invite / resend</button>
     </form>
-    {reference && <div className="mt-3"><label className="block">Pending invitation reference<input className="border p-2 rounded-lg w-full" value={reference} onChange={e => setReference(e.target.value)} /></label><button disabled={busy} onClick={revoke} className="text-red-700 p-2">Revoke invitation</button></div>}
+    {reference && <div className="mt-3"><AdminField className="block">Pending invitation reference<AdminInput className="border p-2 rounded-lg w-full" value={reference} onChange={e => setReference(e.target.value)} /></AdminField><button disabled={busy} onClick={revoke} className="text-red-700 p-2">Revoke invitation</button></div>}
     {message && <p role="status" className="mt-3">{message}</p>}
   </details>;
 }

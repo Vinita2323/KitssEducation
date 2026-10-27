@@ -1,3 +1,4 @@
+import { AdminField, AdminInput, AdminTextarea } from '../components/AdminFields';
 import { FranchiseFeeStatus } from '../../user/components/common/FranchiseFeeStatus';
 import { useDialogFocus } from '../../../shared/ui/useDialogFocus';
 import React, { useState, useEffect } from "react";
@@ -169,7 +170,7 @@ export const AdminFranchiseRequestsPage = () => {
         {/* Search Input */}
         <form onSubmit={handleSearchSubmit} className="relative flex-1 max-w-md">
           <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
-          <input
+          <AdminInput
             type="text"
             aria-label="Search franchise requests" placeholder="Search by ID, applicant, university, college, phone..."
             value={search}
@@ -502,11 +503,11 @@ export const AdminFranchiseRequestsPage = () => {
 
             {/* Add Note or Rejection Reason Input */}
             <div className="space-y-2 pt-2 border-t border-[#EDF2F7]">
-              <label htmlFor="adminfranchiserequestspage-field-1" className="block text-xs font-bold text-[#0A1D3F]">
+              <AdminField htmlFor="adminfranchiserequestspage-field-1" className="block text-xs font-bold text-[#0A1D3F]">
                 Add Admin Note / Rejection Reason
-              </label>
-              <textarea
-                id="adminfranchiserequestspage-field-1"
+              </AdminField>
+              <AdminTextarea
+                helpLabel="Add Admin Note / Rejection Reason" id="adminfranchiserequestspage-field-1"
                 rows={2}
                 placeholder="Enter audit notes or specific reason if rejecting..."
                 value={adminNote}

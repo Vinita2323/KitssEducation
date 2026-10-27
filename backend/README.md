@@ -189,7 +189,7 @@ try {
 }
 ~~~
 
-Password arrives on stdin, not command-line arguments, browser storage or logs. Unique bootstrapKey permanently prevents repeat initialization; an existing super admin also blocks bootstrap. The new identity stays pending until email OTP verification. Open /account/verify, enter the administrator email and request a fresh code (after cooldown), then verify and use Staff sign in. If email fails after identity creation, use resend; do not rerun/bootstrap/reset the database. Startup never bootstraps automatically. Tests exercise bootstrap only inside isolated disposable test data.
+Password arrives on stdin, not command-line arguments, browser storage or logs. Unique bootstrapKey permanently prevents repeat initialization; an existing super admin also blocks bootstrap. The new identity stays pending until email OTP verification. Open `/admin/login` and follow **Verify email / resend code**, enter the administrator email and request a fresh code (after cooldown), then verify and sign in at `/admin/login`. Student sign-in remains at `/login`; there is no staff checkbox or public admin registration. If email fails after identity creation, use resend; do not rerun/bootstrap/reset the database. Startup never bootstraps automatically. Tests exercise bootstrap only inside isolated disposable test data.
 
 ## Frontend integration and limits
 
