@@ -16,7 +16,9 @@ const name=process.env.KITSS_STAGE17_TEST_DB;
 const fresh=()=>randomUUID().replaceAll('-','').slice(0,16);
 
 test('Stage 17 real dump/restore, restored-copy migration, lifecycle, queues and media safety', {skip:!name?'No isolated Stage 17 database supplied':false,timeout:360000},async t=>{
-  assert.equal(process.env.MONGODB_URI,'mongodb://127.0.0.1:27247/kitss_stage17_local');
+  const sourceBase=process.env.MONGODB_URI;
+  assert.ok(['mongodb://127.0.0.1:27247/kitss_stage17_local','mongodb://127.0.0.1:27249/kitss_stage18_local'].includes(sourceBase));
+  const localUri=database=>sourceBase.replace(/\/kitss_stage(?:17|18)_local$/,'/'+database);
   const actual=process.env.KITSS_REAL_MEDIA_ACCEPTANCE==='true';
   const configMedia={enabled:true,port:3315,scanTimeoutMs:120000};
   let outcome='retry',sends=0;
@@ -97,12 +99,12 @@ test('Stage 17 real dump/restore, restored-copy migration, lifecycle, queues and
     protectedBefore=await protectedFacts(f.connection);
   });
   await t.test('official mongodump creates a retained archive with full collection/index/record coverage',async()=>{
-    backup=await backupDatabase({uri:process.env.MONGODB_URI.replace('kitss_stage17_local',name),confirmedLocal:true,writesQuiesced:true,dumpBinary:process.env.KITSS_MONGODUMP_BINARY});
+    backup=await backupDatabase({uri:localUri(name),confirmedLocal:true,writesQuiesced:true,dumpBinary:process.env.KITSS_MONGODUMP_BINARY});
     assert.equal(backup.manifest.completed,true);assert.ok(backup.manifest.bytes>0);assert.ok(backup.manifest.inventory.collections.length>20);
     assert.ok(backup.manifest.inventory.collections.some(c=>c.name==='orders'&&c.count===3));
   });
   await t.test('mongorestore verifies a fresh namespace, exact BSON fingerprints, options, indexes and relationships',async()=>{
-    const target='kitss_stage17_restore_'+fresh();restoredUri=process.env.MONGODB_URI.replace('kitss_stage17_local',target);
+    const target='kitss_stage17_restore_'+fresh();restoredUri=localUri(target);
     const result=await restoreDatabase({uri:restoredUri,confirmedLocal:true,directory:backup.directory,restoreBinary:process.env.KITSS_MONGORESTORE_BINARY});assert.equal(result.verified,true);
     restored=await connectLocal(restoredUri,true);assert.equal(await protectedFacts(restored),protectedBefore);
     assert.deepEqual(await relationshipIntegrity(restored),await relationshipIntegrity(f.connection));
@@ -125,9 +127,9 @@ test('Stage 17 real dump/restore, restored-copy migration, lifecycle, queues and
   });
   await t.test('corrupt backup refuses restore and original source remains byte-equivalent',async()=>{
     const bad=path.join(path.dirname(backup.directory),'corrupt-'+fresh());await cp(backup.directory,bad,{recursive:true});await appendFile(path.join(bad,'database.archive.gz'),'corruption');
-    await assert.rejects(restoreDatabase({uri:process.env.MONGODB_URI.replace('kitss_stage17_local','kitss_stage17_restore_'+fresh()),confirmedLocal:true,directory:bad,restoreBinary:process.env.KITSS_MONGORESTORE_BINARY}),{code:'BACKUP_INTEGRITY_FAILED'});
+    await assert.rejects(restoreDatabase({uri:localUri('kitss_stage17_restore_'+fresh()),confirmedLocal:true,directory:bad,restoreBinary:process.env.KITSS_MONGORESTORE_BINARY}),{code:'BACKUP_INTEGRITY_FAILED'});
     assert.equal(sameInventory(backup.manifest.inventory,await inventory(f.connection,{fingerprints:true})),true);
-    await writeFile(new URL('../../.runtime/stage17-recovery-evidence.json',import.meta.url),JSON.stringify({syntheticOnly:true,backupRelative:path.relative(path.resolve('..'),backup.directory),archiveSha256:backup.manifest.sha256,collections:backup.manifest.inventory.collections.length,documents:backup.manifest.inventory.collections.reduce((n,c)=>n+c.count,0),restoreVerified:true,originalPreserved:true,media:await storageIntegrity(f.connection,f.storage)},null,2));
+    await writeFile(new URL('../../.runtime/'+(sourceBase.includes('stage18')?'stage18-synthetic-recovery-evidence.json':'stage17-recovery-evidence.json'),import.meta.url),JSON.stringify({syntheticOnly:true,backupRelative:path.relative(path.resolve('..'),backup.directory),archiveSha256:backup.manifest.sha256,collections:backup.manifest.inventory.collections.length,documents:backup.manifest.inventory.collections.reduce((n,c)=>n+c.count,0),restoreVerified:true,originalPreserved:true,media:await storageIntegrity(f.connection,f.storage)},null,2));
   });
   await t.test('conflicting legacy token ownership blocks startup with a safe recovery path and preserves both rows',async()=>{
     const devices=restored.db.collection('fcmTokens');await devices.dropIndex('unique_push_device');
@@ -139,10 +141,10 @@ test('Stage 17 real dump/restore, restored-copy migration, lifecycle, queues and
     assert.equal(await protectedFacts(restored),before);assert.equal((await compatibilityReport(restored)).duplicateDeviceGroups,1);
   });
   await t.test('failed tools and unquiesced backup cannot claim success; failed restore never overwrites a destination',async()=>{
-    const uri=process.env.MONGODB_URI.replace('kitss_stage17_local',name);
+    const uri=localUri(name);
     await assert.rejects(backupDatabase({uri,confirmedLocal:true,writesQuiesced:false,dumpBinary:process.env.KITSS_MONGODUMP_BINARY}),{code:'QUIESCED_WRITES_REQUIRED'});
     await assert.rejects(backupDatabase({uri,confirmedLocal:true,writesQuiesced:true,dumpBinary:'kitss-deliberately-missing-dump'}),{code:'DATABASE_TOOL_FAILED'});
-    const target=process.env.MONGODB_URI.replace('kitss_stage17_local','kitss_stage17_restore_'+fresh());
+    const target=localUri('kitss_stage17_restore_'+fresh());
     await assert.rejects(restoreDatabase({uri:target,confirmedLocal:true,directory:backup.directory,restoreBinary:'kitss-deliberately-missing-restore'}),{code:'DATABASE_TOOL_FAILED'});
     const partial=await connectLocal(target,true);
     try { assert.equal((await partial.db.listCollections().toArray()).length,1); }

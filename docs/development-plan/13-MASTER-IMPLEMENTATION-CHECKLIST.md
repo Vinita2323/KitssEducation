@@ -773,3 +773,21 @@ See [Stage 17 report](../../backend/STAGE17-OPERATIONAL-READINESS-REPORT.md) and
 - [ ] Existing real payment/FCM/provider, business/legal/tax/refund/affiliation/result-source/privacy/licensing and deployment gates remain open. No actual application-storage cleanup is approved by a dry-run report.
 
 Stop after Stage 17's local commit. No push, deployment, public tunnel, real payment or external SMTP/FCM delivery.
+
+## Stage 18 remote development database recovery - 27 October 2026
+
+See [Stage 18 report](../../backend/STAGE18-REMOTE-DEV-DATABASE-ACCEPTANCE-REPORT.md) and [operations runbook](../../backend/LOCAL-OPERATIONS-RUNBOOK.md). This supersedes the historical Stage 17 actual-namespace inventory/backup/copy blocker, preserving remaining capacity/media/production gates.
+
+- [x] Inspect clean baseline 04dc583/local configuration without exposing credentials; obtain explicit namespace-only read/backup/local-copy approval before connecting and owner confirmation that all writers are stopped.
+- [x] Read only approved kitss_education_dev; inventory MongoDB 8.0.34, 34 collections, 44 documents, 111 indexes, size/options/relationships/legacy/token/policy/media metadata. Record broader account permissions and independently unverified infrastructure isolation without expanding access.
+- [x] Use official Database Tools 100.14.1, sufficient disk, private Windows ACLs, temporary secret config (removed), namespace-only retained archive, streaming SHA-256 and matching before/after BSON/index fingerprints. Label owner-confirmed quiesced logical consistency without atomic PITR claims.
+- [x] Restore exactly into a fresh task-owned loopback MongoDB 8.0.34 with new namespaces/private storage, isolated empty media root and disabled real providers. Compare all documents/options/indexes including compound-key order before startup.
+- [x] Start the restored application twice; preserve every document in 29 business collections, separately identify jobs.updatedAt-only maintenance changes and keep missing policies unapproved. Original empty transaction/token/approval collections are not populated-history evidence.
+- [x] Reject corrupt/occupied/failed/wrong-major-version restores without overwrites; preserve partial reservations; interrupt/restart only task MongoDB and verify restored data; final remote read-only comparison confirms original unchanged.
+- [x] Reuse synthetic recovery/index/token/commerce/registration/results regressions on fresh local fixtures: full backend 254 passed/zero failed/three explicit skips; client eight passed; final copy/guards 13 passed (overlapping/TAP parent). Build passed, audits zero. No real-media/browser/external-delivery acceptance claimed.
+- [x] Add scoped backup/version/index-order safeguards and tests; update report/runbook/README/matrix. Preserve real .env, source application data, media, frontend, dependencies and existing service configuration.
+- [ ] Confirm dedicated/shared deployment identity, provision least-privilege read/backup credentials and resolve overall shared collection quota/capacity independently of this namespace-only inventory.
+- [ ] Configure owner-approved business policies through existing audited administration; perform a separately approved complete private-media backup/restore. Four media metadata records (three quarantined/one deleted) do not recover files or authorize publication.
+- [ ] Approve full-system backup encryption/protection/off-device retention/RPO/RTO/PITR/capacity/supervision and existing real-provider/business/legal/source/privacy/licensing gates. No original-data repair/migration or operational release is approved here.
+
+Stop after Stage 18's reviewed local commit. No push, deployment, public tunnel, real payment, SMTP message or FCM delivery.

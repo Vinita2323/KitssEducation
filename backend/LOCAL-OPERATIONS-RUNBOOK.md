@@ -2,6 +2,25 @@
 
 This runbook is for positively identified, owner-authorized local development data. Stage 17 found the configured application database was non-loopback and did not connect to it. A development-looking name is not proof of ownership or safety. Remote/shared/production operations require a separately approved scope. Never copy a credential-bearing URI into commands, reports or logs.
 
+## Stage 18 approved remote development recovery
+
+The owner separately approved read-only inventory and logical backup of **only** the configured `kitss_education_dev` namespace, then confirmed all writers were stopped. [Stage 18 acceptance](STAGE18-REMOTE-DEV-DATABASE-ACCEPTANCE-REPORT.md) records actual results and exclusions. This is not permission for future remote writes, index changes, writer shutdown, media copying, application startup against the original, or other namespaces. Deployment isolation remains unconfirmed; the existing account has broader permissions than this approved operation needs. Prefer a dedicated least-privilege read/backup account for future runs.
+
+The existing local CLI still rejects all remote/authenticated URIs. The separate `src/modules/operations/approved-remote-backup.js` operator helper has no .env/network side effects on import. Its caller must supply reviewed development configuration and an approval object with `readOnly: true`, `writesQuiesced: true`, exact `database`, `expectedTopology: 'replica set'`, and `connectionSha256` bound to the approved URI. Capture that fingerprint privately when approving the scope; do not automatically approve a subsequently changed .env. These assertions are operator controls, not a database-enforced read-only role or proof that writers stopped. Reapprove any changed connection identity/topology/permissions/scope before access.
+
+The helper validates TLS restrictions, reads only the named namespace, checks disk capacity, and uses official `mongodump --config` with a temporary private YAML URI file and explicit `--db`. Credentials never enter process arguments. Windows backup directories remove inherited ACLs and grant only the executing owner, SYSTEM and Administrators before credentials/archive creation; POSIX uses mode 0700. The YAML is removed in cleanup. Tool output/driver errors are not echoed. Investigate a failed dump privately; an incomplete directory without a completed manifest is not a valid backup. No encryption, retention policy, recurring schedule or remote writer control is implied.
+
+Stage 18 used Database Tools **100.14.1**, remote MongoDB **8.0.34**, and a new task-owned **8.0.34** loopback instance on port **27249**. A restored namespace must be fresh `kitss_stage18_restore_<16 hex>` (the Stage 17 prefix also remains supported). Restore now rejects a different major server version before creating collections; this intentionally conservative check does not implement cross-version/FCV migrations. The MongoDB [restore documentation](https://www.mongodb.com/docs/database-tools/mongorestore/) requires compatible source/target versions. Compound-index field order is included in inventory comparison.
+
+After a separately approved backup, restore only to that verified local task instance:
+
+```powershell
+$targetName = 'kitss_stage18_restore_'+[guid]::NewGuid().ToString('N').Substring(0,16)
+node backend/scripts/local-recovery.js restore --uri ('mongodb://127.0.0.1:27249/'+$targetName) --confirmed-local-development --backup '<private completed archive directory>'
+```
+
+For the archive-specific acceptance test, set `MONGODB_URI=mongodb://127.0.0.1:27249/kitss_stage18_local`, `KITSS_STAGE18_BACKUP_DIRECTORY` to the selected private directory and `KITSS_MONGORESTORE_BINARY` to the installed official executable. Run `node --test backend/tests/approved-remote-backup.test.js backend/tests/remote-copy.mongodb.integration.test.js`. It uses new local namespaces, blank SMTP/payment secrets, disabled Firebase and the synthetic payment provider. It never connects to the source; missing archive opt-in is reported as skipped. It retains reserved/partial targets and access-restricted corrupt/version-mismatch archive copies for investigation. Database-only archives exclude every media file and private configuration; an empty separate task media root is not a recovered media library.
+
 ## Establish the boundary
 
 - Check Git status and record the code revision. Preserve unrelated work and ignored developer configuration.

@@ -9,7 +9,7 @@ import { backendRoot } from '../../config/env.js';
 
 const exec = promisify(execFile);
 const fail = code => Object.assign(new Error(code), { code });
-async function fileDigest(file) { const hash=createHash('sha256');for await(const chunk of createReadStream(file))hash.update(chunk);return hash.digest('hex'); }
+export async function fileDigest(file) { const hash=createHash('sha256');for await(const chunk of createReadStream(file))hash.update(chunk);return hash.digest('hex'); }
 const canonical = value => Array.isArray(value) ? value.map(canonical) : value && typeof value === 'object' ? Object.fromEntries(Object.keys(value).sort().map(k => [k, canonical(value[k])])) : value;
 const encode = value => JSON.stringify(canonical(mongoose.mongo.BSON.EJSON.serialize(value, { relaxed: false })));
 
@@ -52,9 +52,16 @@ export async function inventory(connection, { fingerprints = false } = {}) {
   return { database: connection.name, serverVersion: build.version, dataBytes: stats.dataSize, storageBytes: stats.storageSize, collections, roles };
 }
 
-export function sameInventory(a, b) { return encode(a.collections) === encode(b.collections); }
+export function sameInventory(a, b) {
+  // Compound index key order is significant; canonical object-key sorting must
+  // not make {a:1,b:1} appear equivalent to {b:1,a:1}.
+  const comparable = item => item.collections.map(c => ({ ...c,
+    indexes: c.indexes.map(index => ({ ...index, key: Object.entries(index.key) })),
+  }));
+  return encode(comparable(a)) === encode(comparable(b));
+}
 
-async function privateBackupDirectory() {
+export async function privateBackupDirectory() {
   const root = path.resolve(backendRoot, '../.runtime/backups');
   const runtime=path.dirname(root);
   await mkdir(runtime,{mode:0o700}).catch(e=>{if(e.code!=='EEXIST')throw e;});
@@ -92,7 +99,7 @@ export async function backupDatabase({ uri, confirmedLocal, writesQuiesced, dump
 
 export async function restoreDatabase({ uri, confirmedLocal, directory, restoreBinary }) {
   const target = localDatabase(uri, confirmedLocal);
-  if (!/^kitss_stage17_restore_[a-f0-9]{16}$/.test(target)) throw fail('FRESH_RESTORE_NAME_REQUIRED');
+  if (!/^kitss_stage(?:17|18)_restore_[a-f0-9]{16}$/.test(target)) throw fail('FRESH_RESTORE_NAME_REQUIRED');
   const root = await realpath(path.resolve(backendRoot, '../.runtime/backups'));
   const resolved = await realpath(directory), relative = path.relative(root, resolved);
   if (!relative || relative.startsWith('..') || path.isAbsolute(relative) || (await lstat(directory)).isSymbolicLink()) throw fail('UNSAFE_BACKUP_ROOT');
@@ -103,6 +110,8 @@ export async function restoreDatabase({ uri, confirmedLocal, directory, restoreB
   if (await fileDigest(archive) !== manifest.sha256 || (await lstat(archive)).size !== manifest.bytes) throw fail('BACKUP_INTEGRITY_FAILED');
   const connection = await connectLocal(uri, confirmedLocal);
   try {
+    const build = await connection.db.admin().command({ buildInfo: 1 });
+    if (String(build.version).split('.')[0] !== String(manifest.inventory?.serverVersion).split('.')[0]) throw fail('RESTORE_VERSION_MISMATCH');
     if ((await connection.db.listCollections().toArray()).length) throw fail('RESTORE_TARGET_NOT_EMPTY');
     // Atomic reservation prevents two restores from sharing a destination. It is retained as evidence.
     await connection.db.createCollection('_kitss_restore_guard');
