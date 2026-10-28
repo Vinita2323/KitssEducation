@@ -281,13 +281,13 @@ export const ProfilePage = () => {
             </Link>
 
             <Link
-              to="/subscriptions"
+              to="/coaching/my-courses"
               className="w-full flex items-center justify-between p-2.5 bg-[#F7F8FA] hover:bg-gray-100 rounded-xl border border-[#E6E8EC] text-left transition block"
             >
               <div className="flex items-center gap-2.5">
                 <Video className="w-3.5 h-3.5 text-[#FF8A00]" />
                 <div>
-                  <h4 className="text-xs font-bold text-[#0A1D3F]">My Subscriptions</h4>
+                  <h4 className="text-xs font-bold text-[#0A1D3F]">My courses</h4>
                   <p className="text-[10px] text-[#667085]">View & renew coaching</p>
                 </div>
               </div>

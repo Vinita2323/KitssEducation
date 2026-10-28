@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 
 import { useAuth } from '../../../user/context/AuthContext';
-import { StaffInvitations } from '../StaffInvitations';
+
 import { AdminNavigation } from './AdminNavigation';
 import { AdminPageGuide } from './AdminPageGuide';
 import { useDialogFocus } from '../../../../shared/ui/useDialogFocus';
@@ -21,7 +21,7 @@ export const AdminLayout = () => {
   const { user, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
-  const isStage4 = location.pathname === "/admin" || /^\/admin\/(refunds|access-requests|users|audit-logs|operations|universities|colleges|applications|franchise-requests|taxonomies|books|content|media|settings|orders|registrations|coaching|enrollments|results|notifications)(\/|$)/.test(location.pathname);
+  const isStage4 = location.pathname === "/admin" || /^\/admin\/(staff|refunds|access-requests|users|audit-logs|operations|universities|colleges|applications|franchise-requests|taxonomies|books|content|media|settings|orders|registrations|coaching|enrollments|results|notifications)(\/|$)/.test(location.pathname);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [desktopSidebarOpen, setDesktopSidebarOpen] = useState(true);
   const root = useRef(null);
@@ -155,7 +155,6 @@ export const AdminLayout = () => {
         {/* Main Content Viewport */}
         <main ref={content} id="admin-main" tabIndex={-1} className="flex-1 min-w-0 overflow-y-auto overscroll-contain p-4 sm:p-6 lg:p-8">
           <AdminPageGuide />
-          <StaffInvitations />
           {!isStage4 && <p role="status" className="mb-4 p-3 bg-amber-50 border rounded-xl text-xs text-[#0A1D3F]">Preview data only. Business management APIs are pending integration; changes are disabled.</p>}
           <fieldset disabled={!isStage4} className="min-w-0"><Outlet /></fieldset>
         </main>

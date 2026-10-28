@@ -15,7 +15,7 @@ test('grouped admin sidebar and mobile drawer (mocked HTTP)', { skip: !existsSyn
   const base = `http://127.0.0.1:${server.httpServer.address().port}`;
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
-  let permissions = ['dashboard.read', 'books.read', 'coaching.read', 'learning.read', 'results.read', 'content.read', 'institutions.read', 'admissions.read', 'registrations.read', 'franchises.read', 'commerce.read', 'refunds.read', 'access.read', 'media.read', 'notifications.read', 'accounts.read', 'settings.read', 'audit.read', 'operations.read'];
+  let permissions = ['dashboard.read', 'books.read', 'coaching.read', 'learning.read', 'results.read', 'content.read', 'institutions.read', 'admissions.read', 'registrations.read', 'franchises.read', 'commerce.read', 'refunds.read', 'access.read', 'media.read', 'notifications.read', 'accounts.read', 'accounts.roles.manage', 'settings.read', 'audit.read', 'operations.read'];
   await page.route('**/*', route => {
     const url = new URL(route.request().url());
     if (url.origin !== base) return route.abort();
@@ -28,8 +28,8 @@ test('grouped admin sidebar and mobile drawer (mocked HTTP)', { skip: !existsSyn
   await goto('/admin/universities');
   const nav = page.getByRole('navigation', { name: 'Admin sections', exact: true });
   await nav.waitFor();
-  await t.test('all 21 routes grouped; active group opens; keyboard toggles groups', async () => {
-    assert.equal(await nav.locator('a').count(), 21);
+  await t.test('all 22 routes grouped; active group opens; keyboard toggles groups', async () => {
+    assert.equal(await nav.locator('a').count(), 22);
     assert.equal(await nav.getByRole('button').count(), 6);
     assert.equal(await nav.getByRole('button', { name: 'Institutions & admissions' }).getAttribute('aria-expanded'), 'true');
     assert.equal(await nav.getByRole('link', { name: 'Universities', exact: true }).getAttribute('aria-current'), 'page');

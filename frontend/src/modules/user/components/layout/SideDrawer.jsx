@@ -41,7 +41,7 @@ export const SideDrawer = ({ isOpen, onClose, support = {} }) => {
     { label: "Registration", path: "/register", icon: UserPlus },
     { label: "Digital Books", path: "/books", icon: BookOpen },
     { label: "Online Coaching", path: "/coaching", icon: Video },
-    { label: "My Subscriptions", path: "/subscriptions", icon: ShieldCheck },
+    { label: "My courses", path: "/coaching/my-courses", icon: ShieldCheck, requiresAccount: true },
     { label: "Examination Results", path: "/results", icon: FileCheck },
     { label: "My Orders", path: "/orders", icon: ShoppingBag },
     { label: "Notifications", path: "/notifications", icon: Bell },
@@ -155,7 +155,7 @@ export const SideDrawer = ({ isOpen, onClose, support = {} }) => {
 
             {/* Menu List */}
             <div className="p-2 overflow-y-auto max-h-[calc(100vh-280px)] space-y-0.5">
-              {menuItems.map((item) => {
+              {menuItems.filter(item => !item.requiresAccount || user).map((item) => {
                 const isActive = location.pathname === item.path;
                 const Icon = item.icon;
 

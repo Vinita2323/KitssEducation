@@ -10,13 +10,13 @@ export const BottomNavigation = () => {
     { label: "Home", path: "/home", icon: Home },
     { label: "Categories", path: "/categories", icon: Layers },
     { label: "Colleges", path: "/colleges", icon: GraduationCap },
-    { label: "Courses", path: "/subscriptions", icon: ShieldCheck },
+    { label: "Courses", path: "/coaching", icon: ShieldCheck },
     { label: "Result", path: "/results", icon: FileCheck },
     { label: "Registration", path: "/register", icon: UserPlus }
   ];
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-xl border-t border-slate-200/90 px-2 pt-1.5 pb-[max(0.6rem,env(safe-area-inset-bottom,12px))] shadow-[0_-4px_20px_rgba(10,29,63,0.06)]">
+    <nav aria-label="Mobile navigation" className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-xl border-t border-slate-200/90 px-2 pt-1.5 pb-[max(0.6rem,env(safe-area-inset-bottom,12px))] shadow-[0_-4px_20px_rgba(10,29,63,0.06)]">
       <div className="flex items-center justify-around max-w-md mx-auto">
         {navItems.map((item) => {
           const Icon = item.icon;
@@ -25,7 +25,7 @@ export const BottomNavigation = () => {
             item.path === "/home" &&
             (location.pathname === "/home" || location.pathname === "/");
           const isActive =
-            isHome ||
+            isHome || (item.path === "/coaching" && location.pathname === "/subscriptions") ||
             (item.path !== "/home" &&
               (location.pathname === item.path || location.pathname.startsWith(item.path)));
 
@@ -33,6 +33,7 @@ export const BottomNavigation = () => {
             <Link
               key={item.label}
               to={item.path}
+              aria-current={isActive ? "page" : undefined}
               className="relative flex flex-col items-center justify-center py-1.5 px-1.5 sm:px-2.5 rounded-2xl touch-target cursor-pointer transition-colors"
             >
               <motion.div

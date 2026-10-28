@@ -23,6 +23,8 @@ import { bookService } from "../../user/services/bookService";
 import { collegeService } from '../../user/services/collegeService';
 import { useAuth } from '../../user/context/AuthContext';
 import { Pagination } from '../../user/components/common/Pagination';
+import { BookReviewDialog } from '../components/BookReviewDialog';
+import { bookDTO } from '../../user/services/bookService';
 import { BookEditor } from '../components/BookEditor';
 
 const COLOR_PRESETS = [
@@ -52,6 +54,7 @@ export const AdminBooksPage = () => {
   const [filterStatus, setFilterStatus] = useState("all");
 
   // Modal states
+  const [review, setReview] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingBook, setEditingBook] = useState(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState(null);
@@ -96,16 +99,6 @@ export const AdminBooksPage = () => {
       loadBooks();
     } catch (err) {
       console.error("Error deleting book:", err);
-      setLoadError(err.message);
-    }
-  };
-
-  const handleTogglePublish = async (id) => {
-    try {
-      const updated = await bookService.togglePublishStatus(books.find(b=>b.id===id));
-      showToast(`Status changed to ${updated.status}.`);
-      loadBooks();
-    } catch (err) {
       setLoadError(err.message);
     }
   };
@@ -381,32 +374,14 @@ export const AdminBooksPage = () => {
                         <div>{book.fileSize || "Private PDF"}</div>
                       </td>
 
-                      {/* Status Toggle */}
                       <td className="p-3.5 text-center whitespace-nowrap">
-                        <button
-                          type="button"
-                          disabled={!can('books.publish') || book.status === 'archived'} onClick={() => handleTogglePublish(book.id)}
-                          className={`px-2.5 py-1 rounded-full text-[10px] font-bold border transition cursor-pointer ${
-                            isPublished
-                              ? "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100"
-                              : "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100"
-                          }`}
-                          title="Click to toggle status"
-                        >
-                          {isPublished ? "● Published" : book.status === 'archived' ? 'Archived' : "○ Draft"}
-                        </button>
+                        <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold border ${isPublished ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-amber-50 text-amber-700 border-amber-200'}`}>{isPublished ? 'Published' : book.status === 'archived' ? 'Archived' : 'Draft'}</span>
                       </td>
-
-                      {/* Actions */}
-                      <td className="p-3.5 text-right whitespace-nowrap">
-                        <div className="flex items-center justify-end gap-1.5">
-                          <Link
-                            to={`/books/${book.id}`}
-                            className="p-1.5 rounded-lg text-slate-600 hover:bg-slate-100 transition"
-                            title="View Public Details"
-                          >
-                            <Eye className="w-4 h-4" />
-                          </Link>
+                      <td className="p-3.5 text-right">
+                        <div className="flex flex-wrap items-center justify-end gap-2">
+                          <button type="button" className="border rounded-lg px-2 py-1 text-xs flex items-center gap-1" onClick={() => setReview({ id: book.id, intent: 'preview' })}><Eye className="w-4 h-4" aria-hidden="true" />Admin preview</button>
+                          {isPublished && <Link to={`/books/${book.id}`} className="text-xs underline">View public page</Link>}
+                          {can('books.publish') && book.status !== 'archived' && <button type="button" className="border rounded-lg px-2 py-1 text-xs" onClick={() => setReview({ id: book.id, intent: isPublished ? 'unpublish' : 'publish' })}>{isPublished ? 'Unpublish' : 'Publish'}</button>}
 
                           <button
                             type="button"
@@ -435,6 +410,8 @@ export const AdminBooksPage = () => {
           </table>
         </div>
       </div>
+
+      {review && <BookReviewDialog bookId={review.id} intent={review.intent} onClose={() => setReview(null)} onEdit={row => { setReview(null); handleOpenEditModal(bookDTO(row)); }} onPublished={message => { setReview(null); showToast(message); loadBooks(); }} />}
 
       {modalOpen && <BookEditor book={editingBook} onClose={()=>setModalOpen(false)} onSaved={()=>{setModalOpen(false);showToast('Book draft saved in MongoDB');loadBooks();}} />}
 

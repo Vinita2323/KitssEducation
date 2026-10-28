@@ -19,6 +19,7 @@ const sections = {
   content: ['Publishing', 'Keep the student site up to date', 'Edit page sections, category cards, banners and faculty profiles as drafts. Preview details and evidence before publishing.'],
   media: ['Publishing', 'Manage files safely', 'Choose the correct file purpose, upload, then check the scan result. Only clean, ready files can be used.'],
   notifications: ['Communication', 'Send clear, useful updates', 'Write a short message, check the audience, and save a draft before publishing to the intended recipients.'],
+  staff: ['Administration', 'Manage staff access', 'Invite staff, review pending accounts and manage permissions. Pending accounts may still need to accept their invitation or verify their email.'],
   users: ['Administration', 'Manage people and permissions', 'Find an account, review its details, and record a reason for changes. Grant staff only the permissions they need.'],
   settings: ['Administration', 'Configure approved platform rules', 'Review settings carefully before saving. Approval checkboxes must reflect real owner decisions, not intended future approval.'],
   'audit-logs': ['Administration', 'Trace administrative changes', 'Filter the activity history by person, action, record or date to understand what changed.'],

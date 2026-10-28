@@ -210,12 +210,12 @@ export const CoachingHomePage = () => {
               <span>Course Selector</span>
             </Link>
 
-            <Link
+            {user && <Link
               to="/coaching/my-courses"
               className="px-2.5 py-1 rounded-md bg-white hover:bg-gray-50 text-[#0A1D3F] border border-[#E6E8EC] font-bold text-[11px] flex items-center gap-1 shadow-2xs transition active:scale-95"
             >
-              <span>My Courses</span>
-            </Link>
+              <span>My courses</span>
+            </Link>}
           </div>
         </div>
 

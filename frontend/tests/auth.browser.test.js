@@ -131,8 +131,8 @@ for (const [name, viewport] of [['desktop', { width: 1440, height: 1000 }], ['mo
     });
     await t.test('super-admin invitation form invokes real contracts outside preview controls', async () => {
       user = { ...identity, roles: ['super_admin'], permissions: ['institutions.read', 'accounts.roles.manage'] };
-      await goto(`${base}/admin/universities`);
-      await page.getByText('Staff invitations', { exact: true }).click();
+      await goto(`${base}/admin/staff`);
+      await page.getByRole('heading', { name: 'Staff invitations', exact: true }).waitFor();
       await page.getByLabel('Staff name', { exact: true }).fill('Invited Staff');
       await page.getByLabel('Staff email', { exact: true }).fill('invited@example.invalid');
       await page.getByRole('button', { name: 'Invite / resend' }).click();
@@ -140,7 +140,7 @@ for (const [name, viewport] of [['desktop', { width: 1440, height: 1000 }], ['mo
       await page.getByRole('button', { name: 'Revoke invitation' }).click();
       await page.getByRole('status').filter({ hasText: 'Invitation revoked' }).waitFor();
       await page.getByRole('button', { name: 'Sign out' }).click();
-      await page.waitForURL('**/login');
+      await page.waitForURL('**/admin/login');
     });
     assert.equal(writes.every(write => write.csrf === 'browser-test-csrf'), true);
     assert.deepEqual(errors, []);

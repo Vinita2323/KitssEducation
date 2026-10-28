@@ -32,6 +32,7 @@ const groups = [
     ['Notifications', '/admin/notifications', FileText, 'notifications.read'],
   ] },
   { id: 'administration', label: 'Administration', items: [
+    ['Staff management', '/admin/staff', ShieldCheck, 'accounts.roles.manage'],
     ['User accounts', '/admin/users', ShieldCheck, 'accounts.read'],
     ['Site settings', '/admin/settings', ShieldCheck, 'settings.read'],
     ['Audit logs', '/admin/audit-logs', FileText, 'audit.read'],

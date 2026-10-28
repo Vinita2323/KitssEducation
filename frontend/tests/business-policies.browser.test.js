@@ -98,7 +98,7 @@ test('Stage 13 real browser/HTTP/MongoDB policy, free content and keyboard granu
     assert.equal((await f.models.ResultRecord.findById(record._id)).status, 'draft');
   });
   await t.test('main admin creates a default-deny invitation using grouped individual permission controls', async () => {
-    await identity(d.admin); await goto('/admin/users'); await page.getByText('Staff invitations', { exact: true }).click();
+    await identity(d.admin); await goto('/admin/staff'); await page.getByRole('heading', { name: 'Staff invitations', exact: true }).waitFor();
     const email = randomUUID() + '@example.invalid';
     await page.getByLabel('Staff name', { exact: true }).fill('Browser subadmin'); await page.getByLabel('Staff email', { exact: true }).fill(email);
     await page.getByLabel('Permission preset', { exact: true }).selectOption('Content Manager');
