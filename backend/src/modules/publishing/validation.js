@@ -19,10 +19,19 @@ const section = v => {
   object(v, ['key', 'type', 'heading', 'body', 'items', 'mediaAssetIds'], ['key', 'type']);
   return { key: text(v.key, 80), type: choice(['text', 'cards', 'stats', 'founder', 'contact'])(v.type), heading: text(v.heading ?? ''), body: text(v.body ?? '', 10000), items: arr(v.items ?? [], item => { object(item, ['heading', 'body', 'linkKey']); return { heading: text(item.heading ?? ''), body: text(item.body ?? '', 2000), ...(item.linkKey ? { linkKey: choice(Object.keys(links))(item.linkKey) } : {}) }; }, 30), mediaAssetIds: arr(v.mediaAssetIds ?? [], ref, 8) };
 };
+const categoryCard = v => {
+  object(v, ['id', 'title', 'subtitle', 'tabLabel', 'path', 'iconKey', 'color', 'badge', 'tags', 'imageAssetId', 'hidden'], ['id', 'title', 'tabLabel', 'path', 'iconKey', 'color']);
+  const cardId = text(v.id, 80), title = text(v.title, 100), tabLabel = text(v.tabLabel, 60);
+  if (!/^[a-z][a-z0-9-]*$/.test(cardId) || cardId === 'all' || !title || !tabLabel) throw invalid('Use a unique category key, title and tab label');
+  return { id: cardId, title, tabLabel, subtitle: text(v.subtitle ?? '', 300), path: safeLink({ type: 'internal', target: v.path }).target,
+    iconKey: choice(['Video', 'Building2', 'FileCheck', 'BookOpen', 'GraduationCap', 'Globe', 'Library', 'Users'])(v.iconKey),
+    color: choice(['orange', 'blue', 'teal', 'navy', 'purple'])(v.color), badge: text(v.badge ?? '', 30), tags: arr(v.tags ?? [], x => text(x, 40), 3),
+    imageAssetId: v.imageAssetId ? ref(v.imageAssetId) : null, hidden: bool(v.hidden ?? false) };
+};
 const date = v => { if (typeof v !== 'string' || !v || Number.isNaN(Date.parse(v))) throw invalid('Invalid date'); return new Date(v); };
 const fields = {
   books: { title: text, subtitle: text, author: text, description: v => text(v, 20000), category: v => text(v, 80), boardId: ref, classId: ref, subjectId: ref, languageId: ref, keywords: v => arr(v, x => text(x, 80)), priceMinor: integer, originalPriceMinor: integer, currency: choice(['INR']), pricingApproved: bool, rightsConfirmed: bool, rightsNote: v => text(v, 1000), coverAssetId: ref, documentAssetId: ref, previewAssetIds: v => arr(v, ref, 8), edition: v => text(v, 80), coverVariant: choice(['navy', 'orange', 'teal']), iconKey: choice(['BookOpen', 'Calculator', 'Atom', 'BookMarked', 'Globe2', 'Languages']), toc: v => arr(v, x => { object(x, ['title', 'page'], ['title', 'page']); const page = integer(x.page, 10000); if (!page) throw invalid('Page numbers start at one'); return { title: text(x.title), page }; }, 200) },
-  pages: { key: choice(['home', 'about', 'categories', 'navigation']), sections: v => { const rows = arr(v, section, 20); if (new Set(rows.map(x => x.key)).size !== rows.length) throw invalid('Duplicate section keys'); return rows; } },
+  pages: { categoryCards: v => { const rows = arr(v, categoryCard, 30); if (new Set(rows.map(x => x.id)).size !== rows.length) throw invalid('Duplicate category keys'); return rows; }, key: choice(['home', 'about', 'categories', 'navigation']), sections: v => { const rows = arr(v, section, 20); if (new Set(rows.map(x => x.key)).size !== rows.length) throw invalid('Duplicate section keys'); return rows; } },
   banners: { placement: choice(['home', 'my_courses', 'results_top', 'results_bottom']), title: text, subtitle: v => text(v, 1000), tag: v => text(v, 80), ctaText: v => text(v, 80), imageAssetId: ref, link: safeLink, variant: choice(['navy', 'orange', 'teal']), sortOrder: v => integer(v, 100000), startsAt: date, endsAt: date },
   faculty: { name: text, role: text, qualifications: v => text(v, 1000), experience: v => text(v, 1000), specialty: v => text(v, 1000), badge: v => text(v, 80), trackTags: v => arr(v, choice(['jee', 'neet', 'admissions', 'school', 'founder']), 5), portraitAssetId: ref, sourceNote: v => text(v, 1000), sortOrder: v => integer(v, 100000) },
 };
@@ -32,6 +41,7 @@ export function contentInput(kind, input, creating = false) {
   const data = {};
   for (const [k, v] of Object.entries(input)) if (k !== 'expectedRevision') data[k] = v === null && /AssetId$|Id$/.test(k) ? null : fields[kind][k](v);
   for (const k of required[kind]) if (k in data && !data[k]) throw invalid('Required field: ' + k);
+  if (kind === 'pages' && data.categoryCards !== undefined && data.key && data.key !== 'categories') throw invalid('Category cards belong to the categories page');
   return { fields: data, expectedRevision: creating ? undefined : revision(input.expectedRevision) };
 }
 export function settingInput(keyName, input) {

@@ -17,7 +17,7 @@ const pageInput = query => {
   return { page, pageSize };
 };
 export const orderDTO = order => ({
-  id: String(order._id), reference: order.reference, product: { kind: order.product.kind, id: String(order.product.id), title: order.product.title, revision: order.product.revision, ...(order.product.courseId ? { courseId: String(order.product.courseId) } : {}) },
+  id: String(order._id), reference: order.reference, product: { kind: order.product.kind, id: String(order.product.id), title: order.product.title, purchaseSlot: order.product.purchaseSlot, revision: order.product.revision, ...(order.product.courseId ? { courseId: String(order.product.courseId) } : {}) },
   amountMinor: order.amountMinor, currency: order.currency, paymentMode: order.paymentMode, simulated: order.simulated,
   orderStatus: order.status, paymentStatus: order.status === 'captured' ? 'captured' : order.attempts.at(-1)?.status ?? order.status, activationStatus: order.fulfillment.state, revision: order.revision,
   providerOrderId: order.providerOrderId, capturedPaymentId: order.capturedPaymentId, attempts: order.attempts,
@@ -43,7 +43,7 @@ export class PaymentService {
   async owned(value, auth) {
     const order = await this.models.Order.findOne({ _id: id(value), userId: auth.user._id });
     if (!order) throw missing();
-    if (order.fulfillment.state === 'applied' && !(order.product.kind === 'registration_fee' ? await this.models.RegistrationApplication.exists({ _id: order.product.id, orderId: order._id, paymentState: 'verified' }) : order.product.kind === 'course_plan' ? await this.learning?.hasEffect(order) : await this.models.BookEntitlement.exists({ orderId: order._id, userId: order.userId, bookId: order.product.id, revokedAt: null }))) order.fulfillment.state = 'pending';
+    if (order.fulfillment.state === 'applied' && !(['franchise_joining','franchise_renewal'].includes(order.product.kind) ? await this.franchise?.hasEffect(order) : order.product.kind === 'registration_fee' ? await this.models.RegistrationApplication.exists({ _id: order.product.id, orderId: order._id, paymentState: 'verified' }) : order.product.kind === 'course_plan' ? await this.learning?.hasEffect(order) : await this.models.BookEntitlement.exists({ orderId: order._id, userId: order.userId, bookId: order.product.id, revokedAt: null }))) order.fulfillment.state = 'pending';
     return order;
   }
   eligible(auth) { if (!auth?.user?.emailVerifiedAt || auth.user.status !== 'active') throw new AppError(403, 'INELIGIBLE_ACCOUNT', 'A verified active account is required'); }
@@ -66,6 +66,7 @@ export class PaymentService {
   }
   async resolve(product, auth) {
     object(product, ['kind', 'id'], ['kind', 'id']);
+    if (['franchise_joining','franchise_renewal'].includes(product.kind) && this.franchise) return this.franchise.quote(product.id, product.kind, auth);
     if (product.kind === 'registration_fee') return this.business.registrationQuote(product.id, auth);
     if (product.kind === 'course_plan' && this.learning) return this.learning.resolvePlan(product.id, auth);
     if (product.kind !== 'book') throw new AppError(409, 'PRODUCT_NOT_ENABLED', 'Registration and coaching charges require approved eligibility, documents, plans and renewal rules');
@@ -166,6 +167,11 @@ export class PaymentService {
   async fulfill(orderId) {
     const order = await this.models.Order.findById(orderId);
     if (!order || order.status !== 'captured') return;
+    if (['franchise_joining','franchise_renewal'].includes(order.product.kind) && this.franchise) {
+      const effect = await this.franchise.fulfill(order);
+      await this.change(orderId, 'fulfillment_applied', current => current.fulfillment.state === 'applied' ? null : { 'fulfillment.state': 'applied', 'fulfillment.effectId': effect._id, 'fulfillment.appliedAt': now() });
+      return;
+    }
     if (order.product.kind === 'registration_fee') {
       const effect = await this.business.fulfillRegistration(order);
       await this.change(orderId, 'registration_fee_applied', current => current.fulfillment.state === 'applied' ? null : { 'fulfillment.state': 'applied', 'fulfillment.effectId': effect._id, 'fulfillment.appliedAt': now() });
@@ -229,7 +235,7 @@ export class PaymentService {
     object(query, ['page', 'pageSize', 'status', 'type', 'sort', 'fulfillment', 'reconciliation']); const { page, pageSize } = pageInput(query);
     const filter = admin ? {} : { userId: auth.user._id };
     if (query.status) { if (!['pending', 'authorized', 'captured', 'failed'].includes(query.status)) throw invalid('Invalid payment state'); if (query.status === 'failed') { filter.status = { $ne: 'captured' }; filter.$expr = { $eq: [{ $arrayElemAt: ['$attempts.status', -1] }, 'failed'] }; } else filter.status = query.status; }
-    if (query.type) { if (!['book','course_plan','registration_fee'].includes(query.type)) throw invalid('Unsupported product'); filter['product.kind'] = query.type; }
+    if (query.type) { if (!['book','course_plan','registration_fee','franchise_joining','franchise_renewal'].includes(query.type)) throw invalid('Unsupported product'); filter['product.kind'] = query.type; }
     if (query.fulfillment) { if (!['pending', 'applied', 'blocked'].includes(query.fulfillment)) throw invalid('Invalid fulfillment state'); filter['fulfillment.state'] = query.fulfillment; }
     if (query.reconciliation) { if (!['pending', 'leased', 'dead', 'done'].includes(query.reconciliation)) throw invalid('Invalid reconciliation state'); filter['reconcile.state'] = query.reconciliation; }
     if (query.sort && query.sort !== 'newest') throw invalid('Unsupported sort');
@@ -293,6 +299,7 @@ export class PaymentService {
     await Model.updateOne({ _id: doc._id, [prefix ? 'reconcile.token' : 'token']: prefix ? doc.reconcile.token : doc.token }, { $set: fields });
   }
   async tick() {
+    try { await this.franchise?.maintenance(); } catch { this.logger.error({ event: 'franchise_maintenance_pending' }, 'Franchise maintenance will retry'); }
     const { Order, Job } = this.models;
     for (let n = 0; n < 20; n++) {
       const token = randomUUID();

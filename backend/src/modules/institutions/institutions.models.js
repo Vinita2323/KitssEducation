@@ -26,6 +26,17 @@ export function createInstitutionModels(connection) {
     contact: { person: str(160), designation: str(160), email: str(254), mobile: str(32), alternateMobile: str(32) }, location: { address: str(500), city: str(160), stateId: ref(), pincode: str(12), mapsUrl: str(2048) },
     pendingDocuments: [{ _id: false, purpose: str(80), name: str(160), size: { type: Number, min: 0, max: 5242880 }, contentType: str(100) }],
     affiliationState: { type: String, enum: ['blocked_pending_policy'], default: 'blocked_pending_policy' }, declaration: { version: str(80), acceptedAt: Date }, status: { type: String, enum: ['draft', 'pending', 'approved', 'rejected'], default: 'draft' }, rejectionReason: str(2000), submittedAt: Date, reviewedAt: Date, reviewedBy: String }, options);
+  // Additive workflow fields; legacy review-only records retain their original status.
+  franchise.path('collegeId').required(false); franchise.path('universityId').required(false);
+  franchise.path('affiliationState').enumValues.push('awaiting_review','awaiting_payment','active','grace','suspended','renewal_review');
+  franchise.path('status').enumValues.push('needs_changes');
+  franchise.add({ workflowVersion: Number, policySnapshot: Schema.Types.Mixed, agreementAcceptance: Schema.Types.Mixed,
+    documents: { type: [new Schema({ key: String, assetId: Schema.Types.ObjectId, state: { type: String, enum: ['pending','verified','rejected'] }, reason: String, reviewedBy: String, reviewedAt: Date }, { _id: false })], default: [] },
+    activatedAt: Date, renewalDueAt: Date, renewalTerms: Schema.Types.Mixed, renewalAcceptance: Schema.Types.Mixed, renewalReview: Schema.Types.Mixed, nextFranchiseCheckAt: Date, activationOrderId: Schema.Types.ObjectId,
+    renewalEffects: { type: [Schema.Types.Mixed], default: [] }, reminderFor: String, expiryNoticeFor: String,
+  });
+  franchise.index({ applicantUserId: 1, createdAt: -1 });
+  franchise.index({ renewalDueAt: 1, affiliationState: 1 });
   franchise.index({ ownerKey: 1, idempotencyKey: 1 }, { unique: true }); franchise.index({ status: 1, createdAt: -1 });
   // Necessary standalone coordination, not a business entity or expiring lease.
   // No TTL: a crashed writer leaves a fail-closed lock for operator recovery.

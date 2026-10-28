@@ -7,7 +7,7 @@ export function createCommerceModels(connection) {
   const attempt = new Schema({ paymentId: String, status: String, observedAt: Date, source: String }, { _id: false });
   const order = new Schema({
     reference: { type: String, unique: true, required: true }, userId: { type: Schema.Types.ObjectId, required: true },
-    product: { kind: String, id: Schema.Types.ObjectId, title: String, revision: Number, documentAssetId: Schema.Types.ObjectId, courseId: Schema.Types.ObjectId, durationDays: Number, durationMonths: Number, eligibility: String, purchaseSlot: String },
+    product: { kind: String, id: Schema.Types.ObjectId, title: String, revision: Number, documentAssetId: Schema.Types.ObjectId, courseId: Schema.Types.ObjectId, durationDays: Number, durationMonths: Number, eligibility: String, purchaseSlot: String, franchiseTerms: Schema.Types.Mixed },
     amountMinor: { type: Number, required: true, min: 1, validate: Number.isSafeInteger }, currency: { type: String, enum: ['INR'], required: true },
     paymentMode: { type: String, enum: ['test'], required: true }, provider: { type: String, enum: ['razorpay', 'fake'], required: true }, providerScope: String, simulated: { type: Boolean, required: true },
     idempotencyKey: { type: String, required: true }, requestHash: String, revision: { type: Number, default: 1 },
@@ -30,6 +30,7 @@ export function createCommerceModels(connection) {
   // One chargeable order per initial/expired purchase period, even across plans.
   order.index({ userId: 1, 'product.courseId': 1, 'product.purchaseSlot': 1 }, { unique: true, name: 'unique_course_purchase_period', partialFilterExpression: { 'product.kind': 'course_plan' } });
   order.index({ userId: 1, 'product.id': 1 }, { unique: true, name: 'unique_registration_fee', partialFilterExpression: { 'product.kind': 'registration_fee' } });
+  order.index({ userId: 1, 'product.id': 1, 'product.kind': 1, 'product.purchaseSlot': 1 }, { unique: true, name: 'unique_franchise_payment_period', partialFilterExpression: { 'product.kind': { $in: ['franchise_joining', 'franchise_renewal'] } } });
   order.index({ 'reconcile.state': 1, 'reconcile.nextAt': 1, 'reconcile.leaseUntil': 1 });
   const entitlement = new Schema({ revision: { type: Number, default: 1 }, updatedBy: String, auditOutbox: { type: [event], default: [] }, userId: { type: Schema.Types.ObjectId, required: true }, bookId: { type: Schema.Types.ObjectId, required: true }, orderId: { type: Schema.Types.ObjectId }, grantId: Schema.Types.ObjectId, source: { type: String, enum: ['purchase', 'free', 'manual'], default: 'purchase' }, grantedAt: Date, expiresAt: Date, revokedAt: Date, revokeReason: String, simulated: Boolean }, options);
   entitlement.index({ userId: 1, bookId: 1 }, { unique: true });

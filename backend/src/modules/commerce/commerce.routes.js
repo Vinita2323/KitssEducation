@@ -18,6 +18,19 @@ export function createCommerceRouter(service, { operations } = {}) {
   const router = express.Router();
   const ctx = req => ({ actorId: req.auth?.user.publicId, requestId: req.requestId, ip: req.ip });
   const reply = (req, res, data, status = 200) => res.status(status).json({ data, requestId: req.requestId });
+  if (service.franchise) {
+    router.get('/public/franchise-policy', async (req, res) => { try { reply(req, res, { available: true, policy: await service.franchise.policy() }); } catch (e) { if (e.code !== 'FRANCHISE_REQUIREMENTS') throw e; reply(req, res, { available: false, message: e.message }); } });
+    router.get('/admin/franchise-policy', requirePermission('settings.read'), async (req, res) => reply(req, res, await service.franchise.adminPolicy()));
+    router.patch('/admin/franchise-policy', requirePermission('settings.write'), async (req, res) => reply(req, res, await service.franchise.savePolicy(req.body, req.auth, ctx(req))));
+    router.post('/admin/franchise-policy/publish', requirePermission('settings.write'), async (req, res) => reply(req, res, await service.franchise.savePolicy(req.body, req.auth, ctx(req), true)));
+    router.get('/me/franchise-applications', requireSession, async (req, res) => reply(req, res, await service.franchise.mine(req.auth)));
+    router.post('/franchise-applications/:id/documents', requireSession, async (req, res) => reply(req, res, await service.franchise.attach(req.params.id, req.body, req.auth, ctx(req))));
+    router.post('/franchise-applications/:id/activate', requireSession, async (req, res) => reply(req, res, await service.franchise.activate(req.params.id, req.body, req.auth, ctx(req))));
+    router.post('/franchise-applications/:id/renewal-agreement', requireSession, async (req, res) => reply(req, res, await service.franchise.acceptRenewal(req.params.id, req.body, req.auth, ctx(req))));
+    router.post('/franchise-applications/:id/renew', requireSession, async (req, res) => reply(req, res, await service.franchise.freeRenew(req.params.id, req.body, req.auth, ctx(req))));
+    router.post('/admin/franchise-applications/:id/renewal-review', requirePermission('franchises.approve'), async (req, res) => reply(req, res, await service.franchise.reviewRenewal(req.params.id, req.body, ctx(req))));
+    router.post('/admin/franchise-applications/:id/documents/review', requirePermission('franchises.review'), async (req, res) => reply(req, res, await service.franchise.reviewDocument(req.params.id, req.body, req.auth, ctx(req))));
+  }
   router.get('/public/registration-config', async (req, res) => reply(req, res, await service.registrationConfig()));
   router.get('/public/franchise-fees', async (req, res) => reply(req, res, await service.business.franchiseFees()));
   router.get('/me/refund-policy', requireSession, async (req, res) => reply(req, res, await service.business.refundOptions()));

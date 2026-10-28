@@ -76,6 +76,12 @@ export function createBusinessPolicyService(commerce) {
       if (input.value.franchise) value.franchise = franchisePolicy(input.value.franchise);
       return coordination.run(async () => {
         let row = await Settings.findOne({ key: 'businessPolicies' });
+        const managed = row?.value?.franchise;
+        if (value.franchise?.workflowDraft && !managed?.workflowDraft || value.franchise?.workflowPublished && !managed?.workflowPublished) throw blocked('Use the dedicated Franchise Policy editor for workflow terms');
+        if (managed?.workflowDraft || managed?.workflowPublished) {
+          if (value.franchise?.workflowDraft && JSON.stringify(value.franchise.workflowDraft) !== JSON.stringify(managed.workflowDraft) || value.franchise?.workflowPublished && JSON.stringify(value.franchise.workflowPublished) !== JSON.stringify(managed.workflowPublished)) throw blocked('Use the dedicated Franchise Policy editor for workflow terms');
+          value.franchise = { ...(value.franchise ?? managed), workflowDraft: managed.workflowDraft, workflowPublished: managed.workflowPublished };
+        }
         if (!row) {
           if (input.expectedRevision !== 0) throw invalid('Initial revision must be zero');
           row = await Settings.create({ key: 'businessPolicies', value, revision: 1, policyHistory: [{ reason: input.reason, actorId: ctx.actorId, at: now(), revision: 1, value }], auditOutbox: [event('business_policy_created', ctx)] });

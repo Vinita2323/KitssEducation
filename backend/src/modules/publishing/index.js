@@ -11,5 +11,5 @@ export async function createPublishingModule({ connection, institutionService, a
   const publishing = createPublishingService({ models, taxonomy: institutionService.models.Taxonomy, coordination, media });
   const maintenance = async () => { await coordination.maintenance(); await media.maintenance(); };
   await maintenance();
-  return { models, media, publishing, coordination, maintenance };
+  return { models, media, publishing, coordination, maintenance, institutions: institutionService };
 }

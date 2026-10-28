@@ -1,3 +1,4 @@
+import { authenticatedWrite } from '../../user/services/authService';
 import { AdminField, AdminInput, AdminTextarea } from '../components/AdminFields';
 import { FranchiseFeeStatus } from '../../user/components/common/FranchiseFeeStatus';
 import { useDialogFocus } from '../../../shared/ui/useDialogFocus';
@@ -127,6 +128,8 @@ export const AdminFranchiseRequestsPage = () => {
             <span>Rejected</span>
           </span>
         );
+      case "Needs changes":
+        return <span className="inline-flex px-2.5 py-0.5 rounded-full bg-amber-50 border text-amber-700 text-xs font-bold">Needs changes</span>;
       case "Pending":
       default:
         return (
@@ -154,7 +157,7 @@ export const AdminFranchiseRequestsPage = () => {
             </h1>
           </div>
           <p className="text-xs sm:text-sm text-[#667085] mt-1">
-            Review and approve incoming franchise registration requests under the accredited University → College hierarchy.
+            Review institution eligibility, supporting documents and affiliation requests. Existing university → college links are shown when supplied.
           </p>
         </div>
 
@@ -180,8 +183,8 @@ export const AdminFranchiseRequestsPage = () => {
         </form>
 
         {/* Status Filter Tabs */}
-        <div className="flex items-center gap-1.5 p-1 bg-[#F7F8FA] rounded-xl border border-[#E6E8EC] self-start sm:self-auto">
-          {["All", "Draft", "Pending", "Approved", "Rejected"].map((st) => (
+        <div className="flex items-center gap-1.5 p-1 flex-wrap bg-[#F7F8FA] rounded-xl border border-[#E6E8EC] self-start sm:self-auto">
+          {["All", "Draft", "Pending", "Needs changes", "Approved", "Rejected"].map((st) => (
             <button
               key={st} aria-pressed={statusFilter === st}
               onClick={() => setStatusFilter(st)}
@@ -229,9 +232,9 @@ export const AdminFranchiseRequestsPage = () => {
               <tbody className="divide-y divide-[#E6E8EC]">
                 {franchises.map((fran) => {
                   const franId = fran._id || fran.id;
-                  const uniName = fran.universityId?.name || "Unknown University";
+                  const uniName = fran.universityId?.name || "Independent institution";
                   const uniShort = fran.universityId?.shortName || "";
-                  const colName = fran.collegeId?.name || "Unknown College";
+                  const colName = fran.institutionName || fran.collegeId?.name || "Institution";
                   return (
                     <tr
                       key={franId}
@@ -260,7 +263,7 @@ export const AdminFranchiseRequestsPage = () => {
                           {colName}
                         </div>
                         <div className="text-[10px] text-[#64748B]">
-                          under {uniName}
+                          {fran.universityId?.name ? 'under ' + uniName : 'Independent application'}
                         </div>
                       </td>
 
@@ -481,6 +484,19 @@ export const AdminFranchiseRequestsPage = () => {
               </div>
             )}
 
+            {selectedFranchise.workflowVersion === 1 && <section className="border rounded-xl p-3 space-y-3" aria-label="Franchise verification">
+              <h3 className="font-bold">Franchise verification</h3>
+              <p>Policy: {selectedFranchise.policySnapshot?.version || 'Not submitted'}. Agreement: {selectedFranchise.agreementAcceptance?.version || 'Not accepted'}.</p>
+              <p>Affiliation: {selectedFranchise.affiliationState?.replaceAll('_',' ')}{selectedFranchise.renewalDueAt ? '; renewal due ' + new Date(selectedFranchise.renewalDueAt).toLocaleDateString() : ''}</p>
+              {selectedFranchise.affiliationState === 'renewal_review' && <button type="button" disabled={processing || !can('franchises.approve') || !adminNote.trim()} onClick={async () => { setProcessing(true); try { await authenticatedWrite('/admin/franchise-applications/' + selectedFranchise.id + '/renewal-review', { expectedRevision: selectedFranchise.revision, reason: adminNote }); setSelectedFranchise(await adminService.getFranchise(selectedFranchise.id)); showSuccess('Renewal approved for payment or free renewal'); } catch(e) { showError(e.message); } finally { setProcessing(false); } }}>Approve expired renewal</button>}
+              <details><summary>Accepted eligibility and agreement</summary><p>Allowed institutions: {selectedFranchise.policySnapshot?.institutionTypes?.join(', ')}. Minimum years: {selectedFranchise.policySnapshot?.minimumYears}.</p><p className="whitespace-pre-wrap">{selectedFranchise.policySnapshot?.agreement?.text}</p></details>
+              {(selectedFranchise.franchiseDocuments || []).map(doc => <div key={doc.key} className="border rounded-xl p-3 space-y-2">
+                <p>{selectedFranchise.policySnapshot?.documents?.find(d => d.key === doc.key)?.label || doc.key}: {doc.state}</p>
+                <a className="underline" href={'/api/v1/media/' + doc.assetId + '/content'} target="_blank" rel="noreferrer">View {doc.key}</a>
+                {doc.reason && <p>{doc.reason}</p>}
+                <div className="flex flex-wrap gap-2">{['verified','rejected'].map(state => <button key={state} type="button" disabled={processing || !can('franchises.review') || !adminNote.trim() || !['Pending','Needs changes'].includes(selectedFranchise.status)} onClick={async () => { setProcessing(true); try { await authenticatedWrite('/admin/franchise-applications/' + selectedFranchise.id + '/documents/review', { expectedRevision: selectedFranchise.revision, key: doc.key, state, reason: adminNote }); setSelectedFranchise(await adminService.getFranchise(selectedFranchise.id)); showSuccess('Document review saved'); } catch(e) { showError(e.message); } finally { setProcessing(false); } }}>{state === 'verified' ? 'Verify document' : 'Reject document'}</button>)}</div>
+              </div>)}
+            </section>}
             {/* Admin Notes / Log Section */}
             {selectedFranchise.adminNotes && selectedFranchise.adminNotes.length > 0 && (
               <div className="space-y-1.5">
@@ -520,13 +536,14 @@ export const AdminFranchiseRequestsPage = () => {
             </div>
 
             <button type="button" disabled={processing || !adminNote.trim() || !can('franchises.review')} onClick={async () => { setProcessing(true); try { const updated = await adminService.addFranchiseNote(selectedFranchise.id, adminNote, noteKey); setSelectedFranchise(updated); setAdminNote(''); setNoteKey(crypto.randomUUID()); showSuccess('Note saved without changing status'); fetchFranchises(); } catch (error) { showError(error.message); } finally { setProcessing(false); } }} className="px-4 py-2 rounded-xl bg-[#0A1D3F] text-white text-xs">Save Note Only</button>
-            <p className="text-xs text-amber-700">Authorized manual review approval is available with a reason. Official affiliation remains blocked pending criteria and agreement approval; no affiliation or account is granted.</p>
+            <p className="text-xs text-amber-700">{selectedFranchise.workflowVersion === 1 ? 'Verify required documents and record a review reason before approval. Approved free applications activate immediately; paid applications activate only after verified payment.' : 'Legacy application: review approval does not activate affiliation. The applicant must submit a new application under the published policy.'}</p>
+            {selectedFranchise.workflowVersion === 1 && <button type="button" disabled={processing || !can('franchises.review') || !adminNote.trim() || selectedFranchise.status !== 'Pending'} onClick={() => handleStatusChange('Needs changes', adminNote)}>Request corrections</button>}
             {/* Approval / Rejection Action Buttons */}
             <div className="flex flex-col sm:flex-row items-center justify-between gap-2 pt-2">
               <div className="flex items-center gap-2 w-full sm:w-auto">
                 <button
                   type="button"
-                  disabled={processing || !can('franchises.approve') || !adminNote.trim()} title="Manual review approval does not activate an official affiliation" onClick={() => handleStatusChange("Approved", adminNote)}
+                  disabled={processing || !can('franchises.approve') || !adminNote.trim() || selectedFranchise.status !== 'Pending'} title={selectedFranchise.workflowVersion === 1 ? 'Approve eligibility after verifying documents' : 'Legacy review does not activate affiliation'} onClick={() => handleStatusChange("Approved", adminNote)}
                   className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs transition cursor-pointer shadow-xs disabled:opacity-50"
                 >
                   <CheckCircle2 className="w-4 h-4" />
@@ -535,7 +552,7 @@ export const AdminFranchiseRequestsPage = () => {
 
                 <button
                   type="button"
-                  disabled={processing || !can('franchises.review')}
+                  disabled={processing || !can('franchises.review') || selectedFranchise.status !== 'Pending'}
                   onClick={() => handleStatusChange("Rejected", adminNote || rejectionReason)}
                   className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-semibold text-xs transition cursor-pointer shadow-xs disabled:opacity-50"
                 >

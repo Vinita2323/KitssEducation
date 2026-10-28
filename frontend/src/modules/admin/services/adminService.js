@@ -2,7 +2,7 @@ import { httpClient } from '../../../shared/api/httpClient';
 import { authenticatedWrite } from '../../user/services/authService';
 import { readPage, readOptions, programDTO, collegeDTO } from '../../user/services/collegeService';
 const status = value => value?.toLowerCase().replaceAll(' ', '_');
-const label = value => ({ in_process: 'In Process' }[value] ?? (value ? value[0].toUpperCase() + value.slice(1) : ''));
+const label = value => ({ in_process: 'In Process', needs_changes: 'Needs changes' }[value] ?? (value ? value[0].toUpperCase() + value.slice(1) : ''));
 const intakeDTO = row => ({
   ...row, _id: row.id, status: label(row.status), applicationId: row.reference,
   courseId: row.programSnapshot ? { courseName: row.programSnapshot.name, degreeType: row.programSnapshot.degreeType } : undefined,
@@ -12,7 +12,7 @@ const intakeDTO = row => ({
   website: row.institution?.website, programsOffered: row.programsOffered,
   contactPerson: row.contact?.person, designation: row.contact?.designation, email: row.contact?.email, mobile: row.contact?.mobile, alternateMobile: row.contact?.alternateMobile,
   address: row.location?.address, city: row.location?.city, state: row.stateLabel || '', pincode: row.location?.pincode, googleMapsLocation: row.location?.mapsUrl,
-  documents: {}, pendingDocuments: row.pendingDocuments ?? [],
+  franchiseDocuments: Array.isArray(row.documents) ? row.documents : [], documents: {}, pendingDocuments: row.pendingDocuments ?? [],
   adminNotes: (row.notes ?? []).map(note => ({ ...note, _id: note.id, author: note.actorId, note: note.text })),
 });
 const filters = input => { const { search, ...rest } = input ?? {}; return { ...rest, q: search, status: rest.status && rest.status !== 'All' ? status(rest.status) : undefined }; };

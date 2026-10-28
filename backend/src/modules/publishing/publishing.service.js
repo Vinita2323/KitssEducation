@@ -31,7 +31,11 @@ export function createPublishingService({ models, taxonomy, coordination, media 
       if (data.portraitAssetId) await media.linkable(data.portraitAssetId, 'faculty', auth);
       for (const section of data.sections ?? []) for (const assetId of section.mediaAssetIds ?? []) await media.linkable(assetId, 'cms', auth);
       if (data.startsAt && data.endsAt && new Date(data.endsAt) <= new Date(data.startsAt)) throw invalid('End must be after start');
-      if (publishing && kind === 'pages' && !data.sections?.length) throw invalid('Add at least one approved section');
+      if (data.categoryCards !== undefined) {
+        if (data.key !== 'categories') throw invalid('Category cards belong to the categories page');
+        for (const card of data.categoryCards) if (card.imageAssetId) await media.linkable(card.imageAssetId, 'cms', auth);
+      }
+      if (publishing && kind === 'pages' && !data.sections?.length && data.categoryCards === undefined) throw invalid('Add at least one approved section');
       if (publishing && kind === 'faculty' && (!data.sourceNote || !data.name || !data.role || !data.portraitAssetId)) throw invalid('Faculty publication requires name, role, portrait and approved source evidence');
       if (publishing && kind === 'banners' && (!data.title || !data.imageAssetId || !data.link)) throw invalid('Banner publication requires title, clean image and safe link');
     }

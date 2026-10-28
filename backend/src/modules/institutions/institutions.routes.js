@@ -31,17 +31,17 @@ export function createInstitutionRouter(service) {
   router.get('/colleges/:id', async (req, res) => send(req, res, await service.detail('college', req.params.id)));
   router.get('/colleges/:id/programs', async (req, res) => list(req, res, await service.list('program', req.query, false, req.params.id)));
   router.post('/admission-applications', requireSession, async (req, res) => send(req, res, await service.submitAdmission(req.body, req.auth, ctx(req)), 201));
-  router.post('/franchise-applications', async (req, res) => send(req, res, await service.createDraft(req.body, req.auth, ctx(req)), 201));
-  router.patch('/franchise-applications/:id', async (req, res) => send(req, res, await service.editDraft(req.params.id, req.body, req.auth, req.get('X-Draft-Capability'), ctx(req))));
-  router.post('/franchise-applications/:id/submit', async (req, res) => send(req, res, await service.submitFranchise(req.params.id, req.body, req.auth, req.get('X-Draft-Capability'), ctx(req))));
-  router.get('/franchise-applications/:id/status', async (req, res) => send(req, res, await service.draftStatus(req.params.id, req.auth, req.get('X-Draft-Capability'))));
+  router.post('/franchise-applications', async (req, res) => send(req, res, await (service.franchiseWorkflow ? service.franchiseWorkflow.create(req.body, req.auth, ctx(req)) : service.createDraft(req.body, req.auth, ctx(req))), 201));
+  router.patch('/franchise-applications/:id', async (req, res) => send(req, res, await (service.franchiseWorkflow ? service.franchiseWorkflow.edit(req.params.id, req.body, req.auth, ctx(req)) : service.editDraft(req.params.id, req.body, req.auth, req.get('X-Draft-Capability'), ctx(req)))));
+  router.post('/franchise-applications/:id/submit', async (req, res) => send(req, res, await (service.franchiseWorkflow ? service.franchiseWorkflow.submit(req.params.id, req.body, req.auth, ctx(req)) : service.submitFranchise(req.params.id, req.body, req.auth, req.get('X-Draft-Capability'), ctx(req)))));
+  router.get('/franchise-applications/:id/status', async (req, res) => send(req, res, await (service.franchiseWorkflow ? service.franchiseWorkflow.status(req.params.id, req.auth) : service.draftStatus(req.params.id, req.auth, req.get('X-Draft-Capability')))));
   for (const [kind, path, read, review] of [
     ['admission', '/admin/admission-applications', 'admissions.read', 'admissions.review'],
     ['franchise', '/admin/franchise-applications', 'franchises.read', 'franchises.review'],
   ]) {
     router.get(path, requirePermission(read), async (req, res) => list(req, res, await service.reviews(kind, req.query)));
     router.get(`${path}/:id`, requirePermission(read), async (req, res) => send(req, res, await service.reviewDetail(kind, req.params.id)));
-    router.patch(`${path}/:id/status`, (req, res, next) => requirePermission(kind === 'franchise' && req.body?.status === 'approved' ? 'franchises.approve' : review)(req, res, next), async (req, res) => send(req, res, await service.review(kind, req.params.id, req.body, ctx(req))));
+    router.patch(`${path}/:id/status`, (req, res, next) => requirePermission(kind === 'franchise' && req.body?.status === 'approved' ? 'franchises.approve' : review)(req, res, next), async (req, res) => send(req, res, await (kind === 'franchise' && service.franchiseWorkflow && (await service.reviewDetail(kind, req.params.id)).workflowVersion === 1 ? service.franchiseWorkflow.review(req.params.id, req.body, ctx(req)) : service.review(kind, req.params.id, req.body, ctx(req)))));
     router.post(`${path}/:id/notes`, requirePermission(review), async (req, res) => send(req, res, await service.review(kind, req.params.id, req.body, ctx(req), true)));
   }
   return router;

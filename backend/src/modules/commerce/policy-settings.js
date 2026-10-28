@@ -1,3 +1,4 @@
+import { workflowPolicy } from '../franchise/policy.js';
 import { object, text, invalid } from '../publishing/validation.js';
 import { accessExpiry } from '../../utils/accessDuration.js';
 
@@ -27,7 +28,7 @@ export function refundPolicy(input) {
   return result;
 }
 export function franchisePolicy(input) {
-  object(input, ['approved', 'version', 'effectiveFrom', 'joining', 'renewal', 'dueRule', 'graceDays', 'requirements'], ['approved', 'joining', 'renewal', 'dueRule', 'requirements']);
+  object(input, ['approved', 'version', 'effectiveFrom', 'joining', 'renewal', 'dueRule', 'graceDays', 'requirements', 'workflowDraft', 'workflowPublished'], ['approved', 'joining', 'renewal', 'dueRule', 'requirements']);
   approval(input); choice(input.dueRule, ['activation_anniversary']);
   if (input.graceDays != null) count(input.graceDays, 365);
   if (!Array.isArray(input.requirements) || input.requirements.length > 20 || input.requirements.some(v => !text(v, 160).trim())) throw invalid('Invalid franchise requirement list');
@@ -36,6 +37,7 @@ export function franchisePolicy(input) {
     choice(fee.currency, ['INR']); if (fee.amountMinor != null) count(fee.amountMinor);
     if (input.approved && fee.enabled && !(fee.amountMinor > 0)) throw invalid('Enabled franchise fees require an explicitly approved positive amount');
   }
+  if (input.workflowDraft) workflowPolicy(input.workflowDraft); if (input.workflowPublished) workflowPolicy(input.workflowPublished);
   return { ...input };
 }
 export function invoicePolicy(input) {
@@ -51,6 +53,7 @@ export function invoicePolicy(input) {
 }
 // This is a planning projection, not affiliation activation or a payment grant.
 export function franchiseFeeStatus(policy, { activationAt, lastVerifiedRenewalAt } = {}, at = new Date()) {
+  if (policy?.workflowPublished && Date.parse(policy.workflowPublished.effectiveFrom) <= at.getTime()) { const p = workflowPolicy(policy.workflowPublished); return { state: 'configured', joining: p.joining, renewal: p.renewal, policyVersion: p.version, paymentCollectionEnabled: false }; }
   if (!policy?.approved || Date.parse(policy.effectiveFrom) > at.getTime()) return { state: 'configuration_required', affiliationState: 'blocked_pending_policy' };
   franchisePolicy(policy);
   const anchor = lastVerifiedRenewalAt ?? activationAt;

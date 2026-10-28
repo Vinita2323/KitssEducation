@@ -47,11 +47,11 @@ export function admissionInput(input) {
   return { collegeId: String(id(input.collegeId)), programId: String(id(input.programId)), studentDetails: details, idempotencyKey: key(input.idempotencyKey) };
 }
 export function key(value) { const s = text(value, 80); if (!/^[\w-]{16,80}$/.test(s)) throw invalid('Use a random idempotency key of 16-80 characters'); return s; }
-export function franchiseInput(input, creating = false) {
+export function franchiseInput(input, creating = false, independent = false) {
   const validators = { universityId: v => String(id(v)), collegeId: v => String(id(v)), institution: v => nested(v, { name: short, type: short, yearEstablished: v => integer(v, 1, new Date().getFullYear()), website: url }), programsOffered: v => array(v, short), contact: v => nested(v, { person: short, designation: short, email, mobile: v => text(v, 32), alternateMobile: v => text(v, 32) }), location: v => nested(v, { address: v => text(v, 500), city: short, stateId: v => String(id(v)), pincode: v => text(v, 12), mapsUrl: url }), pendingDocuments: v => { if (!Array.isArray(v) || v.length > 5) throw invalid('Invalid pending documents'); return v.map(d => nested(d, { purpose: label, name: short, size: v => integer(v, 0, 5242880), contentType: v => text(v, 100) }, ['purpose', 'name', 'size'])); } };
-  object(input, [...Object.keys(validators), creating ? 'idempotencyKey' : 'expectedRevision'], creating ? ['universityId', 'collegeId', 'idempotencyKey'] : ['expectedRevision']);
+  object(input, [...Object.keys(validators), creating ? 'idempotencyKey' : 'expectedRevision'], creating ? (independent ? ['idempotencyKey'] : ['universityId', 'collegeId', 'idempotencyKey']) : ['expectedRevision']);
   const result = {};
-  for (const [field, value] of Object.entries(input)) if (validators[field]) result[field] = validators[field](value);
+  for (const [field, value] of Object.entries(input)) if (validators[field]) result[field] = independent && ['collegeId','universityId'].includes(field) && value === null ? null : validators[field](value);
   if (creating) result.idempotencyKey = key(input.idempotencyKey);
   else result.expectedRevision = integer(input.expectedRevision, 1, Number.MAX_SAFE_INTEGER);
   return result;

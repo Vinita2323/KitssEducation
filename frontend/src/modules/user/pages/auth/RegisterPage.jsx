@@ -10,7 +10,7 @@ import {
   ShieldCheck
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { CollegeFranchiseForm } from "../../components/auth/CollegeFranchiseForm";
+import { FranchiseApplicationForm as CollegeFranchiseForm } from "../../components/auth/FranchiseApplicationForm";
 import { TuitionCoachingForm } from "../../components/auth/TuitionCoachingForm";
 import { StudyRegistrationForm } from "../../components/auth/StudyRegistrationForm";
 import { TeacherProfessorForm } from "../../components/auth/TeacherProfessorForm";
@@ -40,7 +40,7 @@ export const RegisterPage = () => {
       id: "franchise",
       title: "1. Franchise Form",
       subtitle: "Institutional Partner",
-      description: "Apply for institutional franchise under an approved University & College partner.",
+      description: "Apply as an independent or linked institution under the published franchise policy.",
       icon: Building2,
       badgeColor: "bg-amber-50 text-[#FF8A00] border-amber-200/80",
       iconBg: "bg-amber-50 text-[#FF8A00] group-hover:bg-[#FF8A00] group-hover:text-white",
@@ -180,7 +180,7 @@ export const RegisterPage = () => {
         )}
 
         {/* ========================================================
-            FORM 1: FRANCHISE REGISTRATION FORM (UNTOUCHED)
+            FORM 1: POLICY-DRIVEN FRANCHISE APPLICATION
            ======================================================== */}
         {selectedType === "franchise" && (
           <motion.div

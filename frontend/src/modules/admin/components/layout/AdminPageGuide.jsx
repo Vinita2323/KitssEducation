@@ -16,7 +16,7 @@ const sections = {
   orders: ['Payments', 'Understand each payment', 'Review provider-verified payments and fulfillment. Reconciliation checks evidence; it cannot mark an unpaid order as paid.'],
   refunds: ['Payments', 'Review refund requests', 'Check the request against the approved refund rules. A review decision does not replace provider confirmation.'],
   'access-requests': ['Learning access', 'Review exceptional access', 'Check the approved access policy and reason. An exception does not change the payment record.'],
-  content: ['Publishing', 'Keep the student site up to date', 'Edit page sections, banners and faculty profiles as drafts. Preview details and evidence before publishing.'],
+  content: ['Publishing', 'Keep the student site up to date', 'Edit page sections, category cards, banners and faculty profiles as drafts. Preview details and evidence before publishing.'],
   media: ['Publishing', 'Manage files safely', 'Choose the correct file purpose, upload, then check the scan result. Only clean, ready files can be used.'],
   notifications: ['Communication', 'Send clear, useful updates', 'Write a short message, check the audience, and save a draft before publishing to the intended recipients.'],
   users: ['Administration', 'Manage people and permissions', 'Find an account, review its details, and record a reason for changes. Grant staff only the permissions they need.'],

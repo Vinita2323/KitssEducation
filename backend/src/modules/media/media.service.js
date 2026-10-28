@@ -7,7 +7,7 @@ import { id, key as validateKey, invalid, object, revision } from '../publishing
 import { inspectVideo } from './video-inspection.js';
 import { createScanner, probeFile } from './inspection.js';
 
-export const purposes = Object.freeze({ registration_document: { mime: ['application/pdf', 'image/png', 'image/jpeg'], max: 10 * 1024 * 1024 }, lesson_video: { mime: ['video/mp4'], max: 256 * 1024 * 1024 }, result_import: { mime: ['application/json'], max: 2 * 1024 * 1024 }, course_thumbnail: { mime: ['image/png', 'image/jpeg', 'image/webp'], max: 5 * 1024 * 1024 }, lesson_document: { mime: ['application/pdf'], max: 50 * 1024 * 1024 }, book_cover: { mime: ['image/png', 'image/jpeg', 'image/webp'], max: 5 * 1024 * 1024 }, banner: { mime: ['image/png', 'image/jpeg', 'image/webp'], max: 5 * 1024 * 1024 }, faculty: { mime: ['image/png', 'image/jpeg', 'image/webp'], max: 5 * 1024 * 1024 }, cms: { mime: ['image/png', 'image/jpeg', 'image/webp'], max: 5 * 1024 * 1024 }, book_preview: { mime: ['application/pdf'], max: 10 * 1024 * 1024 }, book_full: { mime: ['application/pdf'], max: 50 * 1024 * 1024 } });
+export const purposes = Object.freeze({ franchise_document: { mime: ['application/pdf', 'image/png', 'image/jpeg'], max: 10 * 1024 * 1024 }, registration_document: { mime: ['application/pdf', 'image/png', 'image/jpeg'], max: 10 * 1024 * 1024 }, lesson_video: { mime: ['video/mp4'], max: 256 * 1024 * 1024 }, result_import: { mime: ['application/json'], max: 2 * 1024 * 1024 }, course_thumbnail: { mime: ['image/png', 'image/jpeg', 'image/webp'], max: 5 * 1024 * 1024 }, lesson_document: { mime: ['application/pdf'], max: 50 * 1024 * 1024 }, book_cover: { mime: ['image/png', 'image/jpeg', 'image/webp'], max: 5 * 1024 * 1024 }, banner: { mime: ['image/png', 'image/jpeg', 'image/webp'], max: 5 * 1024 * 1024 }, faculty: { mime: ['image/png', 'image/jpeg', 'image/webp'], max: 5 * 1024 * 1024 }, cms: { mime: ['image/png', 'image/jpeg', 'image/webp'], max: 5 * 1024 * 1024 }, book_preview: { mime: ['application/pdf'], max: 10 * 1024 * 1024 }, book_full: { mime: ['application/pdf'], max: 50 * 1024 * 1024 } });
 export function createMediaService({ models, storage, coordination, config, authService, scanner = createScanner(config.media) }) {
   const Media = models.MediaAsset;
   const inspect = (key, mime) => mime === 'video/mp4' ? inspectVideo(storage, key, config.media) : probeFile(storage, key, mime);
@@ -15,7 +15,7 @@ export function createMediaService({ models, storage, coordination, config, auth
   const inspectionFields = i => Object.fromEntries(['width','height','pageCount','durationSeconds','videoCodec','audioCodec','inspectionVersion'].filter(k => i[k] !== undefined).map(k => [k,i[k]]));
   const missing = () => new AppError(404, 'NOT_FOUND', 'Media was not found');
   const find = async value => { const doc = await Media.findById(id(value)).select('+key +cleanupKeys'); if (!doc || ['deleted', 'failed', 'deleting'].includes(doc.status)) throw missing(); return doc; };
-  const fieldsByModel = { Book: ['coverAssetId', 'documentAssetId', 'previewAssetIds'], Banner: ['imageAssetId'], FacultyProfile: ['portraitAssetId'], PageContent: ['sections.mediaAssetIds'] };
+  const fieldsByModel = { Book: ['coverAssetId', 'documentAssetId', 'previewAssetIds'], Banner: ['imageAssetId'], FacultyProfile: ['portraitAssetId'], PageContent: ['sections.mediaAssetIds', 'categoryCards.imageAssetId'] };
   const conditions = (fields, value, prefix = '') => fields.map(field => ({ [prefix + field]: prefix ? String(value) : id(String(value)) }));
   async function references(value, onlyPublic = false) {
     const refs = [];
@@ -30,11 +30,12 @@ export function createMediaService({ models, storage, coordination, config, auth
   }
   const service = {
     scannerConfigured: scanner.configured,
-    async assertDocumentManagement(value, auth) { const doc = await find(String(value)); if (doc.purpose === 'registration_document' && !grantsFor(auth.user).includes('registrations.documents.review')) throw missing(); },
+    async assertDocumentManagement(value, auth) { const doc = await find(String(value)); if (doc.purpose === 'franchise_document' && !grantsFor(auth.user).some(p => ['franchises.review','franchises.approve'].includes(p))) throw missing(); if (doc.purpose === 'registration_document' && !grantsFor(auth.user).includes('registrations.documents.review')) throw missing(); },
     maxUploadBytes,
     references,
     async linkable(value, purpose, auth) { const doc = await find(String(value)); if (doc.purpose !== purpose || doc.status !== 'ready' || doc.scan.status !== 'clean' || purpose === 'lesson_video' && (!doc.durationSeconds || doc.inspectionVersion !== 'mp4-h264-aac-v1')) throw invalid('Select a clean, ready asset with the correct purpose'); if (!auth || String(doc.ownerUserId) !== String(auth.user._id) && !grantsFor(auth.user).includes('media.write')) throw new AppError(403, 'FORBIDDEN', 'Media linking is not authorized'); const meta = await storage.getMetadata({key:doc.key}); if(meta.bytes !== doc.bytes || meta.checksum !== doc.checksum) throw new AppError(503,'MEDIA_INTEGRITY_FAILED','Media is temporarily unavailable'); return doc; },
     async upload({ purpose, originalName, mime, stream, idempotencyKey, auth, ctx }) {
+      if (purpose === 'franchise_document') { if (!service.franchiseUploadAllowed) throw new AppError(409, 'BUSINESS_POLICY_PENDING', 'Franchise documents are unavailable'); await service.franchiseUploadAllowed(auth); }
       if (purpose === 'registration_document') { if (!service.registrationUploadAllowed) throw new AppError(409, 'BUSINESS_POLICY_PENDING', 'Registration document collection is not configured'); await service.registrationUploadAllowed(); }
       const rule = purposes[purpose]; if (!rule) throw invalid('This media purpose is not enabled');
       validateKey(idempotencyKey);
@@ -48,7 +49,7 @@ export function createMediaService({ models, storage, coordination, config, auth
       // leaves a known generated key for bounded, idempotent reconciliation.
       attempt = await coordination.run(async () => {
         if (await Media.countDocuments({ownerUserId:auth.user._id,status:{$nin:['deleted','failed']}})>=200) throw new AppError(429,'MEDIA_QUOTA','Unreleased media quota reached');
-        const row = await Media.create({key:reservedKey,purpose,visibility:['registration_document','book_full','lesson_document','lesson_video','result_import'].includes(purpose)?'private':'public',originalName,mime,sourceMime:mime,ownerUserId:auth.user._id,uploadActor:ctx.actorId,idempotencyKey:'attempt-'+randomUUID(),status:'staged',auditOutbox:[coordination.event('media_upload_intent',ctx)]});
+        const row = await Media.create({key:reservedKey,purpose,visibility:['franchise_document','registration_document','book_full','lesson_document','lesson_video','result_import'].includes(purpose)?'private':'public',originalName,mime,sourceMime:mime,ownerUserId:auth.user._id,uploadActor:ctx.actorId,idempotencyKey:'attempt-'+randomUUID(),status:'staged',auditOutbox:[coordination.event('media_upload_intent',ctx)]});
         await coordination.flush(Media,row);return row;
       });
       const timer=setTimeout(()=>stream.destroy(new AppError(408,'UPLOAD_TIMEOUT','Upload timed out')),config.media?.videoUploadTimeoutMs ?? 120000);
@@ -90,13 +91,13 @@ export function createMediaService({ models, storage, coordination, config, auth
       } catch(error) {throw error;}
     },
     async rescan(value, input, ctx) { object(input, ['expectedRevision'], ['expectedRevision']); const doc = await find(value); if (doc.revision !== revision(input.expectedRevision) || doc.status !== 'quarantined') throw new AppError(409, 'REVISION_CONFLICT', 'Only the current quarantine revision can be rescanned'); const scan = await scanner.scan((await storage.getFile({ key: doc.key })).stream); if (scan !== 'clean') return cleanDTO(await coordination.run(() => coordination.update(Media, doc, { scan: { status: scan, checkedAt: new Date(), engine: scanner.configured ? 'clamav' : 'not_configured' } }, doc.revision, 'media_rescan_' + scan, ctx))); const inspection = await inspect(doc.key, doc.sourceMime); return service.promote(doc, inspection, ctx); },
-    async metadata(value, auth) { const doc = await find(value); if (!auth || (doc.purpose === 'registration_document' ? !await service.authorizeRegistration?.(doc, auth) : !grantsFor(auth.user).includes('media.read'))) throw missing(); return { ...cleanDTO(doc), references: await references(value) }; },
+    async metadata(value, auth) { const doc = await find(value); if (!auth || (doc.purpose === 'franchise_document' ? !await service.authorizeFranchise?.(doc, auth) : doc.purpose === 'registration_document' ? !await service.authorizeRegistration?.(doc, auth) : !grantsFor(auth.user).includes('media.read'))) throw missing(); return { ...cleanDTO(doc), references: await references(value) }; },
     async publicMetadata(value) { try { const doc = await find(String(value)); if (doc.visibility !== 'public' || doc.status !== 'ready' || doc.scan.status !== 'clean' || !(await references(value, true)).length) return null; return { id: String(doc._id), mime: doc.mime, bytes: doc.bytes, width: doc.width, height: doc.height, pageCount: doc.pageCount }; } catch { return null; } },
     async open(value, auth, rangeHeader) {
       const doc = await find(value);
       const publiclyReadable = doc.visibility === 'public' && doc.status === 'ready' && doc.scan.status === 'clean' && (await references(value, true)).length > 0;
-      const entitled = !publiclyReadable && (doc.purpose === 'registration_document' ? await service.authorizeRegistration?.(doc, auth) : await service.authorizeEntitlement?.(doc, auth));
-      if (doc.purpose === 'registration_document' && !entitled) throw missing();
+      const entitled = !publiclyReadable && (doc.purpose === 'franchise_document' ? doc.status === 'ready' && doc.scan.status === 'clean' && await service.authorizeFranchise?.(doc, auth) : doc.purpose === 'registration_document' ? await service.authorizeRegistration?.(doc, auth) : await service.authorizeEntitlement?.(doc, auth));
+      if (['franchise_document','registration_document'].includes(doc.purpose) && !entitled) throw missing();
       if (!publiclyReadable && !entitled && (!auth || !grantsFor(auth.user).includes('media.read') || doc.status !== 'ready' || doc.scan.status !== 'clean')) throw missing();
       const meta = await storage.getMetadata({ key: doc.key }); if (meta.bytes !== doc.bytes || meta.checksum !== doc.checksum) throw new AppError(503, 'MEDIA_INTEGRITY_FAILED', 'Media is temporarily unavailable');
       let range;

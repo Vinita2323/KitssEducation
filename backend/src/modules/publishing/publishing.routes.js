@@ -44,7 +44,7 @@ export function createPublishingRouter({ publishing, media }) {
         const abort = () => file.destroy(new Error('Upload aborted'));
         req.once('aborted', abort);
         file.on('limit', () => { bad ??= new AppError(413, 'FILE_TOO_LARGE', 'File exceeds upload limit'); file.destroy(bad); });
-        if (fields.purpose !== 'registration_document' && !req.auth.user.roles.includes('super_admin') && !req.auth.user.permissions.includes('media.write')) { bad ??= new AppError(403, 'FORBIDDEN', 'Media upload permission required'); file.resume(); return; }
+        if (!['registration_document','franchise_document'].includes(fields.purpose) && !req.auth.user.roles.includes('super_admin') && !req.auth.user.permissions.includes('media.write')) { bad ??= new AppError(403, 'FORBIDDEN', 'Media upload permission required'); file.resume(); return; }
         upload = media.upload({ ...fields, originalName: info.filename, mime: info.mimeType, stream: file, auth: req.auth, ctx: ctx(req) }).then(data => { file.resume(); return { data }; }, error => { file.resume(); return { error }; }).finally(() => req.removeListener('aborted', abort));
       });
       parser.on('filesLimit', () => fail('Only one file is allowed')); parser.on('fieldsLimit', () => fail('Too many fields')); parser.on('partsLimit', () => fail('Too many parts'));

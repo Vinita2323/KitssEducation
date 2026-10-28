@@ -809,3 +809,18 @@ See [final acceptance](../../backend/STAGE19-FINAL-PROJECT-ACCEPTANCE-REPORT.md)
 - [ ] Confirm production isolation/least privilege/verified main admin, full consistent media+DB recovery/protected off-device retention/RPO/RTO, monitoring/capacity and scanner/process supervision before separately authorized deployment. Resolve finance/refund/tax/invoice, franchise and trusted-results approvals only if included in release scope.
 
 Overall readiness is CONDITIONAL, not production deployment approval. No new development stages are planned. Stop after the final reviewed local commit; no push, deployment/hosting change, tunnel, external payment, SMTP or FCM delivery.
+
+
+### Franchise workflow follow-up ? 2026-10-27
+
+Software follow-up to the earlier document-free/manual-review-only F08 scope. Existing stage evidence remains historical; see `backend/FRANCHISE-WORKFLOW-REPORT.md` for current test evidence and operational gates.
+
+- [x] Main-admin dynamic franchise policy draft/publish, revisions, reasons, immutable accepted policy/agreement versions and prospective changes.
+- [x] Verified-account independent/linked applications, eligibility validation, account-owned draft recovery, status tracking and correction/resubmission.
+- [x] Private scanned document upload/attachment, required-document enforcement, owner/reviewer content authorization and referenced-file deletion protection.
+- [x] Permissioned document verification, review approval/rejection/change requests; free activation after approval and paid activation only from verified capture.
+- [x] Reuse existing orders/Checkout verification/webhooks/reconciliation for franchise joining and renewal; unique payment-period effects and interrupted fulfillment recovery.
+- [x] Calendar-month renewals, accepted terms, grace/suspension/manual-review rules, free/paid renewals, in-app reminders and expiry notices through existing audit-event jobs.
+- [x] Isolated local database/API and mobile applicant/desktop admin browser acceptance; existing commerce/registration/publishing/media/notification regressions. Synthetic payment/scanner evidence is identified separately.
+- [ ] Owner reviews and publishes the initial business policy/agreement/privacy wording; real applicant data and existing legacy applications are not automatically changed.
+- [ ] Current operational scanner/process readiness and separately approved real Razorpay Test Mode acceptance for paid franchise fees. No live payment, automatic recurring billing, deployment or franchise staff portal is authorized by this follow-up.

@@ -159,6 +159,7 @@ export function createInstitutionService({ models, authService, config, logger }
   }
   async function reviewDTO(doc) {
     const result = dto(doc);
+    if (doc.workflowVersion === 1 && service.franchiseWorkflow) result.affiliationState = service.franchiseWorkflow.state(doc);
     const college = await College.findById(doc.collegeId).select('name universityId').lean();
     const university = college ? await University.findById(college.universityId).select('name').lean() : null;
     result.parentCollegeName = college?.name ?? '';
@@ -311,7 +312,7 @@ export function createInstitutionService({ models, authService, config, logger }
     async reviews(kind, raw) {
       const query = pageQuery(raw, ['status', 'collegeId', 'universityId']);
       const filter = {};
-      if (raw.status) { if (!(kind === 'admission' ? ['new', 'contacted', 'in_process', 'approved', 'rejected'] : ['draft', 'pending', 'approved', 'rejected']).includes(raw.status)) throw invalid('Invalid application status'); filter.status = raw.status; }
+      if (raw.status) { if (!(kind === 'admission' ? ['new', 'contacted', 'in_process', 'approved', 'rejected'] : ['draft', 'pending', 'needs_changes', 'approved', 'rejected']).includes(raw.status)) throw invalid('Invalid application status'); filter.status = raw.status; }
       if (raw.collegeId) filter.collegeId = id(raw.collegeId);
       if (raw.universityId && kind === 'franchise') filter.universityId = id(raw.universityId);
       if (raw.q) filter.$or = (kind === 'admission' ? ['reference', 'studentDetails.fullName', 'studentDetails.email'] : ['reference', 'institution.name', 'contact.email']).map(k => ({ [k]: expression(raw.q) }));
