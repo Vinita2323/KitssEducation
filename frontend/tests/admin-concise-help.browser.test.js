@@ -14,7 +14,7 @@ test('concise admin guidance and expandable financial explanation (mocked HTTP)'
   const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
   page.setDefaultTimeout(30000);
   const base = 'http://127.0.0.1:' + server.httpServer.address().port;
-  let signedIn = false, saved;
+  let signedIn = false, saved, savedTaxonomy;
   const errors = []; page.on('pageerror', error => errors.push(error.message));
   await page.route('**/*', async route => {
     const url = new URL(route.request().url());
@@ -24,8 +24,9 @@ test('concise admin guidance and expandable financial explanation (mocked HTTP)'
     let data = [], meta = { page: 1, total: 0, totalPages: 1, unreadCount: 0 };
     if (path === '/auth/me') {
       if (!signedIn) return route.fulfill({ status: 401, json: { error: { code: 'UNAUTHENTICATED', message: 'Please sign in' } } });
-      data = { user: { id: 'CONCISE-ADMIN', name: 'Test Admin', roles: ['admin'], permissions: ['dashboard.read', 'books.read', 'books.create'], status: 'active' } };
+      data = { user: { id: 'CONCISE-ADMIN', name: 'Test Admin', roles: ['admin'], permissions: ['dashboard.read', 'books.read', 'books.create', 'content.read', 'content.write'], status: 'active' } };
     } else if (path === '/admin/dashboard') data = { operations: { totals: {}, asOf: '2026-01-01T00:00:00Z' }, groups: [], failedAttempts: [], eventQueue: [] };
+    else if (path === '/admin/taxonomies' && route.request().method() === 'POST') { savedTaxonomy = route.request().postDataJSON(); data = { id: 'mock-taxonomy', key: 'generated-key', ...savedTaxonomy }; }
     else if (path === '/auth/csrf') data = { csrfToken: 'mock-csrf' };
     else if (path === '/admin/books' && route.request().method() === 'POST') { saved = route.request().postDataJSON(); data = { id: 'mock-book', ...saved, status: 'draft' }; }
     return route.fulfill({ json: { data, meta, requestId: 'concise-test' } });
@@ -46,6 +47,7 @@ test('concise admin guidance and expandable financial explanation (mocked HTTP)'
     const form = page.getByRole('form', { name: 'Dashboard financial filters' });
     assert.equal(await form.locator('.admin-field-help').count(), 0);
     const disclosure = page.locator('details.admin-financial-help');
+    await page.getByText('No payment activity yet. Test orders will appear here after checkout.', { exact: true }).waitFor();
     assert.equal(await disclosure.getAttribute('open'), null);
     await disclosure.locator('summary').focus(); await page.keyboard.press('Enter');
     await page.getByText(/Captured value is the amount collected/).waitFor();
@@ -60,7 +62,9 @@ test('concise admin guidance and expandable financial explanation (mocked HTTP)'
     await page.getByLabel('Start date', { exact: true }).fill('2026-01-01');
     await page.getByRole('button', { name: 'Apply financial filters', exact: true }).click();
     await page.waitForURL('**/admin?from=2026-01-01');
+    await page.getByText('No payment activity matches these filters. Try changing or clearing them.', { exact: true }).waitFor();
     await page.getByRole('button', { name: 'Clear financial filters', exact: true }).click();
+    await page.getByText('No payment activity yet. Test orders will appear here after checkout.', { exact: true }).waitFor();
     for (const width of [1440, 390]) {
       await page.setViewportSize({ width, height: 844 });
       assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
@@ -76,6 +80,20 @@ test('concise admin guidance and expandable financial explanation (mocked HTTP)'
     await title.fill('Concise Test Book'); await editor.getByLabel('Book price', { exact: true }).fill('123.45');
     await editor.getByRole('button', { name: 'Save Book Draft', exact: true }).click(); await editor.waitFor({ state: 'detached' });
     assert.equal(saved.priceMinor, 12345); assert.equal(saved.pricingApproved, false); assert.equal(saved.rightsConfirmed, false);
+  });
+  await t.test('taxonomy creation needs only a label, with no technical key field or column', async () => {
+    await go('/admin/taxonomies');
+    await page.getByRole('button', { name: 'States', exact: true }).click();
+    await page.getByRole('button', { name: 'Add state', exact: true }).click();
+    const editor = page.getByRole('dialog', { name: 'Add state' });
+    assert.equal(await editor.getByText('Canonical key', { exact: true }).count(), 0);
+    assert.equal(await page.getByRole('columnheader', { name: 'Key', exact: true }).count(), 0);
+    await editor.getByLabel('State name', { exact: true }).fill('Uttar Pradesh');
+    await editor.getByRole('button', { name: 'Save state', exact: true }).click();
+    await editor.waitFor({ state: 'detached' });
+    assert.equal(savedTaxonomy.label, 'Uttar Pradesh');
+    assert.equal(savedTaxonomy.kind, 'state');
+    assert.equal(Object.hasOwn(savedTaxonomy, 'key'), false);
   });
   await page.setViewportSize({ width: 1440, height: 1000 }); await go('/admin');
   await page.getByRole('heading', { name: 'Test Mode Financial Summary' }).waitFor();

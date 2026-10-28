@@ -31,7 +31,7 @@ export function FinancialSummary() {
     </details>
     {error&&<p id={id+'-error'} role="alert" className="text-red-800">{error}</p>}{loading&&<p role="status">Loading verified records...</p>}
     <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">{data?.groups?.map((g,i)=><article key={i} className="bg-white border rounded-2xl p-4"><p>{g._id.simulated?'SIMULATED TEST':'Razorpay Test Mode'}</p><h3 className="font-bold">{g._id.status}; fulfillment {g._id.fulfilled}</h3><p>{g.count} orders; INR {(g.amountMinor/100).toFixed(2)}</p></article>)}</div>
-    {!loading&&data&&!data.groups.length&&<p>No matching commerce records.</p>}
+    {!loading&&data&&!data.groups.length&&<p className="rounded-xl border bg-white p-4 text-sm">{query ? 'No payment activity matches these filters. Try changing or clearing them.' : 'No payment activity yet. Test orders will appear here after checkout.'}</p>}
     {data?.failedAttempts?.map((g,i)=><p key={i}>{g._id?'Simulated':'Razorpay Test Mode'} failed attempts: {g.count}</p>)}
     {data?.eventQueue?.map((g,i)=><p key={i}>{g._id.provider==='fake'?'Simulated':'Razorpay Test Mode'} lifetime event queue {g._id.state}: {g.count}</p>)}
   </section>;

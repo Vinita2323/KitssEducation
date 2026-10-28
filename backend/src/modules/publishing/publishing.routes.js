@@ -24,6 +24,7 @@ export function createPublishingRouter({ publishing, media }) {
   router.get('/books/:id', async (req, res) => reply(req, res, await publishing.detail('books', req.params.id)));
   router.get('/public/content/:key', async (req, res) => reply(req, res, await publishing.publicPage(req.params.key)));
   router.get('/public/banners', async (req, res) => list(req, res, await publishing.list('banners', req.query)));
+  router.get('/public/faculty', async (req, res) => list(req, res, await publishing.list('faculty', req.query)));
   router.get('/public/settings', async (req, res) => reply(req, res, await publishing.settings()));
   router.get('/admin/settings', requirePermission('settings.read'), async (req, res) => reply(req, res, await publishing.settings(true)));
   router.patch('/admin/settings/:key', requirePermission('settings.write'), async (req, res) => reply(req, res, await publishing.setSetting(req.params.key, req.body, ctx(req))));

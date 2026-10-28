@@ -1,4 +1,5 @@
 import { escapeRegex } from '../../utils/escapeRegex.js';
+import { generateTaxonomyKey } from './taxonomy-key.js';
 import { randomUUID } from 'node:crypto';
 import { setTimeout as delay } from 'node:timers/promises';
 import { AppError } from '../../utils/AppError.js';
@@ -187,6 +188,7 @@ export function createInstitutionService({ models, authService, config, logger }
         if (kind === 'program') data.nameNormalized = data.name.toLowerCase();
         if (kind === 'college' && data.verification) data.verification = { ...data.verification, actorId: ctx.actorId, checkedAt: new Date() };
         await relationships(kind, data);
+        if (kind === 'taxonomy' && !data.key) data.key = await generateTaxonomyKey(data, Taxonomy);
         const doc = await Model.create({ ...data, auditOutbox: [event(`${kind}_created`, ctx)] });
         await flush(Model, doc); return dto(doc);
       });

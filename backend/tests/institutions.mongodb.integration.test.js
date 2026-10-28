@@ -41,6 +41,18 @@ test('Stage 4 standalone institution/intake integration in fresh isolated MongoD
     const body = await response.json(); return { status: response.status, ...body };
   };
   let state, district, university, college, program, admission, draft;
+  await t.test('automatic taxonomy keys remain unique and stable when labels change', async () => {
+    const first = await service.create('taxonomy', { kind: 'board', label: 'Example Board' }, ctx);
+    const second = await service.create('taxonomy', { kind: 'board', label: 'Example Board' }, ctx);
+    assert.equal(first.key, 'example-board');
+    assert.equal(second.key, 'example-board-2');
+    const child = await service.create('taxonomy', { kind: 'class', label: 'Class 10', parentIds: [first.id] }, ctx);
+    assert.equal(child.key, 'example-board-class-10');
+    const edited = await service.edit('taxonomy', first.id, { label: 'Renamed Board', expectedRevision: first.revision }, ctx);
+    assert.equal(edited.key, first.key);
+    assert.equal(edited.id, first.id);
+    assert.deepEqual((await models.Taxonomy.findById(child.id)).parentIds.map(String), [first.id]);
+  });
   await t.test('taxonomy creation/uniqueness, hierarchy, invalid data and permission boundaries', async () => {
     const result = await api('/admin/taxonomies', { method: 'POST', data: { kind: 'state', key: 'test-state', label: 'Test State' } });
     assert.equal(result.status, 201); state = result.data;

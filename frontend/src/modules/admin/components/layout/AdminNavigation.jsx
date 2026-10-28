@@ -12,7 +12,7 @@ const groups = [
     ['Coaching', '/admin/coaching', GraduationCap, 'coaching.read'],
     ['Enrollments', '/admin/enrollments', BookOpen, 'learning.read'],
     ['Results', '/admin/results', FileText, 'results.read'],
-    ['Taxonomy', '/admin/taxonomies', GraduationCap, 'content.read'],
+    ['Dropdown settings', '/admin/taxonomies', GraduationCap, 'content.read'],
   ] },
   { id: 'institutions', label: 'Institutions & admissions', items: [
     ['Universities', '/admin/universities', GraduationCap, 'institutions.read'],

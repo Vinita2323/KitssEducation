@@ -7,6 +7,12 @@ import { readOptions } from '../../user/services/collegeService';
 import { useAuth } from '../../user/context/AuthContext';
 import { MediaPicker } from '../components/MediaPicker';
 const css = 'w-full p-2 border border-[#E6E8EC] rounded-xl bg-[#F7F8FA] text-sm';
+const choiceSources = [
+  ...'language subject board class program state'.split(' ').map(kind => ({ key: kind, path: '/taxonomies', filters: { kind }, label: { language: 'languages', subject: 'subjects', board: 'boards', class: 'educational levels', program: 'programs', state: 'states' }[kind] })),
+  { key: 'faculty', path: '/public/faculty', label: 'published instructors' },
+  { key: 'books', path: '/books', label: 'published books' },
+];
+const choiceKeys = { languageId: 'language', subjectIds: 'subject', boardId: 'board', classId: 'class', programId: 'program', stateId: 'state', facultyIds: 'faculty', linkedBookIds: 'books' };
 const blank = {
   courses: {
     title: '',
@@ -77,6 +83,7 @@ export function AdminCoachingPage() {
       faculty: [],
       books: []
     });
+  const [choiceErrors, setChoiceErrors] = useState({}), [choiceLoading, setChoiceLoading] = useState({}), [choiceVersion, setChoiceVersion] = useState(0);
   const base = kind === 'courses' ? '/admin/coaching/courses' : '/admin/coaching/courses/' + course.id + '/' + kind;
   const creatable = can(kind === 'plans' ? 'commerce.plans.write' : 'coaching.create');
   const archivable = can(kind === 'plans' ? 'commerce.plans.write' : 'coaching.archive');
@@ -101,20 +108,19 @@ export function AdminCoachingPage() {
     return () => controller.abort();
   }, [base, page, q, version]);
   useEffect(() => {
-    Promise.all([...'language subject board class program state'.split(' ').map(kind => readOptions('/taxonomies', {
-      kind
-    })), readOptions('/public/faculty', {}), readOptions('/books', {})]).then(([language, subject, board, grade, program, state, faculty, books]) => setChoices({
-      language,
-      subject,
-      board,
-      class: grade,
-      program,
-      state,
-      faculty,
-      books
-    })).catch(e => setError(e.message));
-  }, []);
+    const controller = new AbortController();
+    setChoiceErrors({});
+    setChoiceLoading(Object.fromEntries(choiceSources.map(source => [source.key, true])));
+    for (const source of choiceSources) {
+      readOptions(source.path, source.filters, controller.signal)
+        .then(options => { if (!controller.signal.aborted) setChoices(previous => ({ ...previous, [source.key]: options })); })
+        .catch(() => { if (!controller.signal.aborted) setChoiceErrors(previous => ({ ...previous, [source.key]: true })); })
+        .finally(() => { if (!controller.signal.aborted) setChoiceLoading(previous => ({ ...previous, [source.key]: false })); });
+    }
+    return () => controller.abort();
+  }, [choiceVersion]);
   const open = row => {
+    setChoiceVersion(value => value + 1);
     setEditing(row ?? null);
     const defaults = structuredClone(blank[kind]);
     if (row) for (const key of Object.keys(defaults)) if (row[key] !== undefined) defaults[key] = row[key];
@@ -177,7 +183,11 @@ export function AdminCoachingPage() {
   }
   const field = (key, label, type = 'text') => <AdminField className="block text-xs" key={key}>{label}<AdminInput aria-label={label} className={css} type={type} value={form[key] ?? ''} onChange={e => change(key, e.target.value)} required={['title', 'name'].includes(key)} /></AdminField>;
   const check = (key, label) => <AdminField className="flex gap-2 items-center text-xs"><AdminInput type="checkbox" checked={!!form[key]} onChange={e => change(key, e.target.checked)} />{label}</AdminField>;
-  const select = (key, label, options, multiple = false) => <AdminField className="block text-xs">{label}<AdminSelect aria-label={label} className={css} multiple={multiple} value={form[key] ?? (multiple ? [] : '')} onChange={e => change(key, multiple ? [...e.target.selectedOptions].map(o => o.value) : e.target.value || null)}>{!multiple && <option value="">Select explicitly</option>}{options.map(o => <option key={o.id} value={o.id}>{o.label ?? o.title ?? o.name}</option>)}</AdminSelect></AdminField>;
+  const select = (key, label, options, multiple = false) => {
+    const source = choiceKeys[key], loading = choiceLoading[source], failed = choiceErrors[source];
+    return <AdminField className="block text-xs">{label}<AdminSelect aria-label={label} className={css} multiple={multiple} disabled={loading || failed} aria-busy={Boolean(loading)} value={form[key] ?? (multiple ? [] : '')} onChange={e => change(key, multiple ? [...e.target.selectedOptions].map(o => o.value) : e.target.value || null)}>{!multiple && <option value="">{loading ? 'Loading...' : failed ? 'Choices unavailable' : 'Select ' + label.toLowerCase()}</option>}{options.map(o => <option key={o.id} value={o.id}>{o.label ?? o.title ?? o.name}</option>)}</AdminSelect>{!loading && !failed && !options.length && <span className="block mt-1 text-[#667085]">No {label.toLowerCase()} available.</span>}</AdminField>;
+  };
+  const choicesWarning = Object.keys(choiceErrors).length > 0 && <div role="alert" className="rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm"><p>Could not load: {choiceSources.filter(source => choiceErrors[source.key]).map(source => source.label).join(', ')}. Other choices remain available.</p><button type="button" disabled={Object.values(choiceLoading).some(Boolean)} className="mt-2 underline" onClick={() => setChoiceVersion(value => value + 1)}>Retry choices</button></div>;
   const editorDialog = useDialogFocus(Boolean(form), () => setForm(null));
   return <div className="space-y-4 text-[#0A1D3F] min-w-0">
     <header className="bg-white border rounded-2xl p-5 flex flex-wrap justify-between gap-3"><div><h1 className="text-xl font-bold">Coaching Management</h1><p className="text-xs text-[#667085]">{course ? course.title : 'Courses, lessons and explicitly approved prepaid plans'}</p></div>{creatable && <button disabled={busy} onClick={() => open()} className="bg-[#0A1D3F] text-white rounded-xl px-4 py-2">Add {kind.slice(0, -1)}</button>}</header>
@@ -202,7 +212,8 @@ export function AdminCoachingPage() {
                   setQ('');
                 }}>Manage lessons</button>}{writable && row.status !== 'archived' && <button disabled={busy} onClick={() => open(row)}>Edit</button>}{archivable && row.status !== 'archived' && <button disabled={busy} onClick={() => archive(row)}>Archive</button>}{kind === 'courses' && can('coaching.publish') && row.status !== 'archived' && <button disabled={busy} onClick={() => publish(row)}>{row.status === 'published' ? 'Unpublish' : 'Publish'}</button>}</div></td></tr>)}</tbody></table>{!busy && !rows.length && <p className="p-6 text-center">No {kind} found.</p>}</div>
     <div className="flex gap-3 text-sm"><button disabled={page === 1} onClick={() => setPage(p => p - 1)}>Previous</button><span>Page {page} · {total} records</span><button disabled={page * 20 >= total} onClick={() => setPage(p => p + 1)}>Next</button></div>
-    {form && <div className="fixed inset-0 z-50 bg-[#0A1D3F]/70 p-3 flex items-center justify-center"><form ref={editorDialog} role="dialog" aria-modal="true" aria-label="Coaching editor" tabIndex={-1} onSubmit={save} className="bg-white p-5 rounded-2xl space-y-3 w-full max-w-2xl max-h-[90vh] overflow-y-auto"><h2 className="font-bold">{editing ? 'Edit' : 'Add'} {kind.slice(0, -1)}</h2>{error && <p role="alert" className="text-red-700">{error}</p>}
+    {!form && choicesWarning}
+    {form && <div className="fixed inset-0 z-50 bg-[#0A1D3F]/70 p-3 flex items-center justify-center"><form ref={editorDialog} role="dialog" aria-modal="true" aria-label="Coaching editor" tabIndex={-1} onSubmit={save} className="bg-white p-5 rounded-2xl space-y-3 w-full max-w-2xl max-h-[90vh] overflow-y-auto"><h2 className="font-bold">{editing ? 'Edit' : 'Add'} {kind.slice(0, -1)}</h2>{error && <p role="alert" className="text-red-700">{error}</p>}{choicesWarning}
       {kind === 'courses' && <>{['whatYouWillLearn','benefits'].map(key=><AdminField key={key} className="block text-xs">{key==='benefits'?'Course benefits':'Learning outcomes'} (one per line)<AdminTextarea aria-label={key==='benefits'?'Course benefits':'Learning outcomes'} className={css} value={(form[key]||[]).join('\n')} onChange={e=>change(key,e.target.value.split('\n'))}/></AdminField>)}{field('title', 'Course title')}{field('category', 'Category')}<AdminField className="block text-xs">Description<AdminTextarea className={css} value={form.description} onChange={e => change('description', e.target.value)} /></AdminField>{select('languageId', 'Language', choices.language)}{select('boardId', 'Board', choices.board)}{select('classId', 'Educational level', choices.class)}{select('programId', 'Program', choices.program)}{select('stateId', 'State', choices.state)}{select('subjectIds', 'Subjects', choices.subject, true)}{select('facultyIds', 'Published instructors', choices.faculty, true)}{select('linkedBookIds', 'Linked published books', choices.books, true)}<MediaPicker purpose="course_thumbnail" label="Course thumbnail" value={form.thumbnailId} onChange={v => change('thumbnailId', v)} /><div className="space-y-2"><h3 className="font-bold text-sm">Syllabus sections</h3>{form.syllabus.map((s, i) => <div className="grid grid-cols-1 sm:grid-cols-3 gap-2" key={i}><AdminInput aria-label={'Section key ' + (i + 1)} className={css} value={s.key} onChange={e => change('syllabus', form.syllabus.map((x, j) => j === i ? {
                 ...x,
                 key: e.target.value

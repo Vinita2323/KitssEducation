@@ -7,7 +7,7 @@ const sections = {
   coaching: ['Learning', 'Build courses step by step', 'Start with the course, then add lessons and prepaid access plans. Review each draft before publishing.'],
   enrollments: ['Learning', 'Review learning access', 'Check how access was granted and whether it is still active. Payment history and access decisions are kept separate.'],
   results: ['Learning', 'Review academic records', 'Define issuers and exams, validate imports, then review records. Existing source and publication approvals still apply.'],
-  taxonomies: ['Learning', 'Keep choices organized', 'Manage the boards, classes, subjects and other choices used across the platform. Review parent relationships before saving.'],
+  taxonomies: ['Learning', 'Manage dropdown choices', 'Choose a section, then add or edit its options. Create boards before classes, classes before subjects, and states before districts. Archive options to keep existing references.'],
   universities: ['Institutions', 'Maintain the university directory', 'Check official names and references. Only records that meet the existing visibility rules appear to students.'],
   colleges: ['Institutions', 'Manage institutions and programs', 'Choose the parent university and location, then review the institution’s programs and verification evidence.'],
   applications: ['Admissions', 'Review admission applications', 'Read the application and supporting information, record clear notes, and follow the existing approval checks.'],

@@ -98,6 +98,10 @@ test('Stage 5 real standalone publishing/media APIs in fresh isolated MongoDB', 
     faculty=(await api('/admin/content/faculty/'+faculty.id,{method:'PATCH',data:{expectedRevision:faculty.revision,sourceNote:'Generated test profile, no real qualifications claimed'}})).body.data;
     assert.equal((await api('/admin/content/faculty/'+faculty.id+'/publish',{method:'POST',data:{expectedRevision:faculty.revision,publish:true}})).status,200);
     assert.equal((await api('/public/content/about',{actor:null})).body.data.faculty[0].name,'Test-only faculty');
+    const publicFaculty = await api('/public/faculty?page=1&pageSize=100', { actor: null });
+    assert.equal(publicFaculty.status, 200);
+    assert.equal(publicFaculty.body.data[0].name, 'Test-only faculty');
+    assert.equal(publicFaculty.body.data[0].sourceNote, undefined);
   });
   await t.test('settings are typed, permissioned, revisioned and cannot configure secrets/roles/fees',async()=>{
     assert.equal((await api('/admin/settings/support',{method:'PATCH',actor:reader,data:{expectedRevision:0,value:{email:'test@example.invalid'}}})).status,403);
