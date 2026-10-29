@@ -66,7 +66,7 @@ export function LibraryProvider({
     }
   };
   const blocked = () => {
-    throw new Error('Access requires verified server fulfillment.');
+    throw new Error('Your access must be confirmed before this action is available.');
   };
   return <LibraryContext.Provider value={{
     purchasedBookIds: dataOwner === user?.id ? purchasedBookIds : [],

@@ -73,7 +73,7 @@ export const BookCheckoutPage = () => {
       if (actingIdentity.current !== checkoutIdentity) return;
       if(current.product?.kind!=='book'||current.product.id!==id) { setInvalidOrder(true); setPaymentMessage('This order does not belong to this book. Open the correct purchase from order history.'); return; }
       setOrder(current);const next=new URLSearchParams(params);next.set('order',current.id);setParams(next,{replace:true});
-      await openRazorpayCheckout({orderId:current.id,attemptKey:current.attemptId || attemptKey.current,onSuccess:state=>{if(actingIdentity.current !== checkoutIdentity)return;setOrder(state);setPaymentMessage(state.orderStatus==='captured'?'Capture verified; checking fulfillment.':state.paymentStatus==='failed'?'Payment attempt failed. No access granted; check order status before retry.':'Payment pending capture.');},onDismiss:()=>{if(actingIdentity.current === checkoutIdentity)setPaymentMessage('Checkout dismissed. Payment status remains pending until provider verification.');},onFailure:e=>{if(actingIdentity.current === checkoutIdentity)setPaymentMessage(e.message);}});
+      await openRazorpayCheckout({orderId:current.id,attemptKey:current.attemptId || attemptKey.current,onSuccess:state=>{if(actingIdentity.current !== checkoutIdentity)return;setOrder(state);setPaymentMessage(state.orderStatus==='captured'?'Payment confirmed. Your access is being updated.':state.paymentStatus==='failed'?'Payment attempt failed. No access granted; check order status before retry.':'Your payment is awaiting confirmation.');},onDismiss:()=>{if(actingIdentity.current === checkoutIdentity)setPaymentMessage('Checkout closed. Check your order to see whether payment was completed.');},onFailure:e=>{if(actingIdentity.current === checkoutIdentity)setPaymentMessage(e.message);}});
     } catch(e){if(actingIdentity.current===checkoutIdentity)setPaymentMessage(e.message);} finally{if(actingIdentity.current===checkoutIdentity)setProcessing(false);}
   };
 
@@ -262,8 +262,8 @@ export const BookCheckoutPage = () => {
 
         {paymentMessage && <p role="status" className="text-xs text-amber-800">{paymentMessage}</p>}
         {!availability?.available && <p role="status" className="p-3 rounded-xl bg-amber-50 text-xs">Payments unavailable: fresh rotated Test Mode credentials and operator validation are pending.</p>}
-        {isFree && <p role="status" className="text-xs">Zero-price access policy is pending. No automatic entitlement is granted.</p>}
-        {order && <p role="status" className="text-xs break-words">{order.simulated ? 'SIMULATED TEST - ' : 'Test Mode - '}Order {order.reference}: {order.orderStatus}; payment: {order.paymentStatus}; fulfillment: {order.activationStatus}</p>}
+        {isFree && <p role="status" className="text-xs">Free access is not available for this book yet.</p>}
+        {order && <p role="status" className="text-xs break-words">{order.simulated ? 'Simulated Test Mode - ' : 'Test Mode - '}Order {order.reference}: {order.orderStatus}; payment: {order.paymentStatus}; fulfillment: {order.activationStatus}</p>}
         {/* CTA */}
         <div>
           <PrimaryButton

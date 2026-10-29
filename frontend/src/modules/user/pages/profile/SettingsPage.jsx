@@ -20,7 +20,7 @@ export const SettingsPage = () => {
   useEffect(()=>{const c=new AbortController();authService.getPreferences(c.signal).then(p=>{if(!c.signal.aborted){setExamAlerts(p.notification.examAlerts);setCourseUpdates(p.notification.courseUpdates);setPromoAlerts(p.notification.promoAlerts);setPreferencesReady(true);}}).catch(e=>{if(!c.signal.aborted)showError(e.message);});return()=>c.abort();},[]);
   const savePreferences=async()=>{setSaving(true);try{await authService.savePreferences({notification:{examAlerts,courseUpdates,promoAlerts}});showSuccess('Preferences saved');}catch(e){showError(e.message);}finally{setSaving(false);}};
   const handleClearCache = () => {
-    try { localStorage.removeItem('kits_course_selector_prefs'); showSuccess('Saved course filter preferences cleared on this browser. Server records are retained.'); } catch(e) { showError('Browser storage is unavailable'); }
+    try { localStorage.removeItem('kits_course_selector_prefs'); showSuccess('Saved course filter preferences cleared on this browser. Your account records are kept.'); } catch(e) { showError('Browser storage is unavailable'); }
   };
 
   return (
@@ -124,7 +124,7 @@ export const SettingsPage = () => {
                 </span>
               </div>
               <p className="text-[11px] text-[#667085] mt-0.5">
-                Server-verified session • Authorized Single Session
+                Verified sign-in • Authorized Single Session
               </p>
             </div>
           </div>
@@ -153,7 +153,7 @@ export const SettingsPage = () => {
         <div className="flex items-center justify-between p-3 bg-[#F7F8FA] rounded-2xl">
           <div>
             <h4 className="text-xs font-bold text-[#0A1D3F]">Saved Course Filters</h4>
-            <p className="text-[11px] text-[#667085]">Clear this browser's saved filters. Server records and reading progress are retained.</p>
+            <p className="text-[11px] text-[#667085]">Clear this browser's saved filters. Your account records and reading progress are kept.</p>
           </div>
 
           <button

@@ -413,7 +413,7 @@ export const AdminBooksPage = () => {
 
       {review && <BookReviewDialog bookId={review.id} intent={review.intent} onClose={() => setReview(null)} onEdit={row => { setReview(null); handleOpenEditModal(bookDTO(row)); }} onPublished={message => { setReview(null); showToast(message); loadBooks(); }} />}
 
-      {modalOpen && <BookEditor book={editingBook} onClose={()=>setModalOpen(false)} onSaved={()=>{setModalOpen(false);showToast('Book draft saved in MongoDB');loadBooks();}} />}
+      {modalOpen && <BookEditor book={editingBook} onClose={()=>setModalOpen(false)} onSaved={()=>{setModalOpen(false);showToast('Book draft saved.');loadBooks();}} />}
 
       {/* Delete Confirmation Modal */}
       {deleteConfirmId && (

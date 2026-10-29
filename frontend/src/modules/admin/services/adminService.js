@@ -52,5 +52,5 @@ export const adminService = {
   async getFranchise(id) { return intakeDTO((await httpClient.request('/admin/franchise-applications/' + id)).data); },
   async updateFranchiseStatus(id, value, rejectionReason, note, expectedRevision) { return intakeDTO(await authenticatedWrite('/admin/franchise-applications/' + id + '/status', { status: status(value), expectedRevision, ...(rejectionReason ? { rejectionReason } : {}), ...(note ? { note } : {}) }, 'PATCH')); },
   async addFranchiseNote(id, text, idempotencyKey) { return intakeDTO(await authenticatedWrite('/admin/franchise-applications/' + id + '/notes', { text, idempotencyKey })); },
-  async getDashboardStats() { throw new Error('Platform summaries are awaiting later-stage integration.'); },
+  async getDashboardStats() { throw new Error('This summary is currently unavailable. Please try again later.'); },
 };

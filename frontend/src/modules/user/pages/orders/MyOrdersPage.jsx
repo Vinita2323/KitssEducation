@@ -75,7 +75,7 @@ export const MyOrdersPage = () => {
                   <span className="text-xs text-[#667085]">• {order.date}</span>
                 </div>
 
-                <div className="text-xs">{order.simulated ? 'SIMULATED TEST' : 'Test Mode'} - {order.orderStatus}; fulfillment: {order.activationStatus}</div>
+                <div className="text-xs">{order.simulated ? 'Simulated Test Mode' : 'Test Mode'} - {order.orderStatus}; fulfillment: {order.activationStatus}</div>
               </div>
 
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">

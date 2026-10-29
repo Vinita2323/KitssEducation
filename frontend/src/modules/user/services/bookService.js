@@ -20,7 +20,7 @@ export const bookService = {
   async getClasses() { return (await this.getFacets()).classes; },
   async getPreview(id, signal) { return (await httpClient.request('/books/' + id + '/preview', { signal })).data.assets; },
   async getMyLibraryBooks() { return Promise.all((await commerceService.books()).map(async row => ({ ...await this.getBookById(row.id), ...row }))); },
-  async purchaseBook() { throw new Error('Payments and book activation are unavailable until Stage 6.'); },
+  async purchaseBook() { throw new Error('Please use the book checkout page to purchase access.'); },
   async adminPage(input) { const result = await contentService.adminList('/admin/books', filters(input)); return { ...result, data: result.data.map(bookDTO) }; },
   async getAllBooksForAdmin(input) { return (await this.adminPage(input)).data; },
   addBook: input => contentService.create('/admin/books', input),

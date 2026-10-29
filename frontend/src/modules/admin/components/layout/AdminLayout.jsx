@@ -155,7 +155,7 @@ export const AdminLayout = () => {
         {/* Main Content Viewport */}
         <main ref={content} id="admin-main" tabIndex={-1} className="flex-1 min-w-0 overflow-y-auto overscroll-contain p-4 sm:p-6 lg:p-8">
           <AdminPageGuide />
-          {!isStage4 && <p role="status" className="mb-4 p-3 bg-amber-50 border rounded-xl text-xs text-[#0A1D3F]">Preview data only. Business management APIs are pending integration; changes are disabled.</p>}
+          {!isStage4 && <p role="status" className="mb-4 p-3 bg-amber-50 border rounded-xl text-xs text-[#0A1D3F]">This section is not available yet. Changes cannot be saved here.</p>}
           <fieldset disabled={!isStage4} className="min-w-0"><Outlet /></fieldset>
         </main>
       </div>

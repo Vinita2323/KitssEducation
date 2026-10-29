@@ -211,7 +211,7 @@ export const TuitionCoachingForm = ({ onBack }) => {
     setStep((prev) => Math.max(prev - 1, 1));
   };
 
-  const handlePaymentAndCreateUser = async e => { e?.preventDefault(); showError('Submission and payments are blocked pending approved document and eligibility policies. Save a draft instead.'); };
+  const handlePaymentAndCreateUser = async e => { e?.preventDefault(); showError('Applications are not open for submission or payment yet. You can save a draft and return later.'); };
 
   const copyText = (text, type) => {
     navigator.clipboard.writeText(text);
@@ -881,7 +881,7 @@ export const TuitionCoachingForm = ({ onBack }) => {
                     <input
                       type="text"
                       maxLength="12"
-                      name="aadharNumber" disabled title="Identity collection is blocked pending privacy approval"
+                      name="aadharNumber" disabled title="Identity documents are not being collected at this time"
                       placeholder="12-digit Aadhar Number (e.g. 1234 5678 9012)"
                       value={formData.aadharNumber}
                       onChange={handleChange}

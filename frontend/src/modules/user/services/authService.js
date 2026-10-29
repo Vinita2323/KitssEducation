@@ -50,7 +50,7 @@ export const authService = {
   resetPassword: data => write('/auth/password/reset', data),
   changePassword: (currentPassword, newPassword) => write('/auth/password/change', { currentPassword, newPassword }),
   async logout() { await write('/auth/logout', {}); csrfReady = null; setCsrfToken(undefined); },
-  async register() { throw new Error('Business registration is awaiting backend integration. Create and verify an identity account from Login.'); },
+  async register() { throw new Error('Please create an account, verify your email and sign in before applying.'); },
   updateProfile: data => write('/me/profile', data, 'PATCH'),
   getPreferences: signal => httpClient.request('/me/preferences', { signal }).then(r => r.data),
   savePreferences: data => write('/me/preferences', data, 'PATCH'),

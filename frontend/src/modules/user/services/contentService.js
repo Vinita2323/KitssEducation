@@ -15,6 +15,6 @@ export const contentService = {
     const data = new FormData(); data.append('purpose', purpose); data.append('idempotencyKey', key); data.append('file', file);
     onState?.('Uploading and validating…');
     const result = await authenticatedUpload('/media', data, true, percent => onState?.(percent === 100 ? 'Upload complete. Inspecting and scanning...' : percent === null ? 'Uploading...' : 'Uploading: ' + percent + '%'));
-    onState?.(result.status === 'ready' ? 'Clean and ready' : 'Quarantined — scanning required'); return result;
+    onState?.(result.status === 'ready' ? 'Clean and ready' : 'Waiting for a security check'); return result;
   },
 };

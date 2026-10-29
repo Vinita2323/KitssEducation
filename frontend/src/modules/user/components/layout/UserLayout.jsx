@@ -61,7 +61,7 @@ export const UserLayout = () => {
                 </span>
               </div>
               <p className="text-xs text-[#667085] leading-relaxed">
-                {publicSettings.footer?.description || "Published platform information is being prepared."}
+                {publicSettings.footer?.description || "More information will be available soon."}
               </p>
               <p className="text-xs font-semibold text-[#FF8A00]">
                 {publicSettings.brand?.tagline || "KITSS Education"}

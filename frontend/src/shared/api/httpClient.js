@@ -1,10 +1,11 @@
+import { userMessage } from '../ui/displayText.js';
 let identityEpoch = 0;
 export const advanceIdentityEpoch = () => { identityEpoch++; };
 export const getIdentityEpoch = () => identityEpoch;
 
 export class ApiError extends Error {
   constructor(message, { status = 0, code = 'NETWORK_ERROR', fields, requestId, data, cause } = {}) {
-    super(message, { cause });
+    super(userMessage(message), { cause });
     this.name = 'ApiError';
     Object.assign(this, { status, code, fields, requestId, data });
   }

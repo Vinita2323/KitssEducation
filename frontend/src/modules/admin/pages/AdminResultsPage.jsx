@@ -1,3 +1,4 @@
+import { fieldLabel } from '../../../shared/ui/displayText';
 import { AdminField, AdminInput, AdminSelect, AdminTextarea } from '../components/AdminFields';
 import { useEditorFocus } from '../components/useAdminAccessibility';
 import React, { useEffect, useState } from 'react';
@@ -151,7 +152,7 @@ export function AdminResultsPage() {
                     expectedRevision: row.revision
                   }, 'DELETE'))}>Archive</button></>}</div></td></tr>)}</tbody></table>{!rows.length && <p className="p-4 text-sm">No records.</p>}</div>
     <Pagination meta={meta} onChange={setPage} loading={busy} />
-    {form && <form onSubmit={save} ref={inlineEditor} aria-label="Result definition editor" className="p-4 bg-white rounded-xl border space-y-3"><h2 className="font-bold">{form.id ? 'Edit' : 'Add'} {tab === 'issuers' ? 'issuer' : 'exam'}</h2>{Object.keys(values).map(k => <AdminField className="block text-sm" key={k}>{k}{['fieldSchema', 'source'].includes(k) ? <AdminTextarea aria-label={k} rows={5} value={values[k]} onChange={e => setValues(p => ({
+    {form && <form onSubmit={save} ref={inlineEditor} aria-label="Result definition editor" className="p-4 bg-white rounded-xl border space-y-3"><h2 className="font-bold">{form.id ? 'Edit' : 'Add'} {tab === 'issuers' ? 'issuer' : 'exam'}</h2>{Object.keys(values).map(k => <AdminField className="block text-sm" key={k}>{fieldLabel(k)}{['fieldSchema', 'source'].includes(k) ? <AdminTextarea aria-label={k} rows={5} value={values[k]} onChange={e => setValues(p => ({
           ...p,
           [k]: e.target.value
         }))} className="block w-full border rounded-xl p-2 font-mono text-xs" /> : ['status', 'type'].includes(k) ? <AdminSelect aria-label={k} value={values[k]} onChange={e => setValues(p => ({
@@ -160,8 +161,8 @@ export function AdminResultsPage() {
         }))} className="block w-full border p-2 rounded-xl">{(k === 'type' ? ['school', 'university', 'institute'] : tab === 'issuers' ? ['draft', 'active', 'inactive'] : ['draft', 'published', 'withdrawn']).map(v => <option key={v}>{v}</option>)}</AdminSelect> : <AdminInput aria-label={k} required value={values[k]} type={k === 'year' ? 'number' : 'text'} onChange={e => setValues(p => ({
           ...p,
           [k]: e.target.value
-        }))} className="block w-full border p-2 rounded-xl" />}</AdminField>)}<p className="text-xs">Verification schema: JSON array of id, label, type (text/date), required. Source: description and authorizationReference. These are review metadata.</p><button disabled={busy} className="p-3 rounded-xl bg-[#0A1D3F] text-white">Save configuration</button><button type="button" onClick={() => setForm(null)} className="p-3">Cancel</button></form>}
-    {tab === 'records' && can('results.manage') && <section className="bg-white border rounded-xl p-4 space-y-3"><h2 className="font-bold">Import result drafts</h2><p className="text-xs">Private scanned JSON, kitss-results-v1. Up to 200 rows / 2 MiB. Run validation before committing. Each candidate requires an existing verified userPublicId; exact marks/totals/source references are mandatory. See backend README for row schema.</p><AdminField className="block text-sm">Exam ID<AdminInput aria-label="Import exam ID" value={examId} onChange={e => {
+        }))} className="block w-full border p-2 rounded-xl" />}</AdminField>)}<p className="text-xs">For verification questions, enter a JSON list with id, label, type (text/date) and required. For source details, include the description and authorizationReference.</p><button disabled={busy} className="p-3 rounded-xl bg-[#0A1D3F] text-white">Save configuration</button><button type="button" onClick={() => setForm(null)} className="p-3">Cancel</button></form>}
+    {tab === 'records' && can('results.manage') && <section className="bg-white border rounded-xl p-4 space-y-3"><h2 className="font-bold">Import result drafts</h2><p className="text-xs">Upload a results JSON file in kitss-results-v1 format, with up to 200 records and a 2 MB limit. Check the file before importing. Each record needs a verified student account reference, marks, totals and an authorized source reference.</p><AdminField className="block text-sm">Exam ID<AdminInput aria-label="Import exam ID" value={examId} onChange={e => {
           setExamId(e.target.value);
           setDryRun(null);
           setImportKey(crypto.randomUUID());

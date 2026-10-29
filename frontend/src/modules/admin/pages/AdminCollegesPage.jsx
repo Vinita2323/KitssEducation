@@ -505,7 +505,7 @@ export const AdminCollegesPage = () => {
               {/* Parent University Selection */}
               <div>
                 <AdminField className="block text-xs font-bold text-[#0A1D3F] mb-1">
-                  Parent University / Franchise Provider <span className="text-red-500">*</span>
+                  Parent university <span className="text-red-500">*</span>
                 </AdminField>
                 <AdminSelect
                   disabled={Boolean(editingCollege)} aria-label="College universityId" value={formData.universityId}

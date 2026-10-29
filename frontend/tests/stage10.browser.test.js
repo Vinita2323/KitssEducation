@@ -116,7 +116,7 @@ test('Stage 10 admin-to-user persisted workflows and responsive shared navigatio
     await page.getByRole('button', { name: 'Save Public Settings', exact: true }).click(); assert.equal((await footerSaved).status(), 200);
     await goto('/admin/operations'); await page.getByLabel('Job state').selectOption('dead'); await page.getByRole('button', { name: 'Apply filters', exact: true }).click();
     await page.getByText('result_import / dead', { exact: true }).waitFor(); assert.doesNotMatch(await page.locator('body').innerText(), /PRIVATE_BROWSER/);
-    await goto('/admin/enrollments'); await page.getByRole('heading', { name: 'Book entitlement review', exact: true }).waitFor();
+    await goto('/admin/enrollments'); await page.getByRole('heading', { name: 'Book access review', exact: true }).waitFor();
     await page.getByText(/captured source verified/).waitFor();
     await goto('/admin/orders'); await page.getByText(/Page 1 of 2/).waitFor(); await page.getByRole('button', { name: 'Next', exact: true }).click(); await page.getByText(/Page 2 of 2/).waitFor();
     await page.getByRole('button', { name: 'Previous', exact: true }).click(); await page.getByText(/Page 1 of 2/).waitFor();

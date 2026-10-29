@@ -355,7 +355,7 @@ export const AdminFranchiseRequestsPage = () => {
                 </div>
                 <div>
                   <span className="text-[10px] text-[#64748B] block font-medium">
-                    University / Franchise Provider
+                    University
                   </span>
                   <span className="font-bold text-sm text-[#0A1D3F]">
                     {selectedFranchise.universityId?.name} ({selectedFranchise.universityId?.shortName})

@@ -169,7 +169,7 @@ export const AdminUniversitiesPage = () => {
             </h1>
           </div>
           <p className="text-xs sm:text-sm text-[#667085] mt-1">
-            Manage approved parent universities and franchise providers across the platform hierarchy.
+            Manage approved parent universities and partner institutions.
           </p>
         </div>
 
@@ -228,7 +228,7 @@ export const AdminUniversitiesPage = () => {
           </div>
           <h3 className="text-base font-bold text-[#0A1D3F]">No Universities Found</h3>
           <p className="text-xs text-[#667085] max-w-sm mx-auto">
-            No universities match your active filters. Click "Add University" above to add an accredited franchise provider.
+            No universities match your active filters. Click "Add University" above to add a university.
           </p>
           <button
             onClick={handleOpenCreate}

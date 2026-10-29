@@ -1,3 +1,4 @@
+import { statusLabel } from '../../../shared/ui/displayText';
 import { AdminField, AdminInput, AdminSelect } from './AdminFields';
 import React, { useEffect, useId, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
@@ -17,22 +18,22 @@ export function FinancialSummary() {
     <p id={id+'-help'} className="text-sm">Dates use UTC. The end date is included.</p>
     <form onSubmit={apply} aria-label="Dashboard financial filters" aria-describedby={id+'-help'} className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-3 items-end">
       {['from','to'].map(k=><AdminField key={k}>{k==='from'?'Start date':'End date'}<AdminInput aria-label={k==='from'?'Start date':'End date'} type="date" min="1970-01-01" max="9998-12-31" className="block w-full border rounded-lg p-2" value={draft[k]} onChange={e=>setDraft(d=>({...d,[k]:e.target.value}))} aria-invalid={error.startsWith('Start date must')} aria-describedby={error.startsWith('Start date must')?id+'-error':undefined}/></AdminField>)}
-      <AdminField>Payment environment<AdminSelect aria-label="Payment environment" className="block w-full border rounded-lg p-2" value={draft.paymentMode} onChange={e=>setDraft(d=>({...d,paymentMode:e.target.value}))}><option value="">All stored environments</option><option value="test">Test Mode</option></AdminSelect></AdminField>
+      <AdminField>Payment environment<AdminSelect aria-label="Payment environment" className="block w-full border rounded-lg p-2" value={draft.paymentMode} onChange={e=>setDraft(d=>({...d,paymentMode:e.target.value}))}><option value="">All payment modes</option><option value="test">Test Mode</option></AdminSelect></AdminField>
       <button className="border p-2 rounded-lg bg-[#0A1D3F] text-white">Apply financial filters</button><button type="button" className="border p-2 rounded-lg" onClick={reset}>Clear financial filters</button>
     </form>
-    <p role="status">Active financial filters: {params.get('from')||'Any start'} through {params.get('to')||'Any end'}; {params.get('paymentMode')||'all stored environments'} (UTC).</p>
+    <p role="status">Active financial filters: {params.get('from')||'Any start'} through {params.get('to')||'Any end'}; {params.get('paymentMode')||'all payment modes'} (UTC).</p>
     <details className="admin-financial-help">
       <summary>How totals are calculated</summary>
       <div className="space-y-2 mt-2 text-sm">
-        <p>Captured totals use verified capture time. Other orders use creation time; failed attempts use the time they were recorded. Platform counts and event queues cover all time.</p>
-        <p>Captured value is the amount collected before deductions, not net revenue, profit, tax or settlement. Uncaptured amounts are order values, not money received. Simulated records are shown separately.</p>
+        <p>Paid totals use the payment confirmation date. Other orders use their creation date; failed attempts use the date recorded. Account counts and background tasks include all dates.</p>
+        <p>Captured value is the amount collected before deductions. It is not profit or the amount paid into your bank account. Unpaid orders are not money received. Practice records are shown separately.</p>
         <p>Only Test Mode records are stored. Verified payment-method details (UPI, card or wallet) are unavailable.</p>
       </div>
     </details>
     {error&&<p id={id+'-error'} role="alert" className="text-red-800">{error}</p>}{loading&&<p role="status">Loading verified records...</p>}
-    <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">{data?.groups?.map((g,i)=><article key={i} className="bg-white border rounded-2xl p-4"><p>{g._id.simulated?'SIMULATED TEST':'Razorpay Test Mode'}</p><h3 className="font-bold">{g._id.status}; fulfillment {g._id.fulfilled}</h3><p>{g.count} orders; INR {(g.amountMinor/100).toFixed(2)}</p></article>)}</div>
+    <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">{data?.groups?.map((g,i)=><article key={i} className="bg-white border rounded-2xl p-4"><p>{g._id.simulated?'Simulated Test Mode':'Razorpay Test Mode'}</p><h3 className="font-bold">{statusLabel(g._id.status)}; access {statusLabel(g._id.fulfilled)}</h3><p>{g.count} orders; INR {(g.amountMinor/100).toFixed(2)}</p></article>)}</div>
     {!loading&&data&&!data.groups.length&&<p className="rounded-xl border bg-white p-4 text-sm">{query ? 'No payment activity matches these filters. Try changing or clearing them.' : 'No payment activity yet. Test orders will appear here after checkout.'}</p>}
     {data?.failedAttempts?.map((g,i)=><p key={i}>{g._id?'Simulated':'Razorpay Test Mode'} failed attempts: {g.count}</p>)}
-    {data?.eventQueue?.map((g,i)=><p key={i}>{g._id.provider==='fake'?'Simulated':'Razorpay Test Mode'} lifetime event queue {g._id.state}: {g.count}</p>)}
+    {data?.eventQueue?.map((g,i)=><p key={i}>{g._id.provider==='fake'?'Simulated':'Razorpay Test Mode'} background tasks, all dates {g._id.state}: {g.count}</p>)}
   </section>;
 }

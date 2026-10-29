@@ -13,7 +13,7 @@ export function loadRazorpayScript() {
 }
 // Client-priced legacy callers cannot launch Checkout or grant access.
 export async function openRazorpayCheckout({ orderId, attemptKey, onSuccess, onFailure, onDismiss } = {}) {
-  if (!orderId || !attemptKey) throw new Error('Payment unavailable: approved backend product and order required. Registration and coaching policies remain pending.');
+  if (!orderId || !attemptKey) throw new Error('Checkout is not ready. Open the book or course page and try again, or contact support.');
   const result = await commerceService.attempt(orderId, attemptKey), checkout = result.checkout;
   if (!checkout) return result;
   if (checkout.paymentMode !== 'test' || checkout.simulated || !/^rzp_test_[A-Za-z0-9]+$/.test(checkout.keyId)) throw new Error('Approved Razorpay Test Mode checkout is unavailable');

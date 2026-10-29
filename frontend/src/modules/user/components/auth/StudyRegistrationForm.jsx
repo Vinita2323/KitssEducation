@@ -253,7 +253,7 @@ export const StudyRegistrationForm = ({ onBack }) => {
 
   const handlePrev = () => setStep((prev) => Math.max(prev - 1, 1));
 
-  const handlePaymentAndSubmit = async e => { e?.preventDefault(); showError('Submission and payments are blocked pending approved document and eligibility policies. Save a draft instead.'); };
+  const handlePaymentAndSubmit = async e => { e?.preventDefault(); showError('Applications are not open for submission or payment yet. You can save a draft and return later.'); };
 
   const copyCred = (text, type) => {
     navigator.clipboard.writeText(text);
@@ -903,7 +903,7 @@ export const StudyRegistrationForm = ({ onBack }) => {
                       </label>
                       <input
                         type="text"
-                        name="aadharNumber" disabled title="Identity collection is blocked pending privacy approval"
+                        name="aadharNumber" disabled title="Identity documents are not being collected at this time"
                         placeholder="XXXX XXXX XXXX (12 digits)"
                         value={formData.aadharNumber}
                         onChange={handleChange}

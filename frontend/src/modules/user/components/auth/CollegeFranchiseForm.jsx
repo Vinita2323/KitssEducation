@@ -288,7 +288,7 @@ export const CollegeFranchiseForm = ({ onBack }) => {
 
     if (step === 2) {
       if (!selectedUniversity) {
-        newErrors.university = "Please select an approved University / Franchise Provider.";
+        newErrors.university = "Please select an approved University.";
       }
       if (!selectedCollege) {
         newErrors.college = "Please select an authorized College / Institute.";
@@ -374,7 +374,7 @@ export const CollegeFranchiseForm = ({ onBack }) => {
   const persistDraft = async () => {
     if (!selectedUniversity || !selectedCollege) throw new Error('Select a university and college before saving a draft.');
     const value = draft ? { ...draft, ...await collegeService.updateFranchiseDraft(draft, draftPayload()) } : await collegeService.createFranchiseDraft({ ...draftPayload(), idempotencyKey: creationKey });
-    setDraft(value); setDraftMessage('Draft saved in MongoDB: ' + value.reference + '. Files are selected locally, not uploaded.'); return value;
+    setDraft(value); setDraftMessage('Draft saved: ' + value.reference + '. Files are selected locally, not uploaded.'); return value;
   };
   const saveDraft = async () => { setSubmitting(true); try { await persistDraft(); } catch (error) { showError(error.message); } finally { setSubmitting(false); } };
   const handleSubmitApplication = async e => {
@@ -477,7 +477,7 @@ export const CollegeFranchiseForm = ({ onBack }) => {
               <GraduationCap className="w-4 h-4" />
             </div>
             <div>
-              <span className="text-[10px] text-[#64748B] block font-medium">Franchise Provider University</span>
+              <span className="text-[10px] text-[#64748B] block font-medium">Parent university</span>
               <span className="font-bold text-sm text-[#0A1D3F]">
                 {successData.universityName} ({successData.universityShort})
               </span>
@@ -849,10 +849,10 @@ export const CollegeFranchiseForm = ({ onBack }) => {
           </div>
 
           <div className="space-y-3.5">
-            {/* Field 1: Select University / Franchise Provider * */}
+            {/* Field 1: Select University * */}
             <div>
               <label className="block text-xs font-semibold text-[#0A1D3F] mb-1">
-                Select University / Franchise Provider <span className="text-red-500">*</span>
+                Select University <span className="text-red-500">*</span>
               </label>
 
               {loadingUniversities ? (
@@ -887,7 +887,7 @@ export const CollegeFranchiseForm = ({ onBack }) => {
                       </div>
                     ) : (
                       <span className="text-xs text-[#94A3B8]">
-                        -- Select Approved University / Franchise Provider --
+                        -- Select Approved University --
                       </span>
                     )}
                     <ChevronDown className={`w-4 h-4 text-[#64748B] transition-transform ${uniDropdownOpen ? "rotate-180" : ""}`} />
@@ -965,7 +965,7 @@ export const CollegeFranchiseForm = ({ onBack }) => {
               {!selectedUniversity ? (
                 <div className="p-3 rounded-md bg-gray-50 border border-dashed border-[#CBD5E1] text-xs text-[#64748B] flex items-center gap-2">
                   <Lock className="w-4 h-4 text-gray-400 shrink-0" />
-                  <span>Please select a University / Franchise Provider above first to view authorized colleges.</span>
+                  <span>Please select a University above first to view authorized colleges.</span>
                 </div>
               ) : loadingColleges ? (
                 <div className="flex items-center gap-2 p-2.5 rounded-md bg-[#F8FAFC] border border-[#CBD5E1] text-xs text-[#64748B]">

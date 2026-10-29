@@ -21,7 +21,7 @@ export function adminFieldHelp(label, props = {}) {
   if (/section key \d+|^key$|content key/.test(name)) return 'Use a stable, unique reference; lessons and sections may depend on it.';
   if (/notification recipients|user database ids/.test(name)) return 'Separate existing user database IDs with commas. Check recipients before publishing.';
   if (/effective from|effective to/.test(name)) return 'Use a UTC date such as 2026-01-01T00:00:00Z; leave blank only when allowed.';
-  if (/access after confirmed provider refund/.test(name)) return 'This controls access after a confirmed refund; it does not issue a refund.';
+  if (/access after (?:confirmed )?(?:provider )?refund/.test(name)) return 'This controls access after a confirmed refund; it does not issue a refund.';
   if (/permission preset/.test(name)) return 'Review selected permissions before saving; grant only what this staff member needs.';
   if (/duration days/.test(name)) return 'Prepaid access in days. Use the approved plan duration.';
   if (/duration months/.test(name)) return 'Prepaid access in months. Use the approved plan duration.';

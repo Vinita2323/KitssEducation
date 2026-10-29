@@ -79,7 +79,7 @@ export const CourseRegistrationPage = () => {
     }
   };
 
-  const handleSubmit = e => { e.preventDefault(); setErrors({ policy: 'Submission and enrollment are blocked pending approved plans and activation policy. Save a draft instead.' }); };
+  const handleSubmit = e => { e.preventDefault(); setErrors({ policy: 'Enrollment is not open yet. You can save a draft and return later.' }); };
 
   return (
     <div className="max-w-2xl mx-auto py-6 sm:py-10 space-y-6">
