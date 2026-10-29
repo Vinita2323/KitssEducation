@@ -3,7 +3,7 @@ import { ShieldCheck, AlertTriangle, Calendar, RefreshCw } from "lucide-react";
 
 export const CourseExpiry = ({
   status = "Active",
-  expiryDate = "15 March 2027",
+  expiryDate = "Not set",
   daysRemaining = 180,
   onRenew,
 }) => {

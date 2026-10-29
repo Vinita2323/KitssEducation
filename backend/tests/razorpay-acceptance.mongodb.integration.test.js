@@ -121,9 +121,8 @@ test('Razorpay adapter + HTTP + MongoDB acceptance with transport doubles (NOT r
     assert.equal(details.status, 200);
     assert.ok(JSON.stringify(details.body).includes(book.razorpay_order_id));
     assert.equal((await api('/admin/orders/' + book.orderId)).status, 403);
-    const captured = dashboard.body.data.groups.filter(g => g._id.status === 'captured');
-    assert.equal(captured.reduce((n, g) => n + g.amountMinor, 0), 3 * 12345);
-    assert.ok(captured.every(g => g._id.simulated === true));
+    assert.equal(dashboard.body.data.payments.collected.amountMinor, 3 * 12345);
+    assert.equal(dashboard.body.data.payments.collected.orders, 3);
     assert.equal(remote.creates, 3);
     assert.ok(calls.some(c => /\/payments$/.test(c)));
     assert.equal(JSON.stringify(dashboard.body).includes(config.keySecret), false);

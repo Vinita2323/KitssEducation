@@ -93,8 +93,8 @@ test('Stage 10 persisted account operations and redacted operational visibility'
     assert.equal((await get('/admin/audit-logs', student)).status, 401);
     assert.equal((await get('/admin/audit-logs?from=bad', admin)).status, 422);
     const dashboard = await get('/admin/dashboard', admin);
-    assert.equal(dashboard.body.data.operations.totals.accounts, await f.models.User.countDocuments());
-    assert.equal(dashboard.body.data.operations.totals.books, 0);
+    assert.equal(dashboard.body.data.overview.people.students, await f.models.User.countDocuments({ roles: 'student', status: 'active' }));
+    assert.deepEqual(dashboard.body.data.overview.content.books, { published: 0, draft: 0 });
     assert.equal((await get('/public/payment-config')).body.data.available, false);
     assert.equal((await get('/results/config')).body.data.publicationEnabled, false);
   });

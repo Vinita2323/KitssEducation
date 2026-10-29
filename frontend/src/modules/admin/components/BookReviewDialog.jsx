@@ -3,19 +3,11 @@ import { httpClient } from '../../../shared/api/httpClient';
 import { useDialogFocus } from '../../../shared/ui/useDialogFocus';
 import { useAuth } from '../../user/context/AuthContext';
 import { bookService } from '../../user/services/bookService';
-
-const requirements = book => [
-  ['Author', Boolean(book.author?.trim())], ['Category', Boolean(book.category?.trim())],
-  ['Language', Boolean(book.languageId)], ['Description', Boolean(book.description?.trim())],
-  ['Cover image attached', Boolean(book.coverAssetId)], ['Full PDF attached', Boolean(book.documentAssetId)],
-  ['Price set (including zero for a free book)', Number.isSafeInteger(book.priceMinor) && book.priceMinor >= 0],
-  ['Pricing approved by the business owner', book.pricingApproved === true],
-  ['Licensing rights confirmed', book.rightsConfirmed === true], ['Licensing reference supplied', Boolean(book.rightsNote?.trim())],
-];
+import { bookRequirements as requirements, bookState, rupees } from './bookReadiness';
 
 export function BookReviewDialog({ bookId, intent, onClose, onEdit, onPublished }) {
   const { can } = useAuth();
-  const [book, setBook] = useState(null), [error, setError] = useState(''), [loading, setLoading] = useState(true), [saving, setSaving] = useState(false), [version, setVersion] = useState(0);
+  const [book, setBook] = useState(null), [error, setError] = useState(''), [loading, setLoading] = useState(true), [saving, setSaving] = useState(false), [version, setVersion] = useState(0), [owners, setOwners] = useState(null);
   const close = () => { if (!saving) onClose(); };
   const dialog = useDialogFocus(true, close);
   useEffect(() => {
@@ -24,14 +16,17 @@ export function BookReviewDialog({ bookId, intent, onClose, onEdit, onPublished 
       .then(result => { if (!controller.signal.aborted) setBook(result.data); })
       .catch(failure => { if (!controller.signal.aborted) setError(failure.message); })
       .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+    if (intent === 'unpublish') bookService.ownerCounts([bookId], controller.signal).then(counts => { if (!controller.signal.aborted) setOwners(counts[bookId] ?? 0); }).catch(() => {});
     return () => controller.abort();
-  }, [bookId, version]);
+  }, [bookId, version, intent]);
   const title = intent === 'preview' ? 'Admin book preview' : intent === 'unpublish' ? 'Unpublish book' : 'Publish book';
+  const republish = book?.status === 'published' && intent === 'publish';
   const missing = book ? requirements(book).filter(([, ready]) => !ready) : [];
-  const stale = book && ((intent === 'publish' && book.status !== 'draft') || (intent === 'unpublish' && book.status !== 'published'));
+  // Publishing a live book republishes its saved changes; only removed books cannot be published.
+  const stale = book && ((intent === 'publish' && book.status === 'archived') || (intent === 'unpublish' && book.status !== 'published'));
   const submit = async () => {
     setSaving(true); setError('');
-    try { await bookService.togglePublishStatus(book); onPublished(intent === 'unpublish' ? 'Book unpublished.' : 'Book published.'); }
+    try { await bookService.publishBook(book, intent !== 'unpublish'); onPublished(intent === 'unpublish' ? 'Book taken off sale. Existing owners keep access.' : republish ? 'Changes published.' : 'Book published.'); }
     catch (failure) { setError((intent === 'unpublish' ? 'Book was not unpublished. ' : 'Book was not published. ') + failure.message); }
     finally { setSaving(false); }
   };
@@ -43,10 +38,11 @@ export function BookReviewDialog({ bookId, intent, onClose, onEdit, onPublished 
     {book && <>
       <h3 className="font-bold break-words">{book.title}</h3>
       {intent === 'preview' && <p className="text-sm text-slate-600">Current saved admin version. Published pages keep their last published version until you publish again.</p>}
-      <dl className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">{[['Author', book.author || 'Not supplied'], ['Category', book.category || 'Not supplied'], ['Status', book.status], ['Price', book.priceMinor === undefined ? 'Not configured' : 'INR ' + (book.priceMinor / 100).toFixed(2)], ['Pages', book.pageCount || 'Not supplied'], ['Edition', book.edition || 'Not supplied']].map(([label, value]) => <div key={label}><dt className="text-slate-600">{label}</dt><dd className="break-words">{value}</dd></div>)}</dl>
+      <dl className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">{[['Author', book.author || 'Not supplied'], ['Status', bookState(book).label], ['Price', rupees(book.priceMinor)], ['Pages', book.pageCount || 'Not supplied'], ['Chapters', book.toc?.length || 'None']].map(([label, value]) => <div key={label}><dt className="text-slate-600">{label}</dt><dd className="break-words">{value}</dd></div>)}</dl>
       {book.description && <p className="whitespace-pre-wrap break-words text-sm">{book.description}</p>}
       {intent !== 'unpublish' && <div className="rounded-xl border p-3 space-y-2"><h3 className="font-bold text-sm">Publication requirements</h3><ul className="space-y-1 text-sm">{requirements(book).map(([label, ready]) => <li key={label} className={ready ? 'text-slate-600' : 'text-red-800'}>{ready ? 'Complete: ' : 'Required: '}{label}</li>)}</ul><p className="text-xs text-slate-600">The server also checks active dropdown choices, file safety and PDF validity before publishing.</p></div>}
-      {intent === 'unpublish' && <p>This removes the book from the public catalogue. Existing purchase records are retained.</p>}
+      {republish && <p className="text-sm">{book.publication?.changesPending ? 'Students currently see the last published version. Publishing replaces it with your saved changes.' : 'There are no saved changes since the last publish. Publishing again refreshes the live version.'}</p>}
+      {intent === 'unpublish' && <div className="rounded-xl bg-[#F8FAFC] border p-3 space-y-1 text-sm"><p>This takes the book off sale. It leaves the catalogue and nobody new can buy or claim it.</p><p><strong>{owners === null ? 'Students who already own it' : owners === 1 ? '1 student who already owns it' : owners + ' students who already own it'}</strong> keep reading the last published version. Publish again at any time to put it back on sale.</p></div>}
       {can('media.read') && <div className="flex flex-wrap gap-3 text-sm">{[['Open cover', book.coverAssetId], ['Open full PDF', book.documentAssetId], ['Open sample PDF', book.previewAssetIds?.[0]]].filter(([, id]) => id).map(([label, id]) => <a key={label} href={mediaUrl(id)} target="_blank" rel="noopener noreferrer" className="underline">{label}</a>)}</div>}
       {stale && <p role="alert">The book status changed. Close this dialog and refresh the book list before continuing.</p>}
     </>}

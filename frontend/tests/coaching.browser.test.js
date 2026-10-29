@@ -282,9 +282,6 @@ test('Stage 7 coaching and readers with real HTTP/MongoDB; fake providers only i
       name: 'Add section',
       exact: true
     }).click();
-    await page.getByLabel('Section key 1', {
-      exact: true
-    }).fill('section');
     await page.getByLabel('Section title 1', {
       exact: true
     }).fill('Created section');
@@ -292,13 +289,11 @@ test('Stage 7 coaching and readers with real HTTP/MongoDB; fake providers only i
       name: 'Save course',
       exact: true
     }).click();
-    await page.getByRole('cell', {
-      name: 'STAGE7_BROWSER_CREATED_DRAFT',
-      exact: true
-    }).waitFor();
+    await page.getByText('STAGE7_BROWSER_CREATED_DRAFT', { exact: true }).waitFor();
     draft = await f.models.Course.findOne({
       title: 'STAGE7_BROWSER_CREATED_DRAFT'
     });
+    assert.equal(draft.syllabus[0].key, 'created-section', 'section keys are generated from titles');
     assert.deepEqual(draft.whatYouWillLearn.toObject(),['Browser authored outcome']);
     const tr = page.getByRole('row').filter({
       hasText: 'STAGE7_BROWSER_CREATED_DRAFT'
@@ -322,7 +317,7 @@ test('Stage 7 coaching and readers with real HTTP/MongoDB; fake providers only i
     }).fill('STAGE7_BROWSER_CREATED_LESSON');
     await page.getByLabel('Syllabus section', {
       exact: true
-    }).selectOption('section');
+    }).selectOption({ label: 'Created section' });
     await page.getByLabel('Authored lesson content', {
       exact: true
     }).fill('Synthetic browser-created draft only');
@@ -353,7 +348,6 @@ test('Stage 7 coaching and readers with real HTTP/MongoDB; fake providers only i
       exact: true
     }).fill('STAGE7_BROWSER_UNCONFIGURED_PLAN');
     await page.getByLabel('Plan benefits',{exact:true}).fill('Browser authored plan benefit');
-    await page.getByLabel('Plan display order',{exact:true}).fill('7');
     await page.getByLabel('Highlight this plan',{exact:true}).check();
     await page.getByRole('button', {
       name: 'Save plan',
@@ -368,34 +362,37 @@ test('Stage 7 coaching and readers with real HTTP/MongoDB; fake providers only i
     })).rulesApproved, false);
     const planRow = page.getByRole('row').filter({ hasText: 'STAGE7_BROWSER_UNCONFIGURED_PLAN' });
     await planRow.getByRole('button', { name: 'Edit', exact: true }).click();
-    await page.getByLabel('INR price in minor units', { exact: true }).fill('1500');
-    await page.getByLabel('Explicit access duration in days', { exact: true }).fill('5');
-    await page.getByLabel('Approved eligibility', { exact: true }).selectOption('verified_account');
-    await page.getByLabel('I confirm price, duration and eligibility are approved', { exact: true }).check();
-    await page.getByRole('combobox').last().selectOption('active');
+    await page.getByLabel('Plan price (₹)', { exact: true }).fill('15');
+    await page.getByLabel('Access duration', { exact: true }).fill('5');
+    await page.getByLabel('Duration unit', { exact: true }).selectOption('days');
+    await page.getByRole('region', { name: 'Plan preview' }).getByText('₹15', { exact: true }).waitFor();
+    await page.getByLabel('Plan status', { exact: true }).selectOption('active');
     const planEdit = page.waitForResponse(r => r.url().includes('/plans/') && r.request().method() === 'PATCH');
     await page.getByRole('button', { name: 'Save plan', exact: true }).click();
     assert.equal((await planEdit).status(), 200);
     await page.getByRole('heading', { name: 'Edit plan', exact: true }).waitFor({ state: 'detached' });
     assert.equal((await f.models.CoursePlan.findOne({ courseId: draft._id })).priceMinor, 1500);
-    const editorialPlan=await f.models.CoursePlan.findOne({courseId:draft._id});assert.deepEqual(editorialPlan.features.toObject(),['Browser authored plan benefit']);assert.equal(editorialPlan.popular,true);assert.equal(editorialPlan.sortOrder,7);
-    page.once('dialog', dialog => dialog.accept());
+    const editorialPlan=await f.models.CoursePlan.findOne({courseId:draft._id});assert.deepEqual(editorialPlan.features.toObject(),['Browser authored plan benefit']);assert.equal(editorialPlan.popular,true);assert.equal(editorialPlan.durationDays,5);assert.equal(editorialPlan.rulesApproved,true);assert.equal(editorialPlan.eligibility,'verified_account');
     const planArchive = page.waitForResponse(r => r.url().includes('/plans/') && r.request().method() === 'DELETE');
     await planRow.getByRole('button', { name: 'Archive', exact: true }).click();
+    await page.getByRole('dialog', { name: 'Archive plan?' }).getByRole('button', { name: 'Yes, archive', exact: true }).click();
     assert.equal((await planArchive).status(), 200);
     await page.getByRole('button', { name: 'Lessons', exact: true }).click();
     await lessonRow.getByRole('button', { name: 'Archive', exact: true }).waitFor();
-    page.once('dialog', dialog => dialog.accept());
     const lessonArchive = page.waitForResponse(r => r.url().includes('/lessons/') && r.request().method() === 'DELETE');
     await lessonRow.getByRole('button', { name: 'Archive', exact: true }).click();
+    await page.getByRole('dialog', { name: 'Archive lesson?' }).getByRole('button', { name: 'Yes, archive', exact: true }).click();
     assert.equal((await lessonArchive).status(), 200);
     await page.getByRole('button', { name: 'All courses', exact: true }).click();
-    const publication = page.waitForResponse(r => r.url().endsWith('/publish') && r.request().method() === 'POST');
+    // An incomplete course shows its checklist instead of sending a doomed publish request.
+    let published = 0; const countPublish = r => { if (r.url().endsWith('/publish') && r.method() === 'POST') published++; }; page.on('request', countPublish);
     await tr.getByRole('button', { name: 'Publish', exact: true }).click();
-    assert.equal((await publication).status(), 422);
-    page.once('dialog', dialog => dialog.accept());
+    const notReady = page.getByRole('dialog', { name: 'Course is not ready to publish' });
+    await notReady.getByText('Missing: At least one published lesson', { exact: true }).waitFor();
+    await notReady.getByRole('button', { name: 'Cancel', exact: true }).click(); page.off('request', countPublish); assert.equal(published, 0);
     const courseArchive = page.waitForResponse(r => r.url().endsWith('/coaching/courses/' + draft.id) && r.request().method() === 'DELETE');
     await tr.getByRole('button', { name: 'Archive', exact: true }).click();
+    await page.getByRole('dialog', { name: 'Archive course?' }).getByRole('button', { name: 'Yes, archive', exact: true }).click();
     assert.equal((await courseArchive).status(), 200);
     assert.equal((await f.models.Course.findById(draft._id)).status, 'archived');
   });

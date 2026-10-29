@@ -120,9 +120,35 @@ export function createOperationsService(authService, { diagnostics } = {}) {
       const rows = await collection.find(filter, { projection: { kind: 1, state: 1, attempts: 1, availableAt: 1, leaseUntil: 1, createdAt: 1, updatedAt: 1 } }).sort({ createdAt: -1, _id: -1 }).skip((number - 1) * 20).limit(20).toArray();
       return { data: rows.map(r => ({ ...r, id: String(r._id), _id: undefined })), meta: { page: number, total, pageSize: 20, totalPages: Math.max(1, Math.ceil(total / 20)) } };
     },
-    async counts() {
-      const definitions = { accounts: ['users', {}], universities: ['universities', {}], colleges: ['colleges', {}], admissions: ['admissionApplications', {}], franchises: ['franchiseApplications', {}], registrationDrafts: ['registrationApplications', {}], books: ['books', {}], courses: ['coachingCourses', {}], enrollments: ['enrollments', {}], notifications: ['notifications', {}] };
-      return { asOf: new Date(), totals: Object.fromEntries(await Promise.all(Object.entries(definitions).map(async ([key, [name, filter]]) => [key, await connection.collection(name).countDocuments(filter)]))) };
+    async overview(range = {}) {
+      const count = (name, filter) => connection.collection(name).countDocuments(filter);
+      const byStatus = async name => Object.fromEntries((await connection.collection(name).aggregate([{ $group: { _id: '$status', n: { $sum: 1 } } }]).toArray()).map(r => [r._id ?? 'unknown', r.n]));
+      const created = Object.keys(range).length ? { createdAt: range } : {};
+      const now = new Date();
+      const [students, newStudents, staff, activeEnrollments, books, courses, universities, colleges, admissions, franchises, registrations, accessRequests] = await Promise.all([
+        count('users', { roles: 'student', status: 'active' }),
+        count('users', { roles: 'student', ...created }),
+        count('users', { roles: { $in: ['admin', 'super_admin'] }, status: 'active' }),
+        count('enrollments', { revokedAt: null, expiresAt: { $gt: now } }),
+        ...['books', 'coachingCourses', 'universities', 'colleges', 'admissionApplications', 'franchiseApplications', 'registrationApplications', 'accessRequests'].map(byStatus)
+      ]);
+      const sum = (statuses, keys) => keys.reduce((n, k) => n + (statuses[k] ?? 0), 0);
+      return {
+        people: { students, newStudents, staff, activeEnrollments },
+        content: {
+          books: { published: books.published ?? 0, draft: books.draft ?? 0 },
+          courses: { published: courses.published ?? 0, draft: courses.draft ?? 0 },
+          universities: { active: universities.active ?? 0, total: sum(universities, Object.keys(universities)) - (universities.archived ?? 0) },
+          colleges: { active: colleges.active ?? 0, total: sum(colleges, Object.keys(colleges)) - (colleges.archived ?? 0) }
+        },
+        // Work waiting on staff, not on applicants (drafts and "needs changes" are excluded).
+        awaitingReview: {
+          admissions: admissions.new ?? 0,
+          franchises: franchises.pending ?? 0,
+          registrations: sum(registrations, ['submitted', 'pending_verification', 'under_review']),
+          accessRequests: accessRequests.pending ?? 0
+        }
+      };
     }
   };
 }

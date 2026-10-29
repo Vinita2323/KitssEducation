@@ -16,8 +16,8 @@ export function safeLink(value) {
   return { type: value.type, target };
 }
 const section = v => {
-  object(v, ['key', 'type', 'heading', 'body', 'items', 'mediaAssetIds'], ['key', 'type']);
-  return { key: text(v.key, 80), type: choice(['text', 'cards', 'stats', 'founder', 'contact'])(v.type), heading: text(v.heading ?? ''), body: text(v.body ?? '', 10000), items: arr(v.items ?? [], item => { object(item, ['heading', 'body', 'linkKey']); return { heading: text(item.heading ?? ''), body: text(item.body ?? '', 2000), ...(item.linkKey ? { linkKey: choice(Object.keys(links))(item.linkKey) } : {}) }; }, 30), mediaAssetIds: arr(v.mediaAssetIds ?? [], ref, 8) };
+  object(v, ['key', 'type', 'heading', 'body', 'items', 'mediaAssetIds', 'layout'], ['key', 'type']);
+  return { ...(v.layout ? { layout: choice(['services', 'features', 'standard'])(v.layout) } : {}), key: text(v.key, 80), type: choice(['text', 'cards', 'stats', 'founder', 'contact'])(v.type), heading: text(v.heading ?? ''), body: text(v.body ?? '', 10000), items: arr(v.items ?? [], item => { object(item, ['heading', 'body', 'linkKey', 'iconKey', 'color']); return { ...(item.iconKey ? { iconKey: choice(['GraduationCap', 'Video', 'BookOpen', 'Compass', 'ShieldCheck', 'User', 'Headphones', 'Clock', 'Award', 'TrendingUp', 'Building2', 'Users', 'Star', 'Sparkles'])(item.iconKey) } : {}), ...(item.color ? { color: choice(['green', 'orange', 'blue', 'purple', 'teal', 'amber', 'pink'])(item.color) } : {}), heading: text(item.heading ?? ''), body: text(item.body ?? '', 2000), ...(item.linkKey ? { linkKey: choice(Object.keys(links))(item.linkKey) } : {}) }; }, 30), mediaAssetIds: arr(v.mediaAssetIds ?? [], ref, 8) };
 };
 const categoryCard = v => {
   object(v, ['id', 'title', 'subtitle', 'tabLabel', 'path', 'iconKey', 'color', 'badge', 'tags', 'imageAssetId', 'hidden'], ['id', 'title', 'tabLabel', 'path', 'iconKey', 'color']);

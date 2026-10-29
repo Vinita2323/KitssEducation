@@ -84,7 +84,7 @@ test('franchise end-to-end: real isolated DB/HTTP, synthetic payment and scanner
     let renewal=await f.service.create({product:{kind:'franchise_renewal',id:paid.id},idempotencyKey:randomUUID()},applicant.auth,f.ctx);const attempt=await f.service.startAttempt(renewal.id,{idempotencyKey:randomUUID()},applicant.auth,f.ctx);const captured=f.provider.pay(attempt.providerOrderId);
     await f.service.observe(renewal.id,captured.id,'synthetic');await f.service.fulfill(renewal.id);await f.service.fulfill(renewal.id);
     paid=await api.status(paid.id,applicant.auth);assert.equal(paid.affiliationState,'active');assert.equal(paid.renewalEffects.length,1);assert.ok(Date.parse(paid.renewalDueAt)>Date.now());
-    const summary=await f.service.summary({});assert.equal(summary.groups.filter(g=>g._id.status==='captured').reduce((sum,g)=>sum+g.amountMinor,0),15000);
+    const summary=await f.service.summary({});assert.equal(summary.collected.amountMinor,15000);
   });
   await t.test('free renewals and prospective disablement, private files remain protected',async()=>{
     p={...p,version:'franchise-free-renewal-3',renewal:{...p.renewal,amountMinor:0}};await savePublish(p);

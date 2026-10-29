@@ -27,7 +27,7 @@ test('dedicated staff management (mocked HTTP; no emails sent)', { skip: !exists
     else if (path === '/admin/users/invitations/' + staff.id && method === 'DELETE') { writes.push({ method, csrf: route.request().headers()['x-csrf-token'] }); staff.status = 'archived'; data = { message: 'Invitation revoked or already unavailable' }; }
     else if (path === '/admin/users') { queries.push(url.searchParams.toString()); data = [staff].filter(s => !url.searchParams.get('status') || s.status === url.searchParams.get('status')); meta.total = data.length; }
     else if (path === '/admin/users/' + staff.id) data = staff;
-    else if (path === '/admin/dashboard') data = { operations: { totals: {}, asOf: new Date().toISOString() }, groups: [], failedAttempts: [], eventQueue: [] };
+    else if (path === '/admin/dashboard') data = { asOf: new Date().toISOString(), period: { from: '', to: '', timeZone: 'Asia/Kolkata' }, payments: { environment: { mode: 'test', simulated: true }, collected: { amountMinor: 0, orders: 0, buyers: 0 }, byProduct: [], unpaidCheckouts: 0, failedPayments: 0, needsAction: 0, pendingRefunds: 0, recentOrders: [] }, overview: null };
     return route.fulfill({ json: { data, meta, requestId: 'staff-test' } });
   });
   const go = path => page.goto(base + path, { waitUntil: 'domcontentloaded', timeout: 120000 });

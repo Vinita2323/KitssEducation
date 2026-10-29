@@ -13,7 +13,7 @@ test('admin book review and publication (mocked HTTP)', { skip: !existsSync(chro
   t.after(async () => { await browser.close(); await server.close(); });
   const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } }); page.setDefaultTimeout(20000);
   const base = 'http://127.0.0.1:' + server.httpServer.address().port;
-  const book = { id: 'book-1', title: 'Draft demonstration', status: 'draft', revision: 3, author: 'Author', description: 'Saved admin description', category: 'Learning', languageId: 'language-1', priceMinor: 14900, pricingApproved: false, rightsConfirmed: true, rightsNote: 'Original authored text', coverAssetId: 'cover-1', documentAssetId: 'document-1', previewAssetIds: [] };
+  const book = { id: 'book-1', title: 'Draft demonstration', status: 'draft', revision: 3, author: 'Author', description: 'Saved admin description', category: 'Learning', languageId: 'language-1', priceMinor: 14900, pricingApproved: false, rightsConfirmed: false, rightsNote: '', coverAssetId: 'cover-1', documentAssetId: 'document-1', previewAssetIds: [] };
   const writes = [], errors = [], publicReads = [];
   let rejectPublish = false, writable = true;
   page.on('pageerror', e => errors.push(e.message));
@@ -25,11 +25,12 @@ test('admin book review and publication (mocked HTTP)', { skip: !existsSync(chro
     else if (path === '/auth/csrf') data = { csrfToken: 'mock-token' };
     else if (path === '/admin/books') { data = [{ ...book }]; meta.total = 1; }
     else if (path === '/admin/books/book-1') data = { ...book };
+    else if (path === '/admin/book-owner-counts') data = { 'book-1': 2 };
     else if (path === '/admin/books/book-1/publish') {
       const payload = route.request().postDataJSON(); writes.push(payload);
       if (rejectPublish) return route.fulfill({ status: 422, json: { error: { code: 'VALIDATION_ERROR', message: 'The attached PDF must be clean and ready.' } } });
       assert.equal(payload.expectedRevision, book.revision);
-      book.status = payload.publish ? 'published' : 'draft'; book.revision++; data = { ...book };
+      book.status = payload.publish ? 'published' : 'draft'; book.revision++; book.publication = { everPublished: true, changesPending: false }; data = { ...book };
     } else if (path.startsWith('/books/')) publicReads.push(path);
     return route.fulfill({ json: { data, meta, requestId: 'review-test' } });
   });
@@ -45,10 +46,11 @@ test('admin book review and publication (mocked HTTP)', { skip: !existsSync(chro
     assert.equal(await row().getByRole('link', { name: 'View public page', exact: true }).count(), 0);
     await page.keyboard.press('Escape');
   });
-  await t.test('missing pricing approval blocks publication and offers the editor', async () => {
+  await t.test('missing licensing reference blocks publication and offers the editor', async () => {
     await row().getByRole('button', { name: 'Publish', exact: true }).click();
     const dialog = page.getByRole('dialog', { name: 'Publish book', exact: true });
-    await dialog.getByText('Required: Pricing approved by the business owner', { exact: true }).waitFor();
+    await dialog.getByText('Required: Licensing reference supplied', { exact: true }).waitFor();
+    assert.equal(await dialog.getByText(/Pricing approved/).count(), 0);
     assert.equal(await dialog.getByRole('button', { name: 'Confirm publish', exact: true }).isDisabled(), true);
     assert.equal(writes.length, 0);
     await dialog.getByRole('button', { name: 'Edit book', exact: true }).click();
@@ -58,7 +60,7 @@ test('admin book review and publication (mocked HTTP)', { skip: !existsSync(chro
     await page.keyboard.press('Escape');
   });
   await t.test('server 422 stays in the dialog and never changes the book to published', async () => {
-    book.pricingApproved = true; rejectPublish = true;
+    book.rightsConfirmed = true; book.rightsNote = 'Original authored text'; rejectPublish = true;
     await row().getByRole('button', { name: 'Publish', exact: true }).click();
     const dialog = page.getByRole('dialog', { name: 'Publish book', exact: true });
     await dialog.getByRole('button', { name: 'Confirm publish', exact: true }).click();
@@ -72,9 +74,22 @@ test('admin book review and publication (mocked HTTP)', { skip: !existsSync(chro
     await page.getByRole('dialog', { name: 'Publish book', exact: true }).getByRole('button', { name: 'Confirm publish', exact: true }).click();
     await row().getByRole('link', { name: 'View public page', exact: true }).waitFor();
     assert.equal(writes.at(-1).publish, true);
+    assert.equal(await row().getByRole('button', { name: 'Publish changes', exact: true }).count(), 0);
+    book.publication = { everPublished: true, changesPending: true }; await go();
+    await row().getByText('Live · unpublished changes', { exact: true }).waitFor();
+    await row().getByRole('button', { name: 'Publish changes', exact: true }).click();
+    let dialog = page.getByRole('dialog', { name: 'Publish book', exact: true });
+    await dialog.getByText(/Publishing replaces it with your saved changes/).waitFor();
+    await dialog.getByRole('button', { name: 'Confirm publish', exact: true }).click();
+    assert.equal(writes.at(-1).publish, true);
+    await row().getByText('Live', { exact: true }).waitFor();
     await row().getByRole('button', { name: 'Unpublish', exact: true }).click();
-    await page.getByRole('dialog', { name: 'Unpublish book', exact: true }).getByRole('button', { name: 'Confirm unpublish', exact: true }).click();
+    dialog = page.getByRole('dialog', { name: 'Unpublish book', exact: true });
+    await dialog.getByText('2 students who already own it', { exact: true }).waitFor();
+    await dialog.getByRole('button', { name: 'Confirm unpublish', exact: true }).click();
     await row().getByRole('button', { name: 'Publish', exact: true }).waitFor();
+    await row().getByText('Off sale', { exact: true }).waitFor();
+    await row().getByText('2 owners', { exact: true }).waitFor();
     assert.equal(writes.at(-1).publish, false);
     assert.equal(await row().getByRole('link', { name: 'View public page', exact: true }).count(), 0);
   });

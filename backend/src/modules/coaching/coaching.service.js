@@ -66,6 +66,15 @@ export function createCoachingService({
       if (!row || published && row.status !== 'published') throw missing();
       return row;
     },
+    // Enrolled students keep learning after a course goes off sale or is removed: the last
+    // published snapshot stays, while the catalogue, plans and new enrollment require 'published'.
+    async courseFor(value, auth) {
+      const row = await Course.findById(id(value));
+      if (!row?.publishedSnapshot) throw missing();
+      if (row.status === 'published') return row;
+      if (auth && (await service.enrollment(value, auth, false))?.canAccess) return row;
+      throw missing();
+    },
     async refs(data, auth) {
       for (const [field, kind] of [['boardId', 'board'], ['stateId', 'state'], ['classId', 'class'], ['programId', 'program'], ['languageId', 'language']]) if (data[field] && !(await institutions.models.Taxonomy.exists({
         _id: data[field],
@@ -111,13 +120,15 @@ export function createCoachingService({
         $regex: escapeRegex(text(query.q, 160)),
         $options: 'i'
       };
-      return {
-        data: (await modelFor(kind).find(filter).sort(kind === 'lessons' ? {
+      const rows = await modelFor(kind).find(filter).sort(kind === 'lessons' ? {
           sortOrder: 1,
           _id: 1
-        } : {
+        } : kind === 'plans' ? { sortOrder: 1, createdAt: 1 } : {
           createdAt: -1
-        }).skip((page - 1) * pageSize).limit(pageSize)).map(dto),
+        }).skip((page - 1) * pageSize).limit(pageSize);
+      const stats = kind === 'courses' && rows.length ? await service.courseStats(rows.map(r => r._id)) : {};
+      return {
+        data: rows.map(r => ({ ...service.adminDTO(kind, r), ...(kind === 'courses' ? { stats: stats[String(r._id)] } : {}) })),
         meta: {
           page,
           pageSize,
@@ -133,7 +144,7 @@ export function createCoachingService({
         } : {})
       });
       if (!row) throw missing();
-      return dto(row);
+      return { ...service.adminDTO(kind, row), ...(kind === 'courses' ? { stats: (await service.courseStats([row._id]))[String(row._id)] } : {}) };
     },
     async mutate(kind, value, parent, input, auth, ctx, archive = false) {
       const parsed = archive ? (object(input, ['expectedRevision'], ['expectedRevision']), {
@@ -158,7 +169,8 @@ export function createCoachingService({
         if (row?.status === 'archived') throw new AppError(409, 'ARCHIVED', 'Archived definitions cannot be edited');
         let course;
         if (parent) course = await service.course(parent);
-        if (kind === 'courses') {
+        // Removal only needs the live guards; content validation applies to edits.
+        if (kind === 'courses' && !archive) {
           await service.refs(merged, auth);
           if (row && parsed.fields.syllabus) {
             const keys = merged.syllabus.map(s => s.key);
@@ -173,11 +185,9 @@ export function createCoachingService({
             })) throw invalid('Archive or move lessons before removing their section');
           }
         }
-        if (kind === 'plans') await service.validatePlan(merged);
-        if (kind === 'lessons') await service.validateLesson(merged, course, auth, merged.status === 'published');
-        // Publishing dependencies are frozen while public. Unpublish first so a
-        // live syllabus cannot be silently replaced by a draft lesson/plan edit.
-        if (parent && course.status === 'published') throw new AppError(409, 'UNPUBLISH_FIRST', 'Unpublish the course before editing plans or lessons');
+        if (kind === 'plans' && !archive) await service.validatePlan(merged);
+        if (kind === 'lessons' && !archive) await service.validateLesson(merged, course, auth, merged.status === 'published');
+        if (parent) await service.liveGuards(kind, row, merged, course);
         if (row) {
           const updated = await coordination.update(Model, row, parsed.fields, parsed.expectedRevision, 'learning_' + kind + '_updated', ctx);
           return dto(updated);
@@ -192,6 +202,45 @@ export function createCoachingService({
         await coordination.flush(Model, created);
         return dto(created);
       });
+    },
+    // Lessons and plans of a live course are edited in place, so each change must keep it
+    // deliverable: published lessons use live sections/books, and one lesson and plan stay on.
+    async liveGuards(kind, row, merged, course) {
+      if (course.status !== 'published') return;
+      const live = course.publishedSnapshot;
+      if (kind === 'lessons' && merged.status === 'published') {
+        if (!(live.syllabus ?? []).some(s => s.key === merged.subjectKey)) throw invalid('This section is not live yet. Publish the course changes first, then publish the lesson.');
+        for (const book of merged.linkedBookIds ?? []) if (!(live.linkedBookIds ?? []).some(b => same(b, book))) throw invalid('This linked book is not live yet. Publish the course changes first.');
+      }
+      const onState = kind === 'lessons' ? 'published' : 'active', Model = kind === 'lessons' ? Lesson : CoursePlan;
+      if (row?.status === onState && merged.status !== onState && !(await Model.exists({ courseId: course._id, status: onState, _id: { $ne: row._id } })))
+        throw invalid(kind === 'lessons' ? 'A live course needs at least one published lesson. Unpublish the course first.' : 'A live course needs at least one active plan. Unpublish the course first.');
+    },
+    async restore(kind, value, parent, input, ctx) {
+      object(input, ['expectedRevision'], ['expectedRevision']);
+      return coordination.run(async () => {
+        const Model = modelFor(kind), row = await Model.findOne({ _id: id(value), ...(parent ? { courseId: id(parent) } : {}) });
+        if (!row) throw missing();
+        if (row.status !== 'archived') throw invalid('Only removed items can be restored');
+        return service.adminDTO(kind, await coordination.update(Model, row, { status: 'draft' }, revision(input.expectedRevision), 'learning_' + kind + '_restored', ctx));
+      });
+    },
+    // Admin rows carry publication state; course rows also carry lesson, plan and student counts.
+    adminDTO(kind, row) {
+      const data = dto(row), snapshot = (row.toObject?.() ?? row).publishedSnapshot;
+      if (kind === 'courses') data.publication = { everPublished: Boolean(snapshot), changesPending: Boolean(snapshot) && data.status === 'published' && data.revision > snapshot.revision, liveSectionKeys: (snapshot?.syllabus ?? []).map(s => s.key), liveBookIds: (snapshot?.linkedBookIds ?? []).map(String) };
+      return data;
+    },
+    async courseStats(ids) {
+      const now = new Date(), [lessons, plans, students] = await Promise.all([
+        Lesson.aggregate([{ $match: { courseId: { $in: ids }, status: { $ne: 'archived' } } }, { $group: { _id: '$courseId', total: { $sum: 1 }, published: { $sum: { $cond: [{ $eq: ['$status', 'published'] }, 1, 0] } } } }]),
+        CoursePlan.find({ courseId: { $in: ids }, status: 'active' }).sort({ sortOrder: 1, createdAt: 1 }).select('courseId name priceMinor durationDays durationMonths').lean(),
+        Enrollment.aggregate([{ $match: { courseId: { $in: ids }, revokedAt: null, expiresAt: { $gt: now } } }, { $group: { _id: '$courseId', n: { $sum: 1 } } }])
+      ]);
+      return Object.fromEntries(ids.map(courseId => {
+        const l = lessons.find(r => same(r._id, courseId));
+        return [String(courseId), { lessons: { total: l?.total ?? 0, published: l?.published ?? 0 }, activePlans: plans.filter(p => same(p.courseId, courseId)).map(p => ({ name: p.name, priceMinor: p.priceMinor, durationDays: p.durationDays, durationMonths: p.durationMonths })), activeStudents: students.find(r => same(r._id, courseId))?.n ?? 0 }];
+      }));
     },
     async publish(value, input, auth, ctx) {
       object(input, ['expectedRevision', 'publish'], ['expectedRevision', 'publish']);
@@ -249,6 +298,7 @@ export function createCoachingService({
         ...safe,
         id: String(row._id),
         status: 'published',
+        onSale: row.status === 'published',
         teacher: faculty.map(f => f.publishedSnapshot?.name).filter(Boolean).join(', '),
         teacherRole: faculty.map(f => f.publishedSnapshot?.role).filter(Boolean).join(', '),
         teacherAvatar: faculty[0]?.publishedSnapshot?.portraitAssetId ? '/api/v1/media/' + faculty[0].publishedSnapshot.portraitAssetId + '/content' : null,
@@ -357,7 +407,8 @@ export function createCoachingService({
         simulated: row.simulated
       }));
       let verifiedSource = source;
-      if (row?.source === 'free') { const plan = await CoursePlan.findById(row.planId); verifiedSource = plan?.status === 'active' && plan.rulesApproved && plan.priceMinor === 0 && plan.eligibility === 'verified_account'; }
+      // Free enrollment is only granted from an approved zero-priced plan; later plan changes keep it.
+      if (row?.source === 'free') verifiedSource = true;
       if (row?.source === 'manual') verifiedSource = await commerce.business.manualValid(row);
       const owner = row && (await authService.models.User.findById(row.userId).select('status emailVerifiedAt'));
       const active = owner?.status === 'active' && !!owner.emailVerifiedAt && !!row && !row.revokedAt && row.startsAt <= new Date() && row.expiresAt > new Date() && !!verifiedSource;
@@ -449,7 +500,7 @@ export function createCoachingService({
               at: a.at,
               requestId: a.requestId
             })) : undefined,
-            course: await Course.findById(r.courseId).then(c => c?.status === 'published' ? service.publicDTO(c) : {
+            course: await Course.findById(r.courseId).then(c => c?.publishedSnapshot ? service.publicDTO(c) : {
               id: String(r.courseId),
               title: 'Unavailable course'
             })
@@ -463,7 +514,7 @@ export function createCoachingService({
       };
     },
     async syllabus(value, auth) {
-      const course = await service.course(value, true),
+      const course = await service.courseFor(value, auth),
         enrollment = auth ? await service.enrollment(value, auth, false) : null,
         rows = await Lesson.find({
           courseId: course._id,
@@ -499,7 +550,7 @@ export function createCoachingService({
       };
     },
     async lesson(courseId, value, auth) {
-      const course = await service.course(courseId, true),
+      const course = await service.courseFor(courseId, auth),
         lesson = await Lesson.findOne({
           _id: id(value),
           courseId: course._id,
@@ -597,15 +648,16 @@ export function createCoachingService({
       return dto(updated);
     },
     async linkedBook(courseId, bookId, auth) {
-      const course = await service.course(courseId, true);
+      const course = await service.courseFor(courseId, auth);
       if (!(course.publishedSnapshot.linkedBookIds ?? []).some(b => same(b, bookId))) throw missing();
       await service.enrollment(courseId, auth);
       return service.bookState(bookId, auth, courseId);
     },
     async bookAccess(value, auth, courseId) {
+      // Enrolled students keep a linked book's last published snapshot even if it later goes off sale.
       const book = await publishing.models.Book.findOne({
           _id: id(value),
-          status: 'published'
+          publishedSnapshot: { $ne: null }
         }),
         s = book?.publishedSnapshot;
       if (!s?.rightsConfirmed || !s.rightsNote) throw missing();
@@ -617,7 +669,7 @@ export function createCoachingService({
       });
       if (!asset || !Number.isSafeInteger(asset.pageCount) || asset.pageCount < 1) throw new AppError(409, 'MEDIA_UNAVAILABLE', 'Verified PDF page count and clean licensed bytes are required');
       if (courseId) {
-        const course = await service.course(courseId, true);
+        const course = await service.courseFor(courseId, auth);
         if (!(course.publishedSnapshot.linkedBookIds ?? []).some(b => same(b, book._id))) throw missing();
         await service.enrollment(courseId, auth);
       } else if (!(await commerce.canReadAsset(asset, auth))) throw denied();
@@ -772,7 +824,8 @@ export function createCoachingService({
       await service.deliveryReady(course);
       if (!(plan.priceMinor > 0)) throw new AppError(409, 'FREE_PLAN', 'Use the free enrollment action for a zero-priced plan');
       const existing = await Enrollment.findOne({ userId: auth.user._id, courseId: course._id });
-      if (existing && (existing.revokedAt || existing.expiresAt > new Date())) throw new AppError(409, 'ACTIVE_OR_REVOKED_ACCESS', 'Existing active or revoked access cannot be repurchased');
+      // Active access may be renewed early (the new period is added after the current expiry); revoked access may not.
+      if (existing?.revokedAt) throw new AppError(409, 'ACTIVE_OR_REVOKED_ACCESS', 'Revoked access cannot be repurchased');
       const purchaseSlot = existing ? String(existing._id) + ':' + existing.expiresAt.toISOString() : 'initial';
       // Legacy first-purchase rows without a slot remain authoritative.
       if (await commerce.models.Order.exists({ userId: auth.user._id, 'product.kind': 'course_plan', 'product.courseId': course._id, ...(existing ? { 'product.purchaseSlot': purchaseSlot } : {}) })) throw new AppError(409, 'EXISTING_COURSE_ORDER', 'Resume the existing order for this access period');
@@ -793,17 +846,21 @@ export function createCoachingService({
     async fulfill(order) {
       const user = await authService.models.User.findById(order.userId);
       if (!user?.emailVerifiedAt || user.status !== 'active') throw denied();
-      const course = await service.course(String(order.product.courseId), true);
-      await service.deliveryReady(course);
+      // A paid order is delivered even if the course went off sale after checkout started.
+      const course = await Course.findById(id(String(order.product.courseId)));
+      if (!course?.publishedSnapshot) throw missing();
+      if (course.status === 'published') await service.deliveryReady(course);
       if (!validDuration(order.product)) throw invalid("Invalid captured access duration");
       const startsAt = order.capturedAt;
       if (!startsAt) throw denied();
       let enrollment = await Enrollment.findOne({ userId: order.userId, courseId: course._id });
       if (enrollment?.purchaseHistory.some(p => same(p.orderId, order._id))) return enrollment;
       if (enrollment && !same(enrollment.orderId, order._id)) {
-        if (enrollment.revokedAt || enrollment.expiresAt > startsAt || order.product.purchaseSlot !== String(enrollment._id) + ':' + enrollment.expiresAt.toISOString() || enrollment.purchaseHistory.length >= 100) throw new AppError(409, 'ENROLLMENT_CONFLICT', 'Access period changed; investigate before repurchase fulfillment');
+        if (enrollment.revokedAt || order.product.purchaseSlot !== String(enrollment._id) + ':' + enrollment.expiresAt.toISOString() || enrollment.purchaseHistory.length >= 100) throw new AppError(409, 'ENROLLMENT_CONFLICT', 'Access period changed; investigate before repurchase fulfillment');
         const history = enrollment.orderId ? [...enrollment.purchaseHistory.map(p => p.toObject()), { orderId: enrollment.orderId, planId: enrollment.planId, startsAt: enrollment.startsAt, expiresAt: enrollment.expiresAt }] : enrollment.purchaseHistory;
-        enrollment = await Enrollment.findOneAndUpdate({ _id: enrollment._id, revision: enrollment.revision, revokedAt: null, expiresAt: enrollment.expiresAt }, { $set: { orderId: order._id, planId: order.product.id, startsAt, expiresAt: accessExpiry(startsAt, order.product), source: 'paid', simulated: order.simulated, purchaseHistory: history }, $inc: { revision: 1 }, $push: { auditOutbox: coordination.event('paid_course_repurchased', { actorId: 'system' }) } }, { returnDocument: 'after', runValidators: true });
+        // Early renewal keeps access continuous: the paid period starts when the current one ends.
+        const renewing = enrollment.expiresAt > startsAt;
+        enrollment = await Enrollment.findOneAndUpdate({ _id: enrollment._id, revision: enrollment.revision, revokedAt: null, expiresAt: enrollment.expiresAt }, { $set: { orderId: order._id, planId: order.product.id, startsAt: renewing ? enrollment.startsAt : startsAt, expiresAt: accessExpiry(renewing ? enrollment.expiresAt : startsAt, order.product), source: 'paid', simulated: order.simulated, purchaseHistory: history }, $inc: { revision: 1 }, $push: { auditOutbox: coordination.event('paid_course_repurchased', { actorId: 'system' }) } }, { returnDocument: 'after', runValidators: true });
         if (!enrollment) throw new AppError(409, 'ENROLLMENT_CONFLICT', 'Concurrent access-period change');
       } else if (!enrollment) {
         try {
@@ -836,13 +893,12 @@ export function createCoachingService({
       }
       if (asset.purpose === 'book_full' && auth) {
         const book = await publishing.models.Book.findOne({
-          status: 'published',
           'publishedSnapshot.documentAssetId': String(asset._id),
           'publishedSnapshot.rightsConfirmed': true
         });
         if (!book?.publishedSnapshot.rightsNote) return false;
         for (const course of await Course.find({
-          status: 'published',
+          publishedSnapshot: { $ne: null },
           'publishedSnapshot.linkedBookIds': String(book._id)
         })) try {
           await service.enrollment(String(course._id), auth);

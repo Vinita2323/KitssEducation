@@ -136,7 +136,7 @@ test('Stage 8 real MongoDB results, recipient notices, profile and email securit
       dryRun: false,
       validationToken: dry.validationToken
     }, admin.auth, ctx), done);
-    assert.deepEqual((await f.service.summary()).eventQueue, []); // Reused import jobs never appear as payment events.
+    assert.equal(await f.service.models.Job.countDocuments({ kind: 'payment_event' }), 0); // Reused import jobs never appear as payment events.
     await f.service.tick();
     assert.equal((await f.models.Job.findOne({
       kind: 'result_import'

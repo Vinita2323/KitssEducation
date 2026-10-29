@@ -33,7 +33,8 @@ const fields = {
     description: v => text(v, 20000),
     whatYouWillLearn: list(v => text(v,500)),
     benefits: list(v => text(v,500)),
-    category: text,
+    // Category drives the student catalogue tabs; collapse spacing so "JEE " and "JEE" match.
+    category: v => text(v).replace(/\s+/g, ' '),
     boardId: ref,
     classId: ref,
     stateId: ref,

@@ -151,7 +151,7 @@ test('Stage 6 standalone commerce, real HTTP and crash recovery with isolated fa
     assert.equal((await api('/admin/orders/' + primary.id, { method: 'PATCH', actor: admin, data: { status: 'captured' } })).status, 404);
     assert.equal((await api('/admin/orders/' + primary.id + '/reconcile', { method: 'POST', actor: admin, data: {} })).status, 202);
     const details = await api('/admin/orders/' + primary.id, { actor: admin }); assert.equal(details.status,200); assert.ok(Array.isArray(details.body.data.eventHistory)); assert.equal(details.body.data.providerScope,undefined);
-    const summary = await api('/admin/dashboard', { actor: admin }); assert.equal(summary.status, 200); assert.equal(summary.body.data.paymentMode, 'test'); assert.ok(summary.body.data.groups.every(g => g._id.simulated === true));
+    const summary = await api('/admin/dashboard', { actor: admin }); assert.equal(summary.status, 200); assert.equal(summary.body.data.payments.environment.mode, 'test'); assert.equal(summary.body.data.payments.environment.simulated, true);
   });
   await t.test('capture persistence/audit outages and interrupted reconciliation recover without claiming nonexistent effects', async () => {
     const value = await started(), payment = f.provider.pay(value.attempt.providerOrderId);

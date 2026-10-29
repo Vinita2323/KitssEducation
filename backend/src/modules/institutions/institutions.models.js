@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 
-export const taxonomyKinds = ['board', 'class', 'subject', 'program', 'language', 'state', 'district', 'qualification', 'designation', 'experience', 'institution_type'];
+export const taxonomyKinds = ['board', 'class', 'subject', 'program', 'language', 'state', 'district', 'qualification', 'designation', 'experience', 'institution_type', 'course_category'];
 export function createInstitutionModels(connection) {
   const { Schema } = mongoose;
   const str = (max = 160, required = false) => ({ type: String, trim: true, maxlength: max, required });

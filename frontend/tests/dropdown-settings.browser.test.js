@@ -43,12 +43,12 @@ test('grouped dropdown settings (mocked HTTP, no database writes)', { skip: !exi
   const go = () => page.goto(base + '/admin/taxonomies', { waitUntil: 'domcontentloaded', timeout: 120000 });
   const pick = name => page.getByRole('navigation', { name: 'Dropdown groups' }).getByRole('button', { name, exact: true }).click();
   await go();
-  await t.test('all eleven types are grouped and names replace internal fields', async () => {
+  await t.test('all twelve types are grouped and names replace internal fields', async () => {
     await page.getByRole('heading', { name: 'Dropdown settings', exact: true }).waitFor();
     const nav = page.getByRole('navigation', { name: 'Dropdown groups' });
-    assert.equal(await nav.getByRole('button').count(), 11);
-    for (const name of ['Education', 'Locations', 'Institution & profile']) await nav.getByRole('heading', { name, exact: true }).waitFor();
-    for (const [section, singular] of [['Boards', 'board'], ['Languages', 'language'], ['Programs', 'program'], ['States', 'state'], ['Institution types', 'institution type'], ['Qualifications', 'qualification'], ['Designations', 'designation'], ['Experience', 'experience level']]) {
+    assert.equal(await nav.getByRole('button').count(), 12);
+    for (const name of ['Education', 'Locations', 'Coaching', 'Institution & profile']) await nav.getByRole('heading', { name, exact: true }).waitFor();
+    for (const [section, singular] of [['Boards', 'board'], ['Languages', 'language'], ['Programs', 'program'], ['States', 'state'], ['Course categories', 'course category'], ['Institution types', 'institution type'], ['Qualifications', 'qualification'], ['Designations', 'designation'], ['Experience', 'experience level']]) {
       await pick(section);
       await page.getByRole('button', { name: 'Add ' + singular, exact: true }).click();
       const editor = page.getByRole('dialog', { name: 'Add ' + singular, exact: true });

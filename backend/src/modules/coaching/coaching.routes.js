@@ -27,7 +27,7 @@ export function createCoachingRouter(service) {
   });
   router.get('/coaching/facets', async (req, res) => send(req, res, await service.facets()));
   router.get('/coaching/courses', async (req, res) => page(req, res, await service.catalogue(req.query)));
-  router.get('/coaching/courses/:id', async (req, res) => send(req, res, await service.publicDTO(await service.course(req.params.id, true))));
+  router.get('/coaching/courses/:id', async (req, res) => send(req, res, await service.publicDTO(await service.courseFor(req.params.id, req.auth))));
   router.get('/coaching/courses/:id/plans', async (req, res) => send(req, res, await service.plans(req.params.id)));
   router.get('/coaching/courses/:id/syllabus', async (req, res) => send(req, res, await service.syllabus(req.params.id, req.auth)));
   router.get('/coaching/courses/:id/lessons/:lessonId', async (req, res) => send(req, res, await service.lesson(req.params.id, req.params.lessonId, req.auth)));
@@ -72,6 +72,7 @@ export function createCoachingRouter(service) {
     router.post(base, requirePermission(kind === 'plans' ? write : 'coaching.create'), async (req, res) => send(req, res, await service.mutate(kind, null, req.params.courseId, req.body, req.auth, ctx(req)), 201));
     router.patch(base + '/:id', requirePermission(write), async (req, res) => send(req, res, await service.mutate(kind, req.params.id, req.params.courseId, req.body, req.auth, ctx(req))));
     router.delete(base + '/:id', requirePermission(kind === 'plans' ? write : 'coaching.archive'), async (req, res) => send(req, res, await service.mutate(kind, req.params.id, req.params.courseId, req.body, req.auth, ctx(req), true)));
+    router.post(base + '/:id/restore', requirePermission(kind === 'plans' ? write : 'coaching.archive'), async (req, res) => send(req, res, await service.restore(kind, req.params.id, req.params.courseId, req.body, ctx(req))));
   }
   router.post('/admin/coaching/courses/:id/publish', requirePermission('coaching.publish'), async (req, res) => send(req, res, await service.publish(req.params.id, req.body, req.auth, ctx(req))));
   router.get('/admin/enrollments', requirePermission('learning.read'), async (req, res) => {

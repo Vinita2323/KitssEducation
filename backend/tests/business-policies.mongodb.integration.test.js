@@ -91,12 +91,13 @@ test('Stage 13 policy workflows, private documents, free/paid access and granula
     assert.equal(await f.service.canReadAsset(await f.models.MediaAsset.findById(d.book.documentAssetId), d.other.auth), false);
     await f.models.Book.updateOne({ _id: d.book.id }, { $unset: { 'publishedSnapshot.priceMinor': 1 } });
     await assert.rejects(() => f.service.freeBook(d.book.id, d.other.auth, f.ctx));
-    assert.equal(await f.service.canReadAsset(await f.models.MediaAsset.findById(d.book.documentAssetId), d.student.auth), false);
+    // A completed free claim survives a later price change; only new claims are refused.
+    assert.equal(await f.service.canReadAsset(await f.models.MediaAsset.findById(d.book.documentAssetId), d.student.auth), true);
     await f.models.Book.updateOne({ _id: d.book.id }, { $set: { 'publishedSnapshot.priceMinor': 0 } });
   });
   await t.test('paid course expiry and new purchase period preserve history and deduplicate old/new effects', async () => {
     const first = await f.service.create({ product: { kind: 'course_plan', id: d.plan.id }, idempotencyKey: randomUUID() }, d.student.auth, f.ctx); await capture(first);
-    await assert.rejects(() => f.service.create({ product: { kind: 'course_plan', id: d.plan.id }, idempotencyKey: randomUUID() }, d.student.auth, f.ctx), { code: 'ACTIVE_OR_REVOKED_ACCESS' });
+    // Early renewal while active is covered by coaching-lifecycle.mongodb.integration.test.js.
     await f.models.Enrollment.updateOne({ userId: d.student.user._id, courseId: d.course.id }, { $set: { expiresAt: new Date(Date.now() - 1000) } });
     assert.equal((await f.learning.enrollment(d.course.id, d.student.auth, false)).state, 'expired');
     const second = await f.service.create({ product: { kind: 'course_plan', id: d.plan.id }, idempotencyKey: randomUUID() }, d.student.auth, f.ctx); assert.notEqual(first.id, second.id);
@@ -115,7 +116,8 @@ test('Stage 13 policy workflows, private documents, free/paid access and granula
     course = await f.models.Course.findById(d.course.id); await f.learning.publish(d.course.id, { expectedRevision: course.revision, publish: false }, d.admin.auth, f.ctx);
     const reset = await f.models.CoursePlan.findById(d.plan.id); await f.learning.mutate('plans', d.plan.id, d.course.id, { expectedRevision: reset.revision, priceMinor: 12345 }, d.admin.auth, f.ctx);
     course = await f.models.Course.findById(d.course.id); await f.learning.publish(d.course.id, { expectedRevision: course.revision, publish: true }, d.admin.auth, f.ctx);
-    assert.equal((await f.learning.enrollment(d.course.id, d.other.auth, false)).canAccess, false);
+    // A free enrollment lasts its full period even after the plan becomes paid.
+    assert.equal((await f.learning.enrollment(d.course.id, d.other.auth, false)).canAccess, true);
   });
   await t.test('refund request/review remains non-executed and preserves capture and access', async () => {
     value.refunds = { approved: true, version: 'synthetic-v1', effectiveFrom: '2020-01-01T00:00:00Z', enabled: true, courseWindowDays: 7, outsideWindow: 'deny', evidenceRequired: false, categories: { course_plan: { enabled: true, reasons: ['technical_failure'] } }, accessAfterConfirmedRefund: 'separate_review' }; await save();

@@ -2,6 +2,7 @@ import { commerceService } from './commerceService';
 import { httpClient } from '../../../shared/api/httpClient';
 import { queryString } from './collegeService';
 import { contentService } from './contentService';
+import { authenticatedWrite } from './authService';
 const palette = { navy: 'from-[#0A1D3F] to-[#133C8B]', orange: 'from-amber-600 to-orange-700', teal: 'from-teal-700 to-teal-800' };
 export const bookDTO = row => ({ ...row, price: row.priceMinor === undefined ? undefined : row.priceMinor / 100, originalPrice: row.originalPriceMinor === undefined ? undefined : row.originalPriceMinor / 100, isFree: row.priceMinor === 0, coverIcon: row.iconKey || 'BookOpen', coverColor: palette[row.coverVariant] || palette.navy, chapters: (row.toc ?? []).map(c => c.title), pages: row.pageCount, format: 'PDF', canReadFull: false, fileSize: 'Private PDF', discount: row.originalPriceMinor > row.priceMinor ? Math.round((1 - row.priceMinor / row.originalPriceMinor) * 100) + '% OFF' : '' });
 const filters = input => {
@@ -19,7 +20,8 @@ export const bookService = {
   async getAvailableSubjects(board, className) { const query = {}; for (const [k, v] of [['board', board], ['class', className]]) if (v && v !== 'All') query[/^[a-f0-9]{24}$/i.test(v) ? k + 'Id' : k] = v; return (await this.getFacets(query)).subjects; },
   async getClasses() { return (await this.getFacets()).classes; },
   async getPreview(id, signal) { return (await httpClient.request('/books/' + id + '/preview', { signal })).data.assets; },
-  async getMyLibraryBooks() { return Promise.all((await commerceService.books()).map(async row => ({ ...await this.getBookById(row.id), ...row }))); },
+  // Owned rows carry their own snapshot details; the public page is only used to refresh live books.
+  async getMyLibraryBooks() { return Promise.all((await commerceService.books()).map(async row => ({ ...(row.onSale === false ? bookDTO(row) : await this.getBookById(row.id).catch(() => bookDTO(row))), ...row }))); },
   async purchaseBook() { throw new Error('Please use the book checkout page to purchase access.'); },
   async adminPage(input) { const result = await contentService.adminList('/admin/books', filters(input)); return { ...result, data: result.data.map(bookDTO) }; },
   async getAllBooksForAdmin(input) { return (await this.adminPage(input)).data; },
@@ -27,4 +29,7 @@ export const bookService = {
   updateBook: (row, input) => contentService.edit('/admin/books', row, input),
   deleteBook: row => contentService.archive('/admin/books', row),
   togglePublishStatus: row => contentService.publish('/admin/books', row, row.status !== 'published'),
+  publishBook: (row, publish) => contentService.publish('/admin/books', row, publish),
+  restoreBook: row => authenticatedWrite('/admin/books/' + row.id + '/restore', { expectedRevision: row.revision }),
+  ownerCounts: (ids, signal) => httpClient.request('/admin/book-owner-counts' + queryString({ ids: ids.join(',') }), { signal }).then(r => r.data),
 };

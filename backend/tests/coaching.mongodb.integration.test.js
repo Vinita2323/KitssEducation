@@ -135,15 +135,16 @@ test('Stage 7 standalone coaching, commerce and reading integration', {
     await assert.rejects(() => L.lesson(foreign.id, d.lesson.id, d.student.auth));
     assert.equal((await L.syllabus(d.course.id, null)).lessons.find(l => l.id === d.lesson.id).locked, true);
   });
-  await t.test('invalid plan values and published dependency edits rejected', async () => {
+  await t.test('invalid plan values and unsafe live lesson edits rejected', async () => {
     await assert.rejects(() => L.mutate('plans', null, d.course.id, {
       name: 'No rules',
       status: 'active'
     }, d.admin.auth, ctx));
-    await assert.rejects(() => L.mutate('lessons', d.lesson.id, d.course.id, {
-      expectedRevision: d.lesson.revision,
-      title: 'Unsafe live edit'
-    }, d.admin.auth, ctx));
+    // Live courses are edited in place; an edit that leaves a published lesson empty is still refused.
+    const live = await f.models.Lesson.findById(d.lesson.id);
+    await assert.rejects(() => L.mutate('lessons', d.lesson.id, d.course.id, { expectedRevision: live.revision, content: '', documentAssetId: null }, d.admin.auth, ctx), { code: 'INVALID_INPUT' });
+    const edited = await L.mutate('lessons', d.lesson.id, d.course.id, { expectedRevision: live.revision, title: live.title }, d.admin.auth, ctx);
+    assert.equal(edited.revision, live.revision + 1);
   });
   await t.test('unpaid order grants nothing; backend plan snapshot is authoritative', async () => {
     const pending = await f.service.create({
@@ -230,9 +231,14 @@ test('Stage 7 standalone coaching, commerce and reading integration', {
     const stream = await f.media.open(String(asset.documentAssetId), d.student.auth, 'bytes=0-3');
     for await (const chunk of stream.stream) assert.equal(chunk.toString(), '%PDF');
   });
-  await t.test('owned order status recognizes enrollment; active access cannot be repurchased', async () => {
+  await t.test('owned order status recognizes enrollment; active access can be renewed early for the next period', async () => {
     assert.equal((await f.service.owned(String(order._id), d.student.auth)).fulfillment.state, 'applied');
+    const enrollment = await f.models.Enrollment.findOne({ userId: d.student.user._id, courseId: d.course.id });
+    const quote = await L.resolvePlan(d.plan.id, d.student.auth);
+    assert.equal(quote.product.purchaseSlot, String(enrollment._id) + ':' + enrollment.expiresAt.toISOString());
+    await f.models.Enrollment.updateOne({ _id: enrollment._id }, { $set: { revokedAt: new Date() } });
     await assert.rejects(() => L.resolvePlan(d.plan.id, d.student.auth), e => e.code === 'ACTIVE_OR_REVOKED_ACCESS');
+    await f.models.Enrollment.updateOne({ _id: enrollment._id }, { $set: { revokedAt: null } });
   });
   await t.test('progress explicit completion, bounded values, revision and account isolation', async () => {
     const p = await L.progressLesson(d.lesson.id, {

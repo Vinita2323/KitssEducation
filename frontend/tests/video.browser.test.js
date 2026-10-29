@@ -42,7 +42,7 @@ test('Final video admin upload, playback/resume' + (workflowsOnly ? ' workflows 
     await page.getByLabel('Status',{exact:true}).selectOption('published');
     await page.getByRole('button',{name:'Save lesson',exact:true}).click();await page.getByText('FINAL VIDEO BROWSER LESSON',{exact:true}).waitFor();
     lesson=await f.models.Lesson.findOne({title:'FINAL VIDEO BROWSER LESSON'});assert.equal(String(lesson.videoAssetId),asset.id);
-    await page.getByRole('button',{name:'All courses',exact:true}).click();const row=page.getByRole('row').filter({hasText:d.course.title});await row.getByRole('button',{name:'Publish',exact:true}).click();await row.getByRole('cell',{name:'published',exact:true}).waitFor();
+    await page.getByRole('button',{name:'All courses',exact:true}).click();const row=page.getByRole('row').filter({hasText:d.course.title});await row.getByRole('button',{name:'Publish',exact:true}).click();await row.getByText('Live',{exact:true}).waitFor();
     if(!realMediaEnabled) {
     const order=await f.service.create({product:{kind:'course_plan',id:d.plan.id},idempotencyKey:randomUUID()},d.student.auth,f.ctx);await f.service.startAttempt(order.id,{idempotencyKey:randomUUID()},d.student.auth,f.ctx);const stored=await f.models.Order.findById(order.id),payment=f.provider.pay(stored.providerOrderId);await f.service.observe(stored._id,payment.id,'isolated_video_browser',f.ctx);
     }

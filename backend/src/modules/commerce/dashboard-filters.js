@@ -1,7 +1,12 @@
 import { object, invalid } from '../publishing/validation.js';
 
+// The business reports in Indian Standard Time. Asia/Kolkata has no daylight
+// saving, so a fixed UTC+05:30 offset is exact for every calendar day.
+export const DASHBOARD_TIME_ZONE = 'Asia/Kolkata';
+const IST_OFFSET_MS = 330 * 60000, DAY_MS = 86400000;
+
 export function dashboardFilters(query = {}) {
-  object(query, ['from', 'to', 'paymentMode']);
+  object(query, ['from', 'to']);
   const date = key => {
     const value = query[key];
     if (value === undefined || value === '') return undefined;
@@ -12,8 +17,7 @@ export function dashboardFilters(query = {}) {
   };
   const from = date('from'), to = date('to');
   if (from && to && from > to) throw invalid('Start date must not follow end date');
-  const paymentMode = query.paymentMode || '';
-  if (!['', 'test'].includes(paymentMode)) throw invalid('Only the stored test payment environment is supported');
-  const range = { ...(from ? {$gte: from} : {}), ...(to ? {$lt: new Date(to.getTime() + 86400000)} : {}) };
-  return { range, mode: paymentMode ? {paymentMode} : {}, active: Boolean(from || to), public: {from: query.from || '', to: query.to || '', paymentMode, timeZone: 'UTC', endBoundary: 'exclusive start of following UTC day'} };
+  // Start of the IST "from" day up to (not including) the start of the IST day after "to".
+  const range = { ...(from ? { $gte: new Date(from.getTime() - IST_OFFSET_MS) } : {}), ...(to ? { $lt: new Date(to.getTime() + DAY_MS - IST_OFFSET_MS) } : {}) };
+  return { range, active: Boolean(from || to), public: { from: query.from || '', to: query.to || '', timeZone: DASHBOARD_TIME_ZONE } };
 }

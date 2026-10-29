@@ -190,7 +190,8 @@ export class PaymentService {
     // Recheck delivery/license operational gate; payment cannot bypass Stage 5.
     const book = await this.publishingModule.models.Book.findById(order.product.id).lean();
     const delivery = book?.publishedSnapshot;
-    if (book?.status !== 'published' || !delivery?.rightsConfirmed || !delivery.rightsNote || !await this.publishingModule.models.MediaAsset.exists({ _id: delivery.documentAssetId, purpose: 'book_full', status: 'ready', 'scan.status': 'clean' })) throw new AppError(409, 'FULFILLMENT_DELIVERY_BLOCKED', 'Licensed secure delivery must be available before activation');
+    // A paid order is delivered even if the book went off sale after checkout started.
+    if (!delivery?.rightsConfirmed || !delivery.rightsNote || !await this.publishingModule.models.MediaAsset.exists({ _id: delivery.documentAssetId, purpose: 'book_full', status: 'ready', 'scan.status': 'clean' })) throw new AppError(409, 'FULFILLMENT_DELIVERY_BLOCKED', 'Licensed secure delivery must be available before activation');
     await this.hooks.beforeEntitlement?.(order);
     let effect;
     try {
@@ -209,22 +210,29 @@ export class PaymentService {
   }
   async canReadAsset(asset, auth) {
     if (!auth || auth.user.status !== 'active' || !auth.user.emailVerifiedAt || asset.purpose !== 'book_full' || asset.status !== 'ready' || asset.scan.status !== 'clean') return false;
-    const books = await this.publishingModule.models.Book.find({ status: 'published', 'publishedSnapshot.documentAssetId': String(asset._id), 'publishedSnapshot.rightsConfirmed': true }).select('_id publishedSnapshot').lean();
+    // Any status: a book taken off sale or removed keeps its last snapshot so existing owners keep reading it.
+    const books = await this.publishingModule.models.Book.find({ 'publishedSnapshot.documentAssetId': String(asset._id), 'publishedSnapshot.rightsConfirmed': true }).select('_id publishedSnapshot').lean();
     for (const book of books) {
       if (!book.publishedSnapshot?.rightsNote) continue;
       const entitlement = await this.models.BookEntitlement.findOne({ userId: auth.user._id, bookId: book._id, revokedAt: null });
       if (!entitlement) continue;
-      if (entitlement.source === 'free' && book.publishedSnapshot?.pricingApproved && book.publishedSnapshot?.priceMinor === 0 && book.publishedSnapshot?.rightsNote) return true;
+      // Free claims are only granted while the published price is zero; a later price change keeps them.
+      if (entitlement.source === 'free') return true;
       if (entitlement.source === 'manual' && await this.business.manualValid(entitlement)) return true;
       if (await this.models.Order.exists({ _id: entitlement.orderId, userId: auth.user._id, 'product.id': book._id, status: 'captured', simulated: entitlement.simulated, capturedPaymentId: { $type: 'string' } })) return true;
     } return false;
+  }
+  async ownerCounts(ids) {
+    const rows = await this.models.BookEntitlement.aggregate([{ $match: { bookId: { $in: ids }, revokedAt: null } }, { $group: { _id: '$bookId', users: { $addToSet: '$userId' } } }]);
+    return Object.fromEntries(rows.map(r => [String(r._id), r.users.length]));
   }
   async ownedBooks(auth) {
     const rows = await this.models.BookEntitlement.find({ userId: auth.user._id, revokedAt: null }).lean(), result = [];
     for (const row of rows) {
       const book = await this.publishingModule.models.Book.findById(row.bookId).lean();
       const asset = book?.publishedSnapshot?.documentAssetId && await this.publishingModule.models.MediaAsset.findById(book.publishedSnapshot.documentAssetId);
-      if (asset && await this.canReadAsset(asset, auth)) result.push({ id: String(row.bookId), title: book.publishedSnapshot.title, canReadFull: true, contentUrl: '/api/v1/media/' + asset._id + '/content', simulated: row.simulated, readingState: this.learning && Number.isSafeInteger(asset.pageCount) && asset.pageCount > 0 ? await this.learning.bookState(String(row.bookId),auth) : null });
+      // Display details come from the owner's snapshot so off-sale books still render in the library.
+      if (asset && await this.canReadAsset(asset, auth)) result.push({ ...this.publishingModule.publishing.publicData('books', book), onSale: book.status === 'published', id: String(row.bookId), title: book.publishedSnapshot.title, canReadFull: true, contentUrl: '/api/v1/media/' + asset._id + '/content', simulated: row.simulated, readingState: this.learning && Number.isSafeInteger(asset.pageCount) && asset.pageCount > 0 ? await this.learning.bookState(String(row.bookId),auth) : null });
     } return result;
   }
   async receipt(value, auth) {
@@ -243,12 +251,25 @@ export class PaymentService {
     return { data: (await this.models.Order.find(filter).sort({ createdAt: -1, _id: -1 }).skip((page - 1) * pageSize).limit(pageSize)).map(orderDTO), meta: { page, pageSize, total, totalPages: Math.max(1, Math.ceil(total / pageSize)) } };
   }
   async summary(query = {}) {
-    const f = dashboardFilters(query);
-    const aggregate = (model, pipeline) => model.aggregate(pipeline).option({maxTimeMS:10000});
-    const match = {...f.mode, ...(f.active ? {$or:[{status:'captured',capturedAt:f.range},{status:{$ne:'captured'},createdAt:f.range}]} : {})};
-    const rows = await aggregate(this.models.Order,[{$match:match}, { $group: { _id: { status: '$status', simulated: '$simulated', fulfilled: '$fulfillment.state' }, count: { $sum: 1 }, amountMinor: { $sum: '$amountMinor' } } }]);
-    const failed = await aggregate(this.models.Order,[{$match:{...f.mode,...(f.active?{'attempts.observedAt':f.range}:{})}},{$unwind:'$attempts'},{$match:{'attempts.status':'failed',...(f.active?{'attempts.observedAt':f.range}:{})}},{$group:{_id:'$simulated',count:{$sum:1}}}]);
-    return { paymentMode: 'test', currency: 'INR', filters:f.public, timestampBasis:{captured:'capturedAt',otherOrders:'createdAt',failedAttempts:'attempts.observedAt',eventQueue:'lifetime',operations:'lifetime'}, eventQueue: await aggregate(this.models.Job,[{ $match: { kind: 'payment_event' } }, { $group: { _id: { state: '$state', provider: '$provider' }, count: { $sum: 1 } } }]), label: 'Test Mode gross captured value; not net revenue, profit, settlement or tax', groups: rows, failedAttempts: failed };
+    const f = dashboardFilters(query), Order = this.models.Order, mode = this.provider.mode ?? 'test';
+    const within = field => f.active ? { [field]: f.range } : {};
+    // Only the configured payment environment counts, so test orders never mix into live totals.
+    const env = { paymentMode: mode }, paid = { ...env, status: 'captured', ...within('capturedAt') };
+    const [[collected], byProduct, unpaidCheckouts, failedPayments, needsAction, pendingRefunds, recent] = await Promise.all([
+      Order.aggregate([{ $match: paid }, { $group: { _id: null, amountMinor: { $sum: '$amountMinor' }, orders: { $sum: 1 }, buyers: { $addToSet: '$userId' } } }, { $project: { _id: 0, amountMinor: 1, orders: 1, buyers: { $size: '$buyers' } } }]).option({ maxTimeMS: 10000 }),
+      Order.aggregate([{ $match: paid }, { $group: { _id: '$product.kind', amountMinor: { $sum: '$amountMinor' }, orders: { $sum: 1 } } }, { $sort: { amountMinor: -1, _id: 1 } }, { $project: { _id: 0, kind: '$_id', amountMinor: 1, orders: 1 } }]).option({ maxTimeMS: 10000 }),
+      Order.countDocuments({ ...env, status: { $ne: 'captured' }, ...within('createdAt') }),
+      Order.countDocuments({ ...env, status: { $ne: 'captured' }, attempts: { $elemMatch: { status: 'failed', ...within('observedAt') } } }),
+      // Lifetime: a paid order whose access was blocked, or whose payment check gave up, always needs staff.
+      Order.countDocuments({ ...env, $or: [{ 'reconcile.state': 'dead' }, { status: 'captured', 'fulfillment.state': 'blocked' }] }),
+      Order.countDocuments({ ...env, 'refundRequest.status': 'pending' }),
+      Order.find(env).sort({ createdAt: -1, _id: -1 }).limit(6).lean()
+    ]);
+    const names = new Map((await this.authService.models.User.find({ _id: { $in: recent.map(o => o.userId) } }).select('name').lean()).map(u => [String(u._id), u.name]));
+    const recentOrders = recent.map(o => ({ id: String(o._id), reference: o.reference, title: o.product.title, kind: o.product.kind, amountMinor: o.amountMinor, createdAt: o.createdAt, studentName: names.get(String(o.userId)) ?? null,
+      status: o.status === 'captured' ? 'paid' : o.attempts?.at(-1)?.status === 'failed' ? 'failed' : 'unpaid' }));
+    return { currency: 'INR', environment: { mode, simulated: Boolean(this.provider.simulated) }, period: f.public,
+      collected: collected ?? { amountMinor: 0, orders: 0, buyers: 0 }, byProduct, unpaidCheckouts, failedPayments, needsAction, pendingRefunds, recentOrders };
   }
   async receiveWebhook(raw, signature, eventId) {
     const provider = this.provider; if (!provider.ready) throw unavailable();

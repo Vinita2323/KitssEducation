@@ -18,6 +18,7 @@ export function createPublishingRouter({ publishing, media }) {
     router.delete(path + '/:id', requirePermission(kind === 'books' ? 'books.archive' : write), async (req, res) => reply(req, res, await publishing.archive(kind, req.params.id, req.body, ctx(req))));
     router.post(path + '/:id/publish', requirePermission(publish), async (req, res) => reply(req, res, await publishing.publish(kind, req.params.id, req.body, req.auth, ctx(req))));
   }
+  router.post('/admin/books/:id/restore', requirePermission('books.archive'), async (req, res) => reply(req, res, await publishing.restore('books', req.params.id, req.body, ctx(req))));
   router.get('/books/facets', async (req, res) => reply(req, res, await publishing.facets(req.query)));
   router.get('/books', async (req, res) => list(req, res, await publishing.list('books', req.query)));
   router.get('/books/:id/preview', async (req, res) => reply(req, res, await publishing.preview(req.params.id)));

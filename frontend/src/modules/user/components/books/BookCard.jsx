@@ -128,12 +128,13 @@ export const BookCard = ({
         </div>
 
         <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
-          <Link
+          {/* Off-sale books have no public page; owners still read them. */}
+          {book.onSale !== false && <Link
             to={`/books/${book.id}`}
             className="px-3 py-1.5 text-xs font-semibold text-[#667085] hover:text-[#0A1D3F] border border-[#E6E8EC] rounded-lg transition"
           >
             Details
-          </Link>
+          </Link>}
           <Link
             to={`/books/${book.id}/read`}
             className="px-4 py-1.5 bg-[#0A1D3F] hover:bg-[#133C8B] text-white text-xs font-bold rounded-lg shrink-0 transition active:scale-95 shadow-xs flex items-center gap-1.5"

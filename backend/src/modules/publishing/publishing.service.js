@@ -6,6 +6,15 @@ export const modelNames = { books: 'Book', pages: 'PageContent', banners: 'Banne
 export function cleanDTO(doc) { if (!doc) return null; const { _id, __v, auditOutbox, key: storageKey, requestHash, idempotencyKey, ownerUserId, sourceChecksum, cleanupKeys, cleanupAfterAt, ...data } = doc.toObject?.() ?? doc; if ('provider' in data) delete data.publishedSnapshot; return JSON.parse(JSON.stringify({ id: String(_id), ...data, ...(!('provider' in data) && storageKey !== undefined ? { key: storageKey } : {}) })); }
 const snapshotOf = doc => { const { publishedSnapshot, auditOutbox, _id, __v, ...data } = doc.toObject?.() ?? doc; return JSON.parse(JSON.stringify(data)); };
 const escaped = value => new RegExp(escapeRegex(value), 'i');
+// Books expose where they stand against their last published snapshot. Publishing stores the
+// pre-increment revision in the snapshot, so any later save makes revision exceed snapshot + 1.
+function adminDTO(kind, doc) {
+  const data = cleanDTO(doc);
+  if (kind !== 'books' || !data) return data;
+  const snapshot = data.publishedSnapshot;
+  data.publication = { everPublished: Boolean(snapshot), changesPending: Boolean(snapshot) && data.status === 'published' && data.revision > snapshot.revision + 1 };
+  return data;
+}
 export function createPublishingService({ models, taxonomy, coordination, media }) {
   const Model = kind => models[modelNames[kind]];
   const notFound = () => new AppError(404, 'NOT_FOUND', 'The requested content was not found');
@@ -24,7 +33,7 @@ export function createPublishingService({ models, taxonomy, coordination, media 
       }
       if (document) data.pageCount = document.pageCount;
       if ((data.toc ?? []).some(row => !data.pageCount || row.page > data.pageCount)) throw invalid('TOC page exceeds the document');
-      if (publishing && (!data.author || !data.languageId || !data.category || !data.description || !document || !data.coverAssetId || !data.rightsConfirmed || !data.rightsNote || !data.pricingApproved || data.priceMinor === undefined)) throw invalid('Publication requires author, category, language, description, clean cover/full PDF, rights evidence and explicitly approved pricing');
+      if (publishing && (!data.author || !data.languageId || !data.description || !document || !data.coverAssetId || !data.rightsConfirmed || !data.rightsNote || !data.pricingApproved || data.priceMinor === undefined)) throw invalid('Publication requires author, language, description, clean cover/full PDF, licensing reference and a price (zero for free)');
     } else {
       const assetPurpose = { banners: 'banner', faculty: 'faculty' }[kind];
       if (assetPurpose && data.imageAssetId) await media.linkable(data.imageAssetId, assetPurpose, auth);
@@ -45,21 +54,47 @@ export function createPublishingService({ models, taxonomy, coordination, media 
     const { documentAssetId, rightsConfirmed, rightsNote, pricingApproved, createdBy, updatedBy, sourceNote, revision: snapshotRevision, status, ...safe } = data;
     return { ...safe, id: String(doc._id), status: 'published', ...(kind === 'books' ? { canReadFull: false, accessStatus: 'entitlements_pending' } : {}), ...(safe.coverAssetId ? { coverUrl: '/api/v1/media/' + safe.coverAssetId + '/content' } : {}), ...(safe.imageAssetId ? { imageUrl: '/api/v1/media/' + safe.imageAssetId + '/content' } : {}), ...(safe.portraitAssetId ? { portraitUrl: '/api/v1/media/' + safe.portraitAssetId + '/content' } : {}) };
   }
+  // Catalogue-wide counts for the admin books page (independent of filters and paging).
+  async function bookSummary() {
+    const [row] = await models.Book.aggregate([{ $group: { _id: null, total: { $sum: { $cond: [{ $eq: ['$status', 'archived'] }, 0, 1] } }, live: { $sum: { $cond: [{ $eq: ['$status', 'published'] }, 1, 0] } },
+      offSale: { $sum: { $cond: [{ $and: [{ $eq: ['$status', 'draft'] }, { $ne: [{ $ifNull: ['$publishedSnapshot', null] }, null] }] }, 1, 0] } },
+      drafts: { $sum: { $cond: [{ $and: [{ $eq: ['$status', 'draft'] }, { $eq: [{ $ifNull: ['$publishedSnapshot', null] }, null] }] }, 1, 0] } },
+      removed: { $sum: { $cond: [{ $eq: ['$status', 'archived'] }, 1, 0] } },
+      liveFree: { $sum: { $cond: [{ $and: [{ $eq: ['$status', 'published'] }, { $eq: ['$publishedSnapshot.priceMinor', 0] }] }, 1, 0] } } } }]);
+    const { _id, ...counts } = row ?? { total: 0, live: 0, offSale: 0, drafts: 0, removed: 0, liveFree: 0 };
+    return { ...counts, livePaid: counts.live - counts.liveFree };
+  }
   const service = {
     models,
     async create(kind, input, auth, ctx) { const { fields } = contentInput(kind, input, true); return coordination.run(async () => { await validate(kind, fields, false, auth); const doc = await Model(kind).create({ ...fields, ...(kind === 'books' ? { publicId: 'BOOK-' + randomUUID() } : {}), createdBy: ctx.actorId, updatedBy: ctx.actorId, auditOutbox: [coordination.event(kind + '_created', ctx)] }); await coordination.flush(Model(kind), doc); return cleanDTO(doc); }); },
     async edit(kind, value, input, auth, ctx) { const { fields, expectedRevision } = contentInput(kind, input); return coordination.run(async () => { const doc = await find(kind, value); if (doc.status === 'archived') throw invalid('Archived content cannot be edited'); if (kind === 'pages' && fields.key && fields.key !== doc.key) throw invalid('Page key is immutable'); const merged = { ...doc.toObject(), ...fields }; await validate(kind, merged, false, auth); return cleanDTO(await coordination.update(Model(kind), doc, { ...fields, ...(merged.pageCount ? { pageCount: merged.pageCount } : {}) }, expectedRevision, kind + '_edited', ctx)); }); },
-    async publish(kind, value, input, auth, ctx) { object(input, ['expectedRevision', 'publish'], ['expectedRevision', 'publish']); revision(input.expectedRevision); if (typeof input.publish !== 'boolean') throw invalid('Choose publication state'); return coordination.run(async () => { const doc = await find(kind, value); if (doc.status === 'archived') throw invalid('Archived content cannot be published'); const data = doc.toObject(); if (input.publish) await validate(kind, data, true, auth); return cleanDTO(await coordination.update(Model(kind), doc, { status: input.publish ? 'published' : 'draft', publishedSnapshot: input.publish ? snapshotOf(data) : null, publishedAt: input.publish ? new Date() : null, ...(data.pageCount ? { pageCount: data.pageCount } : {}) }, input.expectedRevision, kind + (input.publish ? '_published' : '_unpublished'), ctx)); }); },
+    async publish(kind, value, input, auth, ctx) { object(input, ['expectedRevision', 'publish'], ['expectedRevision', 'publish']); revision(input.expectedRevision); if (typeof input.publish !== 'boolean') throw invalid('Choose publication state'); return coordination.run(async () => { const doc = await find(kind, value); if (doc.status === 'archived') throw invalid('Archived content cannot be published'); const data = doc.toObject();
+      // Publishing a book is the publisher's approval of its saved price (books.publish permission).
+      if (kind === 'books' && input.publish) data.pricingApproved = true;
+      if (input.publish) await validate(kind, data, true, auth);
+      // A book taken off sale keeps its last published snapshot: buyers and free claimants keep reading it,
+      // while the public catalogue, checkout and free claims all require status 'published'.
+      const retain = kind === 'books' && !input.publish;
+      return adminDTO(kind, await coordination.update(Model(kind), doc, { status: input.publish ? 'published' : 'draft', ...(retain ? {} : { publishedSnapshot: input.publish ? snapshotOf(data) : null, publishedAt: input.publish ? new Date() : null }), ...(kind === 'books' && input.publish ? { pricingApproved: true } : {}), ...(data.pageCount ? { pageCount: data.pageCount } : {}) }, input.expectedRevision, kind + (input.publish ? '_published' : '_unpublished'), ctx)); }); },
     async archive(kind, value, input, ctx) {
       object(input, kind === 'banners' ? ['expectedRevision', 'remove'] : ['expectedRevision'], ['expectedRevision']);
       if (input.remove !== undefined && typeof input.remove !== 'boolean') throw invalid('Choose a valid removal action');
       const remove = kind === 'banners' && input.remove === true;
       return coordination.run(async () => {
         const doc = await find(kind, value);
-        return cleanDTO(await coordination.update(Model(kind), doc, { status: 'archived', publishedSnapshot: null, ...(remove ? { deletedAt: new Date() } : {}) }, revision(input.expectedRevision), kind + (remove ? '_deleted' : '_archived'), ctx));
+        return adminDTO(kind, await coordination.update(Model(kind), doc, { status: 'archived', ...(kind === 'books' ? {} : { publishedSnapshot: null }), ...(remove ? { deletedAt: new Date() } : {}) }, revision(input.expectedRevision), kind + (remove ? '_deleted' : '_archived'), ctx));
       });
     },
-    async detail(kind, value, admin = false) { const doc = await find(kind, value); if (!admin && (doc.status !== 'published' || !doc.publishedSnapshot)) throw notFound(); const data = admin ? cleanDTO(doc) : publicData(kind, doc); if (kind === 'books') for (const [field, label] of [['boardId','board'],['classId','class'],['subjectId','subject'],['languageId','language']]) if (data[field]) data[label] = (await taxonomy.findById(data[field]).select('label').lean())?.label ?? ''; return data; },
+    async restore(kind, value, input, ctx) {
+      if (kind !== 'books') throw invalid('Only books can be restored');
+      object(input, ['expectedRevision'], ['expectedRevision']);
+      return coordination.run(async () => {
+        const doc = await find(kind, value);
+        if (doc.status !== 'archived') throw invalid('Only removed books can be restored');
+        return adminDTO(kind, await coordination.update(Model(kind), doc, { status: 'draft' }, revision(input.expectedRevision), 'books_restored', ctx));
+      });
+    },
+    async detail(kind, value, admin = false) { const doc = await find(kind, value); if (!admin && (doc.status !== 'published' || !doc.publishedSnapshot)) throw notFound(); const data = admin ? adminDTO(kind, doc) : publicData(kind, doc); if (kind === 'books') for (const [field, label] of [['boardId','board'],['classId','class'],['subjectId','subject'],['languageId','language']]) if (data[field]) data[label] = (await taxonomy.findById(data[field]).select('label').lean())?.label ?? ''; return data; },
     async list(kind, query = {}, admin = false) {
       object(query, ['page', 'pageSize', 'q', 'status', 'sort', 'boardId', 'classId', 'subjectId', 'languageId', 'board', 'class', 'subject', 'language', 'category', 'type', 'minPriceMinor', 'maxPriceMinor', 'placement']);
       for (const v of Object.values(query)) if (typeof v !== 'string' || v.length > 160) throw invalid('Invalid query');
@@ -82,9 +117,11 @@ export function createPublishingService({ models, taxonomy, coordination, media 
       const sorts = { featured: { [prefix + 'title']: 1 }, newest: { publishedAt: -1 }, price_asc: { [prefix + 'priceMinor']: 1 }, price_desc: { [prefix + 'priceMinor']: -1 }, name: { [prefix + 'title']: 1 } };
       if (query.sort && !Object.hasOwn(sorts, query.sort)) throw invalid('Unsupported sort; ratings require an approved source');
       const total = await Model(kind).countDocuments(filter), rows = await Model(kind).find(filter).sort({ ...(kind === 'banners' || kind === 'faculty' ? { [prefix + 'sortOrder']: 1 } : sorts[query.sort ?? 'featured']), _id: 1 }).skip((page - 1) * pageSize).limit(pageSize).lean();
-      let data = rows.map(row => admin ? cleanDTO(row) : publicData(kind, row));
+      let data = rows.map(row => admin ? adminDTO(kind, row) : publicData(kind, row));
       if (kind === 'books') data = await Promise.all(data.map(async book => { for (const [field, label] of [['boardId', 'board'], ['classId', 'class'], ['subjectId', 'subject'], ['languageId', 'language']]) if (book[field]) book[label] = (await taxonomy.findById(book[field]).select('label').lean())?.label ?? ''; return book; }));
-      return { data, meta: { page, pageSize, total, totalPages: Math.max(1, Math.ceil(total / pageSize)) } };
+      const result = { data, meta: { page, pageSize, total, totalPages: Math.max(1, Math.ceil(total / pageSize)) } };
+      if (admin && kind === 'books') result.summary = await bookSummary();
+      return result;
     },
     async facets(query = {}) { object(query, ['boardId', 'classId', 'languageId', 'board', 'class', 'language']); const rows = await models.Book.find({ status: 'published', publishedSnapshot: { $ne: null } }).lean(); let books = rows.map(r => r.publishedSnapshot); for (const field of ['boardId', 'classId', 'languageId']) if (query[field]) books = books.filter(b => b[field] === String(id(query[field]))); for (const [f, kind] of [['board', 'board'], ['class', 'class'], ['language', 'language']]) if (query[f]) { const t = await taxonomy.findOne({ kind, label: text(query[f]), status: 'active', deletedAt: null }); books = books.filter(b => b[f + 'Id'] === String(t?._id)); } const result = {}; for (const [field, name] of [['boardId', 'boards'], ['classId', 'classes'], ['subjectId', 'subjects'], ['languageId', 'languages']]) result[name] = (await taxonomy.find({ _id: { $in: books.map(b => b[field]).filter(Boolean) }, status: 'active', deletedAt: null }).sort({ sortOrder: 1, label: 1 }).lean()).map(r => ({ id: String(r._id), name: r.label, label: r.label })); result.categories = [...new Set(books.map(b => b.category))]; return result; },
     async preview(value) { const book = await service.detail('books', value); const assets = []; for (const assetId of book.previewAssetIds ?? []) { const asset = await media.publicMetadata(assetId); if (asset) assets.push({ ...asset, url: '/api/v1/media/' + assetId + '/content' }); } return { assets }; },

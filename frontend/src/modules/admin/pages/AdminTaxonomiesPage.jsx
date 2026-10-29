@@ -9,6 +9,7 @@ import { Pagination } from '../../user/components/common/Pagination';
 const groups = [
   { title: 'Education', items: [['board', 'Boards', 'Board'], ['class', 'Classes', 'Class', 'board'], ['subject', 'Subjects', 'Subject', 'class'], ['language', 'Languages', 'Language'], ['program', 'Programs', 'Program']] },
   { title: 'Locations', items: [['state', 'States', 'State'], ['district', 'Districts', 'District', 'state']] },
+  { title: 'Coaching', items: [['course_category', 'Course categories', 'Course category']] },
   { title: 'Institution & profile', items: [['institution_type', 'Institution types', 'Institution type'], ['qualification', 'Qualifications', 'Qualification'], ['designation', 'Designations', 'Designation'], ['experience', 'Experience', 'Experience level']] },
 ];
 const types = Object.fromEntries(groups.flatMap(group => group.items.map(([kind, plural, singular, parent]) => [kind, { plural, singular, parent }])));

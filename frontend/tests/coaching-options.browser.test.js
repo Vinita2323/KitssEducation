@@ -15,6 +15,7 @@ test('coaching editor option loading, recovery and saved payloads (mocked HTTP)'
   page.setDefaultTimeout(20000);
   const base = 'http://127.0.0.1:' + server.httpServer.address().port;
   const errors = [], requests = [], writes = [];
+  let existingCourse = null;
   let failFaculty = false, failState = false, emptyFaculty = false, stateLabel = 'Learning State';
   page.on('pageerror', error => errors.push(error.message));
   await page.route('**/*', async route => {
@@ -30,6 +31,8 @@ test('coaching editor option loading, recovery and saved payloads (mocked HTTP)'
     else if (path === '/taxonomies') { const kind = url.searchParams.get('kind'); data = [{ id: kind + '-1', label: kind === 'state' ? stateLabel : 'Test ' + kind, parentIds: [] }]; }
     else if (path === '/public/faculty' && !emptyFaculty) { const number = Number(url.searchParams.get('page') || 1); data = [{ id: 'faculty-' + number, name: 'Published Instructor ' + number }]; meta = { ...meta, page: number, total: 2, totalPages: 2 }; }
     else if (path === '/books') data = [{ id: 'book-1', title: 'Published Book' }];
+    else if (path === '/admin/coaching/courses' && method === 'GET') { data = existingCourse ? [existingCourse] : []; meta.total = data.length; }
+    else if (path === '/admin/coaching/courses/legacy-course' && method === 'PATCH') { const payload = route.request().postDataJSON(); writes.push(payload); data = { ...existingCourse, ...payload }; }
     else if (path === '/admin/coaching/courses' && method === 'POST') { const payload = route.request().postDataJSON(); writes.push(payload); data = { id: 'saved-course', revision: 1, ...payload }; }
     return route.fulfill({ json: { data, meta, requestId: 'coaching-options-test' } });
   });
@@ -69,9 +72,10 @@ test('coaching editor option loading, recovery and saved payloads (mocked HTTP)'
     stateLabel = 'Newly added state';
     const editor = await open();
     await editor.getByLabel('State', { exact: true }).getByRole('option', { name: stateLabel }).waitFor({ state: 'attached' });
-    for (const label of ['Language', 'Board', 'Educational level', 'Program', 'State']) await ready(editor, label);
+    for (const label of ['Language', 'Board', 'Educational level', 'State']) await ready(editor, label);
+    assert.equal(await editor.getByLabel('Program', { exact: true }).count(), 0, 'program is no longer edited here');
     await editor.getByLabel('Course title', { exact: true }).fill('Coaching selection test');
-    for (const [label, value] of [['Language', 'language-1'], ['Board', 'board-1'], ['Educational level', 'class-1'], ['Program', 'program-1'], ['State', 'state-1'], ['Subjects', 'subject-1'], ['Published instructors', 'faculty-2'], ['Linked published books', 'book-1']]) {
+    for (const [label, value] of [['Language', 'language-1'], ['Board', 'board-1'], ['Educational level', 'class-1'], ['State', 'state-1'], ['Category', 'Test course_category'], ['Subjects', 'subject-1'], ['Published instructors', 'faculty-2'], ['Linked published books', 'book-1']]) {
       await editor.getByLabel(label, { exact: true }).selectOption(value);
     }
     await editor.getByRole('button', { name: 'Save course', exact: true }).click();
@@ -79,6 +83,7 @@ test('coaching editor option loading, recovery and saved payloads (mocked HTTP)'
     assert.equal(writes.at(-1).stateId, 'state-1'); assert.equal(writes.at(-1).classId, 'class-1');
     assert.deepEqual(writes.at(-1).subjectIds, ['subject-1']); assert.deepEqual(writes.at(-1).facultyIds, ['faculty-2']);
     assert.deepEqual(writes.at(-1).linkedBookIds, ['book-1']);
+    assert.equal(writes.at(-1).category, 'Test course_category'); assert.equal('programId' in writes.at(-1), false);
   });
   await t.test('empty published list is explained; mobile keyboard and accessibility remain usable', async () => {
     emptyFaculty = true;
@@ -91,6 +96,46 @@ test('coaching editor option loading, recovery and saved payloads (mocked HTTP)'
     assert.deepEqual(await page.evaluate(async () => (await axe.run(document, { runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21aa'] } })).violations.map(v => v.id)), []);
     await page.keyboard.press('Escape'); await editor.waitFor({ state: 'detached' });
     assert.equal(await page.getByRole('button', { name: 'Add course', exact: true }).evaluate(el => el === document.activeElement), true);
+  });
+  await t.test('KITSS ownership needs confirmation and keeps the existing API contract', async () => {
+    const editor = await open();
+    const details = editor.locator('details').filter({ hasText: 'Content ownership' });
+    assert.equal(await details.getAttribute('open'), null);
+    await details.locator('summary').click();
+    await editor.getByLabel('Who created this content?', { exact: true }).selectOption('kitss');
+    assert.equal(await editor.getByLabel('Permission details', { exact: true }).count(), 0);
+    const confirm = editor.getByLabel('I confirm KITSS owns this course content.', { exact: true });
+    assert.equal(await confirm.isChecked(), false);
+    await confirm.check();
+    await editor.getByLabel('Course title', { exact: true }).fill('Original course');
+    await editor.getByRole('button', { name: 'Save course', exact: true }).click(); await editor.waitFor({ state: 'detached' });
+    assert.equal(writes.at(-1).rightsConfirmed, true);
+    assert.equal(writes.at(-1).rightsNote, 'Original course content created by the KITSS team.');
+  });
+  await t.test('external permission details are recorded and changing source requires confirmation again', async () => {
+    const editor = await open(); await editor.getByText('Content ownership', { exact: true }).click();
+    await editor.getByLabel('Who created this content?', { exact: true }).selectOption('kitss');
+    await editor.getByLabel('I confirm KITSS owns this course content.', { exact: true }).check();
+    await editor.getByLabel('Who created this content?', { exact: true }).selectOption('external');
+    const confirm = editor.getByLabel('I confirm we have permission to use this content.', { exact: true });
+    assert.equal(await confirm.isChecked(), false);
+    await editor.getByLabel('Permission details', { exact: true }).fill('Teacher agreement REF-123');
+    await confirm.check();
+    await editor.getByLabel('Permission details', { exact: true }).fill('Teacher agreement REF-456');
+    assert.equal(await confirm.isChecked(), false);
+    await confirm.check(); await editor.getByLabel('Course title', { exact: true }).fill('External course');
+    await editor.getByRole('button', { name: 'Save course', exact: true }).click(); await editor.waitFor({ state: 'detached' });
+    assert.equal(writes.at(-1).rightsNote, 'Teacher agreement REF-456'); assert.equal(writes.at(-1).rightsConfirmed, true);
+  });
+  await t.test('editing older courses preserves their ownership note and revision', async () => {
+    existingCourse = { id: 'legacy-course', title: 'Older course', status: 'draft', revision: 8, rightsConfirmed: true, rightsNote: 'Original existing reference', syllabus: [] };
+    await go(); await page.getByRole('button', { name: 'Edit', exact: true }).click();
+    const editor = page.getByRole('dialog', { name: 'Coaching editor' });
+    await editor.getByText('Content ownership', { exact: true }).click();
+    assert.equal(await editor.getByLabel('Permission details', { exact: true }).inputValue(), 'Original existing reference');
+    assert.equal(await editor.getByLabel('I confirm we have permission to use this content.', { exact: true }).isChecked(), true);
+    await editor.getByRole('button', { name: 'Save course', exact: true }).click(); await editor.waitFor({ state: 'detached' });
+    assert.equal(writes.at(-1).rightsNote, 'Original existing reference'); assert.equal(writes.at(-1).rightsConfirmed, true); assert.equal(writes.at(-1).expectedRevision, 8);
   });
   assert.deepEqual(errors, []);
 });

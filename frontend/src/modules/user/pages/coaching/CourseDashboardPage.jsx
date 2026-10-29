@@ -160,7 +160,7 @@ export const CourseDashboardPage = () => {
               <div className="flex items-center gap-1.5 shrink-0 bg-[#F7F8FA] border border-[#E6E8EC] px-2.5 py-1 rounded text-right self-start sm:self-center">
                 <Calendar className="w-3 h-3 text-[#FF8A00]" />
                 <span className="text-[10px] sm:text-[11px] font-semibold text-[#0A1D3F]">
-                  Expires: <span className="font-bold">{course.expiryDate || "30 April 2027"}</span>
+                  Expires: <span className="font-bold">{course.expiryDate || "Not set"}</span>
                 </span>
               </div>
             </div>
@@ -276,7 +276,7 @@ export const CourseDashboardPage = () => {
 
               <CourseExpiry
                 status="Active"
-                expiryDate={course.expiryDate || "30 April 2027"}
+                expiryDate={course.expiryDate || "Not set"}
               />
             </div>
           )}

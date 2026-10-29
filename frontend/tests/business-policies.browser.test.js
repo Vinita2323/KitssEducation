@@ -124,7 +124,7 @@ test('Stage 13 real browser/HTTP/MongoDB policy, free content and keyboard granu
   });
   await t.test('granular read-only staff navigation and direct protected route deny unauthorized actions', async () => {
     const staff = await f.fixtureUser(['admin'], ['books.read']); await identity(staff); await goto('/admin/books');
-    await page.getByRole('heading', { name: 'Digital Books Management', exact: true }).waitFor();
+    await page.getByRole('heading', { name: 'Digital Books', exact: true }).waitFor();
     assert.equal(await page.getByRole('button', { name: /Add.*Book/ }).isEnabled(), false);
     await goto('/admin/users'); await page.getByText('You do not have permission to view this page.', { exact: true }).waitFor();
   });

@@ -3,6 +3,7 @@ import { requireSession, requirePermission } from '../auth/auth.routes.js';
 import { object, id, text, key, revision } from '../publishing/validation.js';
 import { registrationBlocked } from './registration.js';
 import { orderDTO } from './payment.service.js';
+import { dashboardFilters } from './dashboard-filters.js';
 import { AppError } from '../../utils/AppError.js';
 
 export function createCommerceWebhookRouter(service) {
@@ -53,7 +54,18 @@ export function createCommerceRouter(service, { operations } = {}) {
   router.get('/me/orders/:id/invoice', requireSession, async (req, res) => { await service.owned(req.params.id, req.auth); throw new AppError(409, 'INVOICE_POLICY_PENDING', 'Official tax invoices are unavailable pending approved compliance policy; use a clearly labelled payment receipt'); });
   router.get('/me/orders/:id', requireSession, async (req, res) => reply(req, res, orderDTO(await service.owned(req.params.id, req.auth))));
   router.get('/me/books', requireSession, async (req, res) => reply(req, res, await service.ownedBooks(req.auth)));
-  router.get('/admin/dashboard', requirePermission('dashboard.read'), async (req, res) => reply(req, res, { ...await service.summary(req.query), ...(operations ? { operations: await operations.counts() } : {}) }));
+  router.get('/admin/book-owner-counts', requirePermission('books.read'), async (req, res) => {
+    object(req.query, ['ids'], ['ids']);
+    const ids = typeof req.query.ids === 'string' ? req.query.ids.split(',') : [];
+    if (!ids.length || ids.length > 100) throw new AppError(422, 'VALIDATION_ERROR', 'Send between 1 and 100 book ids');
+    reply(req, res, await service.ownerCounts(ids.map(value => id(value))));
+  });
+  router.get('/admin/dashboard', requirePermission('dashboard.read'), async (req, res) => {
+    // Validate once before starting queries, so a bad date cannot leave a rejected query unhandled.
+    const filters = dashboardFilters(req.query);
+    const [payments, overview] = await Promise.all([service.summary(req.query), operations?.overview(filters.range) ?? null]);
+    reply(req, res, { asOf: new Date(), period: payments.period, payments, overview });
+  });
   router.get('/admin/orders', requirePermission('commerce.read'), async (req, res) => res.json({ ...await service.list(req.query, req.auth, true), requestId: req.requestId }));
   router.get('/admin/orders/:id', requirePermission('commerce.read'), async (req, res) => { const row = await service.models.Order.findById(id(req.params.id)); if (!row) throw new AppError(404, 'NOT_FOUND', 'Order was not found'); const events = row.providerOrderId ? await service.models.Job.find({ providerOrderId: row.providerOrderId, scope: row.providerScope }).select('_id state attempts lastError paymentId providerOrderId').limit(100).lean() : []; reply(req, res, { ...orderDTO(row), eventHistory: events.map(e => ({ id: String(e._id), state: e.state, attempts: e.attempts, lastError: e.lastError, paymentId: e.paymentId, providerOrderId: e.providerOrderId })) }); });
   router.post('/admin/orders/:id/reconcile', requirePermission('commerce.reconcile'), async (req, res) => { object(req.body, []); await service.authService.limit(ctx(req), req.auth.user.publicId, 'admin-reconcile', 30); reply(req, res, await service.reconcile({ id: req.params.id }, ctx(req)), 202); });

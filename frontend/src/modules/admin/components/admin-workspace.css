@@ -50,9 +50,7 @@
 .kitss-admin .admin-page-help[open] summary { border-bottom:1px solid var(--admin-border); }
 .kitss-admin .admin-page-help > div { padding:.85rem 1rem; }
 .kitss-admin .admin-page-help p { margin-top:.35rem; color:var(--admin-muted); line-height:1.6; }
-.kitss-admin .admin-financial-help { font-size:.875rem; color:var(--admin-muted); }
-.kitss-admin .admin-financial-help summary { cursor:pointer; width:fit-content; min-height:44px; align-content:center; font-weight:600; color:var(--admin-ink); }
-.kitss-admin :where(.admin-financial-help,.admin-page-help) summary:focus-visible { outline:3px solid #0d9488; outline-offset:3px; border-radius:6px; }
+.kitss-admin .admin-page-help summary:focus-visible { outline:3px solid #0d9488; outline-offset:3px; border-radius:6px; }
 .kitss-admin.admin-login-page { background:radial-gradient(ellipse at top,#dfe9fa 0,transparent 60%),#f3f6fb; }
 .kitss-admin.admin-login-page > div { border-radius:20px; padding:2rem; box-shadow:0 15px 60px -20px #162b4d44; }
 .kitss-admin.admin-login-page input:not([type=checkbox]) { min-height:48px; font-size:1rem; }

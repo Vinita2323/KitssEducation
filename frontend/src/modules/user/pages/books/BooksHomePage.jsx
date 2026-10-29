@@ -16,10 +16,6 @@ export const BooksHomePage = () => {
   const [selectedClass, setSelectedClass] = useState(searchParams.get("class") || "All");
   const [selectedSubject, setSelectedSubject] = useState(searchParams.get("subject") || "All");
   const [selectedLanguage, setSelectedLanguage] = useState(searchParams.get("lang") || "All");
-  const [selectedSort, setSelectedSort] = useState("featured");
-  const [selectedType, setSelectedType] = useState("all");
-  const [selectedMinPrice, setSelectedMinPrice] = useState("");
-  const [selectedMaxPrice, setSelectedMaxPrice] = useState("");
 
   const [books, setBooks] = useState([]);
   const [page, setPage] = useState(1), [meta, setMeta] = useState(null), [loadError, setLoadError] = useState('');
@@ -96,7 +92,7 @@ export const BooksHomePage = () => {
     };
   }, [selectedBoard, selectedClass]);
 
-  // Fetch filtered books whenever any filter, search, or sort changes
+  // Fetch books when search, academic filters or page change
   useEffect(() => {
     const controller = new AbortController();
     let isCurrent = true;
@@ -108,11 +104,7 @@ export const BooksHomePage = () => {
           className: selectedClass,
           subject: selectedSubject,
           query,
-          sort: selectedSort,
-          type: selectedType,
           language: selectedLanguage,
-          minPrice: selectedMinPrice,
-          maxPrice: selectedMaxPrice
         }, controller.signal);
         if (!isCurrent) return;
         setBooks(result.data); setMeta(result.meta); setLoadError('');
@@ -133,13 +125,10 @@ export const BooksHomePage = () => {
     selectedClass,
     selectedSubject,
     query,
-    selectedSort,
-    selectedType,
     selectedLanguage,
-    selectedMinPrice,
-    selectedMaxPrice, page
+    page
   ]);
-  useEffect(() => setPage(1), [selectedBoard, selectedClass, selectedSubject, query, selectedSort, selectedType, selectedLanguage, selectedMinPrice, selectedMaxPrice]);
+  useEffect(() => setPage(1), [selectedBoard, selectedClass, selectedSubject, query, selectedLanguage]);
 
   // Handlers for Board, Class, Subject, and Language dropdowns
   const handleBoardClick = (boardId) => {
@@ -163,10 +152,6 @@ export const BooksHomePage = () => {
     setSelectedClass("All");
     setSelectedSubject("All");
     setSelectedLanguage("All");
-    setSelectedSort("featured");
-    setSelectedType("all");
-    setSelectedMinPrice("");
-    setSelectedMaxPrice("");
     setQuery("");
   };
 
@@ -187,9 +172,6 @@ export const BooksHomePage = () => {
     selectedClass !== "All" ||
     selectedSubject !== "All" ||
     selectedLanguage !== "All" ||
-    selectedType !== "all" ||
-    selectedMinPrice !== "" ||
-    selectedMaxPrice !== "" ||
     Boolean(query);
 
   return (
@@ -240,13 +222,6 @@ export const BooksHomePage = () => {
         onSelectSubject={handleSubjectClick}
         onSelectLanguage={handleLanguageClick}
       />
-      <div className="flex flex-wrap gap-2 bg-white p-3 rounded-xl border text-xs text-[#0A1D3F]">
-        <label>Sort <select aria-label="Sort books" className="p-2 border rounded-lg" value={selectedSort} onChange={e => setSelectedSort(e.target.value)}><option value="featured">Title</option><option value="newest">Newest</option><option value="price-low">Price: low to high</option><option value="price-high">Price: high to low</option></select></label>
-        <label>Price type <select aria-label="Book price type" className="p-2 border rounded-lg" value={selectedType} onChange={e => setSelectedType(e.target.value)}><option value="all">All</option><option value="free">Zero-priced</option><option value="paid">Paid</option></select></label>
-        <label className="min-w-0">Minimum INR <input aria-label="Minimum book price" type="number" min="0" value={selectedMinPrice} onChange={e => setSelectedMinPrice(e.target.value)} className="p-2 border rounded-lg w-24" /></label>
-        <label className="min-w-0">Maximum INR <input aria-label="Maximum book price" type="number" min="0" value={selectedMaxPrice} onChange={e => setSelectedMaxPrice(e.target.value)} className="p-2 border rounded-lg w-24" /></label>
-      </div>
-
       {/* Active Filter Chips */}
       {hasActiveFilters && (
         <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 min-w-0">
@@ -311,15 +286,7 @@ export const BooksHomePage = () => {
             </p>
           </div>
 
-          <div className="text-[11px] text-[#667085] shrink-0 font-medium">
-            {selectedSort === "rating"
-              ? "Top Rated"
-              : selectedSort === "price-low"
-              ? "Price: Low to High"
-              : selectedSort === "price-high"
-              ? "Price: High to Low"
-              : "Curated Selection"}
-          </div>
+
         </div>
 
         {loadError && <p role="alert" className="p-3 bg-red-50 text-red-700 rounded-xl">{loadError}</p>}

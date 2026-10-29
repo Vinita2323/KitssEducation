@@ -2,49 +2,33 @@ import { AdminField, AdminInput, AdminSelect } from '../components/AdminFields';
 import { useDialogFocus } from '../../../shared/ui/useDialogFocus';
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import {
-  BookOpen,
-  Plus,
-  Search,
-  Edit2,
-  Trash2,
-  Eye,
-  CheckCircle2,
-  AlertCircle,
-  Filter,
-  RotateCcw,
-  X,
-  Sparkles,
-  Layers,
-  FileText,
-  DollarSign
-} from "lucide-react";
-import { bookService } from "../../user/services/bookService";
+import { BookOpen, Plus, Search, Edit2, Trash2, Eye, CheckCircle2, AlertCircle, RotateCcw, Users, ExternalLink, UploadCloud } from "lucide-react";
+import { bookService, bookDTO } from "../../user/services/bookService";
 import { collegeService } from '../../user/services/collegeService';
 import { useAuth } from '../../user/context/AuthContext';
 import { Pagination } from '../../user/components/common/Pagination';
 import { BookReviewDialog } from '../components/BookReviewDialog';
-import { bookDTO } from '../../user/services/bookService';
 import { BookEditor } from '../components/BookEditor';
+import { bookState, rupees } from '../components/bookReadiness';
 
-const COLOR_PRESETS = [
-  { label: "Navy Blue", value: "from-[#0A1D3F] to-[#133C8B]" },
-  { label: "Emerald Green", value: "from-emerald-700 to-teal-800" },
-  { label: "Vibrant Orange", value: "from-amber-600 to-orange-700" },
-  { label: "Purple Indigo", value: "from-indigo-700 to-purple-800" },
-  { label: "Cyan Blue", value: "from-cyan-700 to-blue-800" },
-  { label: "Crimson Rose", value: "from-rose-700 to-pink-800" }
-];
+const mediaUrl = id => (import.meta.env.VITE_API_BASE_URL || '/api/v1').replace(/\/$/, '') + '/media/' + encodeURIComponent(id) + '/content';
+const filterLabel = 'text-xs font-semibold text-[#53647c] block mb-1';
+const iconButton = '!p-2 w-9 h-9';
 
-const ICON_PRESETS = ["BookOpen", "Calculator", "Atom", "BookMarked", "Globe2", "Languages"];
+function Stat({ label, value, detail }) {
+  return <div className="p-4 bg-white rounded-2xl border min-w-0">
+    <span className="text-sm font-semibold text-[#53647c] block">{label}</span>
+    <div className="text-2xl font-extrabold text-[#0A1D3F] mt-1 leading-tight">{value ?? '–'}</div>
+    {detail && <span className="text-sm text-[#53647c] block mt-0.5">{detail}</span>}
+  </div>;
+}
 
 export const AdminBooksPage = () => {
   const { can } = useAuth();
-  const [page, setPage] = useState(1), [meta, setMeta] = useState(null), [loadError, setLoadError] = useState('');
-  const [tax, setTax] = useState({board:[],class:[],subject:[]});
-  const taxonomyBoards = tax.board.map(t => ({id:t.id,name:t.label})), taxonomyClasses = tax.class.map(t => t.label), taxonomySubjects = tax.subject.map(t => ({id:t.id,name:t.label}));
-  useEffect(() => { Promise.all(['board','class','subject'].map(async kind => [kind,await collegeService.getTaxonomies(kind)])).then(rows=>setTax(Object.fromEntries(rows))).catch(e=>setLoadError(e.message)); }, []);
-  const [books, setBooks] = useState([]);
+  const [page, setPage] = useState(1), [meta, setMeta] = useState(null), [summary, setSummary] = useState(null), [loadError, setLoadError] = useState('');
+  const [tax, setTax] = useState({ board: [], class: [], subject: [] });
+  useEffect(() => { Promise.all(['board', 'class', 'subject'].map(async kind => [kind, await collegeService.getTaxonomies(kind)])).then(rows => setTax(Object.fromEntries(rows))).catch(e => setLoadError(e.message)); }, []);
+  const [books, setBooks] = useState([]), [owners, setOwners] = useState({});
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterBoard, setFilterBoard] = useState("All");
@@ -53,25 +37,18 @@ export const AdminBooksPage = () => {
   const [filterType, setFilterType] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
 
-  // Modal states
   const [review, setReview] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingBook, setEditingBook] = useState(null);
-  const [deleteConfirmId, setDeleteConfirmId] = useState(null);
+  const [removeConfirm, setRemoveConfirm] = useState(null);
   const [toastMessage, setToastMessage] = useState(null);
 
   const loadBooks = async () => {
     try {
       setLoading(true);
-      const result = await bookService.adminPage({ page,
-        board: filterBoard,
-        className: filterClass,
-        subject: filterSubject,
-        type: filterType,
-        status: filterStatus,
-        query: searchQuery
-      });
-      setBooks(result.data); setMeta(result.meta); setLoadError('');
+      const result = await bookService.adminPage({ page, board: filterBoard, className: filterClass, subject: filterSubject, type: filterType, status: filterStatus, query: searchQuery });
+      setBooks(result.data); setMeta(result.meta); setSummary(result.summary ?? null); setLoadError('');
+      if (result.data.length) bookService.ownerCounts(result.data.map(b => b.id)).then(setOwners).catch(() => setOwners({}));
     } catch (err) {
       setBooks([]); setLoadError(err.message);
     } finally {
@@ -79,374 +56,138 @@ export const AdminBooksPage = () => {
     }
   };
 
-  useEffect(() => {
-    loadBooks();
-  }, [filterBoard, filterClass, filterSubject, filterType, filterStatus, searchQuery, page]);
-  useEffect(()=>setPage(1),[filterBoard,filterClass,filterSubject,filterType,filterStatus,searchQuery]);
+  useEffect(() => { loadBooks(); }, [filterBoard, filterClass, filterSubject, filterType, filterStatus, searchQuery, page]);
+  useEffect(() => setPage(1), [filterBoard, filterClass, filterSubject, filterType, filterStatus, searchQuery]);
 
-  const showToast = (msg) => {
-    setToastMessage(msg);
-    setTimeout(() => setToastMessage(null), 3500);
-  };
-
+  const showToast = msg => { setToastMessage(msg); setTimeout(() => setToastMessage(null), 3500); };
   const handleOpenAddModal = () => { setEditingBook(null); setModalOpen(true); };
   const handleOpenEditModal = book => { setEditingBook(book); setModalOpen(true); };
-  const handleDeleteBook = async (id) => {
-    try {
-      await bookService.deleteBook(books.find(b=>b.id===id));
-      showToast("Book archived; historical records retained.");
-      setDeleteConfirmId(null);
-      loadBooks();
-    } catch (err) {
-      console.error("Error deleting book:", err);
-      setLoadError(err.message);
-    }
+  const handleRemove = async book => {
+    try { await bookService.deleteBook(book); showToast("Book removed from the store. Owners keep access."); setRemoveConfirm(null); loadBooks(); }
+    catch (err) { setRemoveConfirm(null); setLoadError(err.message); }
+  };
+  const handleRestore = async book => {
+    try { await bookService.restoreBook(book); showToast("Book restored as a draft. Publish it to put it back on sale."); loadBooks(); }
+    catch (err) { setLoadError(err.message); }
   };
 
-  // Stats calculation
-  const totalCount = meta?.total ?? 0;
-  const publishedCount = books.filter((b) => (b.status || "published") === "published").length;
-  const freeCount = books.filter((b) => b.isFree || b.price === 0).length;
-  const paidCount = books.filter((b) => !b.isFree && b.price > 0).length;
+  const filtersActive = filterBoard !== "All" || filterClass !== "All" || filterSubject !== "All" || filterType !== "all" || filterStatus !== "all" || searchQuery;
+  const clearFilters = () => { setFilterBoard("All"); setFilterClass("All"); setFilterSubject("All"); setFilterType("all"); setFilterStatus("all"); setSearchQuery(""); };
+  const removeDialog = useDialogFocus(Boolean(removeConfirm), () => setRemoveConfirm(null));
 
-  const archiveDialog=useDialogFocus(Boolean(deleteConfirmId),()=>setDeleteConfirmId(null));
   return (
-    <div className="space-y-6">
-      {loadError && <p role="alert" className="p-3 rounded-xl bg-red-50 text-red-700">{loadError}</p>}
-      <Pagination meta={meta} onChange={setPage} loading={loading} />
-      {/* Toast Notification */}
+    <div className="space-y-6 text-[#0A1D3F]">
+      {loadError && <p role="alert">{loadError}</p>}
       {toastMessage && (
-        <div role="status" className="fixed top-20 right-6 left-6 sm:left-auto z-50 bg-[#0A1D3F] text-white px-4 py-3 rounded-2xl shadow-xl border border-[#FF8A00] flex items-center gap-2 animate-in slide-in-from-top duration-200">
-          <CheckCircle2 className="w-4 h-4 text-[#17B26A]" />
-          <span className="text-xs font-bold">{toastMessage}</span>
+        <div role="status" className="fixed top-20 right-6 left-6 sm:left-auto z-50 bg-[#0A1D3F] text-white px-4 py-3 rounded-2xl shadow-xl border border-[#FF8A00] flex items-center gap-2">
+          <CheckCircle2 aria-hidden="true" className="w-4 h-4 text-[#17B26A]" /><span className="text-sm font-semibold">{toastMessage}</span>
         </div>
       )}
 
-      {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-black text-[#0A1D3F] tracking-tight flex items-center gap-2">
-            <BookOpen className="w-6 h-6 text-[#FF8A00]" />
-            <span>Digital Books Management</span>
-          </h1>
-          <p className="text-xs text-[#667085] mt-0.5">
-            Administer curriculum books, manage pricing, hierarchy, and publishing status
-          </p>
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+        <div className="min-w-0">
+          <h1 className="flex items-center gap-2"><BookOpen aria-hidden="true" className="w-6 h-6 text-[#FF8A00] shrink-0" /><span>Digital Books</span></h1>
+          <p className="text-sm mt-1">Create books, set prices and decide what students can buy. Students who own a book always keep reading it.</p>
         </div>
-
-        <div className="flex items-center gap-2">
-
-
-          <button
-            type="button"
-            disabled={!can('books.create')} onClick={handleOpenAddModal}
-            className="px-4 py-2 bg-[#FF8A00] hover:bg-[#E67C00] text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-xs active:scale-95 cursor-pointer"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Add New Book</span>
-          </button>
-        </div>
+        <button type="button" disabled={!can('books.create')} onClick={handleOpenAddModal} className="px-4 py-2.5 bg-[#FF8A00] hover:bg-[#E67C00] text-white rounded-xl text-sm font-bold flex items-center gap-1.5 shrink-0 disabled:opacity-60">
+          <Plus aria-hidden="true" className="w-4 h-4" /><span>Add New Book</span>
+        </button>
       </div>
 
-      {/* KPI Cards Strip */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className="p-4 bg-white rounded-2xl border border-[#E6E8EC] shadow-2xs">
-          <span className="text-[11px] font-semibold text-[#667085] block">Total Books</span>
-          <span className="text-xl font-black text-[#0A1D3F] mt-1 block">{totalCount}</span>
-        </div>
-        <div className="p-4 bg-white rounded-2xl border border-[#E6E8EC] shadow-2xs">
-          <span className="text-[11px] font-semibold text-[#667085] block">Published (page)</span>
-          <span className="text-xl font-black text-[#17B26A] mt-1 block">{publishedCount}</span>
-        </div>
-        <div className="p-4 bg-white rounded-2xl border border-[#E6E8EC] shadow-2xs">
-          <span className="text-[11px] font-semibold text-[#667085] block">Zero-priced (page)</span>
-          <span className="text-xl font-black text-blue-600 mt-1 block">{freeCount}</span>
-        </div>
-        <div className="p-4 bg-white rounded-2xl border border-[#E6E8EC] shadow-2xs">
-          <span className="text-[11px] font-semibold text-[#667085] block">Paid (page)</span>
-          <span className="text-xl font-black text-[#FF8A00] mt-1 block">{paidCount}</span>
-        </div>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <Stat label="Books" value={summary?.total ?? meta?.total} detail={summary?.removed ? summary.removed + ' removed' : 'In the catalogue'} />
+        <Stat label="Live" value={summary?.live} detail={summary ? summary.liveFree + ' free · ' + summary.livePaid + ' paid' : null} />
+        <Stat label="Drafts" value={summary?.drafts} detail="Never published" />
+        <Stat label="Off sale" value={summary?.offSale} detail="Owners still read" />
       </div>
 
-      {/* Filters Strip */}
-      <div className="bg-white rounded-2xl border border-[#E6E8EC] p-4 shadow-2xs space-y-3">
+      <div className="bg-white rounded-2xl border p-4 space-y-3">
         <div className="flex flex-col sm:flex-row gap-3">
-          {/* Search */}
           <div className="relative flex-1">
-            <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-            <AdminInput
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search by title, author, board, or subject..."
-              className="w-full pl-9 pr-3 py-2 bg-[#F7F8FA] border border-[#E6E8EC] rounded-xl text-xs text-[#0A1D3F] focus:outline-none focus:border-[#0A1D3F]"
-            />
+            <Search aria-hidden="true" className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <AdminInput type="text" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="Search by title, author, board, or subject..." />
           </div>
-
-          {/* Reset Filters button */}
-          {(filterBoard !== "All" || filterClass !== "All" || filterSubject !== "All" || filterType !== "all" || filterStatus !== "all" || searchQuery) && (
-            <button
-              onClick={() => {
-                setFilterBoard("All");
-                setFilterClass("All");
-                setFilterSubject("All");
-                setFilterType("all");
-                setFilterStatus("all");
-                setSearchQuery("");
-              }}
-              className="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-xs font-bold text-gray-700 rounded-xl transition shrink-0 cursor-pointer"
-            >
-              Clear Filters
-            </button>
-          )}
+          {filtersActive && <button type="button" onClick={clearFilters} className="shrink-0">Clear Filters</button>}
         </div>
-
-        {/* Dropdown Filters Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 pt-1 border-t border-[#E6E8EC]/80 text-xs">
-          <div>
-            <AdminField htmlFor="adminbookspage-field-1" className="text-[10px] font-bold text-[#667085] uppercase tracking-wider block mb-1">
-              Board
-            </AdminField>
-            <AdminSelect
-              helpLabel="Board" id="adminbookspage-field-1"
-              value={filterBoard}
-              onChange={(e) => setFilterBoard(e.target.value)}
-              className="w-full p-2 bg-[#F7F8FA] border border-[#E6E8EC] rounded-xl text-xs text-[#0A1D3F] focus:outline-none"
-            >
-              <option value="All">All Boards</option>
-              {taxonomyBoards.map((b) => (
-                <option key={b.id} value={b.id}>{b.name}</option>
-              ))}
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 pt-1">
+          {[
+            ['Board', filterBoard, setFilterBoard, [['All', 'All Boards'], ...tax.board.map(t => [t.id, t.label])]],
+            ['Class', filterClass, setFilterClass, [['All', 'All Classes'], ...tax.class.map(t => [t.label, 'Class ' + t.label])]],
+            ['Subject', filterSubject, setFilterSubject, [['All', 'All Subjects'], ...tax.subject.map(t => [t.id, t.label])]],
+            ['Pricing', filterType, setFilterType, [['all', 'All Types'], ['free', 'Free Only'], ['paid', 'Paid Only']]],
+            ['Status', filterStatus, setFilterStatus, [['all', 'All Statuses'], ['published', 'Live'], ['draft', 'Drafts & off sale'], ['archived', 'Removed']]]
+          ].map(([label, value, set, choices], i) => <div key={label}>
+            <AdminField htmlFor={'adminbookspage-field-' + (i + 1)} className={filterLabel}>{label}</AdminField>
+            <AdminSelect helpLabel={label} id={'adminbookspage-field-' + (i + 1)} value={value} onChange={e => set(e.target.value)}>
+              {choices.map(([v, text]) => <option key={v} value={v}>{text}</option>)}
             </AdminSelect>
-          </div>
-
-          <div>
-            <AdminField htmlFor="adminbookspage-field-2" className="text-[10px] font-bold text-[#667085] uppercase tracking-wider block mb-1">
-              Class
-            </AdminField>
-            <AdminSelect
-              helpLabel="Class" id="adminbookspage-field-2"
-              value={filterClass}
-              onChange={(e) => setFilterClass(e.target.value)}
-              className="w-full p-2 bg-[#F7F8FA] border border-[#E6E8EC] rounded-xl text-xs text-[#0A1D3F] focus:outline-none"
-            >
-              <option value="All">All Classes</option>
-              {taxonomyClasses.map((c) => (
-                <option key={c} value={c}>Class {c}</option>
-              ))}
-            </AdminSelect>
-          </div>
-
-          <div>
-            <AdminField htmlFor="adminbookspage-field-3" className="text-[10px] font-bold text-[#667085] uppercase tracking-wider block mb-1">
-              Subject
-            </AdminField>
-            <AdminSelect
-              helpLabel="Subject" id="adminbookspage-field-3"
-              value={filterSubject}
-              onChange={(e) => setFilterSubject(e.target.value)}
-              className="w-full p-2 bg-[#F7F8FA] border border-[#E6E8EC] rounded-xl text-xs text-[#0A1D3F] focus:outline-none"
-            >
-              <option value="All">All Subjects</option>
-              {taxonomySubjects.map((s) => (
-                <option key={s.id} value={s.id}>{s.name}</option>
-              ))}
-            </AdminSelect>
-          </div>
-
-          <div>
-            <AdminField htmlFor="adminbookspage-field-4" className="text-[10px] font-bold text-[#667085] uppercase tracking-wider block mb-1">
-              Pricing
-            </AdminField>
-            <AdminSelect
-              helpLabel="Pricing" id="adminbookspage-field-4"
-              value={filterType}
-              onChange={(e) => setFilterType(e.target.value)}
-              className="w-full p-2 bg-[#F7F8FA] border border-[#E6E8EC] rounded-xl text-xs text-[#0A1D3F] focus:outline-none"
-            >
-              <option value="all">All Types</option>
-              <option value="free">Free Only</option>
-              <option value="paid">Paid Only</option>
-            </AdminSelect>
-          </div>
-
-          <div>
-            <AdminField htmlFor="adminbookspage-field-5" className="text-[10px] font-bold text-[#667085] uppercase tracking-wider block mb-1">
-              Status
-            </AdminField>
-            <AdminSelect
-              helpLabel="Status" id="adminbookspage-field-5"
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
-              className="w-full p-2 bg-[#F7F8FA] border border-[#E6E8EC] rounded-xl text-xs text-[#0A1D3F] focus:outline-none"
-            >
-              <option value="all">All Statuses</option>
-              <option value="published">Published</option>
-              <option value="draft">Draft</option>
-            </AdminSelect>
-          </div>
+          </div>)}
         </div>
       </div>
 
-      {/* Books Table */}
-      <div className="bg-white rounded-2xl border border-[#E6E8EC] overflow-hidden shadow-2xs">
+      <div className="bg-white rounded-2xl border overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs text-[#0A1D3F]">
-            <thead className="bg-[#F7F8FA] border-b border-[#E6E8EC] text-[11px] font-bold text-[#667085] uppercase tracking-wider">
-              <tr>
-                <th className="p-3.5">Book Details</th>
-                <th className="p-3.5">Hierarchy</th>
-                <th className="p-3.5">Pricing</th>
-                <th className="p-3.5">Specs</th>
-                <th className="p-3.5 text-center">Status</th>
-                <th className="p-3.5 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[#E6E8EC]">
-              {loading ? (
-                <tr>
-                  <td colSpan="6" className="p-8 text-center text-[#667085]">
-                    Loading books catalog...
-                  </td>
-                </tr>
-              ) : books.length === 0 ? (
-                <tr>
-                  <td colSpan="6" className="p-8 text-center text-[#667085]">
-                    No books matching current filters. Try resetting filters or adding a new book.
-                  </td>
-                </tr>
-              ) : (
-                books.map((book) => {
-                  const isFree = book.isFree || book.price === 0;
-                  const isPublished = (book.status || "published") === "published";
-
-                  return (
-                    <tr key={book.id} className="hover:bg-slate-50/70 transition">
-                      {/* Title & Author */}
-                      <td className="p-3.5 min-w-[220px]">
-                        <div className="flex items-center gap-2.5">
-                          <div
-                            className={`w-9 h-12 rounded-lg bg-gradient-to-br ${
-                              book.coverColor || "from-[#0A1D3F] to-[#133C8B]"
-                            } text-white flex items-center justify-center shrink-0 text-[10px] font-bold shadow-xs`}
-                          >
-                            Cl {book.class}
-                          </div>
-                          <div className="min-w-0">
-                            <h4 className="font-bold text-[#0A1D3F] truncate">{book.title}</h4>
-                            <p className="text-[11px] text-[#667085] truncate">{book.subtitle}</p>
-                            <span className="text-[10px] text-gray-400 font-mono">ID: {book.id}</span>
-                          </div>
+          <table className="w-full text-left text-sm">
+            <thead><tr><th>Book</th><th>Class &amp; subject</th><th>Price</th><th>Status</th><th className="text-right">Actions</th></tr></thead>
+            <tbody>
+              {loading ? <tr><td colSpan="5" className="text-center text-[#53647c]">Loading books…</td></tr>
+                : books.length === 0 ? <tr><td colSpan="5" className="text-center text-[#53647c]">{filtersActive ? 'No books match these filters. Try clearing them.' : 'No books yet. Add your first book to get started.'}</td></tr>
+                : books.map(book => {
+                  const state = bookState(book), live = book.status === 'published', removed = book.status === 'archived', owned = owners[book.id] ?? 0;
+                  return <tr key={book.id}>
+                    <td className="min-w-[16rem]">
+                      <div className="flex items-start gap-3">
+                        <div className={`w-10 h-14 rounded-md bg-gradient-to-br ${book.coverColor} text-white grid place-items-center shrink-0 overflow-hidden`}>
+                          {book.coverAssetId && can('media.read') ? <img src={mediaUrl(book.coverAssetId)} alt="" className="w-full h-full object-cover" loading="lazy" /> : <BookOpen aria-hidden="true" className="w-4 h-4" />}
                         </div>
-                      </td>
-
-                      {/* Hierarchy */}
-                      <td className="p-3.5 whitespace-nowrap">
-                        <div className="flex flex-col gap-0.5">
-                          <span className="font-bold text-[#0A1D3F]">{book.board}</span>
-                          <span className="text-[11px] text-[#FF8A00] font-semibold">Class {book.class}</span>
-                          <span className="text-[11px] text-[#667085]">{book.subject}</span>
+                        <div className="min-w-0">
+                          <h4 className="font-bold break-words">{book.title}</h4>
+                          {book.author && <p className="text-sm">{book.author}</p>}
+                          <p className="text-sm text-[#53647c] flex items-center gap-1 mt-0.5"><Users aria-hidden="true" className="w-3.5 h-3.5" />{owned === 1 ? '1 owner' : owned + ' owners'}{book.pages ? ' · ' + book.pages + ' pages' : ''}</p>
                         </div>
-                      </td>
-
-                      {/* Pricing */}
-                      <td className="p-3.5 whitespace-nowrap">
-                        {isFree ? (
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                            FREE
-                          </span>
-                        ) : (
-                          <div>
-                            <span className="font-black text-sm text-[#0A1D3F]">{book.price === undefined ? 'Not configured' : `₹${book.price}`}</span>
-                            {book.originalPrice && (
-                              <span className="text-[11px] text-[#667085] line-through block">
-                                ₹{book.originalPrice}
-                              </span>
-                            )}
-                          </div>
-                        )}
-                      </td>
-
-                      {/* Specs */}
-                      <td className="p-3.5 whitespace-nowrap text-[11px] text-[#667085]">
-                        <div>{book.pages} pages</div>
-                        <div>{book.language || "Not supplied"}</div>
-                        <div>{book.fileSize || "Private PDF"}</div>
-                      </td>
-
-                      <td className="p-3.5 text-center whitespace-nowrap">
-                        <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold border ${isPublished ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-amber-50 text-amber-700 border-amber-200'}`}>{isPublished ? 'Published' : book.status === 'archived' ? 'Archived' : 'Draft'}</span>
-                      </td>
-                      <td className="p-3.5 text-right">
-                        <div className="flex flex-wrap items-center justify-end gap-2">
-                          <button type="button" className="border rounded-lg px-2 py-1 text-xs flex items-center gap-1" onClick={() => setReview({ id: book.id, intent: 'preview' })}><Eye className="w-4 h-4" aria-hidden="true" />Admin preview</button>
-                          {isPublished && <Link to={`/books/${book.id}`} className="text-xs underline">View public page</Link>}
-                          {can('books.publish') && book.status !== 'archived' && <button type="button" className="border rounded-lg px-2 py-1 text-xs" onClick={() => setReview({ id: book.id, intent: isPublished ? 'unpublish' : 'publish' })}>{isPublished ? 'Unpublish' : 'Publish'}</button>}
-
-                          <button
-                            type="button"
-                            disabled={!can('books.edit') || book.status === 'archived'} onClick={() => handleOpenEditModal(book)}
-                            className="p-1.5 rounded-lg text-blue-600 hover:bg-blue-50 transition cursor-pointer"
-                            title="Edit Book"
-                          >
-                            <Edit2 className="w-4 h-4" />
-                          </button>
-
-                          <button
-                            type="button"
-                            disabled={!can('books.archive')} onClick={() => setDeleteConfirmId(book.id)}
-                            className="p-1.5 rounded-lg text-red-600 hover:bg-red-50 transition cursor-pointer"
-                            title="Archive Book"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
+                      </div>
+                    </td>
+                    <td className="min-w-[9rem]">
+                      <span className="font-semibold block">{book.board || 'No board'}</span>
+                      <span className="text-sm text-[#53647c] block">{[book.class && 'Class ' + book.class, book.subject, book.language].filter(Boolean).join(' · ') || 'Not classified'}</span>
+                    </td>
+                    <td className="whitespace-nowrap">
+                      <span className="font-bold block">{rupees(book.priceMinor)}</span>
+                      {book.originalPriceMinor > book.priceMinor && <s className="text-sm text-[#53647c]">{rupees(book.originalPriceMinor)}</s>}
+                    </td>
+                    <td className="whitespace-nowrap"><span className={'px-2.5 py-1 rounded-full text-xs font-semibold ring-1 ' + state.tone}>{state.label}</span></td>
+                    <td className="text-right">
+                      <div className="flex flex-wrap items-center justify-end gap-1.5 ml-auto max-w-[15.5rem]">
+                        {can('books.publish') && live && book.publication?.changesPending && <button type="button" className="inline-flex items-center gap-1 text-amber-800" onClick={() => setReview({ id: book.id, intent: 'publish' })}><UploadCloud className="w-4 h-4" aria-hidden="true" />Publish changes</button>}
+                        {can('books.publish') && !removed && <button type="button" onClick={() => setReview({ id: book.id, intent: live ? 'unpublish' : 'publish' })}>{live ? 'Unpublish' : 'Publish'}</button>}
+                        {removed && can('books.archive') && <button type="button" className="inline-flex items-center gap-1" onClick={() => handleRestore(book)}><RotateCcw className="w-4 h-4" aria-hidden="true" />Restore</button>}
+                        <button type="button" className={iconButton} title="Admin preview" aria-label="Admin preview" onClick={() => setReview({ id: book.id, intent: 'preview' })}><Eye className="w-4 h-4" aria-hidden="true" /></button>
+                        {live && <Link to={`/books/${book.id}`} className={iconButton + ' inline-grid place-items-center border border-[#cbd6e5] rounded-[10px]'} title="View public page" aria-label="View public page"><ExternalLink aria-hidden="true" className="w-4 h-4" /></Link>}
+                        {!removed && <button type="button" disabled={!can('books.edit')} onClick={() => handleOpenEditModal(book)} className={iconButton + ' text-blue-700'} title="Edit Book" aria-label={'Edit ' + book.title}><Edit2 aria-hidden="true" className="w-4 h-4" /></button>}
+                        {!removed && <button type="button" disabled={!can('books.archive')} onClick={() => setRemoveConfirm(book)} className={iconButton + ' text-red-700'} title="Remove from store" aria-label={'Remove ' + book.title + ' from store'}><Trash2 aria-hidden="true" className="w-4 h-4" /></button>}
+                      </div>
+                    </td>
+                  </tr>;
+                })}
             </tbody>
           </table>
         </div>
       </div>
+      <Pagination meta={meta} onChange={setPage} loading={loading} />
 
       {review && <BookReviewDialog bookId={review.id} intent={review.intent} onClose={() => setReview(null)} onEdit={row => { setReview(null); handleOpenEditModal(bookDTO(row)); }} onPublished={message => { setReview(null); showToast(message); loadBooks(); }} />}
+      {modalOpen && <BookEditor book={editingBook} onClose={() => setModalOpen(false)} onSaved={() => { setModalOpen(false); showToast(editingBook?.status === 'published' ? 'Changes saved. Publish them when ready.' : 'Book draft saved.'); loadBooks(); }} />}
 
-      {modalOpen && <BookEditor book={editingBook} onClose={()=>setModalOpen(false)} onSaved={()=>{setModalOpen(false);showToast('Book draft saved.');loadBooks();}} />}
-
-      {/* Delete Confirmation Modal */}
-      {deleteConfirmId && (
+      {removeConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div
-            className="fixed inset-0 bg-black/50 backdrop-blur-xs"
-            onClick={() => setDeleteConfirmId(null)}
-          />
-          <div ref={archiveDialog} role="dialog" aria-modal="true" aria-label="Archive book confirmation" tabIndex={-1} className="relative bg-white w-full max-w-sm rounded-2xl shadow-xl border border-[#E6E8EC] z-10 p-5 text-center space-y-3 animate-in fade-in zoom-in-95 duration-150">
-            <div className="w-12 h-12 rounded-full bg-red-50 text-red-600 flex items-center justify-center mx-auto">
-              <AlertCircle className="w-6 h-6" />
-            </div>
-            <h3 className="text-sm font-bold text-[#0A1D3F]">
-              Confirm Archive Book?
-            </h3>
-            <p className="text-xs text-[#667085]">
-              Are you sure you want to remove this book from the catalog? This action will remove it for all students.
-            </p>
+          <div className="fixed inset-0 bg-black/50" onClick={() => setRemoveConfirm(null)} />
+          <div ref={removeDialog} role="dialog" aria-modal="true" aria-label="Remove book confirmation" tabIndex={-1} className="relative bg-white w-full max-w-sm rounded-2xl shadow-xl border z-10 p-5 text-center space-y-3">
+            <div className="w-12 h-12 rounded-full bg-red-50 text-red-600 flex items-center justify-center mx-auto"><AlertCircle aria-hidden="true" className="w-6 h-6" /></div>
+            <h3 className="font-bold">Remove “{removeConfirm.title}” from the store?</h3>
+            <p className="text-sm">It leaves the catalogue and can no longer be bought or edited. {(owners[removeConfirm.id] ?? 0) > 0 ? `The ${owners[removeConfirm.id]} student${owners[removeConfirm.id] === 1 ? ' who owns' : 's who own'} it keep reading.` : 'Anyone who owns it keeps reading.'} You can restore it later from the Removed filter.</p>
             <div className="pt-2 flex justify-center gap-2">
-              <button
-                type="button"
-                onClick={() => setDeleteConfirmId(null)}
-                className="px-4 py-1.5 border border-[#E6E8EC] rounded-xl text-xs font-semibold text-[#667085] hover:bg-gray-50 cursor-pointer"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={() => handleDeleteBook(deleteConfirmId)}
-                className="px-4 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold transition cursor-pointer"
-              >
-                Yes, Archive
-              </button>
+              <button type="button" onClick={() => setRemoveConfirm(null)}>Cancel</button>
+              <button type="button" onClick={() => handleRemove(removeConfirm)} className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-sm font-bold">Yes, remove</button>
             </div>
           </div>
         </div>

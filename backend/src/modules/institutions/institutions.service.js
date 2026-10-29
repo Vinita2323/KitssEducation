@@ -216,7 +216,7 @@ export function createInstitutionService({ models, authService, config, logger }
       else if (raw.status) { if (!(kind === 'taxonomy' ? ['active', 'inactive'] : ['draft', 'active', 'inactive', 'archived']).includes(raw.status)) throw invalid('Invalid status'); filter.status = raw.status; if (admin && raw.status === 'archived') delete filter.deletedAt; }
       else if (!admin) filter.status = 'active';
       if (kind === 'taxonomy') {
-        if (raw.kind) { if (!['board', 'class', 'subject', 'program', 'language', 'state', 'district', 'qualification', 'designation', 'experience', 'institution_type'].includes(raw.kind)) throw invalid('Invalid taxonomy kind'); filter.kind = raw.kind; }
+        if (raw.kind) { if (!['board', 'class', 'subject', 'program', 'language', 'state', 'district', 'qualification', 'designation', 'experience', 'institution_type', 'course_category'].includes(raw.kind)) throw invalid('Invalid taxonomy kind'); filter.kind = raw.kind; }
         if (raw.parentId) filter.parentIds = id(raw.parentId);
       }
       if (admin && kind === 'college' && raw.universityId) filter.universityId = id(raw.universityId);
