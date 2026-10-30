@@ -5,6 +5,7 @@ import {
   MapPin,
   GraduationCap,
   Building2,
+  Building,
   Filter,
   ArrowRight,
   Sparkles,
@@ -423,6 +424,31 @@ export const CollegesListingPage = () => {
 
       {loadError && <p role="alert" className="p-3 rounded-xl bg-red-50 text-red-700 text-sm">{loadError}</p>}
       <Pagination meta={meta} onChange={setPage} loading={loading} />
+
+      {/* Institutional Franchise Application Banner */}
+      <div className="bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-amber-500/10 border border-amber-300/80 rounded-2xl p-4 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-2xs">
+        <div className="space-y-1.5 min-w-0">
+          <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-amber-100 text-amber-900 border border-amber-300/80 text-[10px] font-black uppercase tracking-wider">
+            <Building className="w-3.5 h-3.5 text-[#FF8A00]" />
+            <span>INSTITUTIONAL PARTNER</span>
+          </div>
+          <h3 className="text-sm sm:text-base font-black text-[#0A1D3F]">
+            Franchise Form & Institutional Registration
+          </h3>
+          <p className="text-xs text-slate-600 max-w-xl leading-relaxed">
+            Submit an institutional franchise application for review. Approval criteria and any public affiliation remain pending.
+          </p>
+        </div>
+
+        <Link
+          to="/register?type=franchise"
+          className="inline-flex items-center justify-center gap-1.5 px-5 py-2.5 rounded-xl bg-[#FF8A00] hover:bg-[#E67C00] text-white text-xs font-bold shadow-2xs transition shrink-0 cursor-pointer w-full sm:w-auto text-center"
+        >
+          <span>Apply for Franchise</span>
+          <ArrowRight className="w-3.5 h-3.5" />
+        </Link>
+      </div>
+
       {/* Admission Application Modal */}
       <AdmissionApplicationModal
         isOpen={applyModalOpen}

@@ -133,7 +133,7 @@ try {
     }
     return route.continue();
   });
-  for (const path of ['/home', '/about', '/categories', '/institutes', '/colleges', '/books', '/coaching', '/coaching/select', '/results', '/register', '/account/create', '/account/verify', '/staff/accept', '/forgot-password', '/reset-password', '/login', '/profile', '/orders', '/admin']) {
+  for (const path of ['/home', '/about', '/categories', '/colleges', '/books', '/coaching', '/coaching/select', '/results', '/register', '/account/create', '/account/verify', '/staff/accept', '/forgot-password', '/reset-password', '/login', '/profile', '/orders', '/admin']) {
     await page.goto(base + path, {
       waitUntil: 'domcontentloaded',
       timeout: 60000

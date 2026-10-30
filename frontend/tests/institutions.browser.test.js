@@ -113,7 +113,7 @@ test('Stage 4 existing UI with REAL API/MongoDB and responsive matrix', { skip: 
     for (const path of ['/admin/taxonomies','/admin/universities','/admin/colleges', '/admin/colleges/' + college.id + '/courses','/admin/applications','/admin/franchise-requests']) {
       await goto(base + path); await page.locator('main').waitFor(); assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
     }
-    await identity(null); await goto(base + '/institutes'); await page.getByText('Test College', { exact: true }).waitFor(); await page.getByRole('button', { name: 'View Details', exact: true }).click(); await page.getByRole('button', { name: 'Close modal' }).click();
+    await identity(null); await goto(base + '/colleges'); await page.getByText('Test College', { exact: true }).waitFor(); await page.getByRole('button', { name: 'View Details', exact: true }).click(); await page.getByRole('button', { name: 'Close modal' }).click();
     await goto(base + '/register?type=franchise'); await page.getByRole('heading', { name: /^Franchise application/ }).first().waitFor(); assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
     mkdirSync(fileURLToPath(new URL('../test-artifacts/', import.meta.url)), { recursive: true }); await page.screenshot({ path: fileURLToPath(new URL(`../test-artifacts/stage4-${width}.png`, import.meta.url)), fullPage: true });
     await goto(base + '/admin/universities'); await page.waitForURL('**/login');

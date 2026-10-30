@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { contentService } from '../../services/contentService';
-const routes = { home:'/home', about:'/about', books:'/books', colleges:'/colleges', institutes:'/institutes', coaching:'/coaching', categories:'/categories', results:'/results' };
+const routes = { home:'/home', about:'/about', books:'/books', colleges:'/colleges', institutes:'/colleges', coaching:'/coaching', categories:'/categories', results:'/results' };
 export function usePublishedContent(key) {
   const [data, setData] = useState({ sections: [], faculty: [] }), [error, setError] = useState(''), [loading, setLoading] = useState(true);
   useEffect(() => {

@@ -1,10 +1,9 @@
 // Shared defaults for the public page and its admin editor. No database seed is required.
 export const categoryIcons = ['Video', 'Building2', 'FileCheck', 'BookOpen', 'GraduationCap', 'Globe', 'Library', 'Users'];
 export const categoryColors = ['orange', 'blue', 'teal', 'navy', 'purple'];
-export const categoryRoutes = ['/home', '/about', '/books', '/colleges', '/institutes', '/coaching', '/categories', '/results'];
+export const categoryRoutes = ['/home', '/about', '/books', '/colleges', '/coaching', '/categories', '/results'];
 export const defaultCategoryCards = [
   { id: 'coaching', title: 'Coaching', subtitle: 'Browse published courses, plans and supported lessons', tabLabel: 'Coaching', path: '/coaching', iconKey: 'Video', color: 'orange', badge: '', tags: ['Courses', 'Plans', 'Lessons'] },
-  { id: 'franchise', title: 'Institutes & Franchise Network', subtitle: 'Browse published institution information', tabLabel: 'Institutes & Franchise', path: '/institutes', iconKey: 'Building2', color: 'blue', badge: '', tags: ['Institutes', 'Universities', 'Information'] },
   { id: 'results', title: 'Examination Results', subtitle: 'View available examination information and authorized result access', tabLabel: 'Exam Results', path: '/results', iconKey: 'FileCheck', color: 'teal', badge: '', tags: ['Examinations', 'Results'] },
   { id: 'books', title: 'Digital Books & Library', subtitle: 'Browse published books and approved previews', tabLabel: 'Digital Books', path: '/books', iconKey: 'BookOpen', color: 'blue', badge: 'E-LIBRARY', tags: ['Books', 'Previews', 'Reading'] },
   { id: 'colleges', title: 'Partner Colleges & Admissions', subtitle: 'Explore published college programs and admission enquiries', tabLabel: 'Partner Colleges', path: '/colleges', iconKey: 'GraduationCap', color: 'navy', badge: 'ADMISSIONS', tags: ['Colleges', 'Programs', 'Enquiries'] },

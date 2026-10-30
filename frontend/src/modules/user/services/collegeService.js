@@ -25,7 +25,6 @@ export const collegeService = {
     return { ...result, data: result.data.map(collegeDTO) };
   },
   async getColleges(filters = {}) { const { search, ...rest } = filters; return (await readOptions('/colleges', { ...rest, q: search })).map(collegeDTO); },
-  async getInstitutes(filters = {}) { return (await this.getCollegesPage({ pageSize: 100, ...filters, view: 'institutes' })).data; },
   async getUniversities(filters = {}) { return readOptions('/universities', { q: filters.search }); },
   async getCollegesByUniversity(id) { return (await readOptions('/universities/' + encodeURIComponent(id) + '/colleges')).map(collegeDTO); },
   async getCollegeById(id) {

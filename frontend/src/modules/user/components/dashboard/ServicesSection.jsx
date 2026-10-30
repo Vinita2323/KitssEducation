@@ -96,7 +96,7 @@ const colors = {
   amber: ['bg-amber-50 border-amber-100', 'bg-amber-100 text-amber-700'],
   pink: ['bg-pink-50 border-pink-100', 'bg-pink-100 text-pink-700'],
 };
-const routes = { home: '/home', about: '/about', books: '/books', colleges: '/colleges', institutes: '/institutes', coaching: '/coaching', categories: '/categories', results: '/results' };
+const routes = { home: '/home', about: '/about', books: '/books', colleges: '/colleges', institutes: '/colleges', coaching: '/coaching', categories: '/categories', results: '/results' };
 const serviceIcons = ['GraduationCap', 'Video', 'BookOpen', 'Compass'];
 const featureIcons = ['ShieldCheck', 'User', 'Headphones', 'Clock', 'Award', 'TrendingUp'];
 const serviceColors = ['green', 'orange', 'blue', 'purple'];

@@ -72,7 +72,7 @@ export const CategoriesPage = () => {
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search categories (e.g. Coaching, Institutes, Results, Books, Colleges)..."
+            placeholder="Search categories (e.g. Coaching, Results, Books, Colleges)..."
             className="w-full h-10 pl-10 pr-9 rounded-xl bg-white border border-slate-200/90 text-xs sm:text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[#FF8A00] focus:ring-1 focus:ring-orange-100 transition shadow-2xs"
           />
           {searchQuery && (
