@@ -73,7 +73,7 @@ test('Final video admin upload, playback/resume' + (workflowsOnly ? ' workflows 
   const route=()=>'/coaching/'+d.course.id+'/lecture/'+lesson._id;
   const ready=async()=>{await page.waitForFunction(()=>document.querySelector('video')?.readyState>=2);};
   await t.test('native video actually decodes, seeks, saves and resumes after reload in both players',async()=>{
-    await identity(d.student);if(realMediaEnabled){await go('/coaching/'+d.course.id);await page.getByRole('button',{name:/Open free course/}).click();await page.getByText('Current access is active.',{exact:true}).waitFor();}await go(route());await ready();
+    await identity(d.student);if(realMediaEnabled){await go('/coaching/'+d.course.id);await page.getByRole('button',{name:/Open free course/}).click();await page.getByText('Your course access is active.',{exact:true}).waitFor();}await go(route());await ready();
     await page.getByText('No lesson summary has been published.',{exact:true}).first().waitFor();
     await page.getByText('Duration: 20 seconds',{exact:true}).waitFor();
     await page.locator('video').evaluate(async v=>{v.muted=true;await v.play();});await page.waitForFunction(()=>document.querySelector('video')?.currentTime>1);

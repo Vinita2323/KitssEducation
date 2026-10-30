@@ -39,7 +39,8 @@ test('Stage 10 persisted account operations and redacted operational visibility'
       assert.equal(response.body.meta.total, 0);
     }
     assert.equal((await get('/admin/enrollments?kind=book', admin)).status, 200);
-    assert.equal((await get('/admin/enrollments?kind=book&state=expired', admin)).status, 422);
+    assert.equal((await get('/admin/enrollments?kind=book&state=expired', admin)).status, 200);
+    assert.equal((await get('/admin/enrollments?kind=book&state=bogus', admin)).status, 422);
   });
   await t.test('reasoned suspension persists, invalidates old sessions, audits and rejects stale restoration', async () => {
     const id = student.user.publicId;

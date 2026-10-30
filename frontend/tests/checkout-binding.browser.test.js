@@ -84,7 +84,8 @@ test('checkout binds resumed orders to the displayed product (synthetic provider
     ]) {
       await page.goto(base + route + '?order=' + order.id, { waitUntil: 'domcontentloaded' });
       await page.getByRole('button', { name: buttonName }).first().click();
-      await page.getByText(/fulfillment[: ]+applied/).first().waitFor();
+      // Books report "fulfillment: applied"; the course panel reports "access applied".
+      await page.getByText(/(fulfillment:|access) applied/).first().waitFor();
       const saved = await f.models.Order.findById(order.id);
       assert.equal(saved.status, 'captured'); assert.equal(saved.simulated, true); assert.equal(saved.amountMinor, 12345);
     }

@@ -91,9 +91,3 @@ export function AdminOperationsPage({ audit = false }) {
   </section>;
 }
 
-export function AdminBookEntitlements() {
-  const {can}=useAuth(); const [version,setVersion]=useState(0),[changeError,setChangeError]=useState('');
-  const [page, setPage] = useState(1), [state, setState] = useState('all');
-  const { result, error, loading } = useRecords('/admin/enrollments', { kind: 'book', state, page },version);
-  return <section className="space-y-3 mt-6 text-[#0A1D3F]"><h2 className="text-xl font-bold">Book access review</h2>{changeError&&<p role="alert">{changeError}</p>}<p className="text-xs">Review purchase, free and exceptional rights. Revocation needs its explicit permission, mandatory reason and approved policy; payment history remains unchanged.</p><AdminSelect aria-label="Book access status" className={control} value={state} onChange={e => { setState(e.target.value); setPage(1); }}>{['all', 'active', 'revoked'].map(s => <option key={s}>{s}</option>)}</AdminSelect><State error={error} loading={loading} count={result.data.length} />{result.data.map(row => <article key={row.id} className="p-3 border rounded-xl bg-white text-xs break-all space-y-1"><strong>{row.title}</strong><p>User: {row.userId}; order: {row.orderId}</p><p>{row.state}; source {row.source}; captured source {row.sourceVerified ? 'verified' : 'not applicable/unverified'}{row.simulated ? '; Simulated Test Mode' : ''}</p>{can('access.revoke')&&row.state!=='revoked'&&<button className="border p-2 rounded-lg" onClick={async()=>{const reason=prompt('Mandatory access revocation reason');if(!reason?.trim())return;try{await authenticatedWrite('/admin/entitlements/'+row.id+'/revoke',{kind:'book',reason,expectedRevision:row.revision});setVersion(v=>v+1);}catch(e){setChangeError(e.message);}}}>Revoke book access</button>}</article>)}<Pagination meta={result.meta} onChange={setPage} loading={loading} /></section>;
-}

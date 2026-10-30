@@ -25,7 +25,8 @@ export function VerifiedCoursePurchase({ course, onRefresh }) {
   const until = course.enrollment?.expiresAt ? new Date(course.enrollment.expiresAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' }) : null;
   return <section aria-label="Course access and purchase" className="p-4 border rounded-2xl space-y-3 text-sm bg-white">
     <h2 className="font-bold">Course access</h2>
-    <p>{course.enrollment?.state === 'expired' ? 'Access expired. A new verified purchase is required for a new paid period.' : course.isEnrolled ? 'Your course access is active.' : 'Choose an approved plan.'}{course.isEnrolled && until && <> Access lasts until <strong>{until}</strong>.</>}</p>
+    <p>{course.enrollment?.state === 'expired' ? 'Access expired. A new verified purchase is required for a new paid period.' : course.isEnrolled ? 'Your course access is active.' : 'Choose an approved plan.'}</p>
+    {course.isEnrolled && until && <p>Access lasts until <strong>{until}</strong>.</p>}
     {renewing && plans.length > 0 && <p className="text-[#53647c]">Renew early to keep learning without a break. The new period starts when your current access ends.</p>}
     <div className="grid gap-2">{plans.map(plan => <div key={plan.id} className={'rounded-xl border p-3 space-y-2 ' + ((plan.isPopular || plan.popular) ? 'border-[#FF8A00]' : 'border-[#E6E8EC]')}>
       <div className="flex flex-wrap items-baseline justify-between gap-2"><span className="font-bold">{plan.name}{(plan.isPopular || plan.popular) && <span className="ml-2 text-xs font-bold text-[#FF8A00]">POPULAR</span>}</span><span className="font-extrabold">{plan.priceMinor === 0 ? 'Free' : '₹' + (plan.priceMinor / 100).toLocaleString('en-IN', { maximumFractionDigits: 2 })}<span className="font-normal text-[#53647c]"> / {term(plan)}</span></span></div>

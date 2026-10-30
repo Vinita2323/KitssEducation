@@ -75,10 +75,10 @@ export function createCoachingRouter(service) {
     router.post(base + '/:id/restore', requirePermission(kind === 'plans' ? write : 'coaching.archive'), async (req, res) => send(req, res, await service.restore(kind, req.params.id, req.params.courseId, req.body, ctx(req))));
   }
   router.post('/admin/coaching/courses/:id/publish', requirePermission('coaching.publish'), async (req, res) => send(req, res, await service.publish(req.params.id, req.body, req.auth, ctx(req))));
-  router.get('/admin/enrollments', requirePermission('learning.read'), async (req, res) => {
-    if (req.query.kind === 'book') { const { kind, ...query } = req.query; return page(req, res, await service.bookEntitlements(query)); }
-    return page(req, res, await service.enrollments(req.query, req.auth, true));
-  });
+  // Course enrollments (default) or book access (kind=book), with student details, search and state counts.
+  router.get('/admin/enrollments', requirePermission('learning.read'), async (req, res) => res.json({ ...await service.access.list(req.query), requestId: req.requestId }));
+  router.get('/admin/enrollments/:id', requirePermission('learning.read'), async (req, res) => { object(req.query, ['kind']); send(req, res, await service.access.detail(req.params.id, req.query.kind)); });
+  router.post('/admin/entitlements/:id/restore', requirePermission('access.revoke'), async (req, res) => send(req, res, await service.access.restore(req.params.id, req.body, ctx(req))));
   router.post('/admin/entitlements', requirePermission('learning.grants.manage'), async () => {
     throw new AppError(409, 'MANUAL_GRANT_POLICY_PENDING', 'Manual grants are not approved and cannot change payment truth');
   });

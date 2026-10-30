@@ -403,12 +403,17 @@ test('Stage 7 coaching and readers with real HTTP/MongoDB; fake providers only i
       name: 'Enrollment Review',
       exact: true
     }).waitFor();
-    const support = page.getByRole('row').filter({ hasText: supportOrder.id });
-    await support.getByRole('button', { name: 'Revoke access', exact: true }).waitFor();
-    page.once('dialog', dialog => dialog.accept('Synthetic support revocation test'));
-    const revoked = page.waitForResponse(r => r.url().includes('/revoke') && r.request().method() === 'POST');
+    const support = page.getByRole('row').filter({ hasText: supportOrder.reference });
+    await support.getByText(supportActor.user.emailNormalized, { exact: true }).waitFor();
     await support.getByRole('button', { name: 'Revoke access', exact: true }).click();
+    const confirm = page.getByRole('dialog', { name: 'Revoke access?' });
+    assert.equal(await confirm.getByRole('button', { name: 'Revoke access', exact: true }).isDisabled(), true, 'a reason is required');
+    await confirm.getByLabel('Reason for revoking', { exact: true }).fill('Synthetic support revocation test');
+    const revoked = page.waitForResponse(r => r.url().includes('/revoke') && r.request().method() === 'POST');
+    await confirm.getByRole('button', { name: 'Revoke access', exact: true }).click();
     assert.equal((await revoked).status(), 200);
+    await support.getByText('Revoked', { exact: true }).waitFor();
+    await support.getByRole('button', { name: 'Restore access', exact: true }).waitFor();
     assert.equal((await f.learning.enrollment(d.course.id, supportActor.auth, false)).state, 'revoked');
     assert.equal((await f.models.Order.findById(supportOrder.id)).status, 'captured');
     assert.equal(await f.models.Enrollment.countDocuments({

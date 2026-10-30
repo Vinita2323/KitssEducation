@@ -57,7 +57,7 @@ export function BookEditor({ book, onClose, onSaved }) {
   return <div className="fixed inset-0 z-50 bg-[#0A1D3F]/70 p-2 sm:p-4 flex items-center justify-center"><form ref={editorDialog} tabIndex={-1} onSubmit={save} role="dialog" aria-modal="true" aria-label="Book editor" className="bg-white rounded-2xl w-full max-w-4xl max-h-[94vh] flex flex-col text-[#0A1D3F] overflow-hidden">
     <header className="flex items-start justify-between gap-3 px-4 sm:px-6 py-4 border-b border-[#E6E8EC]">
       <div className="min-w-0"><h2 className="text-lg font-bold">{book ? 'Edit book' : 'Add new book'}</h2><p className="text-sm text-[#53647c]">Saving keeps this as a draft. {book?.status === 'published' ? 'Students see your changes after you publish them.' : 'Publish it from the book list when it is ready.'}</p></div>
-      <button type="button" onClick={onClose} aria-label="Close book editor" className="shrink-0"><X aria-hidden="true" size={18} /></button>
+      <button type="button" onClick={onClose} aria-label="Close" className="shrink-0"><X aria-hidden="true" size={18} /></button>
     </header>
 
     <div className="overflow-y-auto px-4 sm:px-6 py-5 space-y-5">

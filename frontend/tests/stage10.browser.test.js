@@ -109,15 +109,15 @@ test('Stage 10 admin-to-user persisted workflows and responsive shared navigatio
   });
   await check('public settings update the real header; job/book/order administration is usable', async () => {
     await identity(admin); await goto('/admin/settings'); await page.getByLabel('Setting name').fill(longBrand);
-    await page.getByRole('button', { name: 'Save Public Settings', exact: true }).click(); await page.getByText('Public settings saved in MongoDB.', { exact: true }).waitFor();
+    await page.getByRole('button', { name: 'Save Public Settings', exact: true }).click(); await page.getByText('Public settings saved.', { exact: true }).waitFor();
     await page.getByLabel('Setting group').selectOption('footer');
     await page.getByLabel('Footer links', { exact: true }).fill('internal | /about\nexternal | https://example.invalid/approved-reference');
     const footerSaved = page.waitForResponse(r => r.url().endsWith('/admin/settings/footer') && r.request().method() === 'PATCH');
     await page.getByRole('button', { name: 'Save Public Settings', exact: true }).click(); assert.equal((await footerSaved).status(), 200);
     await goto('/admin/operations'); await page.getByLabel('Job state').selectOption('dead'); await page.getByRole('button', { name: 'Apply filters', exact: true }).click();
     await page.getByText('result_import / dead', { exact: true }).waitFor(); assert.doesNotMatch(await page.locator('body').innerText(), /PRIVATE_BROWSER/);
-    await goto('/admin/enrollments'); await page.getByRole('heading', { name: 'Book access review', exact: true }).waitFor();
-    await page.getByText(/captured source verified/).waitFor();
+    await goto('/admin/enrollments'); await page.getByRole('button', { name: 'Books', exact: true }).click(); await page.getByRole('heading', { name: 'Book access review', exact: true }).waitFor();
+    await page.getByText(/Payment verified/).first().waitFor();
     await goto('/admin/orders'); await page.getByText(/Page 1 of 2/).waitFor(); await page.getByRole('button', { name: 'Next', exact: true }).click(); await page.getByText(/Page 2 of 2/).waitFor();
     await page.getByRole('button', { name: 'Previous', exact: true }).click(); await page.getByText(/Page 1 of 2/).waitFor();
     await identity(student); await goto('/home'); await page.locator('header').getByText('Education', { exact: true }).waitFor(); assert.ok((await page.locator('header').innerText()).includes('STAGE10LongBrand'));

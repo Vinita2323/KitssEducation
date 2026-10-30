@@ -6,7 +6,7 @@ import { AdminCoachingPage, AdminEnrollmentsPage } from '../pages/AdminCoachingP
 import { AdminOrdersPage } from '../pages/AdminOrdersPage';
 import { AdminRegistrationsPage } from '../pages/AdminRegistrationsPage';
 import React from "react";
-import { AdminUsersPage, AdminOperationsPage, AdminBookEntitlements } from '../pages/AdminOperationsPage';
+import { AdminUsersPage, AdminOperationsPage } from '../pages/AdminOperationsPage';
 import { Routes, Route, Navigate } from "react-router-dom";
 import { AdminLayout } from "../components/layout/AdminLayout";
 import { AdminDashboardPage } from "../pages/AdminDashboardPage";
@@ -35,7 +35,7 @@ export const AdminRoutes = () => {
         <Route path="results" element={<RouteGuard permission="results.read"><AdminResultsPage /></RouteGuard>} />
         <Route path="notifications" element={<RouteGuard permission="notifications.read"><AdminNotificationsPage /></RouteGuard>} />
         <Route path="coaching" element={<RouteGuard permission="coaching.read"><AdminCoachingPage /></RouteGuard>} />
-        <Route path="enrollments" element={<RouteGuard permission="learning.read"><AdminEnrollmentsPage /><AdminBookEntitlements /></RouteGuard>} />
+        <Route path="enrollments" element={<RouteGuard permission="learning.read"><AdminEnrollmentsPage /></RouteGuard>} />
         <Route path="orders" element={<RouteGuard permission="commerce.read"><AdminOrdersPage /></RouteGuard>} />
         <Route path="registrations" element={<RouteGuard permission="registrations.read"><AdminRegistrationsPage /></RouteGuard>} />
         <Route path="content" element={<RouteGuard permission="content.read"><AdminContentPage /></RouteGuard>} />

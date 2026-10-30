@@ -49,16 +49,16 @@ test('Stage 6 existing UI real API and standalone MongoDB with explicitly isolat
   });
   await t.test('isolated mock Checkout dismissal, pending status, refresh and authorized-only payment grant nothing', async () => {
     checkoutEnabled = true; action = 'dismiss'; await goto('/books/' + book.id + '/checkout'); await page.evaluate(() => { window.__fixtureAction = 'dismiss'; });
-    await page.getByRole('button', { name: /Pay .* Access Book/ }).click(); await page.getByText(/Checkout dismissed/).waitFor(); orderId = new URL(page.url()).searchParams.get('order'); assert.ok(orderId);
+    await page.getByRole('button', { name: /Pay .* Access Book/ }).click(); await page.getByText(/Checkout closed/).waitFor(); orderId = new URL(page.url()).searchParams.get('order'); assert.ok(orderId);
     assert.equal(await f.models.BookEntitlement.countDocuments(), 0); await f.models.Book.updateOne({_id:book.id},{$set:{'publishedSnapshot.priceMinor':25000}}); await page.reload({ waitUntil: 'domcontentloaded' }); await page.getByText(/fulfillment: pending/).waitFor(); assert.ok((await page.getByRole('button',{name:/Pay .* Access Book/}).textContent()).includes('123.45'));
     action = 'failed'; await page.evaluate(() => { window.__fixtureAction = 'failed'; }); await page.getByRole('button', { name: /Pay .* Access Book/ }).click(); await page.getByText(/Payment attempt failed. No access granted/).waitFor(); assert.equal(await f.models.BookEntitlement.countDocuments(), 0);
     action = 'authorized'; await page.evaluate(() => { window.__fixtureAction = 'authorized'; }); await page.getByRole('button', { name: /Pay .* Access Book/ }).click();
-    await page.getByText(/Payment pending capture/).waitFor(); assert.equal(await f.models.BookEntitlement.countDocuments(), 0);
+    await page.getByText(/Your payment is awaiting confirmation/).waitFor(); assert.equal(await f.models.BookEntitlement.countDocuments(), 0);
   });
   await t.test('captured payment and fulfillment are backend verified; order history/receipts and secure private bytes', async () => {
     action = 'captured'; await page.evaluate(() => { window.__fixtureAction = 'captured'; }); await page.getByRole('button', { name: /Pay .* Access Book/ }).click();
     await page.getByText('Test payment captured and fulfilled', { exact: true }).waitFor({ timeout: 45000 }); assert.equal(await f.models.BookEntitlement.countDocuments(), 1);
-    await goto('/orders'); await page.getByText(/SIMULATED TEST - captured; fulfillment: applied/).waitFor(); await page.getByRole('button', { name: 'View Receipt', exact: true }).click(); await page.getByText('Test Mode Order Details - Not a Tax Invoice', { exact: true }).waitFor();
+    await goto('/orders'); await page.getByText(/Simulated Test Mode - captured; fulfillment: applied/).waitFor(); await page.getByRole('button', { name: 'View Receipt', exact: true }).click(); await page.getByText('Test Mode Order Details - Not a Tax Invoice', { exact: true }).waitFor();
     const download = page.waitForEvent('download'); await page.getByRole('button', { name: 'Download Test Payment Receipt (JSON)', exact: true }).click(); assert.match((await download).suggestedFilename(), /test-receipt\.json$/);
     await goto('/my-books'); const link = page.getByRole('link', { name: 'Open secure PDF', exact: true }); await link.waitFor(); assert.equal(await link.getAttribute('href'), '/books/' + book.id + '/read');
   });
@@ -83,7 +83,7 @@ test('Stage 6 existing UI real API and standalone MongoDB with explicitly isolat
     await page.waitForURL(/\/login/, { waitUntil: 'domcontentloaded', timeout: 60000 });
     await page.getByRole('button', { name: 'Login', exact: true }).waitFor();
     assert.equal((await context.request.get(base + '/api/v1/auth/me')).status(), 401);
-    assert.equal(await page.getByText(/SIMULATED TEST - captured/).count(), 0);
+    assert.equal(await page.getByText(/Simulated Test Mode - captured/).count(), 0);
   });
   for (const width of (process.env.KITSS_BROWSER_WORKFLOWS_ONLY ? [] : [320,375,390,414,768,1024,1440])) await t.test('commerce responsive layout at ' + width + 'px', async () => {
     await page.setViewportSize({ width, height: 950 }); await identity(admin);

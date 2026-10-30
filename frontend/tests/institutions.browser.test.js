@@ -91,22 +91,21 @@ test('Stage 4 existing UI with REAL API/MongoDB and responsive matrix', { skip: 
     await page.getByRole('button', { name: 'Continue', exact: true }).click(); const submitted = response('/admission-applications'); await page.getByRole('button', { name: 'Submit Application', exact: true }).click(); assert.equal((await submitted).status(), 201);
     assert.equal(await models.AdmissionApplication.countDocuments(), 1);
   });
-  await t.test('franchise multi-step save/recover/document-free submission persists', async () => {
-    await goto(base + '/register?type=franchise'); await by('Franchise institutionName').fill(''); await by('Franchise institutionName').pressSequentially('Browser Test Applicant Institute', { delay: 20 }); await by('Franchise institutionType').selectOption('Test Institute'); await by('Franchise institutionName').fill(''); await by('Franchise institutionName').pressSequentially('Browser Test Applicant Institute', { delay: 20 }); await by('Franchise institutionName').blur(); assert.equal(await by('Franchise institutionName').inputValue(), 'Browser Test Applicant Institute');
-    await page.getByRole('button', { name: 'Continue to Affiliation' }).click(); await by('Select franchise university').click(); await page.getByText('Test University', { exact: true }).last().click();
-    await by('Select franchise college').click(); await page.getByText('Test College', { exact: true }).last().click(); await page.getByRole('button', { name: 'Test Program', exact: true }).click();
-    const draftSaved = response('/franchise-applications'); await page.getByRole('button', { name: 'Save Draft', exact: true }).click(); const draftResponse = await draftSaved; assert.equal(draftResponse.status(), 201); const savedDraft = (await draftResponse.json()).data; await goto(base + '/register?type=franchise&draft=' + savedDraft.id + '#' + (savedDraft.draftCapability || '')); await page.getByText(/Recovered /).waitFor(); await page.waitForFunction(() => document.querySelector('[aria-label="Franchise institutionName"]')?.value === 'Browser Test Applicant Institute'); assert.equal(await by('Franchise institutionName').inputValue(), 'Browser Test Applicant Institute'); await page.getByRole('button', { name: 'Continue to Affiliation' }).click(); await page.getByRole('button', { name: 'Continue to Contact' }).waitFor();
-    await page.getByRole('button', { name: 'Continue to Contact' }).click(); await by('Franchise contactPerson').pressSequentially('Test Contact', { delay: 10 }); await by('Franchise designation').selectOption('Test Director'); await by('Franchise email').pressSequentially('franchise@example.invalid', { delay: 10 }); await by('Franchise mobile').pressSequentially('9000000000', { delay: 10 });
-    await page.getByRole('button', { name: 'Continue to Campus Location' }).click(); await by('Franchise address').pressSequentially('Test Campus', { delay: 10 }); await by('Franchise city').pressSequentially('Test City', { delay: 10 }); await by('Franchise state').selectOption('Test State'); await by('Franchise pincode').pressSequentially('110001', { delay: 10 });
-    await page.getByRole('button', { name: 'Continue to Documents' }).click(); await page.getByRole('button', { name: 'Review Application' }).click(); await page.getByRole('checkbox').check();
-    const submitted = response('/submit'); await page.getByRole('button', { name: 'Submit Franchise Application', exact: true }).click(); assert.equal((await submitted).status(), 200);
-    await page.getByText('Franchise Application Received', { exact: true }).waitFor(); assert.equal(await models.FranchiseApplication.countDocuments({ status: 'pending' }), 1);
+  // Registration now renders the policy-driven FranchiseApplicationForm, whose full multi-step flow is
+  // covered by franchise-workflow.browser.test.js. Here: the form opens, and a submitted application
+  // (created through the institution service) reaches the admin review below.
+  await t.test('franchise form opens and a submitted application persists as pending', async () => {
+    await goto(base + '/register?type=franchise'); await page.getByRole('heading', { name: /^Franchise application/ }).first().waitFor();
+    const studentAuth = await auth.authenticate(student.token, 'student');
+    const draft = await domain.createDraft({ universityId: university.id, collegeId: college.id, institution: { name: 'Browser Test Applicant Institute', type: 'Test Institute', yearEstablished: 2000 }, programsOffered: ['Test Program'], contact: { person: 'Test Contact', designation: 'Test Director', email: 'franchise@example.invalid', mobile: '9000000000' }, location: { address: 'Test Campus', city: 'Test City', stateId: state.id, pincode: '110001' }, idempotencyKey: randomUUID() }, studentAuth, ctx);
+    await domain.submitFranchise(draft.id, { expectedRevision: draft.revision, declaration: { version: 'franchise-v1', accepted: true } }, studentAuth, draft.draftCapability, ctx);
+    assert.equal(await models.FranchiseApplication.countDocuments({ status: 'pending' }), 1);
   });
   await t.test('admin admission/franchise note-only review does not change status', async () => {
     await identity(admin); await goto(base + '/admin/applications'); await page.getByRole('button', { name: /^Review admission / }).first().click();
     const noteBox = page.locator('textarea').last(); await noteBox.fill('Browser test admission note'); const noteSaved = response('/notes'); await page.getByRole('button', { name: /Save Note Only|Add Note/ }).click(); assert.equal((await noteSaved).status(), 200);
     assert.equal((await models.AdmissionApplication.findOne()).status, 'new');
-    await goto(base + '/admin/franchise-requests'); await page.getByRole('row', { name: /^Review franchise / }).first().click(); await page.locator('textarea').last().fill('Browser test franchise note'); const saved = response('/notes'); await page.getByRole('button', { name: 'Save Note Only' }).click(); assert.equal((await saved).status(), 200);
+    await goto(base + '/admin/franchise-requests'); await page.getByRole('button', { name: /^Review franchise / }).first().click(); await page.locator('textarea').last().fill('Browser test franchise note'); const saved = response('/notes'); await page.getByRole('button', { name: 'Save Note Only' }).click(); assert.equal((await saved).status(), 200);
     assert.equal(await page.getByRole('button', { name: 'Approve Franchise' }).isDisabled(), true); assert.equal((await models.FranchiseApplication.findOne()).status, 'pending');
   });
   for (const width of (process.env.KITSS_STAGE4_WORKFLOWS_ONLY ? [] : [320, 375, 390, 414, 768, 1024, 1440])) await t.test(`responsive directories/modals/forms/admin boundaries at ${width}px`, async () => {
@@ -115,7 +114,7 @@ test('Stage 4 existing UI with REAL API/MongoDB and responsive matrix', { skip: 
       await goto(base + path); await page.locator('main').waitFor(); assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
     }
     await identity(null); await goto(base + '/institutes'); await page.getByText('Test College', { exact: true }).waitFor(); await page.getByRole('button', { name: 'View Details', exact: true }).click(); await page.getByRole('button', { name: 'Close modal' }).click();
-    await goto(base + '/register?type=franchise'); await by('Franchise institutionName').waitFor(); assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
+    await goto(base + '/register?type=franchise'); await page.getByRole('heading', { name: /^Franchise application/ }).first().waitFor(); assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
     mkdirSync(fileURLToPath(new URL('../test-artifacts/', import.meta.url)), { recursive: true }); await page.screenshot({ path: fileURLToPath(new URL(`../test-artifacts/stage4-${width}.png`, import.meta.url)), fullPage: true });
     await goto(base + '/admin/universities'); await page.waitForURL('**/login');
   });

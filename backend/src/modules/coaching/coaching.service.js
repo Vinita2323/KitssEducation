@@ -4,6 +4,7 @@ import { escapeRegex } from '../../utils/escapeRegex.js';
 import { AppError } from '../../utils/AppError.js';
 import { object, id, revision, text, invalid } from '../publishing/validation.js';
 import { inputFor, integer, pagination } from './validation.js';
+import { createEnrollmentAdmin } from './enrollment-admin.js';
 const missing = () => new AppError(404, 'NOT_FOUND', 'Learning resource was not found');
 const denied = () => new AppError(403, 'ACCESS_DENIED', 'A current verified enrollment or book entitlement is required');
 const same = (a, b) => String(a) === String(b);
@@ -47,6 +48,7 @@ export function createCoachingService({
   const service = {
     models,
     coordination,
+    access: createEnrollmentAdmin({ models, commerce, publishing, authService, coordination }),
     async limit(ctx, auth) {
       await authService.limit(ctx, String(auth.user._id), 'learning-mutation', 120);
     },
@@ -418,23 +420,6 @@ export function createCoachingService({
         state: row.revokedAt ? 'revoked' : row.expiresAt <= new Date() ? 'expired' : active ? 'active' : 'blocked',
         canAccess: active
       } : null;
-    },
-    async bookEntitlements(query) {
-      const { page, pageSize } = pagination(query, ['userId', 'bookId']);
-      const filter = {};
-      if (query.userId) filter.userId = id(query.userId);
-      if (query.bookId) filter.bookId = id(query.bookId);
-      if (query.state && query.state !== 'all') {
-        if (!['active', 'revoked'].includes(query.state)) throw invalid('Invalid book entitlement state');
-        filter.revokedAt = query.state === 'revoked' ? { $ne: null } : null;
-      }
-      const rows = await commerce.models.BookEntitlement.find(filter).sort({ createdAt: -1, _id: -1 }).skip((page - 1) * pageSize).limit(pageSize);
-      const total = await commerce.models.BookEntitlement.countDocuments(filter);
-      return { data: await Promise.all(rows.map(async row => {
-        const book = await publishing.models.Book.findById(row.bookId).select('title');
-        const verified = await commerce.models.Order.exists({ _id: row.orderId, userId: row.userId, status: 'captured', 'product.kind': 'book', 'product.id': row.bookId, 'fulfillment.state': 'applied' });
-        return { id: String(row._id), revision: row.revision, source: row.source, revokeReason: row.revokeReason, expiresAt: row.expiresAt, userId: String(row.userId), bookId: String(row.bookId), title: book?.title || 'Archived/unavailable book', orderId: String(row.orderId), grantedAt: row.grantedAt, state: row.revokedAt ? 'revoked' : 'active', sourceVerified: Boolean(verified), simulated: row.simulated };
-      })), meta: { page, pageSize, total, totalPages: Math.max(1, Math.ceil(total / pageSize)) } };
     },
     async enrollments(query, auth, admin = false) {
       const {

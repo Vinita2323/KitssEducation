@@ -34,7 +34,7 @@ test('Stage 13 real browser/HTTP/MongoDB policy, free content and keyboard granu
     await page.getByLabel('Approved amount (INR minor units)', { exact: true }).fill('0');
     await page.getByLabel('Owner approved privacy policy', { exact: true }).check();
     await page.getByLabel('Owner approved document requirements (including explicit none)', { exact: true }).check();
-    await page.getByLabel('Policy change reason').fill('Synthetic browser policy only');
+    await page.getByLabel('Policy change reason', { exact: true }).fill('Synthetic browser policy only');
     const saved = page.waitForResponse(r => r.url().endsWith('/admin/business-policies') && r.request().method() === 'PATCH');
     await page.getByRole('button', { name: 'Save business policies', exact: true }).click(); const savedResponse = await saved; assert.equal(savedResponse.status(), 200, JSON.stringify(await savedResponse.json()));
     assert.equal((await f.service.business.settings()).value.registrations.study.amountMinor, 0);
@@ -46,14 +46,9 @@ test('Stage 13 real browser/HTTP/MongoDB policy, free content and keyboard granu
     await page.getByLabel('Enable refund requests', { exact: true }).check();
     await page.getByLabel('Enable course_plan refund review', { exact: true }).check();
     await page.getByLabel('course_plan allowed reason categories (one per line)', { exact: true }).fill('technical_failure');
-    await page.getByLabel('Owner approved franchise policy', { exact: true }).check();
-    await page.getByLabel('franchise version', { exact: true }).fill('synthetic-franchise-v1');
-    await page.getByLabel('franchise effectiveFrom (UTC ISO date)', { exact: true }).fill('2020-01-01T00:00:00Z');
-    await page.getByLabel('Enable joining fee', { exact: true }).check();
-    await page.getByLabel('joining amount (INR minor units)', { exact: true }).fill('100');
-    await page.getByLabel('Enable renewal fee', { exact: true }).check();
-    await page.getByLabel('renewal amount (INR minor units)', { exact: true }).fill('200');
-    await page.getByLabel('Policy change reason').fill('Synthetic financial configuration only');
+    // Franchise fees moved to the separate Franchise Policy form (covered by franchise-workflow tests).
+    await page.getByText('Franchise eligibility, documents, agreements and fees are managed in Franchise Policy above.', { exact: true }).waitFor();
+    await page.getByLabel('Policy change reason', { exact: true }).fill('Synthetic financial configuration only');
     const response = page.waitForResponse(r => r.url().endsWith('/admin/business-policies') && r.request().method() === 'PATCH');
     await page.getByRole('button', { name: 'Save business policies', exact: true }).click(); assert.equal((await response).status(), 200);
     assert.equal((await f.service.business.settings()).value.refunds.courseWindowDays, 7);
@@ -137,7 +132,7 @@ test('Stage 13 real browser/HTTP/MongoDB policy, free content and keyboard granu
     await page.waitForURL('**/books/' + d.book.id + '/read', { waitUntil: 'domcontentloaded' });
     assert.equal(await f.models.BookEntitlement.countDocuments({ userId: d.student.user._id, source: 'free' }), 1);
     await goto('/coaching/' + d.course.id); await page.getByRole('button', { name: /Open free course/ }).click();
-    await page.getByText('Current access is active.', { exact: true }).waitFor();
+    await page.getByText('Your course access is active.', { exact: true }).waitFor();
     const response = await page.request.get(base + '/api/v1/coaching/courses/' + d.course.id + '/lessons/' + d.lesson.id); assert.equal(response.status(), 200);
     assert.equal(await f.models.Order.countDocuments(), 0);
     assert.equal(f.provider.creates, 0); assert.deepEqual(errors, []);
@@ -162,8 +157,8 @@ test('Stage 13 real browser/HTTP/MongoDB policy, free content and keyboard granu
     await page.getByText('Access expired. A new verified purchase is required for a new paid period.', { exact: true }).waitFor();
     await page.getByRole('button', { name: /^Purchase / }).click();
     await page.waitForURL('**/coaching/' + d.course.id + '?order=*', { waitUntil: 'domcontentloaded' });
-    await page.getByText('Verified payment fulfilled. Refresh course to open lessons.', { exact: true }).waitFor();
-    await page.getByRole('button', { name: 'Refresh course access', exact: true }).click(); await page.getByText('Current access is active.', { exact: true }).waitFor();
+    await page.getByText('Payment confirmed and course access is ready. Refresh the course to open lessons.', { exact: true }).waitFor();
+    await page.getByRole('button', { name: 'Refresh course access', exact: true }).click(); await page.getByText('Your course access is active.', { exact: true }).waitFor();
     const rows = await f.models.Order.find({ userId: actor.user._id }); assert.equal(rows.length, 2); assert.ok(rows.every(r => r.status === 'captured' && r.simulated));
     const enrollment = await f.models.Enrollment.findOne({ userId: actor.user._id }); assert.equal(enrollment.purchaseHistory.length, 1); assert.notEqual(String(enrollment.orderId), first.id);
     await goto('/orders'); await page.getByRole('button', { name: 'View Receipt', exact: true }).first().click();
@@ -174,14 +169,14 @@ test('Stage 13 real browser/HTTP/MongoDB policy, free content and keyboard granu
     await page.getByRole('button', { name: 'Submit refund request', exact: true }).click(); assert.equal((await requested).status(), 201);
     await identity(d.admin); await goto('/admin/refunds'); await page.getByLabel('Review reason', { exact: true }).fill('Approved review only, no execution');
     const reviewed = page.waitForResponse(r => r.url().endsWith('/refund-request') && r.request().method() === 'PATCH');
-    await page.getByRole('button', { name: 'Approve refund request (no execution)', exact: true }).click(); assert.equal((await reviewed).status(), 200);
+    await page.getByRole('button', { name: 'Approve request (refund not sent)', exact: true }).click(); assert.equal((await reviewed).status(), 200);
     const refund = await f.models.Order.findOne({ userId: actor.user._id, 'refundRequest.status': 'approved' }); assert.equal(refund.status, 'captured'); assert.equal(refund.refundRequest.providerStatus, 'not_executed');
   });
   await t.test('exceptional request/issue UI respects the independent policy gate and produces no payment', async () => {
     await identity(d.admin); await goto('/admin/access-requests');
-    await page.getByLabel('userId', { exact: true }).fill(d.other.user.publicId); await page.getByLabel('resourceId', { exact: true }).fill(d.book.id);
-    await page.getByLabel('expiresAt', { exact: true }).fill(new Date(Date.now() + 86400000).toISOString().slice(0, 16));
-    await page.getByLabel('reason', { exact: true }).fill('Synthetic browser exceptional access');
+    await page.getByLabel('User reference', { exact: true }).fill(d.other.user.publicId); await page.getByLabel('Book or course reference', { exact: true }).fill(d.book.id);
+    await page.getByLabel('Access ends', { exact: true }).fill(new Date(Date.now() + 86400000).toISOString().slice(0, 16));
+    await page.getByLabel('Reason', { exact: true }).fill('Synthetic browser exceptional access');
     const requested = page.waitForResponse(r => r.url().endsWith('/admin/access-requests') && r.request().method() === 'POST');
     await page.getByRole('button', { name: 'Request exceptional access', exact: true }).click(); assert.equal((await requested).status(), 201);
     await page.getByLabel('Review reason', { exact: true }).fill('Issue under approved synthetic policy');

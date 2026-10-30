@@ -310,48 +310,5 @@ export function AdminCoachingPage() {
     </form></div>}
   </div>;
 }
-export function AdminEnrollmentsPage() {
-  const {
-      can
-    } = useAuth(),
-    [rows, setRows] = useState([]),
-    [error, setError] = useState(''),
-    [state, setState] = useState('all'),
-    [page, setPage] = useState(1),
-    [total, setTotal] = useState(0),
-    [version, setVersion] = useState(0),
-    [busy, setBusy] = useState(false);
-  useEffect(() => {
-    const controller = new AbortController();
-    setBusy(true);
-    httpClient.request('/admin/enrollments?state=' + state + '&page=' + page, {
-      signal: controller.signal
-    }).then(r => {
-      setRows(r.data);
-      setTotal(r.meta.total);
-    }).catch(e => {
-      if (e.code !== 'ABORTED') setError(e.message);
-    }).finally(() => {
-      if (!controller.signal.aborted) setBusy(false);
-    });
-    return () => controller.abort();
-  }, [state, page, version]);
-  async function revoke(row) {
-    const reason = prompt('Reason for revoking this enrollment');
-    if (!reason?.trim()) return;
-    try {
-      await authenticatedWrite('/admin/entitlements/' + row.id + '/revoke', {
-        kind: 'course',
-        reason,
-        expectedRevision: row.revision
-      });
-      setVersion(v => v + 1);
-    } catch (e) {
-      setError(e.message);
-    }
-  }
-  return <div className="space-y-4"><header className="bg-white border p-5 rounded-2xl"><h1 className="font-bold text-xl text-[#0A1D3F]">Enrollment Review</h1><p className="text-xs">Manual access grants are disabled. Revocation never marks an order paid or issues a refund.</p></header><AdminSelect aria-label="Enrollment status" value={state} onChange={e => {
-      setState(e.target.value);
-      setPage(1);
-    }} className={css}>{['all', 'active', 'expired', 'revoked'].map(s => <option key={s}>{s}</option>)}</AdminSelect>{error && <p role="alert">{error}</p>}{busy && <p role="status">Loading…</p>}<div className="bg-white border rounded-2xl overflow-x-auto"><table className="w-full text-xs"><thead><tr>{['User reference', 'Course', 'Source order', 'Expires', 'Status', 'Actions'].map(h => <th className="p-3 text-left" key={h}>{h}</th>)}</tr></thead><tbody>{rows.map(r => <tr className="border-t" key={r.id}><td className="p-3">{String(r.userId)}</td><td>{r.course.title}</td><td className="p-3 break-all">{String(r.orderId)}{r.simulated && <span className="block">Simulated Test Mode</span>}</td><td className="p-3">{new Date(r.expiresAt).toLocaleString()}</td><td>{r.state}</td><td>{can('access.revoke') && r.state !== 'revoked' && <button onClick={() => revoke(r)}>Revoke access</button>}</td></tr>)}</tbody></table>{!busy && !rows.length && <p className="p-5">No enrollments found.</p>}</div><div className="flex gap-3"><button disabled={page === 1} onClick={() => setPage(p => p - 1)}>Previous</button><span>Page {page}</span><button disabled={page * 20 >= total} onClick={() => setPage(p => p + 1)}>Next</button></div></div>;
-}
+// Enrollment review lives in its own page; re-exported for existing imports.
+export { AdminEnrollmentsPage } from './AdminEnrollmentsPage';
