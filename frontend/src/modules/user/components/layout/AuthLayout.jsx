@@ -35,9 +35,9 @@ export const AuthLayout = ({ title, showBack = true, backPath }) => {
       )}
 
       {/* Auth Content Card */}
-      <div className={`${isRegisterPage ? "max-w-2xl lg:max-w-3xl" : "max-w-md"} w-full mx-auto my-auto py-1 transition-all duration-300`}>
+      <main className={`${isRegisterPage ? "max-w-2xl lg:max-w-3xl" : "max-w-md"} w-full mx-auto my-auto py-1 transition-all duration-300`}>
         <Outlet context={outletContext} />
-      </div>
+      </main>
 
       {/* Footer */}
       <div className="text-center text-[11px] text-[#667085] py-1">

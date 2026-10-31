@@ -1,5 +1,6 @@
 import '../admin-accessibility.css';
 import '../admin-workspace.css';
+import '../admin-design.css';
 import { useAdminAccessibility } from '../useAdminAccessibility';
 import { MotionConfig } from 'framer-motion';
 import React, { useState, useRef, useEffect } from "react";
@@ -9,7 +10,8 @@ import {
   Menu,
   X,
   ShieldCheck,
-  ExternalLink
+  ExternalLink,
+  LogOut
 } from "lucide-react";
 
 import { useAuth } from '../../../user/context/AuthContext';
@@ -29,6 +31,7 @@ export const AdminLayout = () => {
   useEffect(() => { content.current?.scrollTo(0, 0); }, [location.pathname]);
   useAdminAccessibility(root,location.pathname);
   const drawer = useDialogFocus(sidebarOpen, () => setSidebarOpen(false));
+  const initials = (user?.name || 'Admin').trim().split(/\s+/).slice(0, 2).map(part => part[0]).join('').toUpperCase();
 
   useEffect(() => {
     const wide = window.matchMedia('(min-width: 1024px)');
@@ -41,7 +44,7 @@ export const AdminLayout = () => {
     <MotionConfig reducedMotion="user"><div ref={root} className="kitss-admin h-dvh overflow-hidden bg-[#F7F8FA] flex flex-col">
       <a href="#admin-main" className="admin-skip-link">Skip to admin content</a>
       {/* Admin Top Header */}
-      <header className="shrink-0 z-40 bg-[#0A1D3F] text-white border-b border-[#133C8B] shadow-sm">
+      <header className="admin-topbar shrink-0 z-40 bg-[#0A1D3F] text-white border-b border-[#133C8B] shadow-sm">
         <div className="px-4 sm:px-6">
           <div className="flex items-center justify-between h-16">
             {/* Left: Mobile hamburger & Logo */}
@@ -68,7 +71,7 @@ export const AdminLayout = () => {
               </button>
 
               <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-[#FF8A00] flex items-center justify-center font-extrabold text-white shadow-xs">
+                <div className="admin-brand-mark w-9 h-9 rounded-xl bg-[#FF8A00] flex items-center justify-center font-extrabold text-white shadow-xs">
                   <ShieldCheck className="w-5 h-5" />
                 </div>
                 <div>
@@ -82,26 +85,24 @@ export const AdminLayout = () => {
               </div>
             </div>
 
-            <button onClick={async () => { try { await logout(); navigate("/admin/login"); } catch { alert("Logout failed; retry when the connection is restored."); } }} className="text-xs p-2">Sign out</button>
-            {/* Right: Switch to Student Portal & Admin Avatar */}
-            <div className="flex items-center gap-3">
+            {/* Right: Student Portal, admin identity and sign out */}
+            <div className="flex items-center gap-2 sm:gap-3">
               <Link
                 to="/home"
-                className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-semibold text-white transition border border-white/15"
+                className="admin-header-link hidden sm:inline-flex"
               >
                 <span>Student Portal</span>
-                <ExternalLink className="w-3.5 h-3.5" />
+                <ExternalLink aria-hidden="true" className="w-3.5 h-3.5" />
               </Link>
 
-              <div className="flex items-center gap-2 pl-2 border-l border-white/15">
-                <div className="w-8 h-8 rounded-full bg-[#FF8A00] text-white font-bold flex items-center justify-center text-xs shadow-xs">
-                  AD
-                </div>
+              <div className="admin-user-chip">
+                <div className="admin-avatar" aria-hidden="true">{initials}</div>
                 <div className="hidden md:block text-left">
                   <p className="text-xs font-bold text-white leading-tight">{user.name}</p>
                   <p className="text-[10px] text-emerald-400">{user.roles.includes("super_admin") ? "Super Admin" : "Staff"}</p>
                 </div>
               </div>
+              <button type="button" onClick={async () => { try { await logout(); navigate("/admin/login"); } catch { alert("Logout failed; retry when the connection is restored."); } }} className="admin-header-button"><LogOut aria-hidden="true" className="w-4 h-4" /><span>Sign out</span></button>
             </div>
           </div>
         </div>
@@ -111,7 +112,7 @@ export const AdminLayout = () => {
       <div className="flex-1 flex min-h-0 w-full">
         {/* Desktop Sidebar */}
         <aside id="admin-desktop-sidebar" aria-label="Admin sidebar" style={desktopSidebarOpen ? undefined : { display: 'none' }} className="admin-desktop-sidebar hidden lg:flex flex-col w-72 shrink-0 min-h-0 overflow-y-auto overscroll-contain border-r border-[#E6E8EC] bg-white p-4">
-          <p className="px-3 pb-3 font-semibold text-[#667085]">Workspace</p>
+          <p className="admin-sidebar-label">Workspace</p>
           <AdminNavigation />
         </aside>
 

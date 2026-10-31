@@ -90,8 +90,10 @@ try {
         if (!exam) exam = await results.mutate('exams', null, { issuerId, key: e.key, title: e.title, ...(e.level ? { level: e.level } : {}), year: e.year, session: e.session, status: 'published' }, ctx);
         const examId = String(exam._id ?? exam.id);
         if (!(await ResultRecord.exists({ examId, rollNormalized: e.roll }))) {
-          const row = { rollNumber: e.roll, userPublicId: student.publicId, student: { name: 'Demo Student', schoolName: e.school, enrollmentNumber: e.roll }, subjects: e.subjects, totals: e.totals, verificationFields: Object.fromEntries(item.fields.map(f => [f, verification[f]])), issueDate: '2026-' + String(['March', 'April', 'May', 'June', 'July'].indexOf(e.session) + 4).padStart(2, '0') + '-20', externalId: e.key + ':' + e.roll };
-          const asset = await publishing.media.upload({ purpose: 'result_import', originalName: e.key.toLowerCase() + '.json', mime: 'application/json', stream: Readable.from([Buffer.from(JSON.stringify([row]))]), idempotencyKey: 'seed-' + e.key.toLowerCase(), auth: adminAuth, ctx });
+          const row = { rollNumber: e.roll, userPublicId: student.publicId, student: { name: 'Demo Student', schoolName: e.school, enrollmentNumber: e.roll }, subjects: e.subjects, totals: e.totals, verificationFields: Object.fromEntries(item.fields.map(f => [f, verification[f]])), issueDate: '2026-' + String(['March', 'April', 'May', 'June', 'July'].indexOf(e.session) + 3).padStart(2, '0') + '-20', externalId: e.key + ':' + e.roll };
+          let asset = await publishing.media.upload({ purpose: 'result_import', originalName: e.key.toLowerCase() + '.json', mime: 'application/json', stream: Readable.from([Buffer.from(JSON.stringify([row]))]), idempotencyKey: 'seed-v2-' + e.key.toLowerCase(), auth: adminAuth, ctx });
+          // A retry reuses the same upload; rescan it if an earlier scan could not complete.
+          if (asset.status === 'quarantined') asset = await publishing.media.rescan(asset.id, { expectedRevision: asset.revision }, ctx);
           const importKey = 'seed-import-' + e.key.toLowerCase();
           const dry = await results.importRecords({ examId, assetId: asset.id, mappingVersion: 'kitss-results-v1', idempotencyKey: importKey }, adminAuth, ctx);
           if (!dry.validationToken) throw new Error('Dry run rejected ' + e.key + ': ' + JSON.stringify(dry.errors));

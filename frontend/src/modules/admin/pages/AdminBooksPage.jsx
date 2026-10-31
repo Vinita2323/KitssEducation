@@ -10,13 +10,14 @@ import { Pagination } from '../../user/components/common/Pagination';
 import { BookReviewDialog } from '../components/BookReviewDialog';
 import { BookEditor } from '../components/BookEditor';
 import { bookState, rupees } from '../components/bookReadiness';
+import { AdminPageHeader, AdminTable } from '../components/AdminUI';
 
 const mediaUrl = id => (import.meta.env.VITE_API_BASE_URL || '/api/v1').replace(/\/$/, '') + '/media/' + encodeURIComponent(id) + '/content';
 const filterLabel = 'text-xs font-semibold text-[#53647c] block mb-1';
 const iconButton = '!p-2 w-9 h-9';
 
 function Stat({ label, value, detail }) {
-  return <div className="p-4 bg-white rounded-2xl border min-w-0">
+  return <div className="admin-card p-4 min-w-0">
     <span className="text-sm font-semibold text-[#53647c] block">{label}</span>
     <div className="text-2xl font-extrabold text-[#0A1D3F] mt-1 leading-tight">{value ?? '–'}</div>
     {detail && <span className="text-sm text-[#53647c] block mt-0.5">{detail}</span>}
@@ -84,15 +85,11 @@ export const AdminBooksPage = () => {
         </div>
       )}
 
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-        <div className="min-w-0">
-          <h1 className="flex items-center gap-2"><BookOpen aria-hidden="true" className="w-6 h-6 text-[#FF8A00] shrink-0" /><span>Digital Books</span></h1>
-          <p className="text-sm mt-1">Create books, set prices and decide what students can buy. Students who own a book always keep reading it.</p>
-        </div>
-        <button type="button" disabled={!can('books.create')} onClick={handleOpenAddModal} className="px-4 py-2.5 bg-[#FF8A00] hover:bg-[#E67C00] text-white rounded-xl text-sm font-bold flex items-center gap-1.5 shrink-0 disabled:opacity-60">
+      <AdminPageHeader title={<span className="inline-flex items-center gap-2"><BookOpen aria-hidden="true" className="w-6 h-6 text-[#FF8A00] shrink-0" /><span>Digital Books</span></span>}
+        description="Create books, set prices and decide what students can buy. Students who own a book always keep reading it."
+        actions={<button type="button" disabled={!can('books.create')} onClick={handleOpenAddModal} className="admin-btn admin-btn-accent">
           <Plus aria-hidden="true" className="w-4 h-4" /><span>Add New Book</span>
-        </button>
-      </div>
+        </button>} />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <Stat label="Books" value={summary?.total ?? meta?.total} detail={summary?.removed ? summary.removed + ' removed' : 'In the catalogue'} />
@@ -101,13 +98,13 @@ export const AdminBooksPage = () => {
         <Stat label="Off sale" value={summary?.offSale} detail="Owners still read" />
       </div>
 
-      <div className="bg-white rounded-2xl border p-4 space-y-3">
+      <div className="admin-card p-4 space-y-3">
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1">
             <Search aria-hidden="true" className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
             <AdminInput type="text" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="Search by title, author, board, or subject..." />
           </div>
-          {filtersActive && <button type="button" onClick={clearFilters} className="shrink-0">Clear Filters</button>}
+          {filtersActive && <button type="button" onClick={clearFilters} className="admin-btn admin-btn-ghost shrink-0">Clear Filters</button>}
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 pt-1">
           {[
@@ -125,8 +122,7 @@ export const AdminBooksPage = () => {
         </div>
       </div>
 
-      <div className="bg-white rounded-2xl border overflow-hidden">
-        <div className="overflow-x-auto">
+      <AdminTable>
           <table className="w-full text-left text-sm">
             <thead><tr><th>Book</th><th>Class &amp; subject</th><th>Price</th><th>Status</th><th className="text-right">Actions</th></tr></thead>
             <tbody>
@@ -171,8 +167,7 @@ export const AdminBooksPage = () => {
                 })}
             </tbody>
           </table>
-        </div>
-      </div>
+      </AdminTable>
       <Pagination meta={meta} onChange={setPage} loading={loading} />
 
       {review && <BookReviewDialog bookId={review.id} intent={review.intent} onClose={() => setReview(null)} onEdit={row => { setReview(null); handleOpenEditModal(bookDTO(row)); }} onPublished={message => { setReview(null); showToast(message); loadBooks(); }} />}
@@ -181,12 +176,12 @@ export const AdminBooksPage = () => {
       {removeConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="fixed inset-0 bg-black/50" onClick={() => setRemoveConfirm(null)} />
-          <div ref={removeDialog} role="dialog" aria-modal="true" aria-label="Remove book confirmation" tabIndex={-1} className="relative bg-white w-full max-w-sm rounded-2xl shadow-xl border z-10 p-5 text-center space-y-3">
+          <div ref={removeDialog} role="dialog" aria-modal="true" aria-label="Remove book confirmation" tabIndex={-1} className="admin-dialog relative bg-white w-full max-w-sm rounded-2xl shadow-xl border z-10 p-5 text-center space-y-3">
             <div className="w-12 h-12 rounded-full bg-red-50 text-red-600 flex items-center justify-center mx-auto"><AlertCircle aria-hidden="true" className="w-6 h-6" /></div>
             <h3 className="font-bold">Remove “{removeConfirm.title}” from the store?</h3>
             <p className="text-sm">It leaves the catalogue and can no longer be bought or edited. {(owners[removeConfirm.id] ?? 0) > 0 ? `The ${owners[removeConfirm.id]} student${owners[removeConfirm.id] === 1 ? ' who owns' : 's who own'} it keep reading.` : 'Anyone who owns it keeps reading.'} You can restore it later from the Removed filter.</p>
             <div className="pt-2 flex justify-center gap-2">
-              <button type="button" onClick={() => setRemoveConfirm(null)}>Cancel</button>
+              <button type="button" className="admin-btn admin-btn-ghost" onClick={() => setRemoveConfirm(null)}>Cancel</button>
               <button type="button" onClick={() => handleRemove(removeConfirm)} className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-sm font-bold">Yes, remove</button>
             </div>
           </div>

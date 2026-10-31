@@ -200,7 +200,7 @@ export const AdminApplicationsPage = () => {
         </div>
       ) : (
         <div className="bg-white rounded-2xl border border-[#E6E8EC] shadow-2xs overflow-hidden">
-          <div className="overflow-x-auto">
+          <div className="admin-table admin-table-flush">
             <table className="w-full text-left text-xs">
               <thead className="bg-[#F7F8FA] text-[#667085] font-bold uppercase tracking-wider border-b border-[#E6E8EC]">
                 <tr>
@@ -299,7 +299,7 @@ export const AdminApplicationsPage = () => {
             className="fixed inset-0 bg-[#0A1D3F]/60 backdrop-blur-xs"
             onClick={() => setSelectedApp(null)}
           />
-          <div ref={editorDialog} role="dialog" aria-modal="true" aria-label="Admission application review" tabIndex={-1} className="relative bg-white w-full max-w-2xl rounded-2xl sm:rounded-3xl shadow-2xl border border-[#E6E8EC] z-10 overflow-hidden flex flex-col max-h-[92vh] animate-in fade-in zoom-in-95 duration-200">
+          <div ref={editorDialog} role="dialog" aria-modal="true" aria-label="Admission application review" tabIndex={-1} className="admin-dialog relative bg-white w-full max-w-2xl rounded-2xl sm:rounded-3xl shadow-2xl border border-[#E6E8EC] z-10 overflow-hidden flex flex-col max-h-[92vh] animate-in fade-in zoom-in-95 duration-200">
             {/* Header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-[#E6E8EC] bg-white sticky top-0 z-10">
               <div>

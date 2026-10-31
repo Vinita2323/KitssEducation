@@ -83,7 +83,7 @@ test('Stage 13 real browser/HTTP/MongoDB policy, free content and keyboard granu
     const exam = await f.models.Exam.create({ issuerId: issuer._id, key: randomUUID(), title: 'Synthetic exam', year: 2026, status: 'published' });
     const record = await f.models.ResultRecord.create({ examId: exam._id, rollNormalized: 'SYNTHETIC-BROWSER', userId: d.student.user._id, revision: 1, source: { checksum: 'synthetic-source-only' }, __v: 0 });
     await identity(d.admin); await goto('/admin/results');
-    await page.getByRole('button', { name: 'records', exact: true }).click();
+    await page.getByRole('button', { name: 'Student results', exact: true }).click();
     await page.getByRole('button', { name: 'Review', exact: true }).click();
     await page.getByLabel('Result action reason').fill('Synthetic reviewed source');
     await page.getByRole('button', { name: 'Submit for main-admin review', exact: true }).click();

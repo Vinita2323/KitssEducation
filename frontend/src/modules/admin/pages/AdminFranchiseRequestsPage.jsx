@@ -219,7 +219,7 @@ export const AdminFranchiseRequestsPage = () => {
         </div>
       ) : (
         <div className="bg-white rounded-2xl border border-[#E6E8EC] shadow-2xs overflow-hidden">
-          <div className="overflow-x-auto">
+          <div className="admin-table admin-table-flush">
             <table className="w-full text-left text-xs sm:text-sm">
               <thead className="bg-[#F8FAFC] border-b border-[#E6E8EC] text-[11px] font-bold text-[#64748B] uppercase tracking-wider">
                 <tr>
@@ -322,7 +322,7 @@ export const AdminFranchiseRequestsPage = () => {
          ======================================================== */}
       {selectedFranchise && (
         <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4 overflow-y-auto">
-          <div ref={editorDialog} role="dialog" aria-modal="true" aria-label="Franchise application review" tabIndex={-1} className="bg-white rounded-2xl border border-[#E6E8EC] shadow-2xl max-w-xl w-full p-5 sm:p-6 space-y-4 animate-in zoom-in-95 duration-150 text-left max-h-[90vh] overflow-y-auto">
+          <div ref={editorDialog} role="dialog" aria-modal="true" aria-label="Franchise application review" tabIndex={-1} className="admin-dialog bg-white rounded-2xl border border-[#E6E8EC] shadow-2xl max-w-xl w-full p-5 sm:p-6 space-y-4 animate-in zoom-in-95 duration-150 text-left max-h-[90vh] overflow-y-auto">
             {/* Modal Header */}
             <div className="flex items-start justify-between pb-3 border-b border-[#E6E8EC]">
               <div>

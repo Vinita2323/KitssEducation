@@ -15,7 +15,7 @@ export function FranchisePolicyManager() {
   } catch(e) { setError(e.message); } finally { setBusy(false); } };
   const locked = busy || !user?.roles.includes('super_admin');
   const input = (key, label, number = false, min = 0, max = 200) => <AdminField className="block">{label}<AdminInput aria-label={label} type={number ? 'number' : 'text'} min={number ? min : undefined} max={number ? max : undefined} value={draft[key] ?? ''} onChange={e => change(key, number ? Number(e.target.value) : e.target.value)} /></AdminField>;
-  return <section id="franchise-policy" className="p-4 border rounded-xl space-y-4" aria-label="Franchise policy manager"><div className="flex flex-wrap justify-between gap-3"><h2 className="font-bold text-xl">Franchise Policy</h2><button type="button" disabled={busy} onClick={load}>Reload policy</button></div>
+  return <section id="franchise-policy" className="admin-card p-5 space-y-4" aria-label="Franchise policy manager"><div className="flex flex-wrap justify-between gap-3"><h2 className="font-bold text-xl">Franchise Policy</h2><button type="button" disabled={busy} onClick={load}>Reload policy</button></div>
     <p className="text-sm">Draft changes do not affect applicants until published. Only the main administrator can publish. Initial wording and document requirements are editable starting suggestions.</p>
     {error && <p role="alert" className="text-red-700">{error}</p>}{message && <p role="status">{message}</p>}
     {!draft ? <p>Loading franchise policy...</p> : <form onSubmit={e => { e.preventDefault(); save(false); }}><fieldset disabled={locked} className="space-y-4">

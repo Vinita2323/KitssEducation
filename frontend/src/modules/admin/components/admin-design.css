@@ -1,0 +1,133 @@
+/* KITSS admin design system: navy/orange tokens and shared admin building blocks.
+   Scoped to .kitss-admin so student screens are unaffected. */
+.kitss-admin {
+  --kitss-navy: #0a1d3f; --kitss-navy-2: #133c8b; --kitss-orange: #ff8a00; --kitss-orange-ink: #944000;
+  --admin-surface: #fff; --admin-canvas: #f4f6fb; --admin-border: #e1e7f0; --admin-border-strong: #cbd6e5;
+  --admin-ink: #0a1d3f; --admin-muted: #53647c; --admin-radius: 14px; --admin-shadow: 0 1px 2px #0a1d3f0a, 0 6px 20px -14px #0a1d3f40;
+}
+
+/* Shell */
+.kitss-admin .admin-topbar { background: linear-gradient(100deg, var(--kitss-navy) 0%, #0f2a5c 60%, var(--kitss-navy-2) 100%); }
+.kitss-admin .admin-brand-mark { box-shadow: 0 4px 14px -4px #ff8a0080; }
+.kitss-admin .admin-header-button { display: inline-flex; }
+.kitss-admin .admin-header-link,
+.kitss-admin .admin-header-button { align-items: center; gap: .4rem; border-radius: 999px; border: 1px solid #ffffff2e; background: #ffffff14; color: #fff; font-size: .875rem; font-weight: 600; padding: .45rem .9rem; transition: background-color .15s, border-color .15s; }
+.kitss-admin .admin-header-link:hover,
+.kitss-admin .admin-header-button:hover { background: #ffffff26; border-color: #ffffff4d; }
+.kitss-admin .admin-user-chip { display: flex; align-items: center; gap: .6rem; padding-left: .75rem; border-left: 1px solid #ffffff26; }
+.kitss-admin .admin-avatar { display: grid; place-items: center; width: 2.25rem; height: 2.25rem; border-radius: 999px; background: var(--kitss-orange); color: var(--kitss-navy); font-weight: 800; font-size: .875rem; }
+.kitss-admin .admin-desktop-sidebar { background: #fff; border-right: 1px solid var(--admin-border); }
+.kitss-admin .admin-sidebar-label { padding: 0 .75rem .75rem; font-size: .875rem; font-weight: 700; letter-spacing: .04em; color: var(--admin-muted); }
+.kitss-admin nav[aria-label$="admin sections"] > section > button,
+.kitss-admin nav[aria-label="Admin sections"] > section > button { font-weight: 700; color: #334155; }
+.kitss-admin nav[aria-label$="admin sections"] a[aria-current="page"],
+.kitss-admin nav[aria-label="Admin sections"] a[aria-current="page"] { position: relative; box-shadow: inset 3px 0 0 var(--kitss-orange); }
+.kitss-admin #admin-main > fieldset > * { max-width: 1440px; margin-inline: auto; }
+
+@media (max-width: 480px) {
+  .kitss-admin .admin-header-button { padding: .45rem .6rem; }
+  .kitss-admin .admin-header-button > span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; }
+  .kitss-admin .admin-user-chip { display: none; }
+}
+
+/* Page header */
+.kitss-admin .admin-page-header { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 1rem 1.5rem; }
+.kitss-admin .admin-page-header-text { min-width: 0; flex: 1 1 22rem; }
+.kitss-admin #admin-main .admin-page-header-text > p { margin-top: .35rem; max-width: 72ch; font-size: .9375rem; color: var(--admin-muted); }
+.kitss-admin .admin-page-header-actions { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; }
+
+/* Cards and toolbars */
+.kitss-admin .admin-card { background: var(--admin-surface); border: 1px solid var(--admin-border); border-radius: var(--admin-radius); box-shadow: var(--admin-shadow); min-width: 0; }
+.kitss-admin .admin-card-header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .75rem; padding: 1rem 1.25rem; border-bottom: 1px solid var(--admin-border); }
+.kitss-admin .admin-card-title { font-size: 1rem; font-weight: 700; color: var(--admin-ink); }
+.kitss-admin .admin-card-actions { display: flex; flex-wrap: wrap; gap: .5rem; }
+.kitss-admin .admin-card-body { padding: 1.25rem; min-width: 0; }
+.kitss-admin .admin-card-body:empty { display: none; }
+.kitss-admin .admin-toolbar { display: flex; flex-wrap: wrap; align-items: flex-end; gap: .75rem; padding: .875rem 1rem; background: var(--admin-surface); border: 1px solid var(--admin-border); border-radius: var(--admin-radius); box-shadow: var(--admin-shadow); }
+.kitss-admin .admin-toolbar > * { min-width: 0; }
+.kitss-admin .admin-toolbar .admin-toolbar-grow { flex: 1 1 16rem; }
+.kitss-admin .admin-toolbar .admin-toolbar-end { margin-left: auto; }
+.kitss-admin .admin-segmented { display: inline-flex; flex-wrap: wrap; gap: .25rem; padding: .25rem; background: #eef2f8; border-radius: 12px; }
+.kitss-admin #admin-main .admin-segmented > button { border: 0; background: transparent; border-radius: 9px; font-weight: 600; color: #334155; }
+.kitss-admin #admin-main .admin-segmented > button[aria-pressed="true"] { background: var(--kitss-navy); color: #fff; box-shadow: 0 2px 6px #0a1d3f33; }
+.kitss-admin #admin-main .admin-segmented > button:hover:not(:disabled):not([aria-pressed="true"]) { background: #fff; }
+
+/* Buttons */
+.kitss-admin #admin-main .admin-btn { display: inline-flex; align-items: center; justify-content: center; gap: .4rem; border-radius: 10px; padding: .55rem 1rem; font-weight: 600; line-height: 1.25; text-align: center; transition: background-color .15s, border-color .15s, box-shadow .15s; }
+.kitss-admin #admin-main .admin-btn-primary { background: var(--kitss-navy); color: #fff; border: 1px solid var(--kitss-navy); box-shadow: 0 3px 8px #0a1d3f26; }
+.kitss-admin #admin-main .admin-btn-primary:hover:not(:disabled) { background: var(--kitss-navy-2); border-color: var(--kitss-navy-2); }
+.kitss-admin #admin-main .admin-btn-accent { background: var(--kitss-orange); color: var(--kitss-navy); border: 1px solid var(--kitss-orange); box-shadow: 0 3px 8px #ff8a0040; }
+.kitss-admin #admin-main .admin-btn-accent:hover:not(:disabled) { background: #ff9d2e; }
+.kitss-admin #admin-main .admin-btn-secondary { background: #fff; color: var(--admin-ink); border: 1px solid var(--admin-border-strong); }
+.kitss-admin #admin-main .admin-btn-secondary:hover:not(:disabled) { background: #edf3fa; border-color: #8c9fba; }
+.kitss-admin #admin-main .admin-btn-danger { background: #fff; color: #b42318; border: 1px solid #f3c1bc; }
+.kitss-admin #admin-main .admin-btn-danger:hover:not(:disabled) { background: #fef3f2; border-color: #e5978f; }
+.kitss-admin #admin-main .admin-btn-ghost { background: transparent; color: var(--admin-ink); border: 1px solid transparent; }
+.kitss-admin #admin-main .admin-btn-ghost:hover:not(:disabled) { background: #edf3fa; }
+.kitss-admin #admin-main .admin-btn-sm { padding: .4rem .75rem; font-size: .875rem; }
+.kitss-admin .admin-actions { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; }
+
+/* Status badges */
+.kitss-admin .admin-status { display: inline-flex; align-items: center; gap: .35rem; white-space: nowrap; border-radius: 999px; padding: .2rem .65rem; font-size: .875rem; font-weight: 600; line-height: 1.4; box-shadow: inset 0 0 0 1px currentColor; box-shadow: inset 0 0 0 1px color-mix(in srgb, currentColor 22%, transparent); }
+.kitss-admin .admin-status::before { content: ''; width: .45rem; height: .45rem; border-radius: 999px; background: currentColor; opacity: .75; }
+.kitss-admin .admin-status-success { background: #ecfdf3; color: #05603a; }
+.kitss-admin .admin-status-warning { background: #fffaeb; color: #93370d; }
+.kitss-admin .admin-status-danger { background: #fef3f2; color: #b42318; }
+.kitss-admin .admin-status-neutral { background: #f2f4f7; color: #344054; }
+.kitss-admin .admin-status-info { background: #eff4ff; color: #1d3f8a; }
+
+/* Empty states and meta text */
+.kitss-admin .admin-empty { display: flex; flex-direction: column; align-items: center; gap: .35rem; padding: 2.5rem 1rem; text-align: center; color: var(--admin-muted); }
+.kitss-admin .admin-empty-icon { width: 2rem; height: 2rem; color: #94a3b8; margin-bottom: .25rem; }
+.kitss-admin #admin-main .admin-empty-title { font-weight: 700; color: var(--admin-ink); }
+.kitss-admin #admin-main .admin-meta { font-size: .875rem; color: var(--admin-muted); }
+.kitss-admin .admin-list { display: grid; gap: .5rem; }
+.kitss-admin #admin-main .admin-list-item { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .5rem 1rem; width: 100%; text-align: left; background: #fff; border: 1px solid var(--admin-border); border-radius: 12px; padding: .85rem 1rem; box-shadow: var(--admin-shadow); }
+.kitss-admin #admin-main button.admin-list-item:hover:not(:disabled) { border-color: #8c9fba; background: #f8faff; }
+.kitss-admin #admin-main .admin-list-item[aria-current="true"] { border-color: var(--kitss-navy); box-shadow: inset 3px 0 0 var(--kitss-orange), var(--admin-shadow); }
+.kitss-admin .admin-dl { display: grid; grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr)); gap: .75rem 1.25rem; }
+.kitss-admin #admin-main .admin-dl dt { font-size: .875rem; color: var(--admin-muted); }
+.kitss-admin #admin-main .admin-dl dd { font-weight: 600; overflow-wrap: anywhere; }
+.kitss-admin .admin-pager { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .75rem; }
+
+/* Tables: wrapped tables get a card frame and stack into labelled cards on phones */
+.kitss-admin .admin-table { background: var(--admin-surface); border: 1px solid var(--admin-border); border-radius: var(--admin-radius); box-shadow: var(--admin-shadow); overflow-x: auto; min-width: 0; }
+.kitss-admin .admin-table > table { width: 100%; }
+.kitss-admin #admin-main .admin-table th { text-align: left; white-space: nowrap; }
+.kitss-admin #admin-main .admin-table td { vertical-align: middle; }
+.kitss-admin #admin-main .admin-table td .admin-meta { margin-top: .15rem; }
+@media (max-width: 640px) {
+  .kitss-admin .admin-table { overflow: visible; }
+  .kitss-admin .admin-table > table,
+  .kitss-admin .admin-table > table > tbody,
+  .kitss-admin .admin-table > table > tbody > tr,
+  .kitss-admin .admin-table > table > tbody > tr > td { display: block; width: 100%; }
+  .kitss-admin .admin-table > table > thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; }
+  .kitss-admin #admin-main .admin-table > table > tbody > tr { padding: .75rem 1rem; border-bottom: 1px solid var(--admin-border); }
+  .kitss-admin #admin-main .admin-table > table > tbody > tr:last-child { border-bottom: 0; }
+  .kitss-admin #admin-main .admin-table > table > tbody > tr > td { display: grid; grid-template-columns: minmax(6.5rem, 35%) minmax(0, 1fr); column-gap: .75rem; row-gap: .15rem; align-items: start; padding: .4rem 0; border: 0; text-align: left; }
+  .kitss-admin #admin-main .admin-table > table > tbody > tr > td > * { grid-column: 2; min-width: 0; }
+  .kitss-admin #admin-main .admin-table > table > tbody > tr > td::before { content: attr(data-label) / ""; grid-column: 1; grid-row: 1; font-size: .875rem; font-weight: 600; color: var(--admin-muted); }
+  .kitss-admin #admin-main .admin-table > table > tbody > tr > td:not([data-label]) > *,
+  .kitss-admin #admin-main .admin-table > table > tbody > tr > td[data-label=""] > * { grid-column: 1; }
+  .kitss-admin #admin-main .admin-table > table > tbody > tr > td:not([data-label])::before,
+  .kitss-admin #admin-main .admin-table > table > tbody > tr > td[data-label=""]::before { content: none; }
+  .kitss-admin #admin-main .admin-table > table > tbody > tr > td:not([data-label]),
+  .kitss-admin #admin-main .admin-table > table > tbody > tr > td[data-label=""] { grid-template-columns: minmax(0, 1fr); }
+  .kitss-admin #admin-main .admin-table td .flex.justify-end { justify-content: flex-start; }
+  .kitss-admin .admin-page-header-actions { width: 100%; }
+}
+
+/* Dialogs */
+.kitss-admin [role=dialog].admin-dialog { border-radius: 18px; box-shadow: 0 24px 60px -20px #0a1d3f66; }
+@media (max-width: 640px) {
+  .kitss-admin #admin-main .admin-table > table > tbody > tr > td > .admin-status { justify-self: start; }
+}
+
+/* Search icons sit inside the input even when the control renders its own label above it. */
+.kitss-admin #admin-main .relative:has(> .admin-control-field) > svg.absolute { top: auto; bottom: 22px; transform: translateY(50%); z-index: 1; }
+.kitss-admin .admin-table.admin-table-flush { border: 0; border-radius: 0; box-shadow: none; background: transparent; }
+.kitss-admin #admin-main .admin-btn[hidden] { display: none; }
+/* Disabled orange buttons stay readable: a pale fill with dark text instead of fading the whole button. */
+.kitss-admin button:disabled[class*="bg-[#FF8A00]"],
+.kitss-admin #admin-main .admin-btn-accent:disabled { opacity: 1; background: #ffe2c2; border-color: #ffe2c2; color: #5c3a00; box-shadow: none; }

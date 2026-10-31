@@ -33,14 +33,14 @@ function periodLabel({ range, from, to }) {
 }
 
 function StatCard({ icon: Icon, label, value, detail, tone }) {
-  return <article className="bg-white border rounded-2xl p-5 flex flex-col gap-3 min-w-0">
+  return <article className="admin-card p-5 flex flex-col gap-3 min-w-0">
     <div className="flex items-center justify-between gap-3"><p className="text-sm font-semibold text-[#53647c]">{label}</p><span className={'grid place-items-center w-9 h-9 rounded-xl shrink-0 ' + tone}><Icon aria-hidden="true" size={18} /></span></div>
     <div className="text-[1.75rem] leading-none font-extrabold tracking-tight text-[#0A1D3F] break-words">{value}</div>
     {detail && <p className="text-sm">{detail}</p>}
   </article>;
 }
 function Panel({ title, action, className = '', children }) {
-  return <section className={'bg-white border rounded-2xl p-5 min-w-0 ' + className} aria-label={title}>
+  return <section className={'admin-card p-5 min-w-0 ' + className} aria-label={title}>
     <div className="flex items-center justify-between gap-3 mb-4"><h2 className="text-base font-bold text-[#0A1D3F]">{title}</h2>{action}</div>
     {children}
   </section>;
@@ -172,7 +172,7 @@ export const AdminDashboardPage = () => {
             [UserCog, 'Staff', overview.people.staff, 'active accounts', '/admin/staff', 'accounts.roles.manage']
           ].map(([Icon, name, value, sub, to, permission]) => {
             const body = <><Icon aria-hidden="true" size={18} className="text-[#53647c]" /><p className="text-sm mt-2">{name}{['Books', 'Courses'].includes(name) ? ' published' : ['Universities', 'Colleges'].includes(name) ? ' active' : ''}</p><div className="text-2xl leading-tight font-extrabold">{value}</div><p className="text-sm">{sub}</p></>;
-            return can(permission) ? <Link key={name} to={to} className="bg-white border rounded-2xl p-4 block hover:border-[#8c9fba] transition-colors">{body}</Link> : <div key={name} className="bg-white border rounded-2xl p-4">{body}</div>;
+            return can(permission) ? <Link key={name} to={to} className="admin-card p-4 block hover:border-[#8c9fba] transition-colors">{body}</Link> : <div key={name} className="admin-card p-4">{body}</div>;
           })}
         </div>
       </section>}

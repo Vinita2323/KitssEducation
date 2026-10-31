@@ -2,6 +2,8 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../../user/context/AuthContext';
 import { StaffInvitations } from '../components/StaffInvitations';
 import { AdminUsersPage } from './AdminOperationsPage';
+import { RefreshCw } from 'lucide-react';
+import { AdminCard, AdminPageHeader } from '../components/AdminUI';
 
 export function AdminStaffPage() {
   const { can } = useAuth();
@@ -10,12 +12,11 @@ export function AdminStaffPage() {
   useEffect(() => {
     if (target) { invitations.current?.scrollIntoView({ block: 'start' }); invitations.current?.querySelector('input')?.focus(); }
   }, [target]);
-  return <div className="space-y-5">
-    <header className="rounded-2xl border bg-white p-5"><h1 className="text-xl font-bold">Staff management</h1><p className="text-sm text-slate-600">Invite your team and control their admin access.</p></header>
+  return <div className="space-y-5 text-[#0A1D3F]">
+    <AdminPageHeader title="Staff management" description="Invite your team and control their admin access." />
     <div ref={invitations}><StaffInvitations target={target} onChanged={() => setVersion(v => v + 1)} /></div>
-    {can('accounts.read') ? <>
-      <button type="button" className="border rounded-lg px-3 py-2 text-sm" onClick={() => setVersion(v => v + 1)}>Refresh staff accounts</button>
+    {can('accounts.read') ? <AdminCard actions={<button type="button" className="admin-btn admin-btn-secondary admin-btn-sm" onClick={() => setVersion(v => v + 1)}><RefreshCw aria-hidden="true" size={14} />Refresh staff accounts</button>}>
       <AdminUsersPage staffOnly refreshVersion={version} onReviewInvitation={row => setTarget({ ...row })} />
-    </> : <p className="text-sm">Viewing staff accounts requires account-read permission.</p>}
+    </AdminCard> : <p className="text-sm">Viewing staff accounts requires account-read permission.</p>}
   </div>;
 }

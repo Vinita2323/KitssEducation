@@ -6,6 +6,7 @@ import { httpClient } from '../../../shared/api/httpClient';
 import { authenticatedWrite } from '../../user/services/authService';
 import { readOptions } from '../../user/services/collegeService';
 import { useAuth } from '../../user/context/AuthContext';
+import { AdminPageHeader, AdminToolbar } from '../components/AdminUI';
 import { MediaPicker } from '../components/MediaPicker';
 import { ContentOwnership } from '../components/ContentOwnership';
 import { rupees } from '../components/bookReadiness';
@@ -35,7 +36,7 @@ function Section({ title, hint, children }) {
 }
 function Confirm({ title, children, label, danger, busy, onConfirm, onClose }) {
   const ref = useDialogFocus(true, onClose);
-  return <div className="fixed inset-0 z-50 bg-[#0A1D3F]/70 p-4 flex items-center justify-center"><div ref={ref} role="dialog" aria-modal="true" aria-label={title} tabIndex={-1} className="bg-white rounded-2xl p-5 w-full max-w-md space-y-3 text-[#0A1D3F]">
+  return <div className="fixed inset-0 z-50 bg-[#0A1D3F]/70 p-4 flex items-center justify-center"><div ref={ref} role="dialog" aria-modal="true" aria-label={title} tabIndex={-1} className="admin-dialog bg-white rounded-2xl p-5 w-full max-w-md space-y-3 text-[#0A1D3F]">
     <h2 className="text-lg font-bold">{title}</h2><div className="text-sm space-y-2">{children}</div>
     <div className="flex justify-end gap-2 pt-2"><button type="button" onClick={onClose}>Cancel</button>{onConfirm && <button type="button" disabled={busy} onClick={onConfirm} className={(danger ? 'bg-red-600' : 'bg-[#0A1D3F]') + ' text-white rounded-xl px-4 py-2 font-semibold disabled:opacity-50'}>{label}</button>}</div>
   </div></div>;
@@ -170,13 +171,11 @@ export function AdminCoachingPage() {
   </div>;
 
   return <div className="space-y-5 text-[#0A1D3F] min-w-0">
-    <header className="flex flex-wrap items-end justify-between gap-3">
-      <div className="min-w-0"><h1 className="flex items-center gap-2"><GraduationCap aria-hidden="true" className="w-6 h-6 text-[#FF8A00] shrink-0" /><span>Coaching Management</span></h1>
-        <p className="text-sm mt-1">{course ? 'Build the syllabus, add lessons and set the plans students can buy.' : 'Create courses, publish lessons and sell plans. Enrolled students always keep their access period.'}</p></div>
-      {creatable && <button disabled={busy} onClick={() => open()} className="bg-[#FF8A00] hover:bg-[#E67C00] text-white rounded-xl px-4 py-2.5 font-bold inline-flex items-center gap-1.5"><Plus aria-hidden="true" size={16} />Add {singular[kind]}</button>}
-    </header>
+    <AdminPageHeader title={<span className="inline-flex items-center gap-2"><GraduationCap aria-hidden="true" className="w-6 h-6 text-[#FF8A00] shrink-0" /><span>Coaching Management</span></span>}
+      description={course ? 'Build the syllabus, add lessons and set the plans students can buy.' : 'Create courses, publish lessons and sell plans. Enrolled students always keep their access period.'}
+      actions={creatable && <button disabled={busy} onClick={() => open()} className="admin-btn admin-btn-accent"><Plus aria-hidden="true" size={16} />Add {singular[kind]}</button>} />
 
-    {course && <section className="bg-white border rounded-2xl p-4 sm:p-5 space-y-4" aria-label="Course workspace">
+    {course && <section className="admin-card p-4 sm:p-5 space-y-4" aria-label="Course workspace">
       <div className="flex flex-wrap items-start gap-4">
         <div className="w-28 aspect-video rounded-xl bg-gradient-to-br from-[#0A1D3F] to-[#133C8B] grid place-items-center overflow-hidden shrink-0">{detail?.thumbnailId && can('media.read') ? <img src={mediaUrl(detail.thumbnailId)} alt="" className="w-full h-full object-cover" /> : <GraduationCap aria-hidden="true" className="text-white" />}</div>
         <div className="flex-1 min-w-[12rem]">
@@ -192,16 +191,16 @@ export function AdminCoachingPage() {
       </div>
       {detail && detail.status !== 'published' && detail.status !== 'archived' && <Readiness items={courseRequirements(detail, detail.stats)} />}
       {live && <p className="text-sm text-[#53647c]">This course is live. Lesson and plan changes apply straight away; course details and new sections go live when you publish changes.</p>}
-      <nav className="flex flex-wrap gap-2 border-t border-[#E6E8EC] pt-3" aria-label="Course sections">
+      <nav className="flex flex-wrap items-center gap-2 border-t border-[#E6E8EC] pt-3" aria-label="Course sections">
         <button type="button" onClick={() => go('courses', null)} className="inline-flex items-center gap-1"><ArrowLeft aria-hidden="true" size={15} />All courses</button>
         {['lessons', 'plans'].filter(k => can(k === 'plans' ? 'commerce.read' : 'coaching.read')).map(k => <button key={k} type="button" aria-pressed={kind === k} onClick={() => go(k)} className={kind === k ? '!bg-[#0A1D3F] !text-white !border-[#0A1D3F]' : ''}>{k === 'lessons' ? 'Lessons' : 'Course plans'}</button>)}
       </nav>
     </section>}
 
-    <AdminInput aria-label="Search coaching" className={css} placeholder={kind === 'plans' ? 'Search plan names' : 'Search titles'} value={q} onChange={e => { setQ(e.target.value); setPage(1); }} />
+    <AdminToolbar><div className="admin-toolbar-grow"><AdminInput aria-label="Search coaching" className={css} placeholder={kind === 'plans' ? 'Search plan names' : 'Search titles'} value={q} onChange={e => { setQ(e.target.value); setPage(1); }} /></div></AdminToolbar>
     {error && <p role="alert">{error}</p>}{busy && <p role="status" className="text-sm">Loading…</p>}
 
-    <div className="bg-white border rounded-2xl overflow-x-auto">
+    <div className="admin-table">
       {kind === 'courses' && <table className="w-full text-sm"><thead><tr><th className="text-left">Course</th><th className="text-left">Lessons &amp; plans</th><th className="text-left">Students</th><th className="text-left">Status</th><th className="text-right">Actions</th></tr></thead><tbody>{rows.map(row => <tr key={row.id}>
         <td className="min-w-[15rem]"><div className="flex items-start gap-3"><div className="w-16 aspect-video rounded-lg bg-gradient-to-br from-[#0A1D3F] to-[#133C8B] grid place-items-center overflow-hidden shrink-0">{row.thumbnailId && can('media.read') ? <img src={mediaUrl(row.thumbnailId)} alt="" loading="lazy" className="w-full h-full object-cover" /> : <GraduationCap aria-hidden="true" size={16} className="text-white" />}</div><div className="min-w-0"><p className="font-bold break-words">{row.title}</p><p className="text-sm text-[#53647c]">{row.category || 'No category'}</p></div></div></td>
         <td className="min-w-[11rem]"><p>{row.stats ? `${row.stats.lessons.published} of ${row.stats.lessons.total} lessons published` : ''}</p><p className="text-sm text-[#53647c]">{row.stats?.activePlans.length ? row.stats.activePlans.slice(0, 2).map(planLabel).join(' · ') + (row.stats.activePlans.length > 2 ? ` +${row.stats.activePlans.length - 2} more` : '') : 'No plan on sale'}</p></td>
@@ -228,12 +227,12 @@ export function AdminCoachingPage() {
       </tr>)}</tbody></table>}
       {!busy && !rows.length && <p className="p-6 text-center text-[#53647c]">{q ? `No ${kind} match “${q}”.` : kind === 'courses' ? 'No courses yet. Add your first course to get started.' : kind === 'lessons' ? 'No lessons yet. Add the first lesson to this course.' : 'No plans yet. Add a free or paid plan so students can enroll.'}</p>}
     </div>
-    <div className="flex items-center gap-3 text-sm"><button disabled={page === 1} onClick={() => setPage(p => p - 1)}>Previous</button><span>Page {page} · {total} records</span><button disabled={page * 20 >= total} onClick={() => setPage(p => p + 1)}>Next</button></div>
+    <div className="admin-pager text-sm"><button className="admin-btn admin-btn-secondary admin-btn-sm" disabled={page === 1} onClick={() => setPage(p => p - 1)}>Previous</button><span className="admin-meta">Page {page} · {total} records</span><button className="admin-btn admin-btn-secondary admin-btn-sm" disabled={page * 20 >= total} onClick={() => setPage(p => p + 1)}>Next</button></div>
     {!form && choicesWarning}
 
     {dialog && <Confirm title={dialog.title} label={dialog.label} danger={dialog.danger} busy={busy} onConfirm={dialog.run} onClose={() => setDialog(null)}>{dialog.body.map((b, i) => typeof b === 'string' ? <p key={i}>{b}</p> : b)}</Confirm>}
 
-    {form && <div className="fixed inset-0 z-50 bg-[#0A1D3F]/70 p-2 sm:p-4 flex items-center justify-center"><form ref={editorDialog} role="dialog" aria-modal="true" aria-label="Coaching editor" tabIndex={-1} onSubmit={save} className="bg-white rounded-2xl w-full max-w-3xl max-h-[94vh] flex flex-col overflow-hidden">
+    {form && <div className="fixed inset-0 z-50 bg-[#0A1D3F]/70 p-2 sm:p-4 flex items-center justify-center"><form ref={editorDialog} role="dialog" aria-modal="true" aria-label="Coaching editor" tabIndex={-1} onSubmit={save} className="admin-dialog bg-white rounded-2xl w-full max-w-3xl max-h-[94vh] flex flex-col overflow-hidden">
       <div className="px-4 sm:px-6 py-4 border-b border-[#E6E8EC]"><h2 className="text-lg font-bold">{editing ? 'Edit' : 'Add'} {singular[editorKind]}</h2>{editorKind === 'lessons' && live && <p className="text-sm text-[#53647c]">This course is live: saved changes to a published lesson are visible to students straight away.</p>}</div>
       <div className="overflow-y-auto px-4 sm:px-6 py-4 space-y-4">
         {error && <p role="alert">{error}</p>}{choicesWarning}
