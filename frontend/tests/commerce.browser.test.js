@@ -63,9 +63,9 @@ test('Stage 6 existing UI real API and standalone MongoDB with explicitly isolat
     await goto('/my-books'); const link = page.getByRole('link', { name: 'Open secure PDF', exact: true }); await link.waitFor(); assert.equal(await link.getAttribute('href'), '/books/' + book.id + '/read');
   });
   await t.test('registration drafts persist and recover all safe form fields while submission and identity uploads remain blocked', async () => {
-    await goto('/register?type=teacher'); await page.getByRole('button', { name: 'Save Registration Draft', exact: true }).waitFor();
-    const input = page.locator('input[name="fullName"]'); await input.fill('STAGE6_BROWSER_APPLICANT'); await page.getByRole('button', { name: 'Save Registration Draft', exact: true }).click(); await page.getByText(/Draft saved: STAGE6-APP/).waitFor();
-    const application = new URL(page.url()).searchParams.get('application'); assert.ok(application); await page.reload({ waitUntil: 'domcontentloaded' }); await page.getByRole('button', { name: 'Update Registration Draft', exact: true }).waitFor(); assert.equal(await input.inputValue(), 'STAGE6_BROWSER_APPLICANT');
+    await goto('/register?type=teacher'); await page.getByRole('button', { name: 'Save application draft', exact: true }).waitFor();
+    const input = page.locator('input[name="fullName"]'); await input.fill('STAGE6_BROWSER_APPLICANT'); await page.getByRole('button', { name: 'Save application draft', exact: true }).click(); await page.getByText(/Application reference: STAGE6-APP/).waitFor();
+    const application = new URL(page.url()).searchParams.get('application'); assert.ok(application); await page.reload({ waitUntil: 'domcontentloaded' }); await page.getByRole('button', { name: 'Save changes', exact: true }).waitFor(); assert.equal(await input.inputValue(), 'STAGE6_BROWSER_APPLICANT');
     assert.equal((await f.models.RegistrationApplication.findById(application)).paymentState, 'blocked');
   });
   await t.test('admin history, reconciliation, pricing and financial summaries use persisted simulated records only', async () => {

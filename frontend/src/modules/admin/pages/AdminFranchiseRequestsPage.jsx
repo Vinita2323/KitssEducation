@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { authenticatedWrite } from '../../user/services/authService';
 import { AdminField, AdminInput, AdminTextarea } from '../components/AdminFields';
 import { FranchiseFeeStatus } from '../../user/components/common/FranchiseFeeStatus';
@@ -381,6 +382,7 @@ export const AdminFranchiseRequestsPage = () => {
               </div>
             </div>
 
+            {selectedFranchise.institution?.logoAssetId && <a href={'/api/v1/media/'+selectedFranchise.institution.logoAssetId+'/content'} target="_blank" rel="noreferrer" className="block text-xs underline">View institution logo</a>}
             {/* Applicant Details */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
               <div className="p-3 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] space-y-1">
@@ -484,6 +486,7 @@ export const AdminFranchiseRequestsPage = () => {
               </div>
             )}
 
+            {selectedFranchise.workflowVersion === 1 && selectedFranchise.status === 'Approved' && <section aria-label="Public franchise listing" className="border rounded-xl p-3 space-y-2"><h3 className="font-bold">Public franchise listing</h3><p>{selectedFranchise.listingPublishedAt && !selectedFranchise.listingHidden ? 'Listed on the franchise page.' : 'Not shown on the franchise page.'}</p><Link to="/institutes" className="underline block">View franchise network</Link><p>Only the institution name, type, city, website and programs are listed. Contact details and documents stay private.</p><button type="button" disabled={processing || !can('franchises.approve') || !adminNote.trim()} onClick={async()=>{setProcessing(true);try{const updated=await authenticatedWrite('/admin/franchise-applications/'+selectedFranchise.id+'/listing',{expectedRevision:selectedFranchise.revision,publish:!selectedFranchise.listingPublishedAt||Boolean(selectedFranchise.listingHidden),reason:adminNote.trim()});setSelectedFranchise({...selectedFranchise,listingPublishedAt:updated.listingPublishedAt,listingHidden:updated.listingHidden,revision:updated.revision,statusHistory:updated.statusHistory});setAdminNote('');fetchFranchises();}catch(e){showError(e.message);}finally{setProcessing(false);}}} className="border rounded-lg p-2">{selectedFranchise.listingPublishedAt&&!selectedFranchise.listingHidden?'Hide public listing':'Publish franchise listing'}</button><p className="text-xs">Enter a review note below before changing the listing.</p></section>}
             {selectedFranchise.workflowVersion === 1 && <section className="border rounded-xl p-3 space-y-3" aria-label="Franchise verification">
               <h3 className="font-bold">Franchise verification</h3>
               <p>Policy: {selectedFranchise.policySnapshot?.version || 'Not submitted'}. Agreement: {selectedFranchise.agreementAcceptance?.version || 'Not accepted'}.</p>
@@ -536,7 +539,7 @@ export const AdminFranchiseRequestsPage = () => {
             </div>
 
             <button type="button" disabled={processing || !adminNote.trim() || !can('franchises.review')} onClick={async () => { setProcessing(true); try { const updated = await adminService.addFranchiseNote(selectedFranchise.id, adminNote, noteKey); setSelectedFranchise(updated); setAdminNote(''); setNoteKey(crypto.randomUUID()); showSuccess('Note saved without changing status'); fetchFranchises(); } catch (error) { showError(error.message); } finally { setProcessing(false); } }} className="px-4 py-2 rounded-xl bg-[#0A1D3F] text-white text-xs">Save Note Only</button>
-            <p className="text-xs text-amber-700">{selectedFranchise.workflowVersion === 1 ? 'Verify required documents and record a review reason before approval. Approved free applications activate immediately; paid applications activate only after verified payment.' : 'Legacy application: review approval does not activate affiliation. The applicant must submit a new application under the published policy.'}</p>
+            <p className="text-xs text-amber-700">{selectedFranchise.workflowVersion === 1 ? 'Verify required documents and record a review reason before approval. Approval lists the institution publicly. Approved free applications activate immediately; paid applications activate only after verified payment.' : 'Legacy application: review approval does not activate affiliation. The applicant must submit a new application under the published policy.'}</p>
             {selectedFranchise.workflowVersion === 1 && <button type="button" disabled={processing || !can('franchises.review') || !adminNote.trim() || selectedFranchise.status !== 'Pending'} onClick={() => handleStatusChange('Needs changes', adminNote)}>Request corrections</button>}
             {/* Approval / Rejection Action Buttons */}
             <div className="flex flex-col sm:flex-row items-center justify-between gap-2 pt-2">

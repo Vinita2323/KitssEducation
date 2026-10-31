@@ -7,7 +7,7 @@ import { serve } from './helpers.js';
 
 test('public faculty API uses published snapshots, safe fields and validated pagination without a session', async t => {
   const rows = [
-    { _id: 'published-one', status: 'published', name: 'Unsaved public name', sourceNote: 'Private review', publishedSnapshot: { name: 'Published Instructor', role: 'Tutor', portraitAssetId: 'portrait-one', sortOrder: 0, sourceNote: 'Private evidence', createdBy: 'private-actor', updatedBy: 'private-editor', revision: 3, status: 'draft' } },
+    { _id: 'published-one', status: 'published', name: 'Unsaved public name', sourceNote: 'Private review', publishedSnapshot: { name: 'Published Instructor', role: 'Tutor', portraitAssetId: 'portrait-one', sortOrder: 0, sourceNote: 'Private evidence', registrationApplicationId: 'private-application', createdBy: 'private-actor', updatedBy: 'private-editor', revision: 3, status: 'draft' } },
     { _id: 'published-two', status: 'published', publishedSnapshot: { name: 'Second Instructor', role: 'Tutor', sortOrder: 1 } },
     { _id: 'draft', status: 'draft', publishedSnapshot: null },
     { _id: 'archived', status: 'archived', publishedSnapshot: null },
@@ -41,7 +41,7 @@ test('public faculty API uses published snapshots, safe fields and validated pag
   assert.equal(body.data[0].name, 'Published Instructor');
   assert.equal(body.data[0].status, 'published');
   assert.equal(body.data[0].portraitUrl, '/api/v1/media/portrait-one/content');
-  for (const key of ['sourceNote', 'createdBy', 'updatedBy', 'publishedSnapshot', 'revision', 'auditOutbox']) assert.equal(Object.hasOwn(body.data[0], key), false);
+  for (const key of ['registrationApplicationId', 'sourceNote', 'createdBy', 'updatedBy', 'publishedSnapshot', 'revision', 'auditOutbox']) assert.equal(Object.hasOwn(body.data[0], key), false);
   const second = await (await fetch(base + '/api/v1/public/faculty?page=2&pageSize=1')).json();
   assert.equal(second.data[0].id, 'published-two');
   for (const query of ['status=draft', 'status=published', 'page=-1', 'pageSize=101', 'unknown=value']) {

@@ -89,9 +89,9 @@ test('Stage 10 admin-to-user persisted workflows and responsive shared navigatio
     for (const [kind, path, field] of [['study', '/register?type=study', 'studentName'], ['tuition', '/register?type=tuition', 'studentName'], ['teacher', '/register?type=teacher', 'fullName'], ['coaching-profile', '/coaching/register', 'name']]) {
       await identity(student); await goto(path);
       const input = kind === 'coaching-profile' ? page.getByPlaceholder('e.g. Rohan Sharma', { exact: true }) : page.locator('input[name="' + field + '"]'); await input.fill('STAGE10 ' + kind + ' APPLICANT');
-      await page.getByRole('button', { name: 'Save Registration Draft', exact: true }).click(); await page.getByText(/Draft saved:/).waitFor();
+      await page.getByRole('button', { name: 'Save application draft', exact: true }).click(); await page.getByText(/Application reference:/).waitFor();
       const id = new URL(page.url()).searchParams.get('application'); assert.ok(id);
-      await page.reload({ waitUntil: 'domcontentloaded' }); await page.getByRole('button', { name: 'Update Registration Draft', exact: true }).waitFor();
+      await page.reload({ waitUntil: 'domcontentloaded' }); await page.getByRole('button', { name: 'Save changes', exact: true }).waitFor();
       assert.equal(await input.inputValue(), 'STAGE10 ' + kind + ' APPLICANT');
       const row = await f.models.RegistrationApplication.findById(id); assert.equal(row.status, 'draft'); assert.equal(row.paymentState, 'blocked');
       drafts.push({ id, reference: row.reference, field, kind });

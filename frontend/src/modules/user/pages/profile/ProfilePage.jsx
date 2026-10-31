@@ -217,6 +217,7 @@ export const ProfilePage = () => {
           </h3>
 
           <div className="space-y-1.5">
+            <Link to="/my-applications" className="block border rounded-xl p-3 font-semibold text-sm">My applications</Link>
             <button
               type="button"
               onClick={() => setShowPasswordModal(true)}

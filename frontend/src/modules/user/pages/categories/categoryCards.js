@@ -1,7 +1,7 @@
 // Shared defaults for the public page and its admin editor. No database seed is required.
 export const categoryIcons = ['Video', 'Building2', 'FileCheck', 'BookOpen', 'GraduationCap', 'Globe', 'Library', 'Users'];
 export const categoryColors = ['orange', 'blue', 'teal', 'navy', 'purple'];
-export const categoryRoutes = ['/home', '/about', '/books', '/colleges', '/coaching', '/categories', '/results'];
+export const categoryRoutes = ['/home', '/about', '/books', '/institutes', '/colleges', '/coaching', '/categories', '/results'];
 export const defaultCategoryCards = [
   { id: 'coaching', title: 'Coaching', subtitle: 'Browse published courses, plans and supported lessons', tabLabel: 'Coaching', path: '/coaching', iconKey: 'Video', color: 'orange', badge: '', tags: ['Courses', 'Plans', 'Lessons'] },
   { id: 'results', title: 'Examination Results', subtitle: 'View available examination information and authorized result access', tabLabel: 'Exam Results', path: '/results', iconKey: 'FileCheck', color: 'teal', badge: '', tags: ['Examinations', 'Results'] },

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Link, useSearchParams, useOutletContext } from "react-router-dom";
 import {
   GraduationCap,
@@ -14,10 +14,16 @@ import { FranchiseApplicationForm as CollegeFranchiseForm } from "../../componen
 import { TuitionCoachingForm } from "../../components/auth/TuitionCoachingForm";
 import { StudyRegistrationForm } from "../../components/auth/StudyRegistrationForm";
 import { TeacherProfessorForm } from "../../components/auth/TeacherProfessorForm";
+import { useAuth } from "../../context/AuthContext";
 
 export const RegisterPage = () => {
-  const [searchParams] = useSearchParams();
-  const initialType = searchParams.get("type");
+  const { user, loading } = useAuth();
+  const previousAccount = useRef(user?.id), formSession = useRef(0);
+  if (previousAccount.current && previousAccount.current !== user?.id) formSession.current++;
+  previousAccount.current = user?.id;
+  const [searchParams, setSearchParams] = useSearchParams();
+  const candidate = searchParams.get('type') || (searchParams.has('draft') ? 'franchise' : null);
+  const initialType = ['franchise', 'tuition', 'study', 'teacher'].includes(candidate) ? candidate : null;
   
   // Screen state: null = Selection, 'franchise', 'tuition', 'study', 'teacher'
   const [selectedType, setSelectedType] = useState(initialType || null);
@@ -29,11 +35,13 @@ export const RegisterPage = () => {
   }, [selectedType, setHidePageBack]);
 
   useEffect(() => {
-    const t = searchParams.get("type");
-    if (t) {
-      setSelectedType(t);
-    }
-  }, [searchParams]);
+    setSelectedType(initialType);
+  }, [initialType]);
+
+  const chooseForm = type => {
+    setSelectedType(type);
+    setSearchParams(type ? { type } : {});
+  };
 
   const registrationOptions = [
     {
@@ -64,7 +72,7 @@ export const RegisterPage = () => {
       id: "study",
       title: "3. Study Form",
       subtitle: "Student Learning",
-      description: "Apply for study services and track your application review.",
+      description: "Send a study enquiry. KITSS will contact you and arrange the next steps.",
       icon: BookOpen,
       badgeColor: "bg-emerald-50 text-emerald-700 border-emerald-200/80",
       iconBg: "bg-emerald-50 text-emerald-700 group-hover:bg-emerald-600 group-hover:text-white",
@@ -85,6 +93,8 @@ export const RegisterPage = () => {
       btnText: "Apply as Educator"
     }
   ];
+
+  if (loading) return <p role="status">Checking your session...</p>;
 
   return (
     <div className="w-full transition-all duration-300">
@@ -127,7 +137,7 @@ export const RegisterPage = () => {
                 return (
                   <div
                     key={opt.id}
-                    onClick={() => setSelectedType(opt.id)}
+                    onClick={() => chooseForm(opt.id)}
                     className={`group bg-white p-3.5 sm:p-4 rounded-lg border border-slate-200/90 ${opt.borderHover} shadow-2xs hover:shadow-sm transition-all duration-200 cursor-pointer flex flex-col justify-between text-left active:scale-[0.99]`}
                   >
                     <div>
@@ -191,7 +201,7 @@ export const RegisterPage = () => {
             transition={{ duration: 0.18 }}
             className="w-full"
           >
-            <CollegeFranchiseForm onBack={() => setSelectedType(null)} />
+            <CollegeFranchiseForm onBack={() => chooseForm(null)} />
           </motion.div>
         )}
 
@@ -207,7 +217,7 @@ export const RegisterPage = () => {
             transition={{ duration: 0.18 }}
             className="w-full"
           >
-            <TuitionCoachingForm onBack={() => setSelectedType(null)} />
+            <TuitionCoachingForm key={formSession.current} onBack={() => chooseForm(null)} />
           </motion.div>
         )}
 
@@ -223,7 +233,7 @@ export const RegisterPage = () => {
             transition={{ duration: 0.18 }}
             className="w-full"
           >
-            <StudyRegistrationForm onBack={() => setSelectedType(null)} />
+            <StudyRegistrationForm key={formSession.current} onBack={() => chooseForm(null)} />
           </motion.div>
         )}
 
@@ -239,7 +249,7 @@ export const RegisterPage = () => {
             transition={{ duration: 0.18 }}
             className="w-full"
           >
-            <TeacherProfessorForm onBack={() => setSelectedType(null)} />
+            <TeacherProfessorForm key={formSession.current} onBack={() => chooseForm(null)} />
           </motion.div>
         )}
       </AnimatePresence>

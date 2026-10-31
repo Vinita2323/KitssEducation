@@ -1,4 +1,4 @@
-import { RegistrationDraftControls, useRegistrationFee } from './RegistrationDraftControls';
+import { RegistrationDraftControls } from './RegistrationDraftControls';
 import React, { useState } from "react";
 import {
   GraduationCap,
@@ -27,37 +27,7 @@ import {
   CheckSquare
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useToast } from "../../context/ToastContext";
 import { SearchableSelect } from "../common/SearchableSelect";
-import { openRazorpayCheckout } from "../../services/razorpayService";
-
-const STUDY_LANGUAGES = [
-  "Bilingual (Hindi + English)",
-  "English Medium",
-  "Hindi Medium",
-  "Sanskrit",
-  "Regional Language / Other"
-];
-
-const COACHING_COURSES = [
-  "IIT-JEE (Main & Advanced)",
-  "NEET-UG (Medical Prep)",
-  "Classes 11 & 12 (Higher Secondary Board - Science PCM/PCB)",
-  "Classes 11 & 12 (Commerce & Arts)",
-  "Classes 9 & 10 (Foundation & Olympiads)",
-  "Classes 6 to 8 (Middle School Foundation)",
-  "UPSC / State PSC / Civil Services",
-  "College / University Degree Courses",
-  "Other Professional / Skill Coaching"
-];
-
-const EXPERIENCE_YEARS = [
-  "Less than 1 Year",
-  "1 to 3 Years",
-  "3 to 5 Years",
-  "5 to 10 Years",
-  "10+ Years (Senior Faculty / Professor)"
-];
 
 const STEP_DEFINITIONS = [
   { id: 1, title: "Personal Info", subtitle: "Name & Contact" },
@@ -66,21 +36,13 @@ const STEP_DEFINITIONS = [
   { id: 4, title: "Checkout & Pay", subtitle: "Verification Fee" }
 ];
 
+import { RegistrationAccount } from './RegistrationAccount';
+import { useOriginalRegistration } from './useOriginalRegistration';
+import { OriginalDocumentNotes } from './OriginalDocumentNotes';
 export const TeacherProfessorForm = ({ onBack }) => {
-  const { showSuccess, showError } = useToast();
 
   const [step, setStep] = useState(1);
-  const [submitting, setSubmitting] = useState(false);
-  const [isSuccess, setIsSuccess] = useState(false);
-  const [facultyId, setFacultyId] = useState("");
-  const [copiedId, setCopiedId] = useState(false);
 
-  // Payment state
-  const [paymentMethod, setPaymentMethod] = useState("upi");
-  const [upiApp, setUpiApp] = useState("gpay");
-  const [selectedBank, setSelectedBank] = useState("State Bank of India (SBI)");
-  const verificationFee = useRegistrationFee('teacher');
-  const [transactionId, setTransactionId] = useState("");
 
   // All 11 Required Fields State
   const [formData, setFormData] = useState({
@@ -93,14 +55,14 @@ export const TeacherProfessorForm = ({ onBack }) => {
     age: "",
 
     // 3. Study Language
-    studyLanguage: "Bilingual (Hindi + English)",
+    studyLanguage: "",
 
     // 4. Experience details
     instituteName: "", // A. Institute name
     startDate: "", // B. Date of start
     endDate: "", // C. End date
     isContinuing: true, // C. or continue
-    coachingCourse: "IIT-JEE (Main & Advanced)", // D. Which Course of coaching
+    coachingCourse: "", // D. Which Course of coaching
     instituteAddress: "", // E. Institute address
     instituteContact: "", // E. Institute contact details
 
@@ -127,7 +89,7 @@ export const TeacherProfessorForm = ({ onBack }) => {
     aadharCardPreview: null,
 
     // 11. Experience in coaching / Total experience
-    coachingExperience: "3 to 5 Years",
+    coachingExperience: "",
     specializationNotes: ""
   });
 
@@ -183,22 +145,7 @@ export const TeacherProfessorForm = ({ onBack }) => {
     }));
   };
 
-  const handleFileChange = (field, file) => {
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      setFormData((prev) => ({
-        ...prev,
-        [`${field}File`]: file,
-        [`${field}Preview`]: e.target.result
-      }));
-      if (errors[field]) {
-        setErrors((prev) => ({ ...prev, [field]: "" }));
-      }
-    };
-    reader.readAsDataURL(file);
-  };
-
+  const handleFileChange = (field, file) => workflow.chooseDocument(field, file);
   const validateStep = (currentStep) => {
     const errs = {};
 
@@ -231,46 +178,20 @@ export const TeacherProfessorForm = ({ onBack }) => {
       if (!formData.coachingExperience) errs.coachingExperience = "Select Total Coaching Experience";
     }
 
-    // STEP 3 Validation: Document uploads & Aadhar
-    else if (currentStep === 3) {
-      if (!formData.passportPhotoPreview && !formData.passportPhotoFile) {
-        errs.passportPhoto = "Upload Passport size photo";
-      }
-      if (!formData.experienceDocPreview && !formData.experienceDocFile) {
-        errs.experienceDoc = "Upload Experience Certificate copy or ID Card copy";
-      }
-      if (!formData.aadharNumber.trim() || formData.aadharNumber.length < 12) {
-        errs.aadharNumber = "Valid 12-digit Aadhar Number required";
-      }
-      if (!formData.aadharCardPreview && !formData.aadharCardFile) {
-        errs.aadharCard = "Upload Aadhar card copy";
-      }
-    }
-
     setErrors(errs);
     return Object.keys(errs).length === 0;
   };
 
-  const handleNext = () => {
-    if (validateStep(step)) {
-      setStep((prev) => Math.min(prev + 1, 4));
-    }
-  };
-
-  const handlePrev = () => setStep((prev) => Math.max(prev - 1, 1));
-
-  const handlePaymentAndSubmit = async e => { e?.preventDefault(); showError('Applications are not open for submission or payment yet. You can save a draft and return later.'); };
-
-  const copyFacultyId = () => {
-    navigator.clipboard.writeText(facultyId);
-    setCopiedId(true);
-    setTimeout(() => setCopiedId(false), 2000);
-    showSuccess("Application ID copied!");
-  };
-
+  const workflow = useOriginalRegistration('teacher', formData, setFormData, setErrors);
+  const canChooseDocument = workflow.canChooseDocument;
+  const INDIAN_STATES = workflow.choices('state',formData.state || formData.stateName), BOARDS = workflow.choices('board',formData.studyBoard), CLASSES = workflow.choices('class',formData.studentClass), AVAILABLE_COURSES = workflow.choices('program',formData.applyCourseName), STUDY_LANGUAGES = workflow.choices('language',formData.studyLanguage), COACHING_COURSES = workflow.choices('program',formData.coachingCourse), EXPERIENCE_YEARS = workflow.choices('experience',formData.coachingExperience);
+  const beforeSubmit = () => { for (let index = 1; index < 3; index++) if (!validateStep(index)) { setStep(index); return false; } return true; };
+  const handleNext = () => { if (step === 3 || validateStep(step)) setStep(v => Math.min(v + 1, 4)); };
+  const handlePrev = () => setStep(v => Math.max(v - 1, 1));
+  const locked = Boolean(workflow.application && !['draft', 'needs_changes'].includes(workflow.application.status));
+  const stepDefinitions = STEP_DEFINITIONS.map(s => s.id === 4 ? { ...s, title: workflow.policy?.feeRequired ? 'Checkout & Pay' : 'Review & Submit' } : s);
   return (
     <div className="w-full max-w-2xl mx-auto bg-white rounded-lg border border-slate-200/90 shadow-2xs overflow-hidden">
-      <RegistrationDraftControls kind="teacher" formData={formData} setFormData={setFormData} />
       {/* Top Banner - Compact */}
       <div className="p-3 sm:p-3.5 border-b border-slate-200/80 flex items-center justify-between">
         <div className="flex items-center gap-2.5">
@@ -278,7 +199,7 @@ export const TeacherProfessorForm = ({ onBack }) => {
             type="button"
             onClick={onBack}
             className="w-7 h-7 rounded-md bg-slate-50 hover:bg-[#0A1D3F] hover:text-white text-[#0A1D3F] transition-colors border border-slate-200 flex items-center justify-center cursor-pointer shadow-2xs shrink-0"
-            title="Back to options"
+            aria-label="Back to registration options" title="Back to options"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
           </button>
@@ -303,18 +224,19 @@ export const TeacherProfessorForm = ({ onBack }) => {
       </div>
 
       {/* Stepper - Compact */}
-      {!isSuccess && (
+      {(
         <div className="px-3 sm:px-3.5 py-2 sm:py-2.5 border-b border-slate-200/80">
           <div className="flex items-center justify-between relative">
             <div className="absolute top-1/2 left-6 right-6 -translate-y-1/2 h-0.5 bg-slate-100 -z-0" />
             
-            {STEP_DEFINITIONS.map((s) => {
+            {stepDefinitions.map((s) => {
               const isCompleted = step > s.id;
               const isCurrent = step === s.id;
 
               return (
                 <div
                   key={s.id}
+                  role="button" tabIndex={0} aria-label={s.title} aria-current={step === s.id ? "step" : undefined} onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); if (s.id < step) setStep(s.id); } }}
                   className="flex flex-col items-center relative z-10 cursor-pointer"
                   onClick={() => {
                     if (s.id < step) setStep(s.id);
@@ -351,101 +273,7 @@ export const TeacherProfessorForm = ({ onBack }) => {
 
       {/* Main Body */}
       <div className="p-3.5 sm:p-5">
-        {isSuccess ? (
-          <motion.div initial={{ opacity: 0, scale: 0.99 }} animate={{ opacity: 1, scale: 1 }} className="text-center space-y-3.5 py-1">
-            <div className="w-12 h-12 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto ring-4 ring-emerald-50">
-              <CheckCircle2 className="w-7 h-7 stroke-[2.2]" />
-            </div>
-
-            <div className="space-y-0.5">
-              <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-indigo-100 text-indigo-800 border border-indigo-200">
-                <Check className="w-3 h-3" /> Verification Fee Paid • Application Received
-              </span>
-              <h2 className="text-lg sm:text-xl font-extrabold text-[#0A1D3F] pt-0.5">
-                Faculty Profile Registered!
-              </h2>
-              <p className="text-xs text-slate-500 max-w-sm mx-auto leading-relaxed">
-                Thank you, <strong>{formData.title} {formData.fullName}</strong>. Your application & experience details have been registered.
-              </p>
-            </div>
-
-            <div className="p-3.5 bg-[#0A1D3F] rounded-lg text-left text-white space-y-2.5 max-w-md mx-auto shadow-sm">
-              <div className="flex items-center justify-between text-[11px] text-orange-300 font-bold uppercase tracking-wider">
-                <span className="flex items-center gap-1.5">
-                  <ShieldCheck className="w-3.5 h-3.5 text-[#FF8A00]" /> Faculty Tracking ID
-                </span>
-                <span className="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 text-[9px] font-bold">
-                  Verified
-                </span>
-              </div>
-
-              <div className="flex items-center justify-between bg-white/10 p-2.5 rounded-md border border-white/10">
-                <div>
-                  <span className="text-[10px] text-slate-300 block">APPLICATION ID</span>
-                  <span className="font-mono font-extrabold text-sm sm:text-base text-white tracking-wider">
-                    {facultyId}
-                  </span>
-                </div>
-                <button
-                  type="button"
-                  onClick={copyFacultyId}
-                  className="px-2.5 py-1 rounded bg-[#FF8A00] hover:bg-[#e67c00] text-white text-[11px] font-bold flex items-center gap-1 transition cursor-pointer"
-                >
-                  {copiedId ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-                  <span>{copiedId ? "Copied" : "Copy ID"}</span>
-                </button>
-              </div>
-            </div>
-
-            <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 text-xs space-y-1.5 max-w-md mx-auto text-left">
-              <div className="flex justify-between">
-                <span className="text-slate-500">Subject / Course:</span>
-                <span className="font-bold text-[#0A1D3F]">{formData.coachingCourse}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-500">Language Medium:</span>
-                <span className="font-bold text-[#0A1D3F]">{formData.studyLanguage}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-500">Institute Affiliation:</span>
-                <span className="font-bold text-[#0A1D3F]">{formData.instituteName}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-500">Verification Fee:</span>
-                <span className="font-bold text-emerald-600">₹{verificationFee} (Paid Online)</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-500">Transaction ID:</span>
-                <span className="font-mono font-bold text-slate-700">{transactionId}</span>
-              </div>
-            </div>
-
-            <div className="pt-1 flex gap-2.5 max-w-md mx-auto">
-              <button
-                type="button"
-                onClick={onBack}
-                className="flex-1 py-2.5 px-4 rounded-lg bg-[#0A1D3F] text-white font-bold text-xs shadow-2xs transition active:scale-95 cursor-pointer"
-              >
-                Back to Registration Options
-              </button>
-            </div>
-          </motion.div>
-        ) : (
-          <form
-            onSubmit={(e) => {
-              if (step === 4) {
-                handlePaymentAndSubmit(e);
-              } else {
-                e.preventDefault();
-                handleNext();
-              }
-            }}
-            className="space-y-3.5"
-          >
-            <AnimatePresence mode="wait">
-              {/* ========================================================
-                  STEP 1: PERSONAL DETAILS (Name, Age/DOB, Language, Contacts)
-                 ======================================================== */}
+          <fieldset disabled={locked} className="min-w-0"><AnimatePresence mode="wait">
               {step === 1 && (
                 <motion.div
                   key="step-1"
@@ -464,7 +292,7 @@ export const TeacherProfessorForm = ({ onBack }) => {
                   <div className="grid grid-cols-4 gap-2.5">
                     <div className="col-span-1">
                       <label className="block text-xs font-bold text-[#0A1D3F] mb-1">Title</label>
-                      <SearchableSelect
+                      <SearchableSelect disabled={locked}
                         options={["Prof.", "Dr.", "Mr.", "Ms.", "Mrs."]}
                         value={formData.title}
                         onChange={(val) => handleSelectChange("title", val)}
@@ -476,7 +304,7 @@ export const TeacherProfessorForm = ({ onBack }) => {
                         <User className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
                         <input
                           type="text"
-                          name="fullName"
+                          name="fullName" aria-label="Full name"
                           placeholder="e.g. Anand Kumar Sharma"
                           value={formData.fullName}
                           onChange={handleChange}
@@ -496,7 +324,7 @@ export const TeacherProfessorForm = ({ onBack }) => {
                         <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
                         <input
                           type="date"
-                          name="dob"
+                          name="dob" aria-label="Date of birth"
                           value={formData.dob}
                           onChange={handleChange}
                           className="w-full pl-9 pr-3 py-2 bg-slate-50/70 border border-slate-200 rounded-lg text-xs sm:text-sm text-[#0A1D3F] focus:outline-none focus:border-[#FF8A00] focus:bg-white transition"
@@ -512,7 +340,7 @@ export const TeacherProfessorForm = ({ onBack }) => {
                         <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
                         <input
                           type="text"
-                          name="age"
+                          name="age" aria-label="Calculated age"
                           value={formData.age || "Auto-calculated from DOB"}
                           readOnly
                           className="w-full pl-9 pr-3 py-2 bg-slate-100/80 border border-slate-200 rounded-lg text-xs sm:text-sm text-slate-600 font-semibold cursor-not-allowed"
@@ -524,7 +352,7 @@ export const TeacherProfessorForm = ({ onBack }) => {
                   {/* 3. Study Language */}
                   <div>
                     <label className="block text-xs font-bold text-[#0A1D3F] mb-1">3. Study / Teaching Language *</label>
-                    <SearchableSelect
+                    <SearchableSelect disabled={locked}
                       options={STUDY_LANGUAGES}
                       value={formData.studyLanguage}
                       onChange={(val) => handleSelectChange("studyLanguage", val)}
@@ -541,7 +369,7 @@ export const TeacherProfessorForm = ({ onBack }) => {
                         <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
                         <input
                           type="tel"
-                          name="contactNumber"
+                          name="contactNumber" aria-label="Contact number"
                           placeholder="10-digit mobile number"
                           value={formData.contactNumber}
                           onChange={handleChange}
@@ -559,7 +387,7 @@ export const TeacherProfessorForm = ({ onBack }) => {
                         <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
                         <input
                           type="email"
-                          name="email"
+                          name="email" aria-label="Applicant email"
                           placeholder="professor@university.edu"
                           value={formData.email}
                           onChange={handleChange}
@@ -588,7 +416,7 @@ export const TeacherProfessorForm = ({ onBack }) => {
                       <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-emerald-500" />
                       <input
                         type="tel"
-                        name="whatsappNumber"
+                        name="whatsappNumber" aria-label="WhatsApp number"
                         placeholder="WhatsApp enabled mobile number"
                         value={formData.whatsappNumber}
                         onChange={handleChange}
@@ -628,7 +456,7 @@ export const TeacherProfessorForm = ({ onBack }) => {
                       <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
                       <input
                         type="text"
-                        name="instituteName"
+                        name="instituteName" aria-label="Institution name"
                         placeholder="e.g. Government Science College / Allen / Resonance / Self-Academy"
                         value={formData.instituteName}
                         onChange={handleChange}
@@ -645,7 +473,7 @@ export const TeacherProfessorForm = ({ onBack }) => {
                       <label className="block text-xs font-bold text-[#0A1D3F] mb-1">4B. Date of Start *</label>
                       <input
                         type="date"
-                        name="startDate"
+                        name="startDate" aria-label="Start date"
                         value={formData.startDate}
                         onChange={handleChange}
                         className="w-full px-3 py-2 bg-slate-50/70 border border-slate-200 rounded-lg text-xs sm:text-sm text-[#0A1D3F] focus:outline-none focus:border-[#FF8A00] focus:bg-white transition"
@@ -675,7 +503,7 @@ export const TeacherProfessorForm = ({ onBack }) => {
                       ) : (
                         <input
                           type="date"
-                          name="endDate"
+                          name="endDate" aria-label="End date"
                           value={formData.endDate}
                           onChange={handleChange}
                           className="w-full px-3 py-2 bg-slate-50/70 border border-slate-200 rounded-lg text-xs sm:text-sm text-[#0A1D3F] focus:outline-none focus:border-[#FF8A00] focus:bg-white transition"
@@ -690,7 +518,7 @@ export const TeacherProfessorForm = ({ onBack }) => {
                     <label className="block text-xs font-bold text-[#0A1D3F] mb-1">
                       4D. Which Course of Coaching / Target Batch *
                     </label>
-                    <SearchableSelect
+                    <SearchableSelect disabled={locked}
                       options={COACHING_COURSES}
                       value={formData.coachingCourse}
                       onChange={(val) => handleSelectChange("coachingCourse", val)}
@@ -706,7 +534,7 @@ export const TeacherProfessorForm = ({ onBack }) => {
                         4E. Institute Address *
                       </label>
                       <textarea
-                        name="instituteAddress"
+                        name="instituteAddress" aria-label="Institution address"
                         rows={2}
                         placeholder="Complete campus / branch address"
                         value={formData.instituteAddress}
@@ -722,7 +550,7 @@ export const TeacherProfessorForm = ({ onBack }) => {
                         4E. Institute Contact Details *
                       </label>
                       <textarea
-                        name="instituteContact"
+                        name="instituteContact" aria-label="Institution contact number"
                         rows={2}
                         placeholder="Institute Phone, Official Email, or Website"
                         value={formData.instituteContact}
@@ -739,7 +567,7 @@ export const TeacherProfessorForm = ({ onBack }) => {
                     <label className="block text-xs font-bold text-[#0A1D3F] mb-1">
                       11. Total Experience in Coaching / Teaching *
                     </label>
-                    <SearchableSelect
+                    <SearchableSelect disabled={locked}
                       options={EXPERIENCE_YEARS}
                       value={formData.coachingExperience}
                       onChange={(val) => handleSelectChange("coachingExperience", val)}
@@ -772,7 +600,7 @@ export const TeacherProfessorForm = ({ onBack }) => {
                     {/* 8. Passport photo */}
                     <div className="space-y-1">
                       <label className="block text-xs font-bold text-[#0A1D3F]">
-                        8. Passport Photo *
+                        8. Passport Photo
                       </label>
                       <label className="block border border-dashed border-slate-300 hover:border-[#FF8A00] bg-slate-50/70 hover:bg-white rounded-lg p-2.5 text-center cursor-pointer transition shadow-2xs">
                         {formData.passportPhotoPreview ? (
@@ -782,7 +610,7 @@ export const TeacherProfessorForm = ({ onBack }) => {
                               alt="Passport Photo Preview"
                               className="w-16 h-20 object-cover mx-auto rounded border shadow-2xs"
                             />
-                            <span className="text-[10px] text-emerald-600 font-bold block mt-1">Photo Uploaded ✓</span>
+                            <span className="text-[10px] text-emerald-600 font-bold block mt-1">Photo Selected ✓</span>
                           </div>
                         ) : (
                           <div className="py-2 text-slate-500">
@@ -792,7 +620,7 @@ export const TeacherProfessorForm = ({ onBack }) => {
                           </div>
                         )}
                         <input
-                          type="file" disabled title="Document privacy policy pending"
+                          type="file" aria-label="Select passportPhoto" disabled={!canChooseDocument("passportPhoto")} title="Documents follow the application requirements"
                           accept="image/*"
                           onChange={(e) => handleFileChange("passportPhoto", e.target.files[0])}
                           className="hidden"
@@ -824,7 +652,7 @@ export const TeacherProfessorForm = ({ onBack }) => {
                           </div>
                         )}
                         <input
-                          type="file" disabled title="Document privacy policy pending"
+                          type="file" aria-label="Select experienceDoc" disabled={!canChooseDocument("experienceDoc")} title="Documents follow the application requirements"
                           accept="image/*,.pdf"
                           onChange={(e) => handleFileChange("experienceDoc", e.target.files[0])}
                           className="hidden"
@@ -837,9 +665,9 @@ export const TeacherProfessorForm = ({ onBack }) => {
                   {/* 10. Aadhar Card Number & Upload */}
                   <div className="p-3 bg-slate-50/70 rounded-lg border border-slate-200 space-y-2.5">
                     <div className="flex items-center justify-between">
-                      <label className="text-xs font-bold text-[#0A1D3F]">10. Aadhar Card Details *</label>
+                      <label className="text-xs font-bold text-[#0A1D3F]">10. Aadhar Card Details</label>
                       <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                        UIDAI Encrypted
+                        Private documents
                       </span>
                     </div>
 
@@ -849,7 +677,7 @@ export const TeacherProfessorForm = ({ onBack }) => {
                       </label>
                       <input
                         type="text"
-                        name="aadharNumber" disabled title="Identity documents are not being collected at this time"
+                        name="aadharNumber" disabled title="An identity number is not required for this application"
                         placeholder="XXXX XXXX XXXX (12 digits)"
                         value={formData.aadharNumber}
                         onChange={handleChange}
@@ -862,7 +690,7 @@ export const TeacherProfessorForm = ({ onBack }) => {
 
                     <div>
                       <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                        Upload Aadhar Card Copy (Front/Back) *
+                        Upload Aadhar Card Copy (Front/Back)
                       </label>
                       <label className="block border border-dashed border-slate-300 hover:border-[#FF8A00] bg-white rounded-lg p-2 text-center cursor-pointer transition shadow-2xs">
                         {formData.aadharCardPreview ? (
@@ -881,7 +709,7 @@ export const TeacherProfessorForm = ({ onBack }) => {
                           </div>
                         )}
                         <input
-                          type="file" disabled title="Document privacy policy pending"
+                          type="file" aria-label="Select aadharCard" disabled={!canChooseDocument("aadharCard")} title="Documents follow the application requirements"
                           accept="image/*,.pdf"
                           onChange={(e) => handleFileChange("aadharCard", e.target.files[0])}
                           className="hidden"
@@ -890,244 +718,23 @@ export const TeacherProfessorForm = ({ onBack }) => {
                       {errors.aadharCard && <p className="text-[11px] text-red-500 mt-0.5 font-medium">{errors.aadharCard}</p>}
                     </div>
                   </div>
+                  {(workflow.policy?.documents || []).filter(d => !["passportPhoto", "experienceDoc", "aadharCard"].includes(d.key)).map(d => <label key={d.key} className="block text-xs font-bold text-[#0A1D3F]">{d.label}{d.required === false ? ' (optional)' : ' *'}<input type="file" className="block mt-2 text-xs w-full" aria-label={'Select ' + d.key} accept={workflow.policy?.upload?.mime?.join(',') || 'application/pdf,image/png,image/jpeg'} disabled={!canChooseDocument(d.key)} onChange={e => handleFileChange(d.key, e.target.files?.[0])} /></label>)}
+                  <OriginalDocumentNotes workflow={workflow} formData={formData} />
                 </motion.div>
               )}
 
-              {/* ========================================================
-                  STEP 4: CHECKOUT & VERIFICATION PAYMENT
-                 ======================================================== */}
-              {step === 4 && (
-                <motion.div
-                  key="step-4"
-                  initial={{ opacity: 0, x: 8 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -8 }}
-                  transition={{ duration: 0.15 }}
-                  className="space-y-3"
-                >
-                  <div className="flex items-center justify-between pb-1.5 border-b border-slate-100">
-                    <div>
-                      <h2 className="text-xs sm:text-sm font-bold text-[#0A1D3F]">
-                        Checkout & Faculty Verification Fee
-                      </h2>
-                      <p className="text-[11px] text-slate-500">
-                        Review order summary & proceed to secure Razorpay checkout.
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Fee Breakdown Banner */}
-                  <div className="p-3 rounded-lg bg-gradient-to-r from-[#0A1D3F] to-[#133C8B] text-white space-y-1.5 shadow-sm">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <span className="text-[11px] text-indigo-200 block font-semibold">Faculty Verification & Accreditation</span>
-                        <span className="text-xs sm:text-sm font-bold text-white">
-                          {formData.title} {formData.fullName} • {formData.coachingCourse}
-                        </span>
-                      </div>
-                      <div className="text-right">
-                        <span className="text-xl sm:text-2xl font-black text-[#FF8A00]">₹{verificationFee}</span>
-                        <span className="text-[9px] text-emerald-300 block font-semibold">One-time accreditation</span>
-                      </div>
-                    </div>
-                    <div className="text-[10px] text-slate-300 border-t border-white/10 pt-1.5 flex items-center justify-between">
-                      <span>✓ Background Verification + Faculty Portal Profile</span>
-                      <span className="flex items-center gap-1 text-emerald-400 font-semibold">
-                        <ShieldCheck className="w-3 h-3" /> 100% Secure
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Payment Methods */}
-                  <div className="space-y-1.5">
-                    <label className="block text-xs font-bold text-[#0A1D3F]">
-                      Select Payment Method
-                    </label>
-                    <div className="grid grid-cols-3 gap-2">
-                      {[
-                        { id: "upi", name: "UPI & QR", icon: QrCode },
-                        { id: "card", name: "Card", icon: CreditCard },
-                        { id: "netbanking", name: "Net Banking", icon: Building }
-                      ].map((pm) => {
-                        const Icon = pm.icon;
-                        const isSelected = paymentMethod === pm.id;
-                        return (
-                          <div
-                            key={pm.id}
-                            onClick={() => setPaymentMethod(pm.id)}
-                            className={`p-2 rounded-lg border text-center cursor-pointer transition-all duration-150 ${
-                              isSelected
-                                ? "bg-orange-50 border-[#FF8A00] text-[#0A1D3F] font-bold shadow-2xs"
-                                : "bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100"
-                            }`}
-                          >
-                            <Icon className={`w-4 h-4 mx-auto mb-0.5 ${isSelected ? "text-[#FF8A00]" : "text-slate-400"}`} />
-                            <span className="text-[11px] block leading-tight">{pm.name}</span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  {/* UPI QR & Apps */}
-                  {paymentMethod === "upi" && (
-                    <div className="p-3 rounded-lg border border-slate-200 bg-slate-50/70 space-y-2.5">
-                      <div className="flex items-center justify-between text-[11px] font-bold text-[#0A1D3F]">
-                        <span>Pay directly via UPI</span>
-                        <span className="text-[#FF8A00]">Instant ID Generation</span>
-                      </div>
-
-                      <div className="grid grid-cols-3 gap-1.5">
-                        {[
-                          { id: "gpay", label: "Google Pay" },
-                          { id: "phonepe", label: "PhonePe" },
-                          { id: "paytm", label: "Paytm" }
-                        ].map((app) => (
-                          <button
-                            type="button"
-                            key={app.id}
-                            onClick={() => setUpiApp(app.id)}
-                            className={`py-1.5 px-2 rounded-md text-[11px] font-bold border transition cursor-pointer ${
-                              upiApp === app.id
-                                ? "bg-[#0A1D3F] text-white border-[#0A1D3F] shadow-2xs"
-                                : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"
-                            }`}
-                          >
-                            {app.label}
-                          </button>
-                        ))}
-                      </div>
-
-                      <div className="bg-white p-2.5 rounded-lg border border-slate-200 flex items-center justify-center gap-3">
-                        <div className="w-16 h-16 bg-slate-50 p-1 rounded-md border border-slate-200 flex items-center justify-center shrink-0">
-                          <QrCode className="w-14 h-14 text-[#0A1D3F]" />
-                        </div>
-                        <div className="text-left text-xs space-y-0.5">
-                          <p className="font-bold text-[#0A1D3F]">Scan with any UPI App</p>
-                          <p className="text-[10px] text-slate-500">UPI ID: kitseducation@icici</p>
-                          <p className="text-[11px] font-bold text-emerald-600">Amount: ₹{verificationFee}</p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {paymentMethod === "card" && (
-                    <div className="space-y-2.5 p-3 rounded-lg border border-slate-200 bg-slate-50/70">
-                      <div>
-                        <label className="block text-xs font-bold text-[#0A1D3F] mb-1">Card Number</label>
-                        <input
-                          type="text"
-                          defaultValue="4532 8890 1234 5678"
-                          className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-mono"
-                        />
-                      </div>
-                      <div className="grid grid-cols-2 gap-2">
-                        <div>
-                          <label className="block text-xs font-bold text-[#0A1D3F] mb-1">Expiry Date</label>
-                          <input
-                            type="text"
-                            defaultValue="12/28"
-                            className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-mono"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-xs font-bold text-[#0A1D3F] mb-1">CVV</label>
-                          <input
-                            type="password"
-                            defaultValue="789"
-                            className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-mono"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {paymentMethod === "netbanking" && (
-                    <div className="p-3 rounded-lg border border-slate-200 bg-slate-50/70">
-                      <label className="block text-xs font-bold text-[#0A1D3F] mb-1">Select Your Bank</label>
-                      <SearchableSelect
-                        options={[
-                          "State Bank of India (SBI)",
-                          "HDFC Bank",
-                          "ICICI Bank",
-                          "Axis Bank",
-                          "Punjab National Bank (PNB)",
-                          "Bank of Baroda",
-                          "Kotak Mahindra Bank"
-                        ]}
-                        value={selectedBank}
-                        onChange={setSelectedBank}
-                        placeholder="Select Bank"
-                      />
-                    </div>
-                  )}
-
-                  <div className="p-2.5 bg-amber-50 border border-[#FF8A00]/30 rounded-lg flex items-center justify-between text-left text-xs text-[#0A1D3F]">
-                    <div className="flex items-start gap-2">
-                      <Sparkles className="w-3.5 h-3.5 text-[#FF8A00] shrink-0 mt-0.5" />
-                      <p className="text-[11px] leading-snug">
-                        Clicking <strong>Proceed to Pay ₹{verificationFee}</strong> will open the official <strong>Razorpay Checkout Gateway</strong> (UPI, QR, Cards, NetBanking).
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => completeRegistrationSuccess()}
-                      className="text-[10px] text-slate-500 hover:text-[#FF8A00] underline font-semibold shrink-0 ml-2 cursor-pointer"
-                      title="Quick Test Simulation without opening Razorpay"
-                    >
-                      Instant Test Bypass
-                    </button>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            {/* Bottom Actions */}
-            <div className="flex items-center justify-between pt-3 border-t border-slate-100">
-              {step > 1 ? (
-                <button
-                  type="button"
-                  onClick={handlePrev}
-                  className="py-2 px-3.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs flex items-center gap-1.5 transition cursor-pointer shadow-2xs"
-                >
-                  <ArrowLeft className="w-3 h-3" />
-                  <span>Previous</span>
-                </button>
-              ) : (
-                <div />
-              )}
-
-              {step < 3 ? (
-                <button
-                  type="button"
-                  onClick={handleNext}
-                  className="py-2 px-5 rounded-lg bg-[#0A1D3F] hover:bg-[#133C8B] text-white font-bold text-xs flex items-center gap-1.5 shadow-2xs transition active:scale-95 cursor-pointer ml-auto"
-                >
-                  <span>Continue</span>
-                  <ArrowRight className="w-3 h-3" />
-                </button>
-              ) : step === 3 ? (
-                <button
-                  type="button"
-                  onClick={handleNext}
-                  className="py-2 px-5 rounded-lg bg-[#0A1D3F] hover:bg-[#133C8B] text-white font-bold text-xs flex items-center gap-1.5 shadow-2xs transition active:scale-95 cursor-pointer ml-auto"
-                >
-                  <span>Proceed to Checkout</span>
-                  <ArrowRight className="w-3 h-3" />
-                </button>
-              ) : (
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="py-2.5 px-5 rounded-lg bg-[#FF8A00] hover:bg-[#E67C00] text-white font-bold text-xs sm:text-sm flex items-center gap-1.5 shadow-2xs transition active:scale-95 cursor-pointer ml-auto"
-                >
-                  <Lock className="w-3.5 h-3.5" />
-                  <span>{submitting ? "Processing..." : `Proceed to Pay ₹${verificationFee}`}</span>
-                </button>
-              )}
-            </div>
-          </form>
-        )}
+          </AnimatePresence></fieldset>
+          <div hidden={step !== 4} className="space-y-3">
+            <div className="pb-1.5 border-b border-slate-100"><h2 className="text-xs sm:text-sm font-bold text-[#0A1D3F]">4. Review, Account &amp; Submit</h2><p className="text-[11px] text-slate-500">Confirm your details and complete your application. {workflow.policy ? workflow.policy.feeRequired ? 'Application fee: INR ' + (workflow.policy.amountMinor / 100).toFixed(2) : 'No application fee.' : 'Fee details will appear when applications open.'}</p></div>
+            <RegistrationAccount applicantName={formData.fullName} applicantEmail={formData.email} />
+          </div>
+          <div hidden={step !== 4 && !workflow.user?.emailVerified} className="mt-3">
+            <RegistrationDraftControls kind="teacher" formData={formData} setFormData={setFormData} showSubmission={step === 4} onApplicationChange={workflow.setApplication} uploadSelected beforeSubmit={beforeSubmit} />
+          </div>
+          <div className="flex items-center justify-between pt-3 mt-3 border-t border-slate-100">
+            {step > 1 ? <button type="button" onClick={handlePrev} className="py-2 px-3.5 rounded-lg border border-slate-200 bg-white text-slate-700 font-bold text-xs flex items-center gap-1.5"><ArrowLeft className="w-3 h-3" />Previous</button> : <div />}
+            {step < 4 && <button type="button" onClick={handleNext} className="py-2 px-5 rounded-lg bg-[#0A1D3F] hover:bg-[#133C8B] text-white font-bold text-xs flex items-center gap-1.5 ml-auto">{step === 3 ? 'Continue to Review' : 'Continue'}<ArrowRight className="w-3 h-3" /></button>}
+          </div>
       </div>
     </div>
   );

@@ -1,3 +1,4 @@
+import { useSearchParams } from 'react-router-dom';
 import { HomeSectionFields } from '../components/HomeSectionFields';
 import { CategoryCardsManager } from '../components/CategoryCardsManager';
 import { AdminField, AdminInput, AdminSelect, AdminTextarea } from '../components/AdminFields';
@@ -12,8 +13,9 @@ const paths = { pages: '/admin/content/pages', banners: '/admin/content/banners'
 const empty = kind => kind === 'pages' ? { key: 'home', sections: [{ key: 'intro', type: 'text', heading: '', body: '', items: [], mediaAssetIds: [] }] } : kind === 'banners' ? { placement: 'home', title: '', subtitle: '', ctaText: '', tag: '', imageAssetId: null, link: { type: 'internal', target: '/books' }, variant: 'navy', sortOrder: 0 } : { name: '', role: '', qualifications: '', experience: '', specialty: '', badge: '', trackTags: [], portraitAssetId: null, sourceNote: '', sortOrder: 0 };
 export function AdminContentPage() {
   const { can } = useAuth();
+  const [params] = useSearchParams();
   const [categoriesMode, setCategoriesMode] = useState(false);
-  const [kind, setKind] = useState('pages'), [rows, setRows] = useState([]), [meta, setMeta] = useState(null), [page, setPage] = useState(1), [status, setStatus] = useState('');
+  const [kind, setKind] = useState(() => params.get('tab') === 'faculty' ? 'faculty' : 'pages'), [rows, setRows] = useState([]), [meta, setMeta] = useState(null), [page, setPage] = useState(1), [status, setStatus] = useState('');
   const [form, setForm] = useState(null), [editing, setEditing] = useState(null), [error, setError] = useState(''), [busy, setBusy] = useState(false), [version, setVersion] = useState(0);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const deleteDialog = useDialogFocus(Boolean(deleteTarget), () => { if (!busy) setDeleteTarget(null); });

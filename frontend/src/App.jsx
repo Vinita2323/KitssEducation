@@ -7,6 +7,8 @@ import { LibraryProvider } from './modules/user/context/LibraryContext'
 import { UserRoutes } from './modules/user/routes/UserRoutes'
 import { AdminRoutes } from './modules/admin/routes/AdminRoutes'
 import { PushNotificationManager } from './modules/user/components/notifications/PushNotificationManager'
+import { AuthLayout } from './modules/user/components/layout/AuthLayout'
+import { RegisterPage } from './modules/user/pages/auth/RegisterPage'
 
 function SessionLibrary({ children }) {
   const { user, loading } = useAuth();
@@ -21,14 +23,20 @@ function App() {
       <AuthProvider>
         <ToastProvider>
           <PushNotificationManager />
-          <SessionLibrary>
+          <Routes>
+            {/* Public registration manages its own account changes so guest input survives sign-in. */}
+            <Route element={<AuthLayout />}>
+              <Route path="/register" element={<RegisterPage />} />
+            </Route>
+            <Route path="/*" element={<SessionLibrary>
             <Routes>
               {/* Admin Portal Routes */}
               <Route path="/admin/*" element={<AdminRoutes />} />
               {/* Student Portal Routes */}
               <Route path="/*" element={<UserRoutes />} />
             </Routes>
-          </SessionLibrary>
+            </SessionLibrary>} />
+          </Routes>
         </ToastProvider>
       </AuthProvider>
     </BrowserRouter>

@@ -60,8 +60,11 @@ test('Stage 13 real browser/HTTP/MongoDB policy, free content and keyboard granu
     }
   });
   await t.test('verified user submits saved registration and main admin reviews/activates it without changing identity roles', async () => {
-    const row = await f.service.createApplication({ kind: 'study', applicant: { studentName: 'Browser applicant', dob: '1990-01-01' }, idempotencyKey: randomUUID() }, d.student.auth, f.ctx);
+    const row = await f.service.createApplication({ kind: 'study', applicant: { studentName: 'Browser applicant', dob: '1990-01-01', fatherName:'Applicant father',motherName:'Applicant mother',email:d.student.user.emailNormalized,callingNo:'9999999999',whatsappNo:'9999999999',address:'Synthetic street',state:'Synthetic State',district:'Synthetic district',city:'Synthetic City',pincode:'123456',applyCourseName:'Synthetic Program',applyInstituteName:'Synthetic Institute' }, idempotencyKey: randomUUID() }, d.student.auth, f.ctx);
     await identity(d.student); await goto('/register?type=study&application=' + row.id);
+    await page.getByRole('button', { name: 'Save changes', exact: true }).click();
+    for(let step=0;step<3;step++)await page.getByRole('button',{name:'Continue',exact:true}).click();
+    await page.getByRole('button',{name:'Continue to Review',exact:true}).click();
     await page.getByRole('heading', { name: 'Application status: draft' }).waitFor();
     await page.getByLabel('I confirm the application information and submit for admin review.').check();
     await page.getByRole('button', { name: 'Submit registration for review', exact: true }).click();

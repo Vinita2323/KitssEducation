@@ -9,7 +9,6 @@ import { AuthLayout } from "../components/layout/AuthLayout";
 
 // Auth Pages
 import { LoginPage } from "../pages/auth/LoginPage";
-import { RegisterPage } from "../pages/auth/RegisterPage";
 import { RegisterSuccessPage } from "../pages/auth/RegisterSuccessPage";
 import { ForgotPasswordPage, ResetPasswordPage } from "../pages/auth/ForgotPasswordPage";
 
@@ -43,6 +42,8 @@ import { NotificationsPage } from "../pages/notifications/NotificationsPage";
 import { ProfilePage } from "../pages/profile/ProfilePage";
 import { SettingsPage } from "../pages/profile/SettingsPage";
 
+import { MyApplicationsPage } from '../pages/auth/MyApplicationsPage';
+import { FranchiseDirectoryPage } from '../pages/college/FranchiseDirectoryPage';
 import { useAuth } from "../context/AuthContext";
 export const UserRoutes = () => {
   const {user}=useAuth();
@@ -59,7 +60,6 @@ export const UserRoutes = () => {
         <Route path="/account/verify" element={<IdentityPage verify />} />
         <Route path="/staff/accept" element={<IdentityPage invitation />} />
         <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
         <Route path="/register-success" element={<Navigate to="/account/verify" replace />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
@@ -71,8 +71,10 @@ export const UserRoutes = () => {
         <Route path="/about" element={<AboutPage />} />
         <Route path="/categories" element={<CategoriesPage />} />
         
-        {/* Former institutes directory; colleges now lists every institution */}
-        <Route path="/institutes" element={<Navigate to="/colleges" replace />} />
+        {/* Approved franchise directory; college admissions remain separate. */}
+        <Route path="/institutes" element={<FranchiseDirectoryPage />} />
+        <Route path="/franchises" element={<FranchiseDirectoryPage />} />
+        <Route path="/my-applications" element={<RouteGuard><MyApplicationsPage key={user?.id || "guest"} /></RouteGuard>} />
         <Route path="/institutes/:id" element={<Navigate to="/colleges" replace />} />
 
         {/* Partner Colleges & Admissions */}

@@ -7,7 +7,7 @@ import { createPublishingModels } from '../src/modules/publishing/publishing.mod
 
 test('category cards validate safe routes, limits, keys, icon and colour allowlists', () => {
   const parse = cards => contentInput('pages', { key: 'categories', categoryCards: cards }, true);
-  assert.equal(parse(defaultCategoryCards).fields.categoryCards.length, 5);
+  assert.equal(parse(defaultCategoryCards).fields.categoryCards.length, defaultCategoryCards.length);
   assert.deepEqual(parse([]).fields.categoryCards, []);
   for (const patch of [{ path: '/admin' }, { path: 'javascript:alert(1)' }, { iconKey: 'script' }, { color: 'url(evil)' }, { hidden: 'false' }, { id: 'all' }, { title: '' }, { tabLabel: '' }, { tags: ['a','b','c','d'] }, { imageAssetId: '../file' }, { extra: true }]) {
     assert.throws(() => parse([{ ...defaultCategoryCards[0], ...patch }]), { status: 422 });
@@ -17,8 +17,8 @@ test('category cards validate safe routes, limits, keys, icon and colour allowli
   assert.throws(() => contentInput('pages', { key: 'home', categoryCards: [] }, true), { status: 422 });
 });
 test('category defaults preserve old CMS overrides and intentional empty configuration', () => {
-  assert.equal(resolveCategoryCards().length, 5);
-  assert.equal(resolveCategoryCards({ sections: [{ items: [{ linkKey: 'books', heading: 'Legacy books', body: 'Legacy description' }] }] })[3].title, 'Legacy books');
+  assert.equal(resolveCategoryCards().length, defaultCategoryCards.length);
+  assert.equal(resolveCategoryCards({ sections: [{ items: [{ linkKey: 'books', heading: 'Legacy books', body: 'Legacy description' }] }] }).find(card => card.id === 'books').title, 'Legacy books');
   assert.deepEqual(resolveCategoryCards({ categoryCards: [] }), []);
   assert.deepEqual(resolveCategoryCards({ categoryCards: [{ id: 'custom' }] }), [{ id: 'custom' }]);
 });

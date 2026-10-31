@@ -4,6 +4,7 @@ import { AppError } from '../../utils/AppError.js';
 import { object, text, id, revision, key, invalid } from '../publishing/validation.js';
 import { registrationFields } from './registration.js';
 import { grantsFor } from '../auth/security.js';
+import { contentInput } from '../publishing/validation.js';
 
 const blocked = message => new AppError(409, 'BUSINESS_POLICY_PENDING', message);
 const missing = () => new AppError(404, 'NOT_FOUND', 'Record was not found');
@@ -55,6 +56,32 @@ export function createBusinessPolicyService(commerce) {
     await commerce.flush(Model, result); return result;
   }
   const api = {
+    async publishTeacher(value, input, auth, ctx) {
+      object(input, ['expectedRevision', 'profile'], ['expectedRevision', 'profile']);
+      revision(input.expectedRevision);
+      const grants = grantsFor(auth.user);
+      if (!['registrations.approve', 'content.write', 'content.publish'].every(p => grants.includes(p))) throw new AppError(403, 'FORBIDDEN', 'Teacher approval and content publishing permissions are required');
+      const { fields } = contentInput('faculty', input.profile, true);
+      // Publication uses an admin-approved public portrait, never an identity document.
+      if (!fields.name || !fields.role || !fields.portraitAssetId) throw invalid('Add the public name, role and teacher portrait');
+      return coordination.run(async () => {
+        const row = await Application.findById(id(value));
+        if (!row) throw missing();
+        if (row.kind !== 'teacher' || !['approved', 'activated'].includes(row.status) || row.personalDataDeletedAt) throw blocked('Approve the teacher application before publishing a profile');
+        if (row.teacherProfileId) return commerce.applicationDTO(row, true);
+        if (row.revision !== input.expectedRevision) throw new AppError(409, 'REVISION_CONFLICT', 'Refresh before publishing this teacher');
+        await api.conditions(row, true);
+        await publishing.media.linkable(fields.portraitAssetId, 'faculty', auth);
+        const Faculty = publishing.models.FacultyProfile;
+        let profile = await Faculty.findOne({ registrationApplicationId: row._id });
+        if (!profile) {
+          const publicFields = { ...fields, badge: 'KITSS Teacher', sourceNote: 'Approved teacher application ' + row.reference };
+          profile = await Faculty.create({ ...publicFields, registrationApplicationId: row._id, status: 'published', publishedAt: now(), publishedSnapshot: publicFields, createdBy: ctx.actorId, updatedBy: ctx.actorId, auditOutbox: [coordination.event('teacher_profile_published', ctx)] });
+          await coordination.flush(Faculty, profile);
+        }
+        return commerce.applicationDTO(await update(Application, row, row.revision, { teacherProfileId: profile._id, history: [...row.history.map(plain), { status: row.status, reason: 'Published as a KITSS teacher', actorId: ctx.actorId, at: now() }] }, 'teacher_listed', ctx), true);
+      });
+    },
     async settings() { return await Settings.findOne({ key: 'businessPolicies' }).lean() ?? { revision: 0, value: { registrations: {} } }; },
     async save(input, auth, ctx) {
       if (!auth.user.roles.includes('super_admin')) throw new AppError(403, 'FORBIDDEN', 'Only the main admin can approve business policy configuration');

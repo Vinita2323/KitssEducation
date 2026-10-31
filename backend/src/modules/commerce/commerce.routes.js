@@ -20,6 +20,9 @@ export function createCommerceRouter(service, { operations } = {}) {
   const ctx = req => ({ actorId: req.auth?.user.publicId, requestId: req.requestId, ip: req.ip });
   const reply = (req, res, data, status = 200) => res.status(status).json({ data, requestId: req.requestId });
   if (service.franchise) {
+    router.get('/public/franchises', async (req, res) => res.json({ ...await service.franchise.directory(req.query), requestId: req.requestId }));
+    router.get('/public/franchises/:id', async (req, res) => reply(req, res, await service.franchise.directory(req.query, req.params.id)));
+    router.post('/admin/franchise-applications/:id/listing', requirePermission('franchises.approve'), async (req, res) => reply(req, res, await service.franchise.listing(req.params.id, req.body, ctx(req))));
     router.get('/public/franchise-policy', async (req, res) => { try { reply(req, res, { available: true, policy: await service.franchise.policy() }); } catch (e) { if (e.code !== 'FRANCHISE_REQUIREMENTS') throw e; reply(req, res, { available: false, message: e.message }); } });
     router.get('/admin/franchise-policy', requirePermission('settings.read'), async (req, res) => reply(req, res, await service.franchise.adminPolicy()));
     router.patch('/admin/franchise-policy', requirePermission('settings.write'), async (req, res) => reply(req, res, await service.franchise.savePolicy(req.body, req.auth, ctx(req))));
@@ -70,6 +73,13 @@ export function createCommerceRouter(service, { operations } = {}) {
   router.get('/admin/orders/:id', requirePermission('commerce.read'), async (req, res) => { const row = await service.models.Order.findById(id(req.params.id)); if (!row) throw new AppError(404, 'NOT_FOUND', 'Order was not found'); const events = row.providerOrderId ? await service.models.Job.find({ providerOrderId: row.providerOrderId, scope: row.providerScope }).select('_id state attempts lastError paymentId providerOrderId').limit(100).lean() : []; reply(req, res, { ...orderDTO(row), eventHistory: events.map(e => ({ id: String(e._id), state: e.state, attempts: e.attempts, lastError: e.lastError, paymentId: e.paymentId, providerOrderId: e.providerOrderId })) }); });
   router.post('/admin/orders/:id/reconcile', requirePermission('commerce.reconcile'), async (req, res) => { object(req.body, []); await service.authService.limit(ctx(req), req.auth.user.publicId, 'admin-reconcile', 30); reply(req, res, await service.reconcile({ id: req.params.id }, ctx(req)), 202); });
   router.post('/registration-applications', requireSession, async (req, res) => reply(req, res, await service.createApplication(req.body, req.auth, ctx(req)), 201));
+  router.get('/me/registration-applications', requireSession, async (req, res) => {
+    object(req.query, ['page']); const page = Number(req.query.page ?? 1);
+    if (!Number.isSafeInteger(page) || page < 1 || page > 10000) throw new AppError(422, 'INVALID_INPUT', 'Invalid page');
+    const filter = { userId: req.auth.user._id };
+    reply(req, res, { items: (await service.models.RegistrationApplication.find(filter).sort({ createdAt: -1 }).skip((page - 1) * 20).limit(20)).map(r => service.applicationDTO(r)), page, total: await service.models.RegistrationApplication.countDocuments(filter) });
+  });
+  router.post('/admin/registration-applications/:id/teacher-profile', requirePermission('registrations.approve'), requirePermission('content.write'), requirePermission('content.publish'), async (req, res) => reply(req, res, await service.business.publishTeacher(req.params.id, req.body, req.auth, ctx(req))));
   router.patch('/registration-applications/:id', requireSession, async (req, res) => reply(req, res, await service.editApplication(req.params.id, req.body, req.auth, ctx(req))));
   router.get('/registration-applications/:id/status', requireSession, async (req, res) => reply(req, res, service.applicationDTO(await service.application(req.params.id, req.auth))));
   router.post('/registration-applications/:id/submit', requireSession, async (req, res) => reply(req, res, await service.business.submit(req.params.id, req.body, req.auth, ctx(req))));

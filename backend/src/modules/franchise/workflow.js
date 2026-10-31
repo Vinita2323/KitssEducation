@@ -27,7 +27,11 @@ export function createFranchiseWorkflow(commerce, institutions) {
     return row.renewalTerms.expiryAction === 'manual_review' ? 'renewal_review' : 'suspended';
   }
   const result = row => { const { notes, createdBy, updatedBy, ...safe } = dto(row); return ({ ...safe, affiliationState: row.workflowVersion ? state(row) : row.affiliationState }); };
-  async function eligibility(data, p, complete = false) {
+  async function eligibility(data, p, complete = false, ownerId = data.applicantUserId) {
+    if (data.institution?.logoAssetId) {
+      const logo = await publishing.models.MediaAsset.findOne({ _id: data.institution.logoAssetId, ownerUserId: ownerId, purpose: 'franchise_document', status: 'ready', 'scan.status': 'clean' });
+      if (!logo || !['image/png', 'image/jpeg'].includes(logo.mime) || logo.bytes > 3 * 1048576) throw invalid('Choose your own scanned PNG or JPG institution logo up to 3 MB');
+    }
     const linked = Boolean(data.collegeId || data.universityId);
     if (p.applicationMode === 'linked' && !linked || p.applicationMode === 'independent' && linked) throw invalid('Select the institution application mode allowed by the policy');
     if (linked) {
@@ -61,6 +65,28 @@ export function createFranchiseWorkflow(commerce, institutions) {
   }
   const api = {
     policy, state, owned, result,
+    async directory(query = {}, value) {
+      object(query, ['page', 'pageSize']);
+      const page = Number(query.page ?? 1), pageSize = Number(query.pageSize ?? 20);
+      if (!Number.isSafeInteger(page) || page < 1 || page > 10000 || !Number.isSafeInteger(pageSize) || pageSize < 1 || pageSize > 100) throw invalid('Invalid page');
+      const filter = { workflowVersion: 1, status: 'approved', deletedAt: null, listingPublishedAt: { $ne: null }, listingHidden: { $ne: true }, ...(value ? { _id: id(value) } : {}) };
+      const total = await Application.countDocuments(filter);
+      const rows = await Application.find(filter).sort({ listingPublishedAt: -1, _id: 1 }).skip((page - 1) * pageSize).limit(pageSize).lean();
+      // Public institutional information only. Never spread the private application.
+      const data = rows.map(row => ({ id: String(row._id), name: row.institution.name, type: row.institution.type, city: row.location?.city || '', website: row.institution.website || '', programs: row.programsOffered || [] }));
+      if (value && !data.length) throw missing();
+      return value ? data[0] : { data, meta: { page, pageSize, total, totalPages: Math.max(1, Math.ceil(total / pageSize)) } };
+    },
+    async listing(value, input, ctx) {
+      object(input, ['expectedRevision', 'publish', 'reason'], ['expectedRevision', 'publish', 'reason']);
+      if (typeof input.publish !== 'boolean') throw invalid('Choose whether to show the listing');
+      const reason = noteText(input.reason);
+      return coordination.run(async () => {
+        const row = await get(value);
+        if (row.workflowVersion !== 1 || row.status !== 'approved') throw blocked('Only approved franchise applications can be listed');
+        return result(await update(row, { listingHidden: !input.publish, listingPublishedAt: row.listingPublishedAt || new Date(), statusHistory: [...row.statusHistory.map(plain), { from: row.status, to: row.status, reason, actorId: ctx.actorId, at: new Date() }] }, input.expectedRevision, 'franchise_listing_updated', ctx));
+      });
+    },
     async adminPolicy() { const row = await policyRecord(); return { revision: row?.revision ?? 0, hasSavedDraft: Boolean(row?.value?.franchise?.workflowDraft), draft: row?.value?.franchise?.workflowDraft ?? initialWorkflowPolicy(), published: row?.value?.franchise?.workflowPublished ?? null, history: (row?.policyHistory ?? []).map(h => ({ revision: h.revision, reason: h.reason, at: h.at })) }; },
     async savePolicy(input, auth, ctx, publish = false) {
       if (!auth?.user?.roles.includes('super_admin')) throw new AppError(403, 'FORBIDDEN', 'Only the main administrator can publish franchise policy');
@@ -89,7 +115,7 @@ export function createFranchiseWorkflow(commerce, institutions) {
       return coordination.run(async () => {
         const prior = await Application.findOne({ ownerKey: String(auth.user._id), idempotencyKey: fields.idempotencyKey }).select('+requestHash');
         if (prior) { if (prior.requestHash !== requestHash) throw blocked('Draft key was already used with different details'); return result(prior); }
-        await eligibility(fields, p);
+        await eligibility(fields, p, false, auth.user._id);
         const row = await Application.create({ ...fields, ownerKey: String(auth.user._id), requestHash, applicantUserId: auth.user._id, workflowVersion: 1, reference: 'FRN-' + randomUUID(), affiliationState: 'awaiting_review', auditOutbox: [coordination.event('franchise_draft_created', ctx)] });
         await coordination.flush(Application, row); return result(row);
       });
@@ -132,7 +158,7 @@ export function createFranchiseWorkflow(commerce, institutions) {
         if (row.workflowVersion !== 1 || row.status !== 'pending' || !['approved','rejected','needs_changes'].includes(input.status)) throw blocked('Choose an allowed review action for a submitted application');
         if (input.status === 'approved') { const account = await commerce.authService.models.User.findById(row.applicantUserId); if (!account || account.status !== 'active' || !account.emailVerifiedAt) throw blocked('A verified active applicant account is required'); await eligibility(row, row.policySnapshot, true); await documents(row, row.policySnapshot, true); }
         const freeActivation = input.status === 'approved' && row.policySnapshot.joining.amountMinor === 0 ? { activatedAt: new Date(), affiliationState: 'active', renewalTerms: row.policySnapshot.renewal, nextFranchiseCheckAt: new Date(), renewalDueAt: row.policySnapshot.renewal.enabled ? accessExpiry(new Date(), { durationMonths: row.policySnapshot.renewal.months }) : null } : {};
-        return result(await update(row, { ...freeActivation, status: input.status, rejectionReason: input.status === 'rejected' ? reason : '', reviewedAt: new Date(), reviewedBy: ctx.actorId,
+        return result(await update(row, { ...freeActivation, ...(input.status === 'approved' ? { listingPublishedAt: new Date(), listingHidden: false } : {}), status: input.status, rejectionReason: input.status === 'rejected' ? reason : '', reviewedAt: new Date(), reviewedBy: ctx.actorId,
           statusHistory: [...row.statusHistory.map(plain), { from: row.status, to: input.status, actorId: ctx.actorId, at: new Date(), reason }] }, input.expectedRevision, 'franchise_reviewed', ctx)); });
     },
     async activate(value, input, auth, ctx) {
@@ -184,7 +210,7 @@ export function createFranchiseWorkflow(commerce, institutions) {
         if (await commerce.models.Order.exists({ userId: row.applicantUserId, 'product.id': row._id, 'product.kind': 'franchise_renewal', 'product.purchaseSlot': period, status: { $ne: 'captured' } })) throw blocked('An existing payment order must be resolved before a free renewal can be applied');
         return result(await update(row, { affiliationState: 'active', nextFranchiseCheckAt: new Date(), renewalDueAt: p.renewal.enabled ? accessExpiry(new Date(Math.max(Date.now(), row.renewalDueAt.getTime())), { durationMonths: p.renewal.months }) : null, renewalTerms: p.renewal, renewalEffects: [...row.renewalEffects, { period, policyVersion: p.version, agreementVersion: p.agreement.version, policySnapshot: p, at: new Date() }] }, input.expectedRevision, 'franchise_renewed', ctx)); });
     },
-    async refs(value) { return (await Application.find({ 'documents.assetId': id(String(value)) }).select('_id')).map(row => ({ kind: 'FranchiseApplication', id: String(row._id), status: 'private' })); },
+    async refs(value) { return (await Application.find({ $or: [{ 'documents.assetId': id(String(value)) }, { 'institution.logoAssetId': id(String(value)) }] }).select('_id')).map(row => ({ kind: 'FranchiseApplication', id: String(row._id), status: 'private' })); },
     async uploadAllowed(auth) { verified(auth); await policy(); },
     async documentAllowed(asset, auth) { if (!auth || asset.purpose !== 'franchise_document' || ['failed','deleted','deleting'].includes(asset.status)) return false; return String(asset.ownerUserId) === String(auth.user._id) || grantsFor(auth.user).some(p => ['franchises.review','franchises.approve'].includes(p)); },
     async maintenance() {

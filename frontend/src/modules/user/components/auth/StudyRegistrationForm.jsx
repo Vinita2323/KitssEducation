@@ -1,6 +1,5 @@
-import { RegistrationDraftControls, useRegistrationFee } from './RegistrationDraftControls';
+import { RegistrationDraftControls } from './RegistrationDraftControls';
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import {
   User,
   Mail,
@@ -28,36 +27,7 @@ import {
   Image as ImageIcon
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useAuth } from "../../context/AuthContext";
-import { useToast } from "../../context/ToastContext";
 import { SearchableSelect } from "../common/SearchableSelect";
-import { openRazorpayCheckout } from "../../services/razorpayService";
-
-const INDIAN_STATES = [
-  "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh",
-  "Delhi", "Goa", "Gujarat", "Haryana", "Himachal Pradesh", "Jharkhand",
-  "Karnataka", "Kerala", "Madhya Pradesh", "Maharashtra", "Manipur",
-  "Meghalaya", "Mizoram", "Nagaland", "Odisha", "Punjab", "Rajasthan",
-  "Sikkim", "Tamil Nadu", "Telangana", "Tripura", "Uttar Pradesh",
-  "Uttarakhand", "West Bengal", "Other / Outside India"
-];
-
-const AVAILABLE_COURSES = [
-  "Class 10 (Secondary School Board)",
-  "Class 12 - Science (Physics, Chemistry, Maths)",
-  "Class 12 - Science (Physics, Chemistry, Biology)",
-  "Class 12 - Commerce & Accountancy",
-  "Class 12 - Arts & Humanities",
-  "Class 11 - Science / Commerce / Arts",
-  "Class 9 (Secondary Foundation)",
-  "Class 8 (Middle School Foundation)",
-  "Class 7 (Middle School)",
-  "Class 6 (Middle School)",
-  "IIT-JEE (Main & Advanced Prep)",
-  "NEET-UG (Medical Entrance)",
-  "B.A / B.Sc / B.Com / BCA / B.Tech (Undergraduate Degree)",
-  "Competitive Exam Prep / Foundation"
-];
 
 const STEP_DEFINITIONS = [
   { id: 1, title: "Student Info", subtitle: "Name & Parents" },
@@ -67,24 +37,13 @@ const STEP_DEFINITIONS = [
   { id: 5, title: "Checkout & Pay", subtitle: "Enrollment Fee" }
 ];
 
+import { RegistrationAccount } from './RegistrationAccount';
+import { useOriginalRegistration } from './useOriginalRegistration';
+import { OriginalDocumentNotes } from './OriginalDocumentNotes';
 export const StudyRegistrationForm = ({ onBack }) => {
-  const navigate = useNavigate();
-  const { register } = useAuth();
-  const { showSuccess, showError } = useToast();
 
   const [step, setStep] = useState(1);
-  const [submitting, setSubmitting] = useState(false);
-  const [isSuccess, setIsSuccess] = useState(false);
-  const [credentials, setCredentials] = useState(null);
-  const [copiedUserId, setCopiedUserId] = useState(false);
-  const [copiedPassword, setCopiedPassword] = useState(false);
 
-  // Payment State
-  const [paymentMethod, setPaymentMethod] = useState("upi");
-  const [upiApp, setUpiApp] = useState("gpay");
-  const [selectedBank, setSelectedBank] = useState("State Bank of India (SBI)");
-  const registrationFee = useRegistrationFee('study');
-  const [transactionId, setTransactionId] = useState("");
 
   // All 14 Requested Fields State
   const [formData, setFormData] = useState({
@@ -106,13 +65,13 @@ export const StudyRegistrationForm = ({ onBack }) => {
 
     // 3. Address & 4. State, District, City, Pin code
     address: "",
-    state: "Madhya Pradesh",
-    district: "Bhopal",
+    state: "",
+    district: "",
     city: "",
     pincode: "",
 
     // 10. Apply Course name & 11. Apply Institute name
-    applyCourseName: "Class 10 (Secondary School Board)",
+    applyCourseName: "",
     applyInstituteName: "",
 
     // 12. Submit your complete courses certificate or result
@@ -172,22 +131,7 @@ export const StudyRegistrationForm = ({ onBack }) => {
     }
   };
 
-  const handleFileChange = (field, file) => {
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      setFormData((prev) => ({
-        ...prev,
-        [`${field}File`]: file,
-        [`${field}Preview`]: e.target.result
-      }));
-      if (errors[field]) {
-        setErrors((prev) => ({ ...prev, [field]: "" }));
-      }
-    };
-    reader.readAsDataURL(file);
-  };
-
+  const handleFileChange = (field, file) => workflow.chooseDocument(field, file);
   const validateStep = (currentStep) => {
     const errs = {};
 
@@ -225,52 +169,20 @@ export const StudyRegistrationForm = ({ onBack }) => {
       if (!formData.applyInstituteName.trim()) errs.applyInstituteName = "Apply Institute Name is required";
     }
 
-    // STEP 4: Documents Upload
-    else if (currentStep === 4) {
-      if (!formData.courseCertificatePreview && !formData.courseCertificateFile) {
-        errs.courseCertificate = "Upload complete course certificate or result";
-      }
-      if (!formData.aadharNumber.trim() || formData.aadharNumber.length < 12) {
-        errs.aadharNumber = "Valid 12-digit Aadhar Number required";
-      }
-      if (!formData.aadharCardPreview && !formData.aadharCardFile) {
-        errs.aadharCard = "Upload Aadhar card copy";
-      }
-      if (!formData.passportPhotoPreview && !formData.passportPhotoFile) {
-        errs.passportPhoto = "Upload Passport photo";
-      }
-    }
-
     setErrors(errs);
     return Object.keys(errs).length === 0;
   };
 
-  const handleNext = () => {
-    if (validateStep(step)) {
-      setStep((prev) => Math.min(prev + 1, 5));
-    }
-  };
-
-  const handlePrev = () => setStep((prev) => Math.max(prev - 1, 1));
-
-  const handlePaymentAndSubmit = async e => { e?.preventDefault(); showError('Applications are not open for submission or payment yet. You can save a draft and return later.'); };
-
-  const copyCred = (text, type) => {
-    navigator.clipboard.writeText(text);
-    if (type === "userId") {
-      setCopiedUserId(true);
-      setTimeout(() => setCopiedUserId(false), 2000);
-      showSuccess("Student User ID copied!");
-    } else if (type === "password") {
-      setCopiedPassword(true);
-      setTimeout(() => setCopiedPassword(false), 2000);
-      showSuccess("Password copied!");
-    }
-  };
-
+  const workflow = useOriginalRegistration('study', formData, setFormData, setErrors);
+  const canChooseDocument = workflow.canChooseDocument;
+  const INDIAN_STATES = workflow.choices('state',formData.state || formData.stateName), BOARDS = workflow.choices('board',formData.studyBoard), CLASSES = workflow.choices('class',formData.studentClass), AVAILABLE_COURSES = workflow.choices('program',formData.applyCourseName), STUDY_LANGUAGES = workflow.choices('language',formData.studyLanguage), COACHING_COURSES = workflow.choices('program',formData.coachingCourse), EXPERIENCE_YEARS = workflow.choices('experience',formData.coachingExperience);
+  const beforeSubmit = () => { for (let index = 1; index < 4; index++) if (!validateStep(index)) { setStep(index); return false; } return true; };
+  const handleNext = () => { if (step === 4 || validateStep(step)) setStep(v => Math.min(v + 1, 5)); };
+  const handlePrev = () => setStep(v => Math.max(v - 1, 1));
+  const locked = Boolean(workflow.application && !['draft', 'needs_changes'].includes(workflow.application.status));
+  const stepDefinitions = STEP_DEFINITIONS.map(s => s.id === 5 ? { ...s, title: workflow.policy?.feeRequired ? 'Checkout & Pay' : 'Review & Submit' } : s);
   return (
     <div className="w-full max-w-2xl mx-auto bg-white rounded-lg border border-slate-200/90 shadow-2xs overflow-hidden">
-      <RegistrationDraftControls kind="study" formData={formData} setFormData={setFormData} />
       {/* Top Banner - Compact */}
       <div className="p-3 sm:p-3.5 border-b border-slate-200/80 flex items-center justify-between">
         <div className="flex items-center gap-2.5">
@@ -278,7 +190,7 @@ export const StudyRegistrationForm = ({ onBack }) => {
             type="button"
             onClick={onBack}
             className="w-7 h-7 rounded-md bg-slate-50 hover:bg-[#0A1D3F] hover:text-white text-[#0A1D3F] transition-colors border border-slate-200 flex items-center justify-center cursor-pointer shadow-2xs shrink-0"
-            title="Back to options"
+            aria-label="Back to registration options" title="Back to options"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
           </button>
@@ -303,18 +215,19 @@ export const StudyRegistrationForm = ({ onBack }) => {
       </div>
 
       {/* Stepper - Compact */}
-      {!isSuccess && (
+      {(
         <div className="px-3 sm:px-3.5 py-2 sm:py-2.5 border-b border-slate-200/80">
           <div className="flex items-center justify-between relative">
             <div className="absolute top-1/2 left-6 right-6 -translate-y-1/2 h-0.5 bg-slate-100 -z-0" />
             
-            {STEP_DEFINITIONS.map((s) => {
+            {stepDefinitions.map((s) => {
               const isCompleted = step > s.id;
               const isCurrent = step === s.id;
 
               return (
                 <div
                   key={s.id}
+                  role="button" tabIndex={0} aria-label={s.title} aria-current={step === s.id ? "step" : undefined} onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); if (s.id < step) setStep(s.id); } }}
                   className="flex flex-col items-center relative z-10 cursor-pointer"
                   onClick={() => {
                     if (s.id < step) setStep(s.id);
@@ -351,126 +264,7 @@ export const StudyRegistrationForm = ({ onBack }) => {
 
       {/* Main Form Body */}
       <div className="p-3.5 sm:p-5">
-        {isSuccess ? (
-          <motion.div initial={{ opacity: 0, scale: 0.99 }} animate={{ opacity: 1, scale: 1 }} className="text-center space-y-3.5 py-1">
-            <div className="w-12 h-12 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto ring-4 ring-emerald-50">
-              <CheckCircle2 className="w-7 h-7 stroke-[2.2]" />
-            </div>
-
-            <div className="space-y-0.5">
-              <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 border border-emerald-200">
-                <Check className="w-3 h-3" /> Fee Paid • Student Account Activated
-              </span>
-              <h2 className="text-lg sm:text-xl font-extrabold text-[#0A1D3F] pt-0.5">
-                Study Enrollment Successful!
-              </h2>
-              <p className="text-xs text-slate-500 max-w-sm mx-auto leading-relaxed">
-                Welcome, <strong>{formData.studentName}</strong>! Your study registration has been confirmed.
-              </p>
-            </div>
-
-            {/* Generated Credentials Card */}
-            <div className="p-3.5 bg-[#0A1D3F] rounded-lg text-left text-white space-y-2.5 max-w-md mx-auto shadow-sm">
-              <div className="flex items-center justify-between text-[11px] text-emerald-300 font-bold uppercase tracking-wider">
-                <span className="flex items-center gap-1.5">
-                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" /> Official Student Credentials
-                </span>
-                <span className="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 text-[9px] font-bold">
-                  Verified
-                </span>
-              </div>
-
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between bg-white/10 p-2 rounded-md border border-white/10">
-                  <div>
-                    <span className="text-[10px] text-slate-300 block">STUDENT USER ID</span>
-                    <span className="font-mono font-bold text-xs sm:text-sm text-white tracking-wider">
-                      {credentials?.userId}
-                    </span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => copyCred(credentials?.userId, "userId")}
-                    className="px-2 py-1 rounded bg-[#FF8A00] hover:bg-[#e67c00] text-white text-[10px] font-bold flex items-center gap-1 transition cursor-pointer"
-                  >
-                    {copiedUserId ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-                    <span>{copiedUserId ? "Copied" : "Copy"}</span>
-                  </button>
-                </div>
-
-                <div className="flex items-center justify-between bg-white/10 p-2 rounded-md border border-white/10">
-                  <div>
-                    <span className="text-[10px] text-slate-300 block">DEFAULT PASSWORD</span>
-                    <span className="font-mono font-bold text-xs sm:text-sm text-white tracking-wider">
-                      {credentials?.password}
-                    </span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => copyCred(credentials?.password, "password")}
-                    className="px-2 py-1 rounded bg-slate-700 hover:bg-slate-600 text-white text-[10px] font-bold flex items-center gap-1 transition cursor-pointer"
-                  >
-                    {copiedPassword ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-                    <span>{copiedPassword ? "Copied" : "Copy"}</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* Summary Details */}
-            <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 text-xs space-y-1.5 max-w-md mx-auto text-left">
-              <div className="flex justify-between">
-                <span className="text-slate-500">Course Applied:</span>
-                <span className="font-bold text-[#0A1D3F]">{formData.applyCourseName}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-500">Institute Name:</span>
-                <span className="font-bold text-[#0A1D3F]">{formData.applyInstituteName}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-500">Pass Fee Paid:</span>
-                <span className="font-bold text-emerald-600">₹{registrationFee} (Paid Online)</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-500">Transaction ID:</span>
-                <span className="font-mono font-bold text-slate-700">{transactionId}</span>
-              </div>
-            </div>
-
-            <div className="pt-1 flex gap-2.5 max-w-md mx-auto">
-              <button
-                type="button"
-                onClick={() => navigate("/login")}
-                className="flex-1 py-2.5 px-4 rounded-lg bg-[#0A1D3F] hover:bg-[#133C8B] text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-2xs transition active:scale-95 cursor-pointer"
-              >
-                <LogIn className="w-3.5 h-3.5" />
-                <span>Proceed to Student Login</span>
-              </button>
-              <button
-                type="button"
-                onClick={onBack}
-                className="py-2.5 px-3.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs transition cursor-pointer"
-              >
-                Back
-              </button>
-            </div>
-          </motion.div>
-        ) : (
-          <form
-            onSubmit={(e) => {
-              if (step === 5) {
-                handlePaymentAndSubmit(e);
-              } else {
-                e.preventDefault();
-                handleNext();
-              }
-            }}
-            className="space-y-3.5"
-          >
-            <AnimatePresence mode="wait">
-              {/* ========================================================
-                  STEP 1: STUDENT & PARENTS INFO (1, 2, 8, 9)
-                 ======================================================== */}
+          <fieldset disabled={locked} className="min-w-0"><AnimatePresence mode="wait">
               {step === 1 && (
                 <motion.div
                   key="step-1"
@@ -494,7 +288,7 @@ export const StudyRegistrationForm = ({ onBack }) => {
                       <User className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
                       <input
                         type="text"
-                        name="studentName"
+                        name="studentName" aria-label="Student name"
                         placeholder="Student's complete full name"
                         value={formData.studentName}
                         onChange={handleChange}
@@ -515,7 +309,7 @@ export const StudyRegistrationForm = ({ onBack }) => {
                         <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
                         <input
                           type="date"
-                          name="dob"
+                          name="dob" aria-label="Date of birth"
                           value={formData.dob}
                           onChange={handleChange}
                           className="w-full pl-9 pr-3 py-2 bg-slate-50/70 border border-slate-200 rounded-lg text-xs sm:text-sm text-[#0A1D3F] focus:outline-none focus:border-[#FF8A00] focus:bg-white transition"
@@ -533,7 +327,7 @@ export const StudyRegistrationForm = ({ onBack }) => {
                         <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
                         <input
                           type="text"
-                          name="age"
+                          name="age" aria-label="Calculated age"
                           value={formData.age || "Auto-calculated from DOB"}
                           readOnly
                           className="w-full pl-9 pr-3 py-2 bg-slate-100/80 border border-slate-200 rounded-lg text-xs sm:text-sm text-slate-600 font-semibold cursor-not-allowed"
@@ -550,7 +344,7 @@ export const StudyRegistrationForm = ({ onBack }) => {
                       </label>
                       <input
                         type="text"
-                        name="fatherName"
+                        name="fatherName" aria-label="Father's name"
                         placeholder="Father's full name"
                         value={formData.fatherName}
                         onChange={handleChange}
@@ -566,7 +360,7 @@ export const StudyRegistrationForm = ({ onBack }) => {
                       </label>
                       <input
                         type="text"
-                        name="motherName"
+                        name="motherName" aria-label="Mother's name"
                         placeholder="Mother's full name"
                         value={formData.motherName}
                         onChange={handleChange}
@@ -606,7 +400,7 @@ export const StudyRegistrationForm = ({ onBack }) => {
                         <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
                         <input
                           type="tel"
-                          name="callingNo"
+                          name="callingNo" aria-label="Contact number"
                           placeholder="10-digit mobile number"
                           value={formData.callingNo}
                           onChange={handleChange}
@@ -626,7 +420,7 @@ export const StudyRegistrationForm = ({ onBack }) => {
                         <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
                         <input
                           type="email"
-                          name="email"
+                          name="email" aria-label="Applicant email"
                           placeholder="student@example.com"
                           value={formData.email}
                           onChange={handleChange}
@@ -655,7 +449,7 @@ export const StudyRegistrationForm = ({ onBack }) => {
                       <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-emerald-500" />
                       <input
                         type="tel"
-                        name="whatsappNo"
+                        name="whatsappNo" aria-label="WhatsApp number"
                         placeholder="WhatsApp enabled contact number"
                         value={formData.whatsappNo}
                         onChange={handleChange}
@@ -673,7 +467,7 @@ export const StudyRegistrationForm = ({ onBack }) => {
                       3. Full Residential Address *
                     </label>
                     <textarea
-                      name="address"
+                      name="address" aria-label="Address"
                       rows={2}
                       placeholder="House/Flat No., Street, Landmark, Area"
                       value={formData.address}
@@ -690,7 +484,7 @@ export const StudyRegistrationForm = ({ onBack }) => {
                       <label className="block text-xs font-bold text-[#0A1D3F] mb-1">
                         4. State *
                       </label>
-                      <SearchableSelect
+                      <SearchableSelect disabled={locked}
                         options={INDIAN_STATES}
                         value={formData.state}
                         onChange={(val) => handleSelectChange("state", val)}
@@ -705,7 +499,7 @@ export const StudyRegistrationForm = ({ onBack }) => {
                       </label>
                       <input
                         type="text"
-                        name="district"
+                        name="district" aria-label="District"
                         placeholder="e.g. Bhopal"
                         value={formData.district}
                         onChange={handleChange}
@@ -721,7 +515,7 @@ export const StudyRegistrationForm = ({ onBack }) => {
                       </label>
                       <input
                         type="text"
-                        name="city"
+                        name="city" aria-label="City"
                         placeholder="e.g. Bhopal"
                         value={formData.city}
                         onChange={handleChange}
@@ -737,7 +531,7 @@ export const StudyRegistrationForm = ({ onBack }) => {
                       </label>
                       <input
                         type="text"
-                        name="pincode"
+                        name="pincode" aria-label="Pincode"
                         placeholder="6-digit PIN"
                         value={formData.pincode}
                         onChange={handleChange}
@@ -773,7 +567,7 @@ export const StudyRegistrationForm = ({ onBack }) => {
                     <label className="block text-xs font-bold text-[#0A1D3F] mb-1">
                       10. Apply Course Name / Target Class *
                     </label>
-                    <SearchableSelect
+                    <SearchableSelect disabled={locked}
                       options={AVAILABLE_COURSES}
                       value={formData.applyCourseName}
                       onChange={(val) => handleSelectChange("applyCourseName", val)}
@@ -791,7 +585,7 @@ export const StudyRegistrationForm = ({ onBack }) => {
                       <School className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
                       <input
                         type="text"
-                        name="applyInstituteName"
+                        name="applyInstituteName" aria-label="Preferred institution"
                         placeholder="e.g. Model Higher Secondary School / National College"
                         value={formData.applyInstituteName}
                         onChange={handleChange}
@@ -821,7 +615,7 @@ export const StudyRegistrationForm = ({ onBack }) => {
                     <p className="text-[11px] text-slate-500">Course certificate / marksheet result, Aadhar card and Passport photo.</p>
                   </div>
 
-                  {/* 12. Submit Complete Course Certificate / Result & 14. Passport Photo */}
+                  {/* 12. Submit Complete Course Certificate / Result & 14. Passport Photo/}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {/* 12. Course Certificate / Result */}
                     <div className="space-y-1">
@@ -846,7 +640,7 @@ export const StudyRegistrationForm = ({ onBack }) => {
                           </div>
                         )}
                         <input
-                          type="file" disabled title="Document privacy policy pending"
+                          type="file" aria-label="Select courseCertificate" disabled={!canChooseDocument("courseCertificate")} title="Documents follow the application requirements"
                           accept="image/*,.pdf"
                           onChange={(e) => handleFileChange("courseCertificate", e.target.files[0])}
                           className="hidden"
@@ -855,10 +649,10 @@ export const StudyRegistrationForm = ({ onBack }) => {
                       {errors.courseCertificate && <p className="text-[11px] text-red-500 font-medium">{errors.courseCertificate}</p>}
                     </div>
 
-                    {/* 14. Passport Photo */}
+                    {/* 14. Passport Photo/}
                     <div className="space-y-1">
                       <label className="block text-xs font-bold text-[#0A1D3F]">
-                        14. Passport Photo *
+                        14. Passport Photo
                       </label>
                       <label className="block border border-dashed border-slate-300 hover:border-[#FF8A00] bg-slate-50/70 hover:bg-white rounded-lg p-2.5 text-center cursor-pointer transition shadow-2xs">
                         {formData.passportPhotoPreview ? (
@@ -868,7 +662,7 @@ export const StudyRegistrationForm = ({ onBack }) => {
                               alt="Passport Preview"
                               className="w-16 h-20 object-cover mx-auto rounded border shadow-2xs"
                             />
-                            <span className="text-[10px] text-emerald-600 font-bold block mt-1">Photo Uploaded ✓</span>
+                            <span className="text-[10px] text-emerald-600 font-bold block mt-1">Photo Selected ✓</span>
                           </div>
                         ) : (
                           <div className="py-2 text-slate-500">
@@ -878,7 +672,7 @@ export const StudyRegistrationForm = ({ onBack }) => {
                           </div>
                         )}
                         <input
-                          type="file" disabled title="Document privacy policy pending"
+                          type="file" aria-label="Select passportPhoto" disabled={!canChooseDocument("passportPhoto")} title="Documents follow the application requirements"
                           accept="image/*"
                           onChange={(e) => handleFileChange("passportPhoto", e.target.files[0])}
                           className="hidden"
@@ -891,19 +685,19 @@ export const StudyRegistrationForm = ({ onBack }) => {
                   {/* 13. Aadhar Card Number & Upload */}
                   <div className="p-3 bg-slate-50/70 rounded-lg border border-slate-200 space-y-2.5">
                     <div className="flex items-center justify-between">
-                      <label className="text-xs font-bold text-[#0A1D3F]">13. Submit Aadhar Card Details *</label>
+                      <label className="text-xs font-bold text-[#0A1D3F]">13. Submit Aadhar Card Details</label>
                       <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                        UIDAI Encrypted
+                        Private documents
                       </span>
                     </div>
 
                     <div>
                       <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                        12-Digit Student Aadhar Number *
+                        12-Digit Student Aadhar Number
                       </label>
                       <input
                         type="text"
-                        name="aadharNumber" disabled title="Identity documents are not being collected at this time"
+                        name="aadharNumber" disabled title="An identity number is not required for this application"
                         placeholder="XXXX XXXX XXXX (12 digits)"
                         value={formData.aadharNumber}
                         onChange={handleChange}
@@ -916,7 +710,7 @@ export const StudyRegistrationForm = ({ onBack }) => {
 
                     <div>
                       <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                        Upload Aadhar Card Copy (Front/Back) *
+                        Upload Aadhar Card Copy (Front/Back)
                       </label>
                       <label className="block border border-dashed border-slate-300 hover:border-[#FF8A00] bg-white rounded-lg p-2 text-center cursor-pointer transition shadow-2xs">
                         {formData.aadharCardPreview ? (
@@ -935,7 +729,7 @@ export const StudyRegistrationForm = ({ onBack }) => {
                           </div>
                         )}
                         <input
-                          type="file" disabled title="Document privacy policy pending"
+                          type="file" aria-label="Select aadharCard" disabled={!canChooseDocument("aadharCard")} title="Documents follow the application requirements"
                           accept="image/*,.pdf"
                           onChange={(e) => handleFileChange("aadharCard", e.target.files[0])}
                           className="hidden"
@@ -944,244 +738,23 @@ export const StudyRegistrationForm = ({ onBack }) => {
                       {errors.aadharCard && <p className="text-[11px] text-red-500 mt-0.5 font-medium">{errors.aadharCard}</p>}
                     </div>
                   </div>
+                  {(workflow.policy?.documents || []).filter(d => !["courseCertificate", "aadharCard", "passportPhoto"].includes(d.key)).map(d => <label key={d.key} className="block text-xs font-bold text-[#0A1D3F]">{d.label}{d.required === false ? ' (optional)' : ' *'}<input type="file" className="block mt-2 text-xs w-full" aria-label={'Select ' + d.key} accept={workflow.policy?.upload?.mime?.join(',') || 'application/pdf,image/png,image/jpeg'} disabled={!canChooseDocument(d.key)} onChange={e => handleFileChange(d.key, e.target.files?.[0])} /></label>)}
+                  <OriginalDocumentNotes workflow={workflow} formData={formData} />
                 </motion.div>
               )}
 
-              {/* ========================================================
-                  STEP 5: CHECKOUT & ENROLLMENT FEE PAYMENT
-                 ======================================================== */}
-              {step === 5 && (
-                <motion.div
-                  key="step-5"
-                  initial={{ opacity: 0, x: 8 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -8 }}
-                  transition={{ duration: 0.15 }}
-                  className="space-y-3"
-                >
-                  <div className="flex items-center justify-between pb-1.5 border-b border-slate-100">
-                    <div>
-                      <h2 className="text-xs sm:text-sm font-bold text-[#0A1D3F]">
-                        Checkout & Enrollment Fee Payment
-                      </h2>
-                      <p className="text-[11px] text-slate-500">
-                        Review order summary & proceed to secure Razorpay checkout.
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Fee Breakdown Banner */}
-                  <div className="p-3 rounded-lg bg-gradient-to-r from-[#0A1D3F] to-[#133C8B] text-white space-y-1.5 shadow-sm">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <span className="text-[11px] text-emerald-300 block font-semibold">Student Learning Portal Pass</span>
-                        <span className="text-xs sm:text-sm font-bold text-white">
-                          {formData.studentName} • {formData.applyCourseName}
-                        </span>
-                      </div>
-                      <div className="text-right">
-                        <span className="text-xl sm:text-2xl font-black text-[#FF8A00]">₹{registrationFee}</span>
-                        <span className="text-[9px] text-emerald-300 block font-semibold">Registration policy pending</span>
-                      </div>
-                    </div>
-                    <div className="text-[10px] text-slate-300 border-t border-white/10 pt-1.5 flex items-center justify-between">
-                      <span>✓ Digital E-Books + Chapter Tests + Video Lessons</span>
-                      <span className="flex items-center gap-1 text-emerald-400 font-semibold">
-                        <ShieldCheck className="w-3 h-3" /> 100% Secure
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Payment Methods */}
-                  <div className="space-y-1.5">
-                    <label className="block text-xs font-bold text-[#0A1D3F]">
-                      Select Payment Method
-                    </label>
-                    <div className="grid grid-cols-3 gap-2">
-                      {[
-                        { id: "upi", name: "UPI & QR", icon: QrCode },
-                        { id: "card", name: "Card", icon: CreditCard },
-                        { id: "netbanking", name: "Net Banking", icon: Building }
-                      ].map((pm) => {
-                        const Icon = pm.icon;
-                        const isSelected = paymentMethod === pm.id;
-                        return (
-                          <div
-                            key={pm.id}
-                            onClick={() => setPaymentMethod(pm.id)}
-                            className={`p-2 rounded-lg border text-center cursor-pointer transition-all duration-150 ${
-                              isSelected
-                                ? "bg-orange-50 border-[#FF8A00] text-[#0A1D3F] font-bold shadow-2xs"
-                                : "bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100"
-                            }`}
-                          >
-                            <Icon className={`w-4 h-4 mx-auto mb-0.5 ${isSelected ? "text-[#FF8A00]" : "text-slate-400"}`} />
-                            <span className="text-[11px] block leading-tight">{pm.name}</span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  {/* UPI QR & Apps */}
-                  {paymentMethod === "upi" && (
-                    <div className="p-3 rounded-lg border border-slate-200 bg-slate-50/70 space-y-2.5">
-                      <div className="flex items-center justify-between text-[11px] font-bold text-[#0A1D3F]">
-                        <span>Pay directly via UPI</span>
-                        <span className="text-[#FF8A00]">Instant ID Generation</span>
-                      </div>
-
-                      <div className="grid grid-cols-3 gap-1.5">
-                        {[
-                          { id: "gpay", label: "Google Pay" },
-                          { id: "phonepe", label: "PhonePe" },
-                          { id: "paytm", label: "Paytm" }
-                        ].map((app) => (
-                          <button
-                            type="button"
-                            key={app.id}
-                            onClick={() => setUpiApp(app.id)}
-                            className={`py-1.5 px-2 rounded-md text-[11px] font-bold border transition cursor-pointer ${
-                              upiApp === app.id
-                                ? "bg-[#0A1D3F] text-white border-[#0A1D3F] shadow-2xs"
-                                : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"
-                            }`}
-                          >
-                            {app.label}
-                          </button>
-                        ))}
-                      </div>
-
-                      <div className="bg-white p-2.5 rounded-lg border border-slate-200 flex items-center justify-center gap-3">
-                        <div className="w-16 h-16 bg-slate-50 p-1 rounded-md border border-slate-200 flex items-center justify-center shrink-0">
-                          <QrCode className="w-14 h-14 text-[#0A1D3F]" />
-                        </div>
-                        <div className="text-left text-xs space-y-0.5">
-                          <p className="font-bold text-[#0A1D3F]">Scan with any UPI App</p>
-                          <p className="text-[10px] text-slate-500">UPI ID: kitseducation@icici</p>
-                          <p className="text-[11px] font-bold text-emerald-600">Amount: ₹{registrationFee}</p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {paymentMethod === "card" && (
-                    <div className="space-y-2.5 p-3 rounded-lg border border-slate-200 bg-slate-50/70">
-                      <div>
-                        <label className="block text-xs font-bold text-[#0A1D3F] mb-1">Card Number</label>
-                        <input
-                          type="text"
-                          defaultValue="4532 8890 1234 5678"
-                          className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-mono"
-                        />
-                      </div>
-                      <div className="grid grid-cols-2 gap-2">
-                        <div>
-                          <label className="block text-xs font-bold text-[#0A1D3F] mb-1">Expiry Date</label>
-                          <input
-                            type="text"
-                            defaultValue="12/28"
-                            className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-mono"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-xs font-bold text-[#0A1D3F] mb-1">CVV</label>
-                          <input
-                            type="password"
-                            defaultValue="789"
-                            className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-mono"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {paymentMethod === "netbanking" && (
-                    <div className="p-3 rounded-lg border border-slate-200 bg-slate-50/70">
-                      <label className="block text-xs font-bold text-[#0A1D3F] mb-1">Select Your Bank</label>
-                      <SearchableSelect
-                        options={[
-                          "State Bank of India (SBI)",
-                          "HDFC Bank",
-                          "ICICI Bank",
-                          "Axis Bank",
-                          "Punjab National Bank (PNB)",
-                          "Bank of Baroda",
-                          "Kotak Mahindra Bank"
-                        ]}
-                        value={selectedBank}
-                        onChange={setSelectedBank}
-                        placeholder="Select Bank"
-                      />
-                    </div>
-                  )}
-
-                  <div className="p-2.5 bg-amber-50 border border-[#FF8A00]/30 rounded-lg flex items-center justify-between text-left text-xs text-[#0A1D3F]">
-                    <div className="flex items-start gap-2">
-                      <Sparkles className="w-3.5 h-3.5 text-[#FF8A00] shrink-0 mt-0.5" />
-                      <p className="text-[11px] leading-snug">
-                        Clicking <strong>Proceed to Pay ₹{registrationFee}</strong> opens the secure <strong>Razorpay Checkout Gateway</strong> (UPI, QR, Cards, NetBanking).
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => completeStudyRegistration()}
-                      className="text-[10px] text-slate-500 hover:text-[#FF8A00] underline font-semibold shrink-0 ml-2 cursor-pointer"
-                      title="Quick Test Simulation without opening Razorpay"
-                    >
-                      Instant Test Bypass
-                    </button>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            {/* Bottom Actions */}
-            <div className="flex items-center justify-between pt-3 border-t border-slate-100">
-              {step > 1 ? (
-                <button
-                  type="button"
-                  onClick={handlePrev}
-                  className="py-2 px-3.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs flex items-center gap-1.5 transition cursor-pointer shadow-2xs"
-                >
-                  <ArrowLeft className="w-3 h-3" />
-                  <span>Previous</span>
-                </button>
-              ) : (
-                <div />
-              )}
-
-              {step < 4 ? (
-                <button
-                  type="button"
-                  onClick={handleNext}
-                  className="py-2 px-5 rounded-lg bg-[#0A1D3F] hover:bg-[#133C8B] text-white font-bold text-xs flex items-center gap-1.5 shadow-2xs transition active:scale-95 cursor-pointer ml-auto"
-                >
-                  <span>Continue</span>
-                  <ArrowRight className="w-3 h-3" />
-                </button>
-              ) : step === 4 ? (
-                <button
-                  type="button"
-                  onClick={handleNext}
-                  className="py-2 px-5 rounded-lg bg-[#0A1D3F] hover:bg-[#133C8B] text-white font-bold text-xs flex items-center gap-1.5 shadow-2xs transition active:scale-95 cursor-pointer ml-auto"
-                >
-                  <span>Proceed to Checkout</span>
-                  <ArrowRight className="w-3 h-3" />
-                </button>
-              ) : (
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="py-2.5 px-5 rounded-lg bg-[#FF8A00] hover:bg-[#E67C00] text-white font-bold text-xs sm:text-sm flex items-center gap-1.5 shadow-2xs transition active:scale-95 cursor-pointer ml-auto"
-                >
-                  <Lock className="w-3.5 h-3.5" />
-                  <span>{submitting ? "Processing..." : `Proceed to Pay ₹${registrationFee}`}</span>
-                </button>
-              )}
-            </div>
-          </form>
-        )}
+          </AnimatePresence></fieldset>
+          <div hidden={step !== 5} className="space-y-3">
+            <div className="pb-1.5 border-b border-slate-100"><h2 className="text-xs sm:text-sm font-bold text-[#0A1D3F]">5. Review, Account &amp; Submit</h2><p className="text-[11px] text-slate-500">Confirm your details and complete your application. {workflow.policy ? workflow.policy.feeRequired ? 'Application fee: INR ' + (workflow.policy.amountMinor / 100).toFixed(2) : 'No application fee.' : 'Fee details will appear when applications open.'}</p></div>
+            <RegistrationAccount applicantName={formData.studentName} applicantEmail={formData.email} />
+          </div>
+          <div hidden={step !== 5 && !workflow.user?.emailVerified} className="mt-3">
+            <RegistrationDraftControls kind="study" formData={formData} setFormData={setFormData} showSubmission={step === 5} onApplicationChange={workflow.setApplication} uploadSelected beforeSubmit={beforeSubmit} />
+          </div>
+          <div className="flex items-center justify-between pt-3 mt-3 border-t border-slate-100">
+            {step > 1 ? <button type="button" onClick={handlePrev} className="py-2 px-3.5 rounded-lg border border-slate-200 bg-white text-slate-700 font-bold text-xs flex items-center gap-1.5"><ArrowLeft className="w-3 h-3" />Previous</button> : <div />}
+            {step < 5 && <button type="button" onClick={handleNext} className="py-2 px-5 rounded-lg bg-[#0A1D3F] hover:bg-[#133C8B] text-white font-bold text-xs flex items-center gap-1.5 ml-auto">{step === 4 ? 'Continue to Review' : 'Continue'}<ArrowRight className="w-3 h-3" /></button>}
+          </div>
       </div>
     </div>
   );

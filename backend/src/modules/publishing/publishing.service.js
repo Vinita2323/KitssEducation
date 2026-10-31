@@ -51,7 +51,7 @@ export function createPublishingService({ models, taxonomy, coordination, media 
   }
   function publicData(kind, doc) {
     const data = doc.publishedSnapshot; if (!data) return null;
-    const { documentAssetId, rightsConfirmed, rightsNote, pricingApproved, createdBy, updatedBy, sourceNote, revision: snapshotRevision, status, ...safe } = data;
+    const { registrationApplicationId, documentAssetId, rightsConfirmed, rightsNote, pricingApproved, createdBy, updatedBy, sourceNote, revision: snapshotRevision, status, ...safe } = data;
     return { ...safe, id: String(doc._id), status: 'published', ...(kind === 'books' ? { canReadFull: false, accessStatus: 'entitlements_pending' } : {}), ...(safe.coverAssetId ? { coverUrl: '/api/v1/media/' + safe.coverAssetId + '/content' } : {}), ...(safe.imageAssetId ? { imageUrl: '/api/v1/media/' + safe.imageAssetId + '/content' } : {}), ...(safe.portraitAssetId ? { portraitUrl: '/api/v1/media/' + safe.portraitAssetId + '/content' } : {}) };
   }
   // Catalogue-wide counts for the admin books page (independent of filters and paging).

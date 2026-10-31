@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { workflowPolicy, initialWorkflowPolicy } from '../src/modules/franchise/policy.js';
 import { commerceFixture } from './commerce-fixture.js';
-import { pdfBytes } from './publishing-fixture.js';
+import { pdfBytes, imageBytes } from './publishing-fixture.js';
 import { Readable } from 'node:stream';
 import { randomUUID } from 'node:crypto';
 import { serve } from './helpers.js';
@@ -36,6 +36,19 @@ test('franchise end-to-end: real isolated DB/HTTP, synthetic payment and scanner
     // Re-save the accepted baseline draft after deliberate rejected publication.
     await savePublish(p);
   });
+  await t.test('optional original logo is private, owned, clean and protected while referenced', async () => {
+    const uploadLogo = async owner => f.media.upload({purpose:'franchise_document',originalName:'logo.png',mime:'image/png',stream:Readable.from(await imageBytes()),idempotencyKey:randomUUID(),auth:owner.auth,ctx:f.ctx});
+    const logo = await uploadLogo(applicant), foreign = await uploadLogo(other), pdf = await document(applicant);
+    for (const asset of [foreign,pdf]) await assert.rejects(api.create({...data(),institution:{...data().institution,logoAssetId:asset.id}},applicant.auth,f.ctx),{status:422});
+    const input={...data(),institution:{...data().institution,logoAssetId:logo.id}};
+    let saved=await api.create(input,applicant.auth,f.ctx);assert.equal(String(saved.institution.logoAssetId),logo.id);
+    assert.equal((await request('/media/'+logo.id+'/content','GET',undefined,null)).status,404);
+    assert.equal((await request('/media/'+logo.id+'/content','GET',undefined,other)).status,404);
+    assert.equal((await request('/media/'+logo.id+'/content','GET',undefined,reviewer)).status,200);
+    await assert.rejects(f.media.remove(logo.id,{expectedRevision:logo.revision},f.ctx),{status:409});
+    saved=await api.edit(saved.id,{expectedRevision:saved.revision,institution:{...saved.institution,logoAssetId:null}},applicant.auth,f.ctx);assert.equal(saved.institution.logoAssetId,null);
+    await f.media.remove(logo.id,{expectedRevision:logo.revision},f.ctx);
+  });
   await t.test('independent draft, private uploads, cross-user rejection, revisions and document requirements',async()=>{
     const input=data(); row=await api.create(input,applicant.auth,f.ctx);assert.equal((await api.create(input,applicant.auth,f.ctx)).id,row.id);
     assert.equal(row.workflowVersion,1);assert.equal(row.collegeId,undefined);
@@ -61,6 +74,18 @@ test('franchise end-to-end: real isolated DB/HTTP, synthetic payment and scanner
     assert.equal((await request('/admin/franchise-applications/'+row.id+'/status','PATCH',{expectedRevision:row.revision,status:'approved',reason:'Review'},reviewer)).status,403);
     row=await api.review(row.id,{expectedRevision:row.revision,status:'approved',reason:'Evidence reviewed'},f.ctx);assert.equal(row.affiliationState,'active');assert.ok(row.activatedAt);
     assert.equal((await api.activate(row.id,{expectedRevision:row.revision},applicant.auth,f.ctx)).activatedAt,row.activatedAt);
+  });
+  await t.test('approved franchise directory is public and private data stays out; listing can be hidden without changing affiliation',async()=>{
+    const directory=await request('/public/franchises','GET',undefined,null);assert.equal(directory.status,200);
+    const listing=directory.body.data.find(item=>item.id===row.id);assert.ok(listing);
+    assert.deepEqual(Object.keys(listing).sort(),['id','name','type','city','website','programs'].sort());
+    assert.equal((await request('/public/franchises?status=pending','GET',undefined,null)).status,422);
+    const stale=row.revision;
+    let result=await request('/admin/franchise-applications/'+row.id+'/listing','POST',{expectedRevision:row.revision,publish:false,reason:'Hide isolated test listing'},admin);assert.equal(result.status,200);row=result.body.data;
+    assert.equal((await request('/public/franchises/'+row.id,'GET',undefined,null)).status,404);assert.equal(row.affiliationState,'active');
+    assert.equal((await request('/admin/franchise-applications/'+row.id+'/listing','POST',{expectedRevision:stale,publish:true,reason:'Stale change'},admin)).status,409);
+    result=await request('/admin/franchise-applications/'+row.id+'/listing','POST',{expectedRevision:row.revision,publish:true,reason:'Restore isolated test listing'},admin);assert.equal(result.status,200);row=result.body.data;
+    assert.equal((await request('/public/franchises/'+row.id,'GET',undefined,null)).status,200);
   });
   let paid,order,payment;
   await t.test('prospective paid policy preserves old accepted terms; verified joining and duplicate callbacks',async()=>{
