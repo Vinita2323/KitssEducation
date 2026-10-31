@@ -21,7 +21,26 @@ export function useAdminAccessibility(root, route) {
     const review=()=>{
       for(const table of node.querySelectorAll('table')) {
         for(const th of table.querySelectorAll('thead th')) if(!th.hasAttribute('scope'))th.setAttribute('scope','col');
+        // Wrapped tables stack into cards on phones; keep table semantics and give each cell its column name.
+        if(table.parentElement?.classList.contains('admin-table')){
+          const headings=[...table.querySelectorAll(':scope > thead > tr > th')].map(th=>th.textContent.trim());
+          if(table.getAttribute('role')!=='table')table.setAttribute('role','table');
+          for(const section of table.querySelectorAll(':scope > thead, :scope > tbody'))if(section.getAttribute('role')!=='rowgroup')section.setAttribute('role','rowgroup');
+          for(const row of table.querySelectorAll(':scope > thead > tr, :scope > tbody > tr')){
+            if(row.getAttribute('role')!=='row')row.setAttribute('role','row');
+            let column=0;
+            for(const cell of row.children){
+              const header=cell.tagName==='TH';
+              const role=header?'columnheader':'cell';
+              if(cell.getAttribute('role')!==role)cell.setAttribute('role',role);
+              const span=Math.max(1,cell.colSpan||1);
+              if(!header){const label=span===1?(headings[column]||''):'';if(cell.getAttribute('data-label')!==label)cell.setAttribute('data-label',label);}
+              column+=span;
+            }
+          }
+        }
         const region=table.parentElement;
+        if(region?.classList.contains('admin-table')&&region.classList.contains('admin-scroll-region')&&region.scrollWidth<=region.clientWidth){region.classList.remove('admin-scroll-region');region.removeAttribute('role');region.removeAttribute('aria-label');region.removeAttribute('tabindex');}
         if(region&&region.scrollWidth>region.clientWidth){region.classList.add('admin-scroll-region');region.setAttribute('role','region');region.setAttribute('aria-label',(table.getAttribute('aria-label')||node.querySelector('main h1')?.textContent||'Records')+' scrollable table');region.tabIndex=0;}
       }
       for(const alert of node.querySelectorAll('[role=alert]')) {alert.tabIndex=-1;}

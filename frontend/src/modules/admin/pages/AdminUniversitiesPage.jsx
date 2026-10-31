@@ -345,7 +345,7 @@ export const AdminUniversitiesPage = () => {
          ======================================================== */}
       {modalOpen && (
         <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4 overflow-y-auto">
-          <div ref={editorDialog} role="dialog" aria-modal="true" aria-label="University editor" tabIndex={-1} className="bg-white rounded-2xl border border-[#E6E8EC] shadow-2xl max-w-md w-full p-5 sm:p-6 space-y-4 animate-in zoom-in-95 duration-150">
+          <div ref={editorDialog} role="dialog" aria-modal="true" aria-label="University editor" tabIndex={-1} className="admin-dialog bg-white rounded-2xl border border-[#E6E8EC] shadow-2xl max-w-md w-full p-5 sm:p-6 space-y-4 animate-in zoom-in-95 duration-150">
             <div className="flex items-center justify-between pb-3 border-b border-[#E6E8EC]">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-lg bg-[#0A1D3F]/10 text-[#0A1D3F] flex items-center justify-center font-bold">

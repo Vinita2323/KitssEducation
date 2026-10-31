@@ -8,6 +8,7 @@ import { authenticatedWrite } from '../../user/services/authService';
 import { useAuth } from '../../user/context/AuthContext';
 import { rupees } from '../components/bookReadiness';
 import { duration } from '../components/coachingDisplay';
+import { AdminEmpty, AdminPageHeader, AdminTable } from '../components/AdminUI';
 
 const day = value => value ? new Date(value).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Asia/Kolkata' }) : '—';
 const stamp = value => value ? new Date(value).toLocaleString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit', timeZone: 'Asia/Kolkata' }) : '—';
@@ -21,7 +22,7 @@ const stateOf = row => row.state === 'active' && row.expiringSoon ? 'expiring' :
 function Pill({ state }) { const [label, tone] = stateTone[state] ?? [state, stateTone.expired[1]]; return <span className={'inline-block whitespace-nowrap px-2.5 py-1 rounded-full text-xs font-semibold ring-1 ' + tone}>{label}</span>; }
 function Dialog({ title, onClose, children, wide }) {
   const ref = useDialogFocus(true, onClose);
-  return <div className="fixed inset-0 z-50 bg-[#0A1D3F]/70 p-3 flex items-center justify-center"><div ref={ref} role="dialog" aria-modal="true" aria-label={title} tabIndex={-1} className={'bg-white rounded-2xl p-5 w-full max-h-[92vh] overflow-y-auto space-y-4 text-[#0A1D3F] ' + (wide ? 'max-w-2xl' : 'max-w-md')}>
+  return <div className="fixed inset-0 z-50 bg-[#0A1D3F]/70 p-3 flex items-center justify-center"><div ref={ref} role="dialog" aria-modal="true" aria-label={title} tabIndex={-1} className={'admin-dialog bg-white rounded-2xl p-5 w-full max-h-[92vh] overflow-y-auto space-y-4 text-[#0A1D3F] ' + (wide ? 'max-w-2xl' : 'max-w-md')}>
     <div className="flex items-start justify-between gap-3"><h2 className="text-lg font-bold">{title}</h2><button type="button" onClick={onClose}>Close</button></div>{children}
   </div></div>;
 }
@@ -51,16 +52,16 @@ export function AdminEnrollmentsPage() {
   const cards = [['active', 'Active', Users], ['expiring', 'Expiring in 7 days', GraduationCap], ['expired', 'Expired', BookOpen], ['revoked', 'Revoked', ShieldOff], ...(summary?.blocked ? [['blocked', 'Blocked', ShieldOff]] : [])];
 
   return <div className="space-y-5 text-[#0A1D3F]">
-    <header><h1>Enrollment Review</h1><p className="text-sm mt-1">See who has access to each course and book, follow their progress, and revoke or restore access. Revoking never changes a payment or issues a refund.</p></header>
-    <div className="flex flex-wrap gap-2" role="group" aria-label="Access type">{[['course', 'Courses'], ['book', 'Books']].map(([value, label]) => <button key={value} type="button" aria-pressed={kind === value} onClick={() => { setKind(value); setState('all'); setSource(''); setPage(1); }} className={kind === value ? '!bg-[#0A1D3F] !text-white !border-[#0A1D3F]' : ''}>{label}</button>)}</div>
+    <AdminPageHeader title="Enrollment Review" description="See who has access to each course and book, follow their progress, and revoke or restore access. Revoking never changes a payment or issues a refund." />
+    <div className="admin-segmented" role="group" aria-label="Access type">{[['course', 'Courses'], ['book', 'Books']].map(([value, label]) => <button key={value} type="button" aria-pressed={kind === value} onClick={() => { setKind(value); setState('all'); setSource(''); setPage(1); }}>{label}</button>)}</div>
     {kind === 'book' && <h2 className="text-lg font-bold">Book access review</h2>}
 
-    <div className={"grid grid-cols-2 gap-3 " + (cards.length > 4 ? "lg:grid-cols-5" : "lg:grid-cols-4")}>{cards.map(([value, label, Icon]) => <button key={value} type="button" aria-pressed={state === value} onClick={() => filter(state === value ? 'all' : value)} className={'!text-left !p-4 !rounded-2xl bg-white ' + (state === value ? '!border-[#0A1D3F] ring-2 ring-[#0A1D3F]/15' : '')}>
+    <div className={"grid grid-cols-2 gap-3 " + (cards.length > 4 ? "lg:grid-cols-5" : "lg:grid-cols-4")}>{cards.map(([value, label, Icon]) => <button key={value} type="button" aria-pressed={state === value} onClick={() => filter(state === value ? 'all' : value)} className={'!text-left !p-4 !rounded-2xl bg-white shadow-[0_6px_20px_-14px_#0a1d3f40] ' + (state === value ? '!border-[#0A1D3F] ring-2 ring-[#0A1D3F]/15' : '')}>
       <span className="flex items-center justify-between gap-2 text-sm font-semibold text-[#53647c]">{label}<Icon aria-hidden="true" size={16} /></span>
       <span className="block !text-2xl !font-extrabold mt-1 !text-[#0A1D3F]">{summary?.[value] ?? '–'}</span>
     </button>)}</div>
 
-    <div className="bg-white border rounded-2xl p-4 grid grid-cols-1 md:grid-cols-[2fr_1fr_1fr] gap-3">
+    <div className="admin-card p-4 grid grid-cols-1 md:grid-cols-[2fr_1fr_1fr] gap-3">
       <AdminField help="">Search<AdminInput aria-label="Search enrollments" placeholder={`Student name, email, ${kind} or order reference`} value={q} onChange={e => { setQ(e.target.value); setPage(1); }} /></AdminField>
       <AdminField help="">Status<AdminSelect aria-label={kind === 'course' ? 'Enrollment status' : 'Book access status'} value={state} onChange={e => filter(e.target.value)}><option value="all">All statuses</option>{Object.entries(stateTone).map(([value, [label]]) => <option key={value} value={value}>{label}</option>)}</AdminSelect></AdminField>
       <AdminField help="">Source<AdminSelect aria-label="Access source" value={source} onChange={e => { setSource(e.target.value); setPage(1); }}><option value="">All sources</option>{sources[kind].map(([value, label]) => <option key={value} value={value}>{label}</option>)}</AdminSelect></AdminField>
@@ -68,7 +69,7 @@ export function AdminEnrollmentsPage() {
 
     {notice && <p role="status" className="rounded-xl bg-emerald-50 text-emerald-900 border border-emerald-200 p-3 text-sm">{notice}</p>}
     {error && <p role="alert">{error}</p>}{busy && <p role="status" className="text-sm">Loading…</p>}
-    <div className="bg-white border rounded-2xl overflow-x-auto">
+    <AdminTable>
       <table className="w-full text-sm"><thead><tr><th className="text-left">Student</th><th className="text-left">{product}</th>{kind === 'course' && <th className="text-left">Progress</th>}<th className="text-left">Access</th><th className="text-left">Status</th><th className="text-right">Actions</th></tr></thead>
         <tbody>{result.data.map(row => { const s = stateOf(row); return <tr key={row.id}>
           <td className="min-w-[12rem]"><p className="font-semibold break-words">{row.student?.name ?? 'Deleted account'}</p><p className="text-[#53647c] [overflow-wrap:anywhere]">{row.student?.email ?? row.userId}</p></td>
@@ -80,9 +81,9 @@ export function AdminEnrollmentsPage() {
             {can('access.revoke') && row.state !== 'revoked' && <button type="button" className="text-red-700" onClick={() => { setReason(''); setChange({ action: 'revoke', row }); }}>Revoke access</button>}
             {can('access.revoke') && row.state === 'revoked' && <button type="button" className="inline-flex items-center gap-1" onClick={() => { setReason(''); setChange({ action: 'restore', row }); }}><RotateCcw aria-hidden="true" size={14} />Restore access</button>}</div></td>
         </tr>; })}</tbody></table>
-      {!busy && !result.data.length && <p className="p-6 text-center text-[#53647c]">{q || state !== 'all' || source ? 'No enrollments match these filters.' : kind === 'course' ? 'No course enrollments yet.' : 'No book access records yet.'}</p>}
-    </div>
-    <div className="flex items-center gap-3 text-sm"><button disabled={page === 1} onClick={() => setPage(p => p - 1)}>Previous</button><span>Page {page} of {result.meta?.totalPages ?? 1} · {result.meta?.total ?? 0} records</span><button disabled={page >= (result.meta?.totalPages ?? 1)} onClick={() => setPage(p => p + 1)}>Next</button></div>
+      {!busy && !result.data.length && <AdminEmpty icon={Users}><p>{q || state !== 'all' || source ? 'No enrollments match these filters.' : kind === 'course' ? 'No course enrollments yet.' : 'No book access records yet.'}</p></AdminEmpty>}
+    </AdminTable>
+    <div className="admin-pager text-sm"><button className="admin-btn admin-btn-secondary admin-btn-sm" disabled={page === 1} onClick={() => setPage(p => p - 1)}>Previous</button><span className="admin-meta">Page {page} of {result.meta?.totalPages ?? 1} · {result.meta?.total ?? 0} records</span><button className="admin-btn admin-btn-secondary admin-btn-sm" disabled={page >= (result.meta?.totalPages ?? 1)} onClick={() => setPage(p => p + 1)}>Next</button></div>
 
     {detail && <Dialog title="Enrollment details" wide onClose={() => setDetail(null)}>
       <div className="flex flex-wrap items-start justify-between gap-3"><div><p className="font-bold text-base">{detail.student?.name ?? 'Deleted account'}</p><p className="text-sm text-[#53647c] break-all">{detail.student?.email}</p></div><Pill state={stateOf(detail)} /></div>

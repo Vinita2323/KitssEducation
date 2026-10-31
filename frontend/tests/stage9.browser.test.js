@@ -398,7 +398,7 @@ test('Stage 9 cross-stage active routes and release smoke', {
       }
     }
   });
-  writeFileSync(process.env.KITSS_PROJECT_AUDIT === 'true' ? 'backend/FINAL-PROJECT-ROUTE-VERIFICATION.json' : process.env.KITSS_STAGE10_ROUTE_AUDIT === 'true' ? 'backend/STAGE10-ROUTE-VERIFICATION.json' : focus ? 'backend/STAGE9-GATE-VERIFICATION.json' : 'backend/STAGE9-ROUTE-VERIFICATION.json', JSON.stringify({
+  writeFileSync(process.env.KITSS_PROJECT_AUDIT === 'true' ? fileURLToPath(new URL('../../backend/FINAL-PROJECT-ROUTE-VERIFICATION.json', import.meta.url)) : process.env.KITSS_STAGE10_ROUTE_AUDIT === 'true' ? fileURLToPath(new URL('../../backend/STAGE10-ROUTE-VERIFICATION.json', import.meta.url)) : focus ? fileURLToPath(new URL('../../backend/STAGE9-GATE-VERIFICATION.json', import.meta.url)) : fileURLToPath(new URL('../../backend/STAGE9-ROUTE-VERIFICATION.json', import.meta.url)), JSON.stringify({
     routes: manifest,
     ...(process.env.KITSS_PROJECT_AUDIT==='true'?{adminWidths:[320,375,390,414,768,1024,1280,1440]}:{}),
     pageErrors: errors,

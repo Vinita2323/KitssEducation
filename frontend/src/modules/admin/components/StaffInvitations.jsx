@@ -21,14 +21,14 @@ export function StaffInvitations({ target, onChanged }) {
     try { const result = await authService.revokeInvitation(reference); setMessage(result.message); setReference(''); onChanged?.(); }
     catch (error) { setMessage(error.message); } finally { setBusy(false); }
   }
-  return <section aria-label="Staff invitations" className="mb-4 p-4 bg-white border border-[#E6E8EC] rounded-2xl text-sm">
-    <h2 className="font-bold text-[#0A1D3F]">Staff invitations</h2>
+  return <section aria-label="Staff invitations" className="admin-card p-5 text-sm">
+    <h2 className="admin-card-title">Staff invitations</h2>
     <p className="text-xs text-[#667085] my-3">Invite or resend to an unactivated staff account. Resending replaces the previous link after a 60-second cooldown. Staff must set a password and verify email.</p>
-    <form onSubmit={submit} className="space-y-3">
+    <form onSubmit={submit} className="grid gap-4 sm:grid-cols-2">
       <AdminField className="block">Staff name<AdminInput className="block w-full border p-2 rounded-lg" value={name} onChange={e => setName(e.target.value)} maxLength={100} required /></AdminField>
       <AdminField className="block">Staff email<AdminInput type="email" className="block w-full border p-2 rounded-lg" value={email} onChange={e => setEmail(e.target.value)} required /></AdminField>
-      <PermissionSelector available={user.permissions} value={permissions} onChange={setPermissions} disabled={busy} />
-      <button disabled={busy} className="px-4 py-2 rounded-lg bg-[#0A1D3F] text-white">Invite / resend</button>
+      <div className="sm:col-span-2"><PermissionSelector available={user.permissions} value={permissions} onChange={setPermissions} disabled={busy} /></div>
+      <div className="sm:col-span-2"><button disabled={busy} className="admin-btn admin-btn-primary">Invite / resend</button></div>
     </form>
     {reference && <div className="mt-3"><AdminField className="block">Pending invitation reference<AdminInput className="border p-2 rounded-lg w-full" value={reference} onChange={e => setReference(e.target.value)} /></AdminField><button disabled={busy} onClick={revoke} className="text-red-700 p-2">Revoke invitation</button></div>}
     {message && <p role="status" className="mt-3">{message}</p>}

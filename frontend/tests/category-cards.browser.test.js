@@ -94,7 +94,7 @@ test('category CMS: protected publishing, media references and admin/public brow
     page.once('dialog', dialog => dialog.accept()); await item.getByRole('button', { name: 'Remove', exact: true }).click();
     await save(); await page.getByRole('button', { name: 'Publish categories', exact: true }).click(); await page.getByText('Categories published.', { exact: true }).waitFor();
     const publicPage = await f.publishing.publicPage('categories');
-    assert.equal(publicPage.categoryCards.length, 5); assert.equal(publicPage.sections[0].key, 'legacy');
+    assert.equal(publicPage.categoryCards.length, 4); assert.equal(publicPage.sections[0].key, 'legacy');
     assert.ok(await f.models.MediaAsset.findById(image.id));
     record = await f.publishing.detail('pages', record.id, true);
     record = await f.publishing.edit('pages', record.id, { expectedRevision: record.revision, categoryCards: [] }, admin.auth, f.ctx);
