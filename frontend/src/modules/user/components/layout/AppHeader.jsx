@@ -21,8 +21,7 @@ export const AppHeader = ({ onOpenDrawer, brand }) => {
   const navLinks = [
     { name: "Home", path: "/home" },
     { name: "Categories", path: "/categories" },
-    { name: "Franchises", path: "/institutes" },
-    { name: "Colleges", path: "/colleges" },
+    { name: "Colleges & Institutes", path: "/colleges" },
     { name: "Registration", path: "/register" },
     { name: "Books", path: "/books" },
     { name: "Coaching", path: "/coaching" },

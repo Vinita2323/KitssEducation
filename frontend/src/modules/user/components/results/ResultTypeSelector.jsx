@@ -24,7 +24,7 @@ export const ResultTypeSelector = ({
     {
       id: "institute",
       title: "Institute Class / School",
-      subtitle: "Franchise Institutes & Classes",
+      subtitle: "Schools, institutes & coaching",
       icon: School,
       iconStyle: "bg-blue-50 text-[#133C8B] border-blue-200/70",
     }

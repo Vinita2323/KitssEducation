@@ -11,6 +11,7 @@ export function createResultRouter(service) {
     data,
     requestId: req.requestId
   });
+  router.get('/admin/results/organizations', requirePermission('results.read'), async (req,res) => res.json({ ...await service.organizations(req.query), requestId:req.requestId }));
   router.get('/results/config', async (req, res) => send(req, res, await service.config()));
   router.get('/results/issuers/:id', async (req, res) => send(req, res, await service.issuer(req.params.id)));
   router.post('/results/lookup', requireSession, async (req, res) => send(req, res, await service.lookup(req.body, req.auth, ctx(req))));

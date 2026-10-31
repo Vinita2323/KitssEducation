@@ -42,7 +42,7 @@ test('Stage 8 real API/Mongo browser; synthetic source/mail only', {
   });
   const issuer = await f.results.mutate('issuers', null, {
     key: 'synthetic-browser',
-    type: 'school',
+    type: 'university',
     name: 'SYNTHETIC',
     fullName: 'SYNTHETIC BROWSER ISSUER',
     status: 'active',
@@ -203,20 +203,25 @@ test('Stage 8 real API/Mongo browser; synthetic source/mail only', {
   await check('exact owned synthetic result displays stored marks and exports PDF', async () => {
     await identity(student);
     await goto('/results');
-    await page.getByLabel('Result issuer').selectOption(issuer.id);
-    await page.getByLabel('Result exam').selectOption(exam.id);
-    await page.getByLabel('Roll number', {
-      exact: true
-    }).fill(row.rollNumber);
+    await page.getByRole('button', { name: 'Board Result' }).click();
+    await page.getByRole('button', { name: /Central Board of Secondary Education/ }).click();
+    await page.getByText(/Online CBSE results are not available on KITSS yet/).waitFor();
+    await page.getByRole('button', { name: 'Back', exact: true }).click();
+    await page.getByRole('button', { name: /Council for the Indian School Certificate/ }).waitFor();
+    await page.getByRole('button', { name: 'Back', exact: true }).click();
+    await page.getByRole('button', { name: 'University Result' }).click();
+    await page.getByRole('button', { name: /SYNTHETIC BROWSER ISSUER/ }).click();
+    await page.getByLabel('Examination / Class / Course').selectOption(exam.id);
+    await page.getByLabel('Roll number').fill(row.rollNumber);
     await page.getByLabel('Date of birth').fill('2000-01-01');
     await page.getByRole('button', {
-      name: 'Check result',
+      name: 'Check Result',
       exact: true
     }).click();
     await page.getByText(row.student.name, {
       exact: true
     }).waitFor();
-    assert.ok((await page.locator('#printable-marksheet').innerText()).includes('82 / 100'));
+    assert.match(await page.locator('#printable-marksheet').innerText(), /Obtained Marks\s+82/i);
     assert.equal(await page.getByText('Verified & Digitally Signed', {
       exact: true
     }).count(), 0);
@@ -233,22 +238,20 @@ test('Stage 8 real API/Mongo browser; synthetic source/mail only', {
       media: 'screen'
     });
   });
-  await check('admin issuer configuration and targeted notification publication', async () => {
+  const configuredUniversity = await f.institutions.create('university', { name: 'SYNTHETIC CONFIGURATION UNIVERSITY', shortName: 'SCU', status: 'active' }, ctx);
+  await check('admin result institution configuration and targeted notification publication', async () => {
     await identity(admin);
     await goto('/admin/results');
     await page.getByRole('button', {
-      name: 'Add issuer',
+      name: 'Add institution',
       exact: true
     }).click();
-    await page.getByLabel('key', {
-      exact: true
-    }).fill('synthetic-created');
-    await page.getByLabel('name', {
-      exact: true
-    }).fill('SYNTHETIC CREATED ISSUER');
-    await page.getByLabel('fullName', {
-      exact: true
-    }).fill('SYNTHETIC CREATED ISSUER FULL');
+    await page.getByLabel('Platform institution').selectOption(configuredUniversity.id);
+    await page.getByLabel('Short display name').fill('SYNTHETIC CREATED ISSUER');
+    await page.getByLabel('Institution display name').fill('SYNTHETIC CREATED ISSUER FULL');
+    await page.getByLabel('Where the marks were received from').fill('Synthetic institution statement');
+    await page.getByLabel('Permission / source reference').fill('Synthetic authorization reference');
+    await page.getByLabel('Definition status').selectOption('active');
     await page.getByRole('button', {
       name: 'Save configuration',
       exact: true
@@ -286,6 +289,49 @@ test('Stage 8 real API/Mongo browser; synthetic source/mail only', {
       name: 'published',
       exact: true
     }).waitFor();
+  });
+  await check('admin uploads, approves and publishes a university result for its student', async () => {
+    await identity(admin); await goto('/admin/results');
+    await page.getByRole('button', { name: 'Examinations', exact: true }).click();
+    await page.getByRole('button', { name: 'Add examination', exact: true }).click();
+    await page.getByLabel('Exam institution').selectOption({ label: 'SYNTHETIC CREATED ISSUER FULL' });
+    await page.getByLabel('Examination name').fill('SYNTHETIC MANAGED UNIVERSITY EXAM');
+    await page.getByLabel('Examination year').fill('2026');
+    await page.getByLabel('Academic session').fill('TEST');
+    await page.getByLabel('Definition status').selectOption('published');
+    await page.getByRole('button', { name: 'Save configuration', exact: true }).click();
+    await page.getByRole('cell', { name: /SYNTHETIC MANAGED UNIVERSITY EXAM/ }).waitFor();
+    await page.getByRole('button', { name: 'Student results', exact: true }).click();
+    await page.getByRole('button', { name: 'Enter student marks', exact: true }).click();
+    await page.getByLabel('Student result examination').selectOption({ label: 'SYNTHETIC MANAGED UNIVERSITY EXAM / 2026 / TEST' });
+    await page.getByLabel('Student User ID').fill(student.user.publicId);
+    await page.getByLabel('Student roll number').fill('SYNTHETIC-MANAGED-001');
+    await page.getByLabel('Student name').fill('SYNTHETIC MANAGED CANDIDATE');
+    await page.getByLabel('Result issue date').fill('2026-10-31');
+    await page.getByLabel('Institution result reference').fill('SYNTHETIC-MANAGED-REF');
+    await page.getByLabel('Answer: Date of birth').fill('2000-01-01');
+    await page.getByLabel('Subject code 1').fill('M1');
+    await page.getByLabel('Subject name 1').fill('Synthetic mathematics');
+    await page.getByLabel('Obtained marks 1').fill('91');
+    await page.getByLabel('Result status').fill('PASS');
+    await page.getByRole('button', { name: 'Save result draft', exact: true }).click();
+    await page.getByRole('region', { name: 'Result review' }).waitFor();
+    await page.getByLabel('Result action reason').fill('Synthetic source reviewed');
+    await page.getByRole('button', { name: 'Submit for main-admin review', exact: true }).click();
+    await page.getByLabel('Result action reason').fill('Synthetic main-admin decision');
+    await page.getByRole('button', { name: 'Approve result', exact: true }).click();
+    await page.getByRole('button', { name: 'Publish result', exact: true }).click();
+    await page.getByRole('status').filter({ hasText: /Result published to the student/ }).waitFor();
+    assert.ok(await f.models.ResultRecord.exists({ rollNormalized: 'SYNTHETIC-MANAGED-001', status: 'published', 'review.status': 'approved' }));
+    await identity(student); await goto('/results');
+    await page.getByRole('button', { name: 'University Result' }).click();
+    await page.getByRole('button', { name: /SYNTHETIC CREATED ISSUER FULL/ }).click();
+    await page.getByLabel('Examination / Class / Course').selectOption({ label: 'SYNTHETIC MANAGED UNIVERSITY EXAM / 2026 / TEST' });
+    await page.getByLabel('Roll number').fill('SYNTHETIC-MANAGED-001');
+    await page.getByLabel('Date of birth').fill('2000-01-01');
+    await page.getByRole('button', { name: 'Check Result', exact: true }).click();
+    await page.getByText('SYNTHETIC MANAGED CANDIDATE', { exact: true }).waitFor();
+    assert.match(await page.locator('#printable-marksheet').innerText(), /OBTAINED MARKS\s+91/i);
   });
   await check('recipient read state survives reload and other account sees nothing', async () => {
     await identity(student);

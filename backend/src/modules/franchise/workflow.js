@@ -78,13 +78,19 @@ export function createFranchiseWorkflow(commerce, institutions) {
       return value ? data[0] : { data, meta: { page, pageSize, total, totalPages: Math.max(1, Math.ceil(total / pageSize)) } };
     },
     async listing(value, input, ctx) {
-      object(input, ['expectedRevision', 'publish', 'reason'], ['expectedRevision', 'publish', 'reason']);
+      object(input, ['expectedRevision', 'publish', 'reason', 'collegeListingId'], ['expectedRevision', 'publish', 'reason']);
       if (typeof input.publish !== 'boolean') throw invalid('Choose whether to show the listing');
       const reason = noteText(input.reason);
       return coordination.run(async () => {
         const row = await get(value);
+        let association = {};
+        if ('collegeListingId' in input) {
+          const listingId = input.collegeListingId === null ? null : String(id(input.collegeListingId));
+          if (listingId && String(row.collegeListingId || '') !== listingId) await institutions.detail('college', listingId);
+          association = { collegeListingId: listingId };
+        }
         if (row.workflowVersion !== 1 || row.status !== 'approved') throw blocked('Only approved franchise applications can be listed');
-        return result(await update(row, { listingHidden: !input.publish, listingPublishedAt: row.listingPublishedAt || new Date(), statusHistory: [...row.statusHistory.map(plain), { from: row.status, to: row.status, reason, actorId: ctx.actorId, at: new Date() }] }, input.expectedRevision, 'franchise_listing_updated', ctx));
+        return result(await update(row, { ...association, listingHidden: !input.publish, listingPublishedAt: row.listingPublishedAt || new Date(), statusHistory: [...row.statusHistory.map(plain), { from: row.status, to: row.status, reason, actorId: ctx.actorId, at: new Date() }] }, input.expectedRevision, 'franchise_listing_updated', ctx));
       });
     },
     async adminPolicy() { const row = await policyRecord(); return { revision: row?.revision ?? 0, hasSavedDraft: Boolean(row?.value?.franchise?.workflowDraft), draft: row?.value?.franchise?.workflowDraft ?? initialWorkflowPolicy(), published: row?.value?.franchise?.workflowPublished ?? null, history: (row?.policyHistory ?? []).map(h => ({ revision: h.revision, reason: h.reason, at: h.at })) }; },

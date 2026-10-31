@@ -9,7 +9,7 @@ import { commerceFixture } from '../../backend/tests/commerce-fixture.js';
 import { pdfBytes, imageBytes } from '../../backend/tests/publishing-fixture.js';
 const db=process.env.KITSS_FRANCHISE_BROWSER_DB;
 test('franchise policy and applicant/admin screens: isolated HTTP, browser, fake scanner/payment', {skip:!db?'No isolated franchise browser DB':false,timeout:300000},async t=>{
-  const f=await commerceFixture(db);let server,vite,browser;t.after(async()=>{await browser?.close();await vite?.close();if(server)await new Promise(resolve=>{server.close(resolve);server.closeAllConnections();});await f.close();});
+  const f=await commerceFixture(db);let server,vite,browser;t.after(async()=>{await browser?.close();await vite?.close();if(server)await new Promise(resolve=>{server.close(resolve);server.closeAllConnections();});await f.connection.dropDatabase();await f.close();});
   const admin=await f.fixtureUser(),student=await f.fixtureUser(['student']);
   await f.institutions.create('taxonomy',{kind:'designation',key:randomUUID(),label:'Owner',status:'active'},f.ctx);
   await f.institutions.create('taxonomy',{kind:'state',key:randomUUID(),label:'Synthetic State',status:'active'},f.ctx);
@@ -81,9 +81,35 @@ test('franchise policy and applicant/admin screens: isolated HTTP, browser, fake
     assert.equal((await f.service.franchise.status(id,student.auth)).affiliationState,'active');
     await page.screenshot({path:fileURLToPath(new URL('../../.runtime/franchise-admin-review.png',import.meta.url)),fullPage:true});
     await app.goto(base+'/institutes',{waitUntil:'domcontentloaded'});
-    await app.getByRole('heading',{name:'KITSS Franchise Network',exact:true}).waitFor();
+    await app.getByRole('heading',{name:'Colleges & Institutes',exact:true}).waitFor();
+    assert.equal(new URL(app.url()).pathname,'/colleges');assert.equal(new URL(app.url()).searchParams.get('network'),'franchise');
     await app.getByRole('heading',{name:'BROWSER FRANCHISE INSTITUTE',exact:true}).waitFor();
+    const profile=app.locator('.group').filter({has:app.getByRole('heading',{name:'BROWSER FRANCHISE INSTITUTE',exact:true})});
+    await profile.getByText('KITSS Franchise',{exact:true}).waitFor();assert.equal(await profile.getByRole('button',{name:'Apply Now',exact:true}).count(),0);
+    await profile.getByRole('button',{name:'View Details',exact:true}).click();await app.getByRole('dialog',{name:'BROWSER FRANCHISE INSTITUTE',exact:true}).waitFor();await app.getByRole('button',{name:'Close',exact:true}).click();
     assert.equal(await app.getByText('browser@example.invalid',{exact:true}).count(),0);
+    // Same institution can be explicitly associated with its existing college profile.
+    const state=(await f.institutions.list('taxonomy',{kind:'state'})).data.find(v=>v.label==='Synthetic State');
+    await f.institutions.create('taxonomy',{kind:'district',key:randomUUID(),label:'Synthetic District',parentIds:[state.id]},f.ctx);
+    const university=await f.institutions.create('university',{name:'Synthetic University',shortName:'SYN',status:'active'},f.ctx);
+    const college=await f.institutions.create('college',{name:'BROWSER FRANCHISE INSTITUTE',code:'COMBINED-BROWSER',category:'Institute',universityId:university.id,stateId:state.id,district:'Synthetic District',city:'Synthetic City',address:'Published campus',status:'active',verification:{state:'verified',source:'Synthetic browser evidence'}},f.ctx);
+    await f.institutions.create('program',{name:'Synthetic Public Program',degreeType:'Certificate',duration:'1 year',eligibility:'Synthetic',feeMinor:100,status:'active',admissionStatus:'open'},f.ctx,college.id);
+    await page.reload({waitUntil:'domcontentloaded'});await page.getByRole('row').filter({hasText:'BROWSER FRANCHISE INSTITUTE'}).getByRole('button').first().click();
+    const listing=page.getByRole('region',{name:'Public franchise listing'});
+    await listing.getByLabel('Existing institution listing',{exact:true}).selectOption(college.id);
+    await page.getByLabel('Add Admin Note / Rejection Reason',{exact:true}).fill('Same institution confirmed; use existing profile');
+    const associated=page.waitForResponse(r=>r.url().endsWith('/listing')&&r.request().method()==='POST');
+    await listing.getByRole('button',{name:'Save listing association',exact:true}).click();assert.equal((await associated).status(),200);
+    await page.waitForFunction(node=>node.value==='',await page.getByLabel('Add Admin Note / Rejection Reason',{exact:true}).elementHandle());
+    await app.reload({waitUntil:'domcontentloaded'});await app.getByRole('heading',{name:'BROWSER FRANCHISE INSTITUTE',exact:true}).waitFor();assert.equal(await app.getByRole('heading',{name:'BROWSER FRANCHISE INSTITUTE',exact:true}).count(),1);
+    await app.getByRole('button',{name:'Apply Now',exact:true}).waitFor();
+    await app.getByRole('button',{name:'View Details',exact:true}).click();await app.getByRole('button',{name:'Close modal',exact:true}).click();
+    await f.institutions.create('taxonomy',{kind:'qualification',key:randomUUID(),label:'Synthetic Qualification'},f.ctx);
+    await app.getByRole('button',{name:'Apply Now',exact:true}).click();await app.getByRole('dialog',{name:'Admission application',exact:true}).getByText('Synthetic Public Program',{exact:true}).click();
+    await app.getByRole('button',{name:'Continue',exact:true}).click();await app.getByLabel('Admission mobileNumber',{exact:true}).fill('9999999999');await app.getByLabel('Admission educationalQualification',{exact:true}).selectOption('Synthetic Qualification');
+    await app.getByRole('button',{name:'Continue',exact:true}).click();const submitted=app.waitForResponse(r=>r.url().endsWith('/admission-applications')&&r.request().method()==='POST');await app.getByRole('button',{name:'Submit Application',exact:true}).click();assert.equal((await submitted).status(),201);assert.equal(await f.models.AdmissionApplication.countDocuments({collegeId:college.id}),1);
+    await app.keyboard.press('Escape');
+    for(const width of [390,320]){await app.setViewportSize({width,height:844});assert.ok(await app.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));}
     assert.deepEqual(errors,[]);
   });
 });

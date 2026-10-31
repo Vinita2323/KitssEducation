@@ -43,7 +43,6 @@ import { ProfilePage } from "../pages/profile/ProfilePage";
 import { SettingsPage } from "../pages/profile/SettingsPage";
 
 import { MyApplicationsPage } from '../pages/auth/MyApplicationsPage';
-import { FranchiseDirectoryPage } from '../pages/college/FranchiseDirectoryPage';
 import { useAuth } from "../context/AuthContext";
 export const UserRoutes = () => {
   const {user}=useAuth();
@@ -71,9 +70,9 @@ export const UserRoutes = () => {
         <Route path="/about" element={<AboutPage />} />
         <Route path="/categories" element={<CategoriesPage />} />
         
-        {/* Approved franchise directory; college admissions remain separate. */}
-        <Route path="/institutes" element={<FranchiseDirectoryPage />} />
-        <Route path="/franchises" element={<FranchiseDirectoryPage />} />
+        {/* Legacy directory links open the franchise filter on the combined listing. */}
+        <Route path="/institutes" element={<Navigate to="/colleges?network=franchise" replace />} />
+        <Route path="/franchises" element={<Navigate to="/colleges?network=franchise" replace />} />
         <Route path="/my-applications" element={<RouteGuard><MyApplicationsPage key={user?.id || "guest"} /></RouteGuard>} />
         <Route path="/institutes/:id" element={<Navigate to="/colleges" replace />} />
 
@@ -103,7 +102,7 @@ export const UserRoutes = () => {
         <Route path="/subscriptions" element={<RouteGuard><MyCoursesPage key={user?.id || "guest"} /></RouteGuard>} />
 
         {/* Results */}
-        <Route path="/results" element={<ResultsPage />} />
+        <Route path="/results" element={<ResultsPage key={user?.id || "guest"} />} />
 
         {/* Orders */}
         <Route path="/orders" element={<RouteGuard><MyOrdersPage /></RouteGuard>} />

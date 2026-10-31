@@ -19,6 +19,7 @@ export async function readOptions(path, filters = {}, signal) {
   throw new Error('Too many choices; narrow the selection before continuing.');
 }
 export const collegeService = {
+  async getDirectoryPage(filters = {}, signal) { const { search, ...rest } = filters; const result = await readPage('/public/institutions', { ...rest, q: search }, signal); return { ...result, data: result.data.map(collegeDTO) }; },
   async getCollegesPage(filters = {}, signal) {
     const { search, ...rest } = filters;
     const result = await readPage('/colleges', { ...rest, q: search }, signal);

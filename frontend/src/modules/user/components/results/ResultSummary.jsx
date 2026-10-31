@@ -13,8 +13,8 @@ export const ResultSummary = ({ result }) => {
   const isCompartment = result.status?.toUpperCase().includes("COMPARTMENT");
   const isFail = result.status?.toUpperCase().includes("FAIL") || isCompartment;
 
-  const maxTotal = result.maxTotalMarks || 500;
-  const obtainedTotal = result.obtainedMarks || result.totalMarks || 0;
+  const maxTotal = result.maxTotalMarks ?? '-';
+  const obtainedTotal = result.obtainedMarks ?? result.totalMarks ?? '-';
   const percentage = result.percentage || (obtainedTotal && maxTotal ? ((obtainedTotal / maxTotal) * 100).toFixed(1) : 0);
 
   return (
@@ -57,7 +57,7 @@ export const ResultSummary = ({ result }) => {
             Overall Grade
           </span>
           <div className="mt-0.5 text-xs sm:text-sm font-semibold text-slate-800">
-            {result.grade || "A"}
+            {result.grade || "-"}
           </div>
         </div>
       </div>
@@ -108,7 +108,7 @@ export const ResultSummary = ({ result }) => {
 
         <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-white/90 border border-slate-200 text-[10px] font-medium text-slate-700">
           <Award className="w-3 h-3 text-[#FF8A00]" />
-          <span>Session {result.year || "2026"}</span>
+          <span>Session {result.year || "-"}</span>
         </div>
       </div>
     </div>

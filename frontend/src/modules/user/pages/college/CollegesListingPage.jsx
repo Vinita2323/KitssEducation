@@ -1,5 +1,6 @@
+import { FranchiseProfileModal } from '../../components/college/FranchiseProfileModal';
 import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import {
   Search,
   MapPin,
@@ -21,6 +22,9 @@ import { AdmissionApplicationModal } from "../../components/college/AdmissionApp
 import { CollegeDetailsModal } from "../../components/college/CollegeDetailsModal";
 
 export const CollegesListingPage = () => {
+  const [params,setParams] = useSearchParams();
+  const network = params.get('network') === 'franchise' ? 'franchise' : 'all';
+  const [franchiseDetails,setFranchiseDetails]=useState(null);
   const [colleges, setColleges] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -50,15 +54,16 @@ export const CollegesListingPage = () => {
   const fetchColleges = async () => {
     pending.current?.abort(); const controller = new AbortController(); pending.current = controller;
     setLoading(true); setLoadError('');
-    const filters = { search: searchQuery, category: selectedCategory, state: selectedState, district: selectedDistrict, view: 'colleges', page };
+    const filters = { search: searchQuery, category: selectedCategory, state: selectedState, district: selectedDistrict, network, page };
     try {
-      const [result, options] = await Promise.all([collegeService.getCollegesPage(filters, controller.signal), collegeService.getFacets({ view: 'colleges', state: selectedState }, controller.signal)]);
+      const result = await collegeService.getDirectoryPage(filters, controller.signal);
+      const options = result.facets;
       if (!controller.signal.aborted) { setColleges(result.data); setMeta(result.meta); setFacets(options); }
     } catch (error) { if (error.code !== 'ABORTED') { setColleges([]); setLoadError(error.message); } }
     finally { if (!controller.signal.aborted) setLoading(false); }
   };
-  useEffect(() => { fetchColleges(); return () => pending.current?.abort(); }, [selectedCategory, selectedState, selectedDistrict, searchQuery, page]);
-  useEffect(() => { setPage(1); }, [selectedCategory, selectedState, selectedDistrict, searchQuery]);
+  useEffect(() => { fetchColleges(); return () => pending.current?.abort(); }, [selectedCategory, selectedState, selectedDistrict, searchQuery, page, network]);
+  useEffect(() => { setPage(1); }, [selectedCategory, selectedState, selectedDistrict, searchQuery, network]);
 
   // Debounced or on-submit search
   const handleSearchSubmit = (e) => {
@@ -73,6 +78,7 @@ export const CollegesListingPage = () => {
   };
 
   const handleClearFilters = () => {
+    setParams({}, {replace:true}); setPage(1);
     setSearchQuery("");
     setSelectedCategory("All");
     setSelectedState("All");
@@ -85,6 +91,7 @@ export const CollegesListingPage = () => {
   };
 
   const openDetailsModal = (college) => {
+    if(college.franchiseOnly){setFranchiseDetails(college);return;}
     setSelectedCollegeForDetails(college);
     setDetailsModalOpen(true);
   };
@@ -99,10 +106,10 @@ export const CollegesListingPage = () => {
             <span>Verified Education Partners Network</span>
           </div>
           <h1 className="text-xl sm:text-2xl lg:text-3xl font-extrabold tracking-tight">
-            Find Your <span className="text-[#FF8A00]">College</span>
+            <span className="text-[#FF8A00]">Colleges &amp; Institutes</span>
           </h1>
           <p className="text-xs sm:text-sm text-blue-100/80 leading-relaxed font-normal">
-            Explore our partner colleges and find the right course for your future. Get direct counseling and certified degree pathways.
+            Explore partner colleges, institutes and approved KITSS franchises. View programs and available admission options.
           </p>
         </div>
 
@@ -121,7 +128,7 @@ export const CollegesListingPage = () => {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search college, course, state, district..."
+              placeholder="Search college, course, state, district..." aria-label="Search colleges and institutes"
               className="w-full pl-9 pr-8 py-2 bg-[#F7F8FA] border border-[#E6E8EC] rounded-lg text-xs sm:text-sm text-[#0A1D3F] placeholder-[#667085] focus:outline-none focus:border-[#FF8A00] transition"
             />
             {searchQuery && (
@@ -145,6 +152,7 @@ export const CollegesListingPage = () => {
           </button>
         </form>
 
+        <label className="block text-xs font-semibold">Institution network<select aria-label="Institution network" className="block w-full sm:w-auto border border-slate-200 rounded-lg p-2 mt-1 bg-slate-50" value={network} onChange={e=>{setPage(1);setSelectedCategory('All');setSelectedState('All');setSelectedDistrict('All');const next=new URLSearchParams(params);if(e.target.value==='franchise')next.set('network','franchise');else next.delete('network');setParams(next);}}><option value="all">All institutions</option><option value="franchise">KITSS Franchises</option></select></label>
         {/* 3-Dropdown Filter Grid: Type, State, District */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-2 border-t border-[#E6E8EC]/60">
           {/* 1. Institution Type / Category Dropdown */}
@@ -296,10 +304,10 @@ export const CollegesListingPage = () => {
       {/* Result Count Header */}
       <div className="flex items-center justify-between px-1 gap-2 flex-wrap">
         <h2 className="text-xs sm:text-sm font-bold text-[#0A1D3F] uppercase tracking-wider truncate">
-          {loading ? "Searching Colleges..." : `Showing ${meta?.total ?? 0} Partner Institutions`}
+          {loading ? "Searching institutions..." : `Showing ${meta?.total ?? 0} Institutions`}
         </h2>
         <span className="text-xs text-[#667085]">
-          Verified Franchise Network
+          Colleges & Institutes
         </span>
       </div>
 
@@ -322,8 +330,8 @@ export const CollegesListingPage = () => {
       ) : colleges.length === 0 ? (
         <EmptyState
           icon={Building2}
-          title="No Partner Colleges Found"
-          description="We couldn't find any colleges matching your current filters or search query."
+          title="No Institutions Found"
+          description="We couldn't find any institutions matching your current filters or search query."
           actionText="Reset All Filters"
           onAction={handleClearFilters}
         />
@@ -333,18 +341,18 @@ export const CollegesListingPage = () => {
             const collegeId = college._id || college.id;
             return (
               <div
-                key={collegeId}
+                key={college.directoryKey || collegeId}
                 className="bg-white rounded-md border border-[#E6E8EC] shadow-2xs hover:shadow-md transition-all duration-200 flex flex-col justify-between overflow-hidden group hover:border-gray-300"
               >
                 <div>
                   {/* Banner Image */}
                   <div className="relative h-40 sm:h-44 w-full overflow-hidden bg-gray-100">
-                    <img
+                    {college.franchiseOnly ? <div className="h-full w-full flex items-center justify-center bg-gradient-to-br from-slate-100 to-blue-100"><Building2 className="w-16 h-16 text-blue-800/50" aria-hidden="true"/></div> : <img
                       src={college.banner || college.image || "https://images.unsplash.com/photo-1541339907198-e08756dedf3f?w=600&auto=format&fit=crop&q=80"}
                       alt={college.name}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                       loading="lazy"
-                    />
+                    />}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
 
                     {/* College Type Badge */}
@@ -357,7 +365,7 @@ export const CollegesListingPage = () => {
                       <div className="text-white drop-shadow-sm flex items-center gap-1.5">
                         <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-[#17B26A]/90 px-2 py-0.5 rounded backdrop-blur-xs">
                           <CheckCircle2 className="w-3.5 h-3.5" />
-                          <span>Verified Partner</span>
+                          <span>{college.kitssFranchise ? 'KITSS Franchise' : 'Verified Partner'}</span>
                         </span>
                       </div>
                     </div>
@@ -407,13 +415,13 @@ export const CollegesListingPage = () => {
                       View Details
                     </button>
 
-                    <button
+                    {!college.franchiseOnly && college.admissionsAvailable && <button
                       type="button"
                       onClick={() => openApplyModal(collegeId)}
                       className="px-3.5 py-1.5 rounded-md text-xs font-bold text-white bg-[#FF8A00] hover:bg-[#E67C00] transition active:scale-95 shadow-2xs cursor-pointer"
                     >
                       Apply Now
-                    </button>
+                    </button>}
                   </div>
                 </div>
               </div>
@@ -436,7 +444,7 @@ export const CollegesListingPage = () => {
             Franchise Form & Institutional Registration
           </h3>
           <p className="text-xs text-slate-600 max-w-xl leading-relaxed">
-            Submit an institutional franchise application for review. Approval criteria and any public affiliation remain pending.
+            Apply for your institution to join the KITSS network. Approved institutions are listed here.
           </p>
         </div>
 
@@ -449,6 +457,7 @@ export const CollegesListingPage = () => {
         </Link>
       </div>
 
+      <FranchiseProfileModal institution={franchiseDetails} onClose={()=>setFranchiseDetails(null)} />
       {/* Admission Application Modal */}
       <AdmissionApplicationModal
         isOpen={applyModalOpen}

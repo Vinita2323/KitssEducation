@@ -54,7 +54,7 @@ export const CategorySheet = ({ isOpen, onClose }) => {
       color: "from-blue-500/10 to-indigo-500/10 text-blue-600 border-blue-500/20"
     },
     {
-      title: "Partner Colleges",
+      title: "Colleges & Institutes",
       subtitle: "College programs and admission enquiries",
       path: "/colleges",
       icon: GraduationCap,

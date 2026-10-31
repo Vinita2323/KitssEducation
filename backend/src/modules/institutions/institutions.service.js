@@ -1,3 +1,4 @@
+import { institutionDirectory } from './directory.js';
 import { escapeRegex } from '../../utils/escapeRegex.js';
 import { generateTaxonomyKey } from './taxonomy-key.js';
 import { randomUUID } from 'node:crypto';
@@ -169,6 +170,7 @@ export function createInstitutionService({ models, authService, config, logger }
     return result;
   }
   const service = {
+    directory: institutionDirectory({ models, visibleColleges, decorateColleges }),
     models,
     async initialize() {
       for (const Model of Object.values(models)) await Model.createIndexes();

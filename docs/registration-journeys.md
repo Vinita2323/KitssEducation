@@ -23,9 +23,14 @@ the applicant (maximum 3 MB), available to reviewers but excluded from public
 listings. Existing applications need no logo. Programs, contact designation, state
 and maps URL retain their original fields.
 Staff review documents and decide the request in **Franchise Requests**. Approving
-a current application also publishes its institutional listing at `/institutes`
-(`/franchises` is an alias). Publication lists only name, type, city, website and
-programs. Personal contacts, full addresses, documents, notes and payment data are
+a current application also publishes its institutional listing in **Colleges & Institutes** at `/colleges`. `/institutes` and `/franchises`
+redirect to `/colleges?network=franchise`. Standalone franchise profiles list only name, type, city/state, website and
+programs. They do not offer online admissions. Admin may explicitly associate an
+approved franchise with the same existing published college listing; this yields
+one profile with a KITSS Franchise badge, retaining that college’s public courses
+and admission rules. University/college affiliation alone does not merge different
+institutions. Hiding the franchise listing removes its profile/badge without
+hiding an independently published college. Personal contacts, full addresses, documents, notes and payment data are
 never included in the public directory.
 
 Approval and paid affiliation activation remain separate. Existing joining,

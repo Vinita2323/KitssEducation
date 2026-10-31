@@ -103,7 +103,7 @@ export const CollegeDetailsModal = ({ college: selectedCollege, isOpen, onClose 
               {college.verified && (
                 <span className="px-2.5 py-0.5 rounded-md text-[11px] font-semibold bg-white/90 backdrop-blur-md text-slate-900 flex items-center gap-1 border border-white/20 shadow-xs">
                   <CheckCircle2 className="w-3.5 h-3.5 text-blue-600 fill-blue-50" />
-                  <span>Verified Partner</span>
+                  <span>{selectedCollege?.kitssFranchise ? 'KITSS Franchise' : 'Verified Partner'}</span>
                 </span>
               )}
             </div>

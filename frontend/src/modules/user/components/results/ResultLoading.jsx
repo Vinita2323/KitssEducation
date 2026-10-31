@@ -32,7 +32,7 @@ export const ResultLoading = ({ boardName = "Examination Board" }) => {
 
       <div className="flex items-center justify-center gap-2 text-xs font-semibold text-[#667085] pt-2">
         <ShieldCheck className="w-4 h-4 text-[#17B26A]" />
-        <span>Authenticating digital examination seal...</span>
+        <span>Checking your examination record...</span>
       </div>
 
       {/* Skeleton Preview Lines */}

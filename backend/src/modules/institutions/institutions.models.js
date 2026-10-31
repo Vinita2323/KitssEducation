@@ -30,7 +30,7 @@ export function createInstitutionModels(connection) {
   franchise.path('collegeId').required(false); franchise.path('universityId').required(false);
   franchise.path('affiliationState').enumValues.push('awaiting_review','awaiting_payment','active','grace','suspended','renewal_review');
   franchise.path('status').enumValues.push('needs_changes');
-  franchise.add({ listingPublishedAt: Date, listingHidden: { type: Boolean, default: false }, workflowVersion: Number, policySnapshot: Schema.Types.Mixed, agreementAcceptance: Schema.Types.Mixed,
+  franchise.add({ collegeListingId: ref(), listingPublishedAt: Date, listingHidden: { type: Boolean, default: false }, workflowVersion: Number, policySnapshot: Schema.Types.Mixed, agreementAcceptance: Schema.Types.Mixed,
     documents: { type: [new Schema({ key: String, assetId: Schema.Types.ObjectId, state: { type: String, enum: ['pending','verified','rejected'] }, reason: String, reviewedBy: String, reviewedAt: Date }, { _id: false })], default: [] },
     activatedAt: Date, renewalDueAt: Date, renewalTerms: Schema.Types.Mixed, renewalAcceptance: Schema.Types.Mixed, renewalReview: Schema.Types.Mixed, nextFranchiseCheckAt: Date, activationOrderId: Schema.Types.ObjectId,
     renewalEffects: { type: [Schema.Types.Mixed], default: [] }, reminderFor: String, expiryNoticeFor: String,

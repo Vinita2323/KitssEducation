@@ -1,176 +1,58 @@
-import { fieldLabel } from '../../../shared/ui/displayText';
-import { AdminField, AdminInput, AdminSelect, AdminTextarea } from '../components/AdminFields';
-import { useEditorFocus } from '../components/useAdminAccessibility';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { httpClient } from '../../../shared/api/httpClient';
 import { authenticatedWrite } from '../../user/services/authService';
+import { contentService } from '../../user/services/contentService';
+import { readOptions } from '../../user/services/collegeService';
 import { useAuth } from '../../user/context/AuthContext';
 import { MediaPicker } from '../components/MediaPicker';
 import { Pagination } from '../../user/components/common/Pagination';
-const paths = {
-  issuers: '/admin/result-issuers',
-  exams: '/admin/exams',
-  records: '/admin/results/records'
-};
-export function AdminResultsPage() {
-  const {
-    can, user
-  } = useAuth();
-  const [tab, setTab] = useState('issuers'),
-    [rows, setRows] = useState([]),
-    [meta, setMeta] = useState(null),
-    [page, setPage] = useState(1), [reviewStatus, setReviewStatus] = useState('');
-  const [form, setForm] = useState(null),
-    [values, setValues] = useState({}),
-    [error, setError] = useState(''),
-    [busy, setBusy] = useState(false),
-    [detail, setDetail] = useState(null);
-  const [examId, setExamId] = useState(''),
-    [assetId, setAssetId] = useState(null),
-    [importKey, setImportKey] = useState(() => crypto.randomUUID()),
-    [dryRun, setDryRun] = useState(null);
-  const [correction, setCorrection] = useState(''),
-    [reason, setReason] = useState(''),
-    [source, setSource] = useState('');
-  const refresh = async () => {
-    const r = await httpClient.request(paths[tab] + '?page=' + page + (tab === 'records' && reviewStatus ? '&reviewStatus=' + reviewStatus : ''));
-    setRows(r.data);
-    setMeta(r.meta);
-  };
-  useEffect(() => {
-    const c = new AbortController();
-    setError('');
-    setRows([]);
-    httpClient.request(paths[tab] + '?page=' + page + (tab === 'records' && reviewStatus ? '&reviewStatus=' + reviewStatus : ''), {
-      signal: c.signal
-    }).then(r => {
-      if (!c.signal.aborted) {
-        setRows(r.data);
-        setMeta(r.meta);
-      }
-    }).catch(e => {
-      if (!c.signal.aborted) setError(e.message);
-    });
-    return () => c.abort();
-  }, [tab, page, reviewStatus]);
-  const run = async work => {
-    setBusy(true);
-    setError('');
-    try {
-      await work();
-      await refresh();
-    } catch (e) {
-      setError(e.message);
-    } finally {
-      setBusy(false);
+import { ResultDefinitionEditor } from '../components/ResultDefinitionEditor';
+import { ResultEntryEditor } from '../components/ResultEntryEditor';
+const paths={issuers:'/admin/result-issuers',exams:'/admin/exams',records:'/admin/results/records'};
+const labels={issuers:'Result institutions',exams:'Examinations',records:'Student results'};
+const button='border border-slate-200 rounded-lg px-3 py-2 text-sm disabled:opacity-50';
+export function AdminResultsPage(){
+  const {can,user}=useAuth(),[tab,setTab]=useState('issuers'),[rows,setRows]=useState([]),[meta,setMeta]=useState(null),[page,setPage]=useState(1),[reviewStatus,setReviewStatus]=useState('');
+  const [form,setForm]=useState(null),[entry,setEntry]=useState(false),[detail,setDetail]=useState(null),[error,setError]=useState(''),[message,setMessage]=useState(''),[busy,setBusy]=useState(false),[reason,setReason]=useState('');
+  const [exams,setExams]=useState([]),[examId,setExamId]=useState(''),[assetId,setAssetId]=useState(null),[dryRun,setDryRun]=useState(null),[importKey,setImportKey]=useState(()=>crypto.randomUUID());
+  const alive=useRef(true),identity=useRef(user?.id),pending=useRef(null);identity.current=user?.id;
+  useEffect(()=>{alive.current=true;return()=>{alive.current=false;};},[]);
+  const refresh=async()=>{const r=await httpClient.request(paths[tab]+'?page='+page+(tab==='records'&&reviewStatus?'&reviewStatus='+reviewStatus:''));if(alive.current){setRows(r.data);setMeta(r.meta);}};
+  useEffect(()=>{const c=new AbortController();setError('');setRows([]);httpClient.request(paths[tab]+'?page='+page+(tab==='records'&&reviewStatus?'&reviewStatus='+reviewStatus:''),{signal:c.signal}).then(r=>{if(!c.signal.aborted){setRows(r.data);setMeta(r.meta);}}).catch(e=>{if(!c.signal.aborted)setError(e.message);});if(tab==='records')readOptions('/admin/exams',{},c.signal).then(v=>{if(!c.signal.aborted)setExams(v);}).catch(e=>{if(!c.signal.aborted)setError(e.message);});return()=>c.abort();},[tab,page,reviewStatus]);
+  const run=async work=>{setBusy(true);setError('');setMessage('');try{await work();if(alive.current)await refresh();}catch(e){if(alive.current)setError(e.message);}finally{if(alive.current)setBusy(false);}};
+  const inspect=row=>run(async()=>{setDetail((await httpClient.request(paths[tab]+'/'+row.id)).data);setForm(null);setEntry(false);setReason('');});
+  const saveDefinition=data=>run(async()=>{await authenticatedWrite(paths[tab]+(form.id?'/'+form.id:''),{...data,...(form.id?{expectedRevision:form.revision}:{})},form.id?'PATCH':'POST');setForm(null);setMessage('Configuration saved.');});
+  const act=action=>run(async()=>{const result=await authenticatedWrite('/admin/results/records/'+detail.id+'/'+action,{expectedRevision:detail.expectedRevision,...(action==='publish'?{}:{reason})});setDetail((await httpClient.request(paths.records+'/'+result.id)).data);setReason('');setMessage(action==='publish'?'Result published to the student’s account.':'Result review updated.');});
+  const saveRow=async(selectedExam,row,sourceReference)=>{
+    const actor=identity.current;const current=()=>{if(!alive.current||identity.current!==actor)throw new Error('Your session changed. Reopen the result before saving.');};
+    if(entry!=='new'){
+      if(!reason.trim())throw new Error('Enter the correction reason in the review section.');
+      const updated=await authenticatedWrite('/admin/results/records/'+detail.id+'/corrections',{expectedRevision:detail.expectedRevision,reason,source:sourceReference,correctedFields:row});current();setDetail((await httpClient.request(paths.records+'/'+updated.id)).data);
+    }else{
+      const fingerprint=JSON.stringify({selectedExam,row});let cached=pending.current;
+      if(!cached||cached.fingerprint!==fingerprint||!cached.asset){cached={fingerprint,key:crypto.randomUUID()};pending.current=cached;cached.asset=await contentService.upload(new File([JSON.stringify([row])],'student-result.json',{type:'application/json'}),'result_import');}
+      else if(cached.asset)cached.asset=(await httpClient.request('/media/'+cached.asset.id+'/metadata')).data;
+      current();if(!cached.asset||cached.asset.status!=='ready')throw new Error('The marks file is waiting for its security check. Save again after the file is cleared.');
+      const input={examId:selectedExam,assetId:cached.asset.id,mappingVersion:'kitss-results-v1',idempotencyKey:cached.key};
+      const checked=await authenticatedWrite('/admin/results/imports',{...input,dryRun:true});current();
+      if(checked.errors.length)throw new Error('Check the verified student User ID, verification answers, subject marks and examination details.');
+      await authenticatedWrite('/admin/results/imports',{...input,dryRun:false,validationToken:checked.validationToken});current();pending.current=null;
+      const found=(await httpClient.request(paths.records+'?examId='+selectedExam+'&q='+encodeURIComponent(row.rollNumber))).data.find(r=>r.rollNormalized===row.rollNumber.trim().toUpperCase());
+      if(found)setDetail((await httpClient.request(paths.records+'/'+found.id)).data);
     }
+    current();setEntry(false);setMessage('Result draft saved. Review and main-admin approval are required before publication.');await refresh();
   };
-  const edit = row => {
-    setDetail(null);
-    setForm(row ?? {});
-    setValues(tab === 'issuers' ? {
-      key: row?.key ?? '',
-      name: row?.name ?? '',
-      fullName: row?.fullName ?? '',
-      type: row?.type ?? 'school',
-      status: row?.status ?? 'draft',
-      fieldSchema: JSON.stringify(row?.fieldSchema ?? [], null, 2),
-      source: JSON.stringify(row?.source ?? {
-        description: '',
-        authorizationReference: ''
-      }, null, 2)
-    } : {
-      issuerId: row?.issuerId ?? '',
-      key: row?.key ?? '',
-      title: row?.title ?? '',
-      year: row?.year ?? '',
-      session: row?.session ?? '',
-      status: row?.status ?? 'draft'
-    });
-  };
-  const save = e => {
-    e.preventDefault();
-    run(async () => {
-      const data = {
-        ...values
-      };
-      if (tab === 'issuers') {
-        data.fieldSchema = JSON.parse(data.fieldSchema);
-        data.source = JSON.parse(data.source);
-      } else data.year = Number(data.year);
-      if (form.id) data.expectedRevision = form.revision;
-      await authenticatedWrite(paths[tab] + (form.id ? '/' + form.id : ''), data, form.id ? 'PATCH' : 'POST');
-      setForm(null);
-    });
-  };
-  const importRows = commit => run(async () => {
-    const result = await authenticatedWrite('/admin/results/imports', {
-      examId,
-      assetId,
-      mappingVersion: 'kitss-results-v1',
-      idempotencyKey: importKey,
-      dryRun: !commit,
-      ...(commit ? {
-        validationToken: dryRun.validationToken
-      } : {})
-    });
-    setDryRun(result);
-  });
-  const inspect = row => run(async () => {
-    const result = (await httpClient.request(paths[tab] + '/' + row.id)).data;
-    setDetail(result);
-    setForm(null);
-    setCorrection('');
-    setReason('');
-    setSource('');
-  });
-  const action = (name, row) => run(async () => {
-    const input = {
-      expectedRevision: row.expectedRevision,
-      ...(name === 'publish' ? {} : {
-        reason
-      }),
-      ...(name === 'corrections' ? {
-        correctedFields: JSON.parse(correction),
-        source
-      } : {})
-    };
-    const result = await authenticatedWrite('/admin/results/records/' + row.id + '/' + name, input);
-    setDetail(result);
-  });
-  const inlineEditor=useEditorFocus(Boolean(form));
-  return <div className="space-y-4 min-w-0"><h1 className="text-xl font-bold text-[#0A1D3F]">Academic results</h1><p className="p-3 border rounded-xl bg-amber-50 text-sm">Official publication is disabled until trusted source authorization is separately approved. Source references entered here do not enable publication.</p>
-    {error && <p role="alert" className="p-3 bg-red-50 border rounded-xl">{error}</p>}
-    <div className="flex flex-wrap gap-2">{Object.keys(paths).map(t => <button aria-pressed={tab === t} key={t} disabled={busy} onClick={() => {
-        setTab(t);
-        setPage(1);
-        setForm(null);
-        setDetail(null);
-      }} className={'border p-2 rounded-xl ' + (tab === t ? 'bg-[#0A1D3F] text-white' : 'bg-white')}>{t}</button>)}{tab !== 'records' && can('results.manage') && <button disabled={busy} onClick={() => edit(null)} className="bg-[#0A1D3F] text-white p-2 rounded-xl">Add {tab === 'issuers' ? 'issuer' : 'exam'}</button>}</div>
-    {tab === 'records' && <AdminField className="block">Review queue<AdminSelect aria-label="Result review status" className="block border p-2 rounded-xl w-full" value={reviewStatus} onChange={e => { setReviewStatus(e.target.value); setPage(1); }}><option value="">All records</option>{['draft','submitted','approved','rejected'].map(s => <option key={s}>{s}</option>)}</AdminSelect></AdminField>}
-    <div className="overflow-x-auto rounded-xl border bg-white"><table className="w-full text-sm"><thead><tr><th className="p-3 text-left">Record</th><th>Status</th><th>Revision</th><th>Actions</th></tr></thead><tbody>{rows.map(row => <tr className="border-t" key={row.id}><td className="p-3 break-words">{row.name ?? row.title ?? row.rollNormalized}<p className="text-xs">{row.id}</p></td><td>{row.status}</td><td>{row.revision}</td><td><div className="flex flex-wrap gap-2 p-2"><button disabled={busy} onClick={() => inspect(row)}>Review</button>{tab !== 'records' && can('results.manage') && <><button disabled={busy} onClick={() => edit(row)}>Edit</button><button disabled={busy} onClick={() => window.confirm('Archive this configuration?') && run(() => authenticatedWrite(paths[tab] + '/' + row.id, {
-                    expectedRevision: row.revision
-                  }, 'DELETE'))}>Archive</button></>}</div></td></tr>)}</tbody></table>{!rows.length && <p className="p-4 text-sm">No records.</p>}</div>
-    <Pagination meta={meta} onChange={setPage} loading={busy} />
-    {form && <form onSubmit={save} ref={inlineEditor} aria-label="Result definition editor" className="p-4 bg-white rounded-xl border space-y-3"><h2 className="font-bold">{form.id ? 'Edit' : 'Add'} {tab === 'issuers' ? 'issuer' : 'exam'}</h2>{Object.keys(values).map(k => <AdminField className="block text-sm" key={k}>{fieldLabel(k)}{['fieldSchema', 'source'].includes(k) ? <AdminTextarea aria-label={k} rows={5} value={values[k]} onChange={e => setValues(p => ({
-          ...p,
-          [k]: e.target.value
-        }))} className="block w-full border rounded-xl p-2 font-mono text-xs" /> : ['status', 'type'].includes(k) ? <AdminSelect aria-label={k} value={values[k]} onChange={e => setValues(p => ({
-          ...p,
-          [k]: e.target.value
-        }))} className="block w-full border p-2 rounded-xl">{(k === 'type' ? ['school', 'university', 'institute'] : tab === 'issuers' ? ['draft', 'active', 'inactive'] : ['draft', 'published', 'withdrawn']).map(v => <option key={v}>{v}</option>)}</AdminSelect> : <AdminInput aria-label={k} required value={values[k]} type={k === 'year' ? 'number' : 'text'} onChange={e => setValues(p => ({
-          ...p,
-          [k]: e.target.value
-        }))} className="block w-full border p-2 rounded-xl" />}</AdminField>)}<p className="text-xs">For verification questions, enter a JSON list with id, label, type (text/date) and required. For source details, include the description and authorizationReference.</p><button disabled={busy} className="p-3 rounded-xl bg-[#0A1D3F] text-white">Save configuration</button><button type="button" onClick={() => setForm(null)} className="p-3">Cancel</button></form>}
-    {tab === 'records' && can('results.manage') && <section className="bg-white border rounded-xl p-4 space-y-3"><h2 className="font-bold">Import result drafts</h2><p className="text-xs">Upload a results JSON file in kitss-results-v1 format, with up to 200 records and a 2 MB limit. Check the file before importing. Each record needs a verified student account reference, marks, totals and an authorized source reference.</p><AdminField className="block text-sm">Exam ID<AdminInput aria-label="Import exam ID" value={examId} onChange={e => {
-          setExamId(e.target.value);
-          setDryRun(null);
-          setImportKey(crypto.randomUUID());
-        }} className="block border p-2 rounded-xl w-full" /></AdminField><MediaPicker purpose="result_import" label="Result import JSON" value={assetId} onChange={v => {
-        setAssetId(v);
-        setDryRun(null);
-        setImportKey(crypto.randomUUID());
-      }} /><button disabled={busy || !assetId || !examId} onClick={() => importRows(false)} className="border p-2 rounded-xl">Validate import</button><button disabled={busy || !dryRun?.validationToken} onClick={() => importRows(true)} className="border p-2 rounded-xl ml-2">Import validated drafts</button>{dryRun && <pre role="status" className="overflow-auto text-xs p-2">{JSON.stringify(dryRun, null, 2)}</pre>}</section>}
-    {detail && <section className="bg-white border p-4 rounded-xl space-y-3"><h2 className="font-bold">Review record and audit history</h2><pre className="text-xs overflow-auto max-h-96">{JSON.stringify(detail, null, 2)}</pre>{tab === 'records' && <><AdminField className="block text-sm">Reason<AdminInput aria-label="Result action reason" value={reason} onChange={e => setReason(e.target.value)} className="block w-full border rounded-xl p-2" /></AdminField>{can('results.manage') && <button disabled={busy || !reason || detail.status !== 'draft' || !['draft','rejected'].includes(detail.review?.status ?? 'draft')} onClick={() => action('submit', detail)} className="border rounded-xl p-2">Submit for main-admin review</button>}{user?.roles.includes('super_admin') && detail.review?.status === 'submitted' && <>{['approve','reject'].map(a => <button key={a} disabled={busy || !reason} onClick={() => action(a, detail)} className="border rounded-xl p-2">{a === 'approve' ? 'Approve official result revision' : 'Reject result with reason'}</button>)}</>}{can('results.publish') && user?.roles.includes('super_admin') && <><button disabled={busy} onClick={() => action('publish', detail)} className="border rounded-xl p-2">Request publication</button><button disabled={busy || !reason} onClick={() => window.confirm('Withdraw this result?') && action('withdraw', detail)} className="border rounded-xl p-2">Withdraw result</button></>}{can('results.manage') && <><AdminField className="block text-sm">Correction source reference<AdminInput value={source} onChange={e => setSource(e.target.value)} className="w-full border p-2 rounded-xl" /></AdminField><AdminField className="block text-sm">Complete corrected row (kitss-results-v1 JSON)<AdminTextarea aria-label="Corrected result JSON" rows={8} value={correction} onChange={e => setCorrection(e.target.value)} className="block w-full border p-2 rounded-xl font-mono text-xs" /></AdminField><button disabled={busy || !reason || !source || !correction} onClick={() => action('corrections', detail)} className="border rounded-xl p-2">Create correction draft</button></>}</>}</section>}
+  const importFile=commit=>run(async()=>{const result=await authenticatedWrite('/admin/results/imports',{examId,assetId,mappingVersion:'kitss-results-v1',idempotencyKey:importKey,dryRun:!commit,...(commit?{validationToken:dryRun.validationToken}:{})});setDryRun(result);if(commit)setMessage(result.imported+' result drafts imported. Review them before publication.');});
+  const template=()=>run(async()=>{const exam=(await httpClient.request('/admin/exams/'+examId)).data,issuer=(await httpClient.request('/admin/result-issuers/'+exam.issuerId)).data;const row={rollNumber:'REPLACE_WITH_ROLL_NUMBER',userPublicId:'REPLACE_WITH_VERIFIED_STUDENT_ID',student:{name:'REPLACE_WITH_STUDENT_NAME'},subjects:[{code:'SUBJECT_CODE',name:'SUBJECT_NAME',maxMarks:100,obtained:0}],totals:{max:100,obtained:0,percentage:0,status:'REPLACE_WITH_RESULT_STATUS'},verificationFields:Object.fromEntries(issuer.fieldSchema.map(f=>[f.id,f.type==='date'?'YYYY-MM-DD':'REPLACE_WITH_ANSWER'])),issueDate:'YYYY-MM-DD',externalId:'REPLACE_WITH_INSTITUTION_REFERENCE'};const url=URL.createObjectURL(new Blob([JSON.stringify([row],null,2)],{type:'application/json'})),a=document.createElement('a');a.href=url;a.download='results-template.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);});
+  return <div className="space-y-4 min-w-0"><h1 className="text-xl font-bold text-[#0A1D3F]">Academic results</h1><p className="text-sm text-slate-600">Choose an institution, add its examination and enter or upload marks. The main admin reviews and publishes each result. Board results are not available yet.</p>
+    {error&&<p role="alert" className="bg-red-50 border border-red-200 rounded-lg p-3">{error}</p>}{message&&<p role="status" className="bg-emerald-50 border border-emerald-200 rounded-lg p-3">{message}</p>}
+    <div className="flex flex-wrap gap-2">{Object.keys(paths).map(t=><button className={button+(tab===t?' bg-[#0A1D3F] text-white':' bg-white')} key={t} aria-pressed={tab===t} disabled={busy} onClick={()=>{setTab(t);setPage(1);setForm(null);setDetail(null);setEntry(false);setDryRun(null);setMessage('');}}>{labels[t]}</button>)}{can('results.manage')&&tab!=='records'&&<button className={button} disabled={busy} onClick={()=>{setForm({});setDetail(null);}}>Add {tab==='issuers'?'institution':'examination'}</button>}{tab==='records'&&can('results.manage')&&can('media.write')&&<button className={button} onClick={()=>{setEntry('new');setDetail(null);setReason('');}}>Enter student marks</button>}</div>
+    {tab==='records'&&<label className="block text-sm">Review queue<select aria-label="Result review status" className="block border border-slate-200 rounded-lg p-2 w-full" value={reviewStatus} onChange={e=>{setReviewStatus(e.target.value);setPage(1);}}><option value="">All records</option>{['draft','submitted','approved','rejected'].map(s=><option key={s}>{s}</option>)}</select></label>}
+    <div className="overflow-x-auto bg-white border border-slate-200 rounded-xl"><table className="w-full text-sm"><thead><tr><th className="p-3 text-left">{tab==='records'?'Student / Roll number':tab==='exams'?'Examination':'Institution'}</th><th>Status</th><th>Actions</th></tr></thead><tbody>{rows.map(row=><tr key={row.id} className="border-t border-slate-100"><td className="p-3 break-words">{row.fullName||row.title||row.student?.name}<p className="text-xs text-slate-500">{row.rollNormalized||row.level||''}</p></td><td className="p-2">{row.status}{tab==='records'&&<p className="text-xs">Review: {row.review?.status||'draft'}</p>}</td><td className="p-2"><div className="flex flex-wrap gap-2"><button className={button} disabled={busy} onClick={()=>inspect(row)}>Review</button>{tab!=='records'&&can('results.manage')&&<><button className={button} disabled={busy} onClick={()=>{setForm(row);setDetail(null);}}>Edit</button><button className={button} disabled={busy} onClick={()=>window.confirm('Archive this configuration?')&&run(()=>authenticatedWrite(paths[tab]+'/'+row.id,{expectedRevision:row.revision},'DELETE'))}>Archive</button></>}</div></td></tr>)}</tbody></table>{!rows.length&&<p className="p-4 text-sm">No records.</p>}</div><Pagination meta={meta} onChange={setPage} loading={busy}/>
+    {form&&<ResultDefinitionEditor key={tab+':'+(form.id||'new')} kind={tab} record={form} busy={busy} onSave={saveDefinition} onCancel={()=>setForm(null)}/>}
+    {detail&&<section aria-label="Result review" className="bg-white border border-slate-200 rounded-xl p-4 space-y-3"><h2 className="font-bold">{detail.student?.name||detail.fullName||detail.title}</h2>{tab==='records'?<><p className="text-sm">Roll number: {detail.rollNormalized} · Academic version: {detail.revision}</p><p className="text-sm">Student User ID: {detail.candidatePublicId}</p><div className="overflow-x-auto"><table className="w-full text-sm"><thead><tr><th>Subject</th><th>Maximum</th><th>Obtained</th><th>Grade</th></tr></thead><tbody>{detail.subjects.map(s=><tr key={s.code}><td>{s.name}</td><td>{s.maxMarks}</td><td>{s.obtained}</td><td>{s.grade||'—'}</td></tr>)}</tbody></table></div><p>Total: {detail.totals.obtained} / {detail.totals.max} ({detail.totals.percentage}%) · {detail.totals.status}</p><p className="text-sm">Review: {detail.review?.status||'draft'}{detail.review?.reason?' — '+detail.review.reason:''}</p>{can('media.read')&&detail.source?.assetId&&<a className="underline text-sm block" href={'/api/v1/media/'+detail.source.assetId+'/content'} target="_blank" rel="noreferrer">View uploaded marks file</a>}
+      <label className="block text-sm">Review / correction reason<input aria-label="Result action reason" disabled={busy} className="block w-full border border-slate-200 rounded-lg p-2 disabled:bg-slate-100" value={reason} onChange={e=>setReason(e.target.value)}/></label><div className="flex flex-wrap gap-2">{can('results.manage')&&<button className={button} disabled={busy||!reason.trim()||detail.status!=='draft'||!['draft','rejected'].includes(detail.review?.status||'draft')} onClick={()=>act('submit')}>Submit for main-admin review</button>}{user?.roles.includes('super_admin')&&detail.review?.status==='submitted'&&['approve','reject'].map(a=><button key={a} className={button} disabled={busy||!reason.trim()} onClick={()=>act(a)}>{a==='approve'?'Approve result':'Reject result'}</button>)}{user?.roles.includes('super_admin')&&can('results.publish')&&<><button className={button} disabled={busy||detail.status!=='draft'||detail.review?.status!=='approved'} onClick={()=>act('publish')}>Publish result</button><button className={button} disabled={busy||!reason.trim()||detail.status==='withdrawn'} onClick={()=>window.confirm('Withdraw this result from the student’s account?')&&act('withdraw')}>Withdraw result</button></>}{can('results.manage')&&<button className={button} disabled={busy||!reason.trim()||detail.status==='withdrawn'} onClick={()=>setEntry('correction')}>Create correction draft</button>}</div><p className="text-xs text-slate-500">To replace a published result, create and approve a correction draft, withdraw the previous version, then publish the correction.</p></>:<div className="text-sm space-y-1">{detail.type&&<p>Category: {detail.type==='university'?'University':detail.type==='institute'?'Institute / School / Coaching':'Board'}</p>}{detail.level&&<p>Class / course / batch: {detail.level}</p>}{detail.session&&<p>Session: {detail.session}</p>}{detail.source&&<p>Result source: {detail.source.description} · Reference: {detail.source.authorizationReference}</p>}</div>}{detail.audit?.length>0&&<details><summary className="text-sm cursor-pointer">Activity history</summary>{detail.audit.map((a,i)=><p className="text-xs py-1" key={i}>{a.action.replaceAll('_',' ')} — {new Date(a.at).toLocaleString()}</p>)}</details>}</section>}
+    {entry&&<ResultEntryEditor key={entry==='new'?'new':detail.id} record={entry==='new'?null:detail} onSave={saveRow} onCancel={()=>setEntry(false)}/>}
+    {tab==='records'&&can('results.manage')&&<details className="bg-white border border-slate-200 rounded-xl p-4"><summary className="font-semibold cursor-pointer">Upload multiple students’ results</summary><div className="space-y-3 mt-3"><p className="text-sm">Download the examination template and replace every example value. Upload a JSON file containing up to 200 student results, then check and import it.</p><label className="block text-sm">Examination<select aria-label="Import examination" className="block w-full border border-slate-200 rounded-lg p-2" value={examId} onChange={e=>{setExamId(e.target.value);setDryRun(null);setImportKey(crypto.randomUUID());}}><option value="">Select examination</option>{exams.map(e=><option key={e.id} value={e.id}>{[e.title,e.level,e.year,e.session].filter(Boolean).join(' / ')}</option>)}</select></label><button className={button} disabled={!examId||busy} onClick={template}>Download result template</button><MediaPicker purpose="result_import" label="Results file" value={assetId} onChange={v=>{setAssetId(v);setDryRun(null);setImportKey(crypto.randomUUID());}}/><div className="flex flex-wrap gap-2"><button className={button} disabled={busy||!examId||!assetId} onClick={()=>importFile(false)}>Check results file</button><button className={button} disabled={busy||!dryRun?.validationToken||dryRun.dryRun===false} onClick={()=>importFile(true)}>Import checked drafts</button></div>{dryRun&&<p role="status" className="text-sm">{dryRun.dryRun?dryRun.validRows+' of '+dryRun.rows+' rows are valid.':dryRun.imported+' drafts imported.'}{dryRun.errors?.length>0?' Check rows: '+dryRun.errors.map(e=>e.row||'duplicate roll numbers').join(', '):''}</p>}</div></details>}
   </div>;
 }

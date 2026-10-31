@@ -87,11 +87,11 @@ test('Stage 13 real browser/HTTP/MongoDB policy, free content and keyboard granu
     await page.getByRole('button', { name: 'Review', exact: true }).click();
     await page.getByLabel('Result action reason').fill('Synthetic reviewed source');
     await page.getByRole('button', { name: 'Submit for main-admin review', exact: true }).click();
-    await page.getByRole('button', { name: 'Approve official result revision', exact: true }).click();
-    await page.getByRole('button', { name: 'Approve official result revision', exact: true }).waitFor({ state: 'detached' });
+    await page.getByRole('button', { name: 'Approve result', exact: true }).click();
+    await page.getByRole('button', { name: 'Approve result', exact: true }).waitFor({ state: 'detached' });
     assert.equal((await f.models.ResultRecord.findById(record._id)).review.status, 'approved');
-    await page.getByRole('button', { name: 'Request publication', exact: true }).click();
-    await page.getByRole('alert').filter({ hasText: 'Official result publication is disabled' }).waitFor();
+    await page.getByRole('button', { name: 'Publish result', exact: true }).click();
+    await page.getByRole('alert').filter({ hasText: 'institution or examination is not currently available' }).waitFor();
     for (const width of [320,375,390,414,768,1024,1280,1440]) { await page.setViewportSize({ width, height: 950 }); assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1), false, 'Results overflow at ' + width); }
     assert.equal((await f.models.ResultRecord.findById(record._id)).status, 'draft');
   });

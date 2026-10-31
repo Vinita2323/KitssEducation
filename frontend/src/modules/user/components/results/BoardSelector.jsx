@@ -10,7 +10,8 @@ export const BoardSelector = ({
   boards = [],
   selectedBoardId,
   onSelectBoard,
-  resultType = "school"
+  resultType = "school",
+  allowCustom = false
 }) => {
   const titleByType = {
     school: "Select Board",
@@ -34,7 +35,7 @@ export const BoardSelector = ({
             {title}
           </h2>
           <span className="text-[10px] font-semibold text-slate-400">
-            {listedBoards.length}+ Franchise Partners
+            {listedBoards.length} Institutions
           </span>
         </div>
 
@@ -54,15 +55,15 @@ export const BoardSelector = ({
               }
               onSelectBoard(value);
             }}
-            placeholder="Choose or type your institute / school"
-            searchPlaceholder="Search or type institute name"
+            placeholder="Choose your institute / school"
+            searchPlaceholder="Search institute name"
             searchable
-            allowCustom
+            allowCustom={allowCustom}
             forceOpenDirection="down"
             icon={Building2}
           />
           <p className="text-[10px] text-slate-400 pt-0.5">
-            Select from the list, or type your institute name if it is not listed.
+            Choose the institution that published your examination results.
           </p>
         </div>
       </div>

@@ -58,6 +58,9 @@ export function createResultModels(connection) {
     }, {
       _id: false
     })],
+    sourceMode: { type: String, enum: ['external', 'admin'], default: 'external' },
+    organizationKind: { type: String, enum: ['university','college','franchise','course'] },
+    organizationId: ref,
     source: {
       description: String,
       authorizationReference: String

@@ -37,9 +37,8 @@ export const SideDrawer = ({ isOpen, onClose, support = {} }) => {
   const menuItems = [
     { label: "Home", path: "/home", icon: Home },
     { label: "About Us", path: "/about", icon: Info },
-    { label: "Franchise Network", path: "/institutes", icon: ShieldCheck },
     { label: "My applications", path: "/my-applications", icon: FileCheck, requiresAccount: true },
-    { label: "Partner Colleges", path: "/colleges", icon: GraduationCap },
+    { label: "Colleges & Institutes", path: "/colleges", icon: GraduationCap },
     { label: "Registration", path: "/register", icon: UserPlus },
     { label: "Digital Books", path: "/books", icon: BookOpen },
     { label: "Online Coaching", path: "/coaching", icon: Video },

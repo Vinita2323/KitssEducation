@@ -26,6 +26,7 @@ export function createInstitutionRouter(service) {
     await service.detail('university', req.params.id);
     list(req, res, await service.list('college', { ...req.query, universityId: req.params.id }));
   });
+  router.get('/public/institutions', async (req, res) => res.json({ ...await service.directory(req.query), requestId: req.requestId }));
   router.get('/institutions/facets', async (req, res) => send(req, res, await service.facets(req.query)));
   router.get('/colleges', async (req, res) => list(req, res, await service.list('college', req.query)));
   router.get('/colleges/:id', async (req, res) => send(req, res, await service.detail('college', req.params.id)));

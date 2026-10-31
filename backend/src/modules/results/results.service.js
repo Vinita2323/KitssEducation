@@ -1,3 +1,4 @@
+import { adminResultSource } from './admin-source.js';
 import { escapeRegex } from '../../utils/escapeRegex.js';
 import { createHash } from 'node:crypto';
 import { AppError } from '../../utils/AppError.js';
@@ -47,14 +48,16 @@ export async function createResultService({
   } = models;
   const coordination = publishingModule.coordination;
   const secret = config.auth.secret;
-  // The production composition supplies no trustedSource override: publication
-  // stays closed until a separately approved owner/source authorization exists.
+  // External providers remain closed in production. Admin sources must refer to
+  // available platform organizations, with final approval on each academic revision.
+  const adminSource = adminResultSource({ publishingModule, commerceService });
+  const publicationReady = async issuer => issuer.sourceMode === 'admin' ? adminSource.ready(issuer) : trustedSource(issuer);
   const proof = (fields, issuer) => {
     object(fields, issuer.fieldSchema.map(f => f.id), issuer.fieldSchema.filter(f => f.required).map(f => f.id));
     const normalized = {};
     for (const f of [...issuer.fieldSchema].sort((a, b) => a.id.localeCompare(b.id))) {
       const value = text(fields[f.id] ?? '', 120);
-      if (f.required && !value || f.type === 'date' && value && !/^\d{4}-\d{2}-\d{2}$/.test(value)) throw invalid('Invalid verification details');
+      if (f.required && !value || f.type === 'date' && value && (!/^\d{4}-\d{2}-\d{2}$/.test(value) || !Number.isFinite(Date.parse(value)) || new Date(value).toISOString().slice(0,10)!==value)) throw invalid('Invalid verification details');
       normalized[f.id] = value;
     }
     return mac(secret, JSON.stringify(normalized));
@@ -76,15 +79,19 @@ export async function createResultService({
         }
       }).cursor()) await coordination.flush(Model, row);
     },
+    organizations: adminSource.options,
     async config() {
+      const issuers = (await Promise.all((await Issuer.find({ status: 'active' })).map(async r => await publicationReady(r) ? r : null))).filter(Boolean);
       return {
         types: ['school', 'university', 'institute'],
-        publicationEnabled: false,
-        message: 'Only authorized source-reviewed records are available. Official publication awaits source authorization.',
-        issuers: (await Issuer.find({
-          status: 'active'
-        })).map(r => ({
+        publicationEnabled: issuers.length > 0,
+        adminPublicationEnabled: true,
+        externalPublicationEnabled: false,
+        boardAvailable: false,
+        message: 'View results published by your university or institution.',
+        issuers: issuers.map(r => ({
           id: String(r._id),
+          code: r.key,
           name: r.name,
           fullName: r.fullName,
           type: r.type
@@ -93,9 +100,10 @@ export async function createResultService({
     },
     async issuer(value) {
       const row = await get(Issuer, value);
-      if (row.status !== 'active') throw absent();
+      if (row.status !== 'active' || !(await publicationReady(row))) throw absent();
       return {
         id: String(row._id),
+        code: row.key,
         name: row.name,
         fullName: row.fullName,
         type: row.type,
@@ -152,11 +160,12 @@ export async function createResultService({
       }).limit(30).lean();
       return {
         ...dto(row),
+        ...(kind === 'records' ? {candidatePublicId:(await authService.models.User.findById(row.userId).select('publicId'))?.publicId || ''} : {}),
         audit
       };
     },
     async mutate(kind, value, input, ctx, archive = false) {
-      const allowed = kind === 'issuers' ? ['key', 'type', 'name', 'fullName', 'fieldSchema', 'source', 'status'] : ['issuerId', 'key', 'title', 'year', 'session', 'level', 'status'];
+      const allowed = kind === 'issuers' ? ['key', 'type', 'name', 'fullName', 'fieldSchema', 'source', 'status', 'sourceMode', 'organizationKind', 'organizationId'] : ['issuerId', 'key', 'title', 'year', 'session', 'level', 'status'];
       object(input, [...allowed, 'expectedRevision'], value ? ['expectedRevision'] : kind === 'issuers' ? ['key', 'name', 'fullName', 'type'] : ['issuerId', 'key', 'title', 'year', 'session']);
       return coordination.run(async () => {
         const Model = kind === 'issuers' ? Issuer : Exam,
@@ -167,7 +176,7 @@ export async function createResultService({
             if (!Array.isArray(input[field]) || input[field].length > 8) throw invalid('At most eight verification fields');
             fields[field] = input[field].map(f => {
               object(f, ['id', 'label', 'type', 'required'], ['id', 'label', 'type', 'required']);
-              if (!/^[a-z][a-zA-Z0-9]{0,39}$/.test(f.id) || !['text', 'date'].includes(f.type) || typeof f.required !== 'boolean') throw invalid('Invalid verification schema');
+              if (['examId','rollNumber','boardId','type','boardName','__proto__','constructor','prototype'].includes(f.id) || !/^[a-z][a-zA-Z0-9]{0,39}$/.test(f.id) || !['text', 'date'].includes(f.type) || typeof f.required !== 'boolean') throw invalid('Invalid verification schema');
               return {
                 id: f.id,
                 label: text(f.label, 80),
@@ -182,17 +191,25 @@ export async function createResultService({
               description: text(input.source.description ?? '', 2000),
               authorizationReference: text(input.source.authorizationReference ?? '', 200)
             };
-          } else if (field === 'issuerId') fields[field] = id(input[field]);else if (field === 'year') fields[field] = integer(input[field], 1900, 2200);else fields[field] = text(input[field], 160);
+          } else if (['issuerId','organizationId'].includes(field)) fields[field] = id(input[field]);else if (field === 'year') fields[field] = integer(input[field], 1900, 2200);else fields[field] = text(input[field], 160);
         }
         if (fields.key && !/^[a-zA-Z0-9_-]{1,80}$/.test(fields.key)) throw invalid('Invalid key');
         for (const required of kind === 'issuers' ? ['key', 'name', 'fullName'] : ['key', 'title', 'session']) if (required in fields && !fields[required]) throw invalid('Required metadata cannot be empty');
         if (kind === 'issuers' && fields.type && !['school', 'university', 'institute'].includes(fields.type)) throw invalid('Invalid issuer type');
         if (fields.status && !(kind === 'issuers' ? ['draft', 'active', 'inactive'] : ['draft', 'published', 'withdrawn']).includes(fields.status)) throw invalid('Invalid status');
         if (archive) fields.status = kind === 'issuers' ? 'inactive' : 'withdrawn';
+        if (kind === 'issuers') {
+          const merged = { ...(row?.toObject?.() ?? {}), ...fields };
+          if (fields.sourceMode && !['admin','external'].includes(fields.sourceMode)) throw invalid('Choose an available result source');
+          if (fields.organizationKind && !['university','college','franchise','course'].includes(fields.organizationKind)) throw invalid('Choose an institution type');
+          if (!archive && merged.sourceMode === 'admin') await adminSource.validate(merged);
+          if (row && ['type','sourceMode','organizationKind','organizationId'].some(k=>k in fields && String(fields[k])!==String(row[k]??'')) && await Exam.exists({issuerId:row._id})) throw invalid('An institution with examinations cannot change its identity or result source');
+          if (row && fields.fieldSchema && JSON.stringify(fields.fieldSchema)!==JSON.stringify(row.fieldSchema.map(f=>({id:f.id,label:f.label,type:f.type,required:f.required}))) && await Record.exists({examId:{$in:(await Exam.find({issuerId:row._id}).select('_id')).map(e=>e._id)}})) throw invalid('Verification questions are fixed once marks are imported. Create a new result institution configuration for different questions.');
+        }
         if (kind === 'exams') {
           if (row && fields.issuerId && String(fields.issuerId) !== String(row.issuerId)) throw invalid('Exam issuer is immutable');
           const issuer = await get(Issuer, fields.issuerId ?? row?.issuerId);
-          if (fields.status === 'published' && (issuer.status !== 'active' || !(await trustedSource(issuer)))) throw new AppError(409, 'SOURCE_APPROVAL_REQUIRED', 'Official publication requires separately approved trusted-source authorization');
+          if (fields.status === 'published' && (issuer.status !== 'active' || !(await publicationReady(issuer)))) throw new AppError(409, 'SOURCE_APPROVAL_REQUIRED', 'Activate the institution and confirm its result source before publishing this examination');
         }
         if (row && (await Record.exists(kind === 'exams' ? {
           examId: row._id,
@@ -386,7 +403,7 @@ export async function createResultService({
           dryRun: false,
           imported: rows.length,
           status: 'draft',
-          publicationEnabled: false
+          publicationEnabled: await publicationReady(currentIssuer)
         };
         await Job.create({
           key: batchKey,
@@ -424,7 +441,7 @@ export async function createResultService({
         }
         if (action === 'publish') {
           if (row.review?.status !== 'approved' || row.review.academicRevision !== row.revision) throw new AppError(409, 'MAIN_ADMIN_APPROVAL_REQUIRED', 'Current academic revision needs final main-admin approval');
-          if (row.status !== 'draft' || exam.status !== 'published' || issuer.status !== 'active' || !(await trustedSource(issuer))) throw new AppError(409, 'SOURCE_APPROVAL_REQUIRED', 'Official result publication is disabled without separately approved trusted-source evidence');
+          if (row.status !== 'draft' || exam.status !== 'published' || issuer.status !== 'active' || !(await publicationReady(issuer))) throw new AppError(409, 'SOURCE_APPROVAL_REQUIRED', 'The institution or examination is not currently available for result publication');
           if (!issuer.source?.authorizationReference || !row.source?.checksum) throw invalid('Source provenance required');
         } else if (!text(input.reason, 2000)) throw invalid('Reason required');
         if (action === 'corrections') {
@@ -491,7 +508,7 @@ export async function createResultService({
       if (!auth.user.emailVerifiedAt) throw absent();
       const issuer = await get(Issuer, input.issuerId),
         exam = await get(Exam, input.examId);
-      if (issuer.status !== 'active' || exam.status !== 'published' || String(exam.issuerId) !== String(issuer._id) || !(await trustedSource(issuer))) throw absent();
+      if (issuer.status !== 'active' || exam.status !== 'published' || String(exam.issuerId) !== String(issuer._id) || !(await publicationReady(issuer))) throw absent();
       const row = await Record.findOne({
         examId: exam._id,
         rollNormalized: canonicalRoll(input.rollNumber),
@@ -537,10 +554,11 @@ export async function createResultService({
       for (const record of records) {
         const exam = await get(Exam, record.examId),
           issuer = await get(Issuer, exam.issuerId);
-        if (record.review?.status === 'approved' && record.review.academicRevision === record.revision && exam.status === 'published' && issuer.status === 'active' && (await trustedSource(issuer))) available.push({
+        if (record.review?.status === 'approved' && record.review.academicRevision === record.revision && exam.status === 'published' && issuer.status === 'active' && (await publicationReady(issuer))) available.push({
           ...dto(record),
           issuerId: String(issuer._id),
           issuerName: issuer.name,
+          issuerType: issuer.type,
           examTitle: exam.title
         });
       }

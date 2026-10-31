@@ -480,6 +480,29 @@ test('Stage 8 real MongoDB results, recipient notices, profile and email securit
     assert.equal(saved.emailNormalized, before);
     assert.equal(saved.challenges?.emailChange, undefined);
   });
+  await t.test('admin-managed university results publish through the platform while board providers stay closed', async () => {
+    const university = await f.institutions.create('university', { name: 'Synthetic Results University', shortName: 'SRU', status: 'active' }, ctx);
+    const managedIssuer = await R.mutate('issuers', null, {
+      key: 'synthetic-admin-university', type: 'university', name: 'Synthetic University', fullName: 'Synthetic Results University',
+      sourceMode: 'admin', organizationKind: 'university', organizationId: university.id, status: 'active',
+      fieldSchema: [{ id: 'dob', label: 'Date of birth', type: 'date', required: true }],
+      source: { description: 'Synthetic university marks statement', authorizationReference: 'Synthetic permission reference' }
+    }, ctx);
+    const managedExam = await R.mutate('exams', null, { issuerId: managedIssuer.id, key: 'synthetic-admin-exam', title: 'Synthetic university exam', year: 2026, session: 'TEST', status: 'published' }, ctx);
+    const adminRow = { ...row, rollNumber: 'SYNTHETIC-ADMIN-001', externalId: 'SYNTHETIC-ADMIN-REF' };
+    const adminAsset = await f.media.upload({ purpose: 'result_import', stream: Readable.from(Buffer.from(JSON.stringify([adminRow]))), mime: 'application/json', originalName: 'synthetic-admin-result.json', idempotencyKey: randomUUID(), auth: admin.auth, ctx });
+    const input = { examId: managedExam.id, assetId: adminAsset.id, mappingVersion: 'kitss-results-v1', idempotencyKey: randomUUID() };
+    const dry = await R.importRecords(input, admin.auth, ctx); assert.equal(dry.validRows, 1);
+    const imported = await R.importRecords({ ...input, dryRun: false, validationToken: dry.validationToken }, admin.auth, ctx); assert.equal(imported.imported, 1);
+    let managedRecord = (await R.list('records', { examId: managedExam.id })).data[0];
+    managedRecord = await R.changeRecord(managedRecord.id, 'submit', { expectedRevision: managedRecord.expectedRevision, reason: 'Synthetic source review' }, ctx);
+    managedRecord = await R.changeRecord(managedRecord.id, 'approve', { expectedRevision: managedRecord.expectedRevision, reason: 'Synthetic main-admin approval' }, ctx);
+    managedRecord = await R.changeRecord(managedRecord.id, 'publish', { expectedRevision: managedRecord.expectedRevision }, ctx);
+    assert.equal((await R.lookup({ issuerId: managedIssuer.id, examId: managedExam.id, rollNumber: adminRow.rollNumber, verificationFields: adminRow.verificationFields }, student.auth, ctx)).totals.obtained, 80);
+    await assert.rejects(() => R.lookup({ issuerId: managedIssuer.id, examId: managedExam.id, rollNumber: adminRow.rollNumber, verificationFields: adminRow.verificationFields }, other.auth, ctx), { code: 'RESULT_NOT_FOUND' });
+    const publicConfig = await R.config(); assert.equal(publicConfig.publicationEnabled, true); assert.equal(publicConfig.externalPublicationEnabled, false); assert.equal(publicConfig.boardAvailable, false);
+    assert.ok(publicConfig.issuers.some(item => item.id === managedIssuer.id));
+  });
   await t.test('real HTTP RBAC, Origin and CSRF remain enforced; private imports do not leak', async () => {
     server = http.createServer(f.app());
     await new Promise(r => server.listen(0, '127.0.0.1', r));

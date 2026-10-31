@@ -13,6 +13,7 @@ export const ResultSearchForm = ({
   initialValues = {},
   onSubmit,
   loading = false,
+  disabled = false,
   onChangeBoard
 }) => {
   const [formData, setFormData] = useState({});
@@ -209,6 +210,7 @@ export const ResultSearchForm = ({
                 ) : field.type === "date" ? (
                   <div className="relative">
                     <input
+                      maxLength={field.maxLength || 120}
                       id={field.id}
                       type="date"
                       value={formData[field.id] ?? ""}
@@ -224,6 +226,7 @@ export const ResultSearchForm = ({
                 ) : (
                   <div className="relative">
                     <input
+                      maxLength={field.maxLength || 120}
                       id={field.id}
                       type={field.type || "text"}
                       placeholder={field.placeholder || ""}
@@ -261,6 +264,7 @@ export const ResultSearchForm = ({
             size="md"
             fullWidth
             loading={loading}
+            disabled={disabled || loading}
             icon={Search}
           >
             Check Result
