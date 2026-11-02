@@ -8,8 +8,8 @@
     "node": ">=22.15.0 <23"
   },
   "scripts": {
-    "dev": "node api.js && node --watch src/server.js",
-    "start": "node api.js && node src/server.js",
+    "dev": "node --watch src/server.js",
+    "start": "node src/server.js",
     "test": "node --test --test-concurrency=1",
     "bootstrap:admin": "node src/modules/auth/bootstrap.js",
     "test:client": "node --test ../frontend/src/shared/api/httpClient.test.js",

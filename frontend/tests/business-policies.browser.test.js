@@ -81,12 +81,15 @@ test('Stage 13 real browser/HTTP/MongoDB policy, free content and keyboard granu
   await t.test('result draft review queue, main-admin approval and source gate through browser', async () => {
     const issuer = await f.models.ResultIssuer.create({ key: randomUUID(), type: 'school', name: 'Synthetic browser', fullName: 'Synthetic browser issuer', status: 'active', source: { authorizationReference: 'SYNTHETIC_ISOLATED_ONLY' } });
     const exam = await f.models.Exam.create({ issuerId: issuer._id, key: randomUUID(), title: 'Synthetic exam', year: 2026, status: 'published' });
-    const record = await f.models.ResultRecord.create({ examId: exam._id, rollNormalized: 'SYNTHETIC-BROWSER', userId: d.student.user._id, revision: 1, source: { checksum: 'synthetic-source-only' }, __v: 0 });
+    const record = await f.models.ResultRecord.create({ examId: exam._id, rollNormalized: 'SYNTHETIC-BROWSER', userId: d.student.user._id, revision: 1, student: { name: 'Synthetic browser student' }, subjects: [{ code: 'SYN', name: 'Synthetic subject', maxMarks: 100, obtained: 50 }], totals: { max: 100, obtained: 50, percentage: 50, status: 'PASS' }, source: { checksum: 'synthetic-source-only' }, __v: 0 });
     await identity(d.admin); await goto('/admin/results');
     await page.getByRole('button', { name: 'Student results', exact: true }).click();
     await page.getByRole('button', { name: 'Review', exact: true }).click();
     await page.getByLabel('Result action reason').fill('Synthetic reviewed source');
     await page.getByRole('button', { name: 'Submit for main-admin review', exact: true }).click();
+    await page.getByRole('button', { name: 'Approve result', exact: true }).waitFor();
+    // Each review decision records its own reason; the field clears after submission.
+    await page.getByLabel('Result action reason').fill('Synthetic main-admin approval');
     await page.getByRole('button', { name: 'Approve result', exact: true }).click();
     await page.getByRole('button', { name: 'Approve result', exact: true }).waitFor({ state: 'detached' });
     assert.equal((await f.models.ResultRecord.findById(record._id)).review.status, 'approved');
