@@ -34,7 +34,7 @@ test('dedicated staff management (mocked HTTP; no emails sent)', { skip: !exists
   await t.test('invitations exist only on the dedicated page and the sidebar links there', async () => {
     for (const path of ['/admin', '/admin/books', '/admin/users']) {
       await go(path); await page.getByRole('main').waitFor();
-      assert.equal(await page.getByRole('heading', { name: 'Staff invitations', exact: true }).count(), 0);
+      assert.equal(await page.getByRole('heading', { name: 'Invite staff', exact: true }).count(), 0);
     }
     const nav = page.getByRole('navigation', { name: 'Admin sections', exact: true });
     await nav.getByRole('button', { name: 'Administration', exact: true }).click();
@@ -42,7 +42,7 @@ test('dedicated staff management (mocked HTTP; no emails sent)', { skip: !exists
     if (await nav.getByRole('button', { name: 'Administration', exact: true }).getAttribute('aria-expanded') === 'false') await nav.getByRole('button', { name: 'Administration', exact: true }).click();
     await nav.getByRole('link', { name: 'Staff management', exact: true }).click();
     await page.getByRole('heading', { name: 'Staff management', exact: true }).waitFor();
-    await page.getByRole('heading', { name: 'Staff invitations', exact: true }).waitFor();
+    await page.getByRole('heading', { name: 'Invite staff', exact: true }).waitFor();
     assert.equal(await page.locator('fieldset[disabled]').count(), 0);
     await page.getByRole('button', { name: /Pending Person/ }).waitFor();
     assert.ok(queries.some(q => new URLSearchParams(q).get('role') === 'admin'));
@@ -52,8 +52,8 @@ test('dedicated staff management (mocked HTTP; no emails sent)', { skip: !exists
     await page.getByRole('button', { name: 'Review invitation', exact: true }).click();
     await page.waitForFunction(email => document.querySelector('input[type=email]')?.value === email, staff.email);
     assert.equal(await page.getByLabel('Staff email', { exact: true }).inputValue(), staff.email);
-    assert.equal(await page.getByLabel('books.read', { exact: true }).isChecked(), true);
-    await page.getByRole('button', { name: 'Invite / resend', exact: true }).click();
+    assert.equal(await page.getByLabel('View books', { exact: true }).isChecked(), true, 'access outside the job roles opens under Custom permissions');
+    await page.getByRole('button', { name: 'Resend invitation', exact: true }).click();
     await page.getByRole('status').filter({ hasText: 'Invitation submitted to SMTP' }).waitFor();
     assert.deepEqual(writes.at(-1).input, { name: staff.name, email: staff.email, permissions: ['books.read'] });
     assert.equal(writes.at(-1).csrf, 'mock-csrf');
@@ -72,7 +72,7 @@ test('dedicated staff management (mocked HTTP; no emails sent)', { skip: !exists
     manage = false; await go('/admin/staff');
     await page.getByRole('alert').filter({ hasText: 'You do not have permission' }).waitFor();
     assert.equal(await page.getByRole('link', { name: 'Staff management', exact: true }).count(), 0);
-    assert.equal(await page.getByRole('button', { name: 'Invite / resend', exact: true }).count(), 0);
+    assert.equal(await page.getByRole('button', { name: /^(Send|Resend) invitation$/ }).count(), 0);
   });
   assert.deepEqual(errors, []);
 });

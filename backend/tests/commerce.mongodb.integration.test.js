@@ -185,8 +185,9 @@ test('Stage 6 standalone commerce, real HTTP and crash recovery with isolated fa
     assert.equal((await api('/orders', { method: 'POST', data: { product: { kind: 'registration_fee', id: application.id }, idempotencyKey: randomUUID() } })).status, 409);
     assert.equal((await api('/registration-applications', { method: 'POST', data: { ...input, applicant: { aadharNumber: 'never-collected' } } })).status, 422);
     assert.deepEqual((await f.models.User.findById(student.user._id)).roles, ['student']);
-    assert.equal((await api('/admin/settings/registrationFees', { method: 'PATCH', actor: admin, data: { expectedRevision: 0, value: { teacher: { amountMinor: 500, approved: true } } } })).status, 200);
-    const config = await api('/public/registration-config', { actor: null }); assert.equal(config.body.data.paymentEnabled, false); assert.equal(config.body.data.fees.teacher.amountMinor, 500);
+    // Fees come only from registration rules; the retired separate fee setting cannot be saved.
+    assert.equal((await api('/admin/settings/registrationFees', { method: 'PATCH', actor: admin, data: { expectedRevision: 0, value: { teacher: { amountMinor: 500, approved: true } } } })).status, 422);
+    const config = await api('/public/registration-config', { actor: null }); assert.equal(config.body.data.paymentEnabled, false); assert.equal(config.body.data.fees.teacher, undefined);
   });
   await t.test('only a never-started internal order may bind newly approved credentials; external intents keep their scope', async () => {
     const actor = await f.fixtureUser(['student']), order = await create(actor), originalScope = f.provider.scope;

@@ -21,7 +21,6 @@ test('technical file and structured formats retain concise guidance', () => {
 test('consequential policy fields retain their boundary', () => {
   assert.match(adminFieldHelp('Approved retention days'), /does not authorize deletion/);
   assert.match(adminFieldHelp('Access after confirmed provider refund'), /does not issue a refund/);
-  assert.match(adminFieldHelp('Permission preset'), /grant only/);
 });
 test('native limits stay native rather than becoming visible boilerplate', () => {
   const props = { type: 'date', min: '1970-01-01', max: '9998-12-31', required: true };

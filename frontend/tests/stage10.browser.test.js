@@ -58,9 +58,10 @@ test('Stage 10 admin-to-user persisted workflows and responsive shared navigatio
   });
   await check('super-admin permission edit is enforced on a newly authenticated staff session', async () => {
     await identity(admin); await searchAccount('STAGE10 ORDINARY STAFF');
-    await page.getByRole('checkbox', { name: 'audit.read', exact: true }).check(); await page.getByLabel('Account change reason').fill('STAGE10 safe staff visibility');
+    const custom = page.locator('details').filter({ has: page.getByText(/^Custom permissions/) }); if (!(await custom.evaluate(d => d.open))) await custom.locator('summary').click();
+    await page.getByRole('checkbox', { name: 'View audit logs', exact: true }).check(); await page.getByLabel('Account change reason').fill('STAGE10 safe staff visibility');
     const response = page.waitForResponse(r => r.url().endsWith('/roles') && r.request().method() === 'PATCH');
-    await page.getByRole('button', { name: 'Save staff permissions', exact: true }).click(); assert.equal((await response).status(), 200);
+    await page.getByRole('button', { name: 'Save role and access', exact: true }).click(); assert.equal((await response).status(), 200);
     assert.equal(await f.auth.authenticate(staff.token, 'admin'), null);
     const signedIn = await f.auth.login({ identifier: staff.user.emailNormalized, password: 'SyntheticPassword123!', kind: 'admin' }, f.ctx);
     await identity(signedIn); await goto('/admin/audit-logs'); await page.getByRole('heading', { name: 'Audit logs', exact: true }).waitFor();
@@ -108,19 +109,24 @@ test('Stage 10 admin-to-user persisted workflows and responsive shared navigatio
     }
   });
   await check('public settings update the real header; job/book/order administration is usable', async () => {
-    await identity(admin); await goto('/admin/settings'); await page.getByLabel('Setting name').fill(longBrand);
-    await page.getByRole('button', { name: 'Save Public Settings', exact: true }).click(); await page.getByText('Public settings saved.', { exact: true }).waitFor();
-    await page.getByLabel('Setting group').selectOption('footer');
-    await page.getByLabel('Footer links', { exact: true }).fill('internal | /about\nexternal | https://example.invalid/approved-reference');
+    await identity(admin); await goto('/admin/settings');
+    const footer = page.getByRole('form', { name: 'Footer settings' }); await footer.getByLabel('Footer description', { exact: true }).fill(longBrand);
+    await footer.getByRole('button', { name: 'Add footer link', exact: true }).click(); await footer.getByLabel('Footer link 1 page', { exact: true }).selectOption('/about');
+    await footer.getByRole('button', { name: 'Add footer link', exact: true }).click(); await footer.getByLabel('Footer link 2 type', { exact: true }).selectOption('external');
+    await footer.getByLabel('Footer link 2 address', { exact: true }).fill('https://example.invalid/approved-reference');
     const footerSaved = page.waitForResponse(r => r.url().endsWith('/admin/settings/footer') && r.request().method() === 'PATCH');
-    await page.getByRole('button', { name: 'Save Public Settings', exact: true }).click(); assert.equal((await footerSaved).status(), 200);
+    await footer.getByRole('button', { name: 'Save footer', exact: true }).click(); const footerResult = await footerSaved; assert.equal(footerResult.status(), 200);
+    const footerValue = (await footerResult.json()).data.value; assert.equal(footerValue.description, longBrand); assert.equal(footerValue.copyright, undefined, 'the copyright line is generated automatically');
+    assert.deepEqual(footerValue.links, [{ type: 'internal', target: '/about' }, { type: 'external', target: 'https://example.invalid/approved-reference' }]);
     await goto('/admin/operations'); await page.getByLabel('Job state').selectOption('dead'); await page.getByRole('button', { name: 'Apply filters', exact: true }).click();
     await page.getByText('result_import / dead', { exact: true }).waitFor(); assert.doesNotMatch(await page.locator('body').innerText(), /PRIVATE_BROWSER/);
     await goto('/admin/enrollments'); await page.getByRole('button', { name: 'Books', exact: true }).click(); await page.getByRole('heading', { name: 'Book access review', exact: true }).waitFor();
     await page.getByText(/Payment verified/).first().waitFor();
     await goto('/admin/orders'); await page.getByText(/Page 1 of 2/).waitFor(); await page.getByRole('button', { name: 'Next', exact: true }).click(); await page.getByText(/Page 2 of 2/).waitFor();
     await page.getByRole('button', { name: 'Previous', exact: true }).click(); await page.getByText(/Page 1 of 2/).waitFor();
-    await identity(student); await goto('/home'); await page.locator('header').getByText('Education', { exact: true }).waitFor(); assert.ok((await page.locator('header').innerText()).includes('STAGE10LongBrand'));
+    await identity(student); await goto('/home'); await page.locator('header').getByText('KITSS', { exact: true }).first().waitFor();
+    // The brand name is fixed now; the saved footer description reaches the public footer (hidden on phones, so read its text).
+    await page.waitForFunction(text => document.querySelector('footer')?.textContent.includes(text), longBrand);
     await page.getByRole('navigation', { name: 'Published footer links' }).getByRole('link', { name: '/about', exact: true }).click(); await page.waitForURL('**/about');
   });
   for (const width of [320, 375, 390, 414, 768, 1024, 1440]) await check('new account/operations/category navigation at ' + width + 'px', async () => {

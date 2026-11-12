@@ -27,31 +27,35 @@ test('Stage 13 real browser/HTTP/MongoDB policy, free content and keyboard granu
   const identity = async actor => { await context.clearCookies(); if (actor) await context.addCookies([{ name: actor.user.roles.includes('student') ? 'kitss_student_session' : 'kitss_staff_session', value: actor.token, url: base, httpOnly: true, sameSite: 'Lax' }]); };
   await identity(d.admin);
   await t.test('main admin configures an explicit free registration policy through the UI', async () => {
-    await goto('/admin/settings'); const panel = page.getByRole('heading', { name: 'Business policy configuration' }); await panel.waitFor();
-    await page.getByLabel('Policy registration category').selectOption('study');
-    await page.getByLabel('Policy status', { exact: true }).selectOption('active');
-    await page.getByLabel('Fee required', { exact: true }).uncheck();
-    await page.getByLabel('Approved amount (INR minor units)', { exact: true }).fill('0');
-    await page.getByLabel('Owner approved privacy policy', { exact: true }).check();
-    await page.getByLabel('Owner approved document requirements (including explicit none)', { exact: true }).check();
-    await page.getByLabel('Policy change reason', { exact: true }).fill('Synthetic browser policy only');
+    await goto('/admin/settings'); await page.getByRole('group', { name: 'Settings sections' }).getByRole('button', { name: 'Registrations', exact: true }).click();
+    const tab = page.getByRole('region', { name: 'Registration settings' }), study = tab.getByRole('region', { name: 'Study registration rules' });
+    // A paid fee needs an amount before it can be saved.
+    await study.getByLabel('Open for applications', { exact: true }).check();
+    await study.getByLabel('Study registration fee type', { exact: true }).selectOption('paid');
+    await tab.getByLabel('Reason for this change', { exact: true }).fill('Synthetic browser policy only');
+    await tab.getByRole('button', { name: 'Save registration rules', exact: true }).click();
+    await tab.getByRole('alert').filter({ hasText: 'Enter the fee in rupees, or choose Free.' }).waitFor();
+    await study.getByLabel('Study registration fee type', { exact: true }).selectOption('free');
     const saved = page.waitForResponse(r => r.url().endsWith('/admin/business-policies') && r.request().method() === 'PATCH');
-    await page.getByRole('button', { name: 'Save business policies', exact: true }).click(); const savedResponse = await saved; assert.equal(savedResponse.status(), 200, JSON.stringify(await savedResponse.json()));
-    assert.equal((await f.service.business.settings()).value.registrations.study.amountMinor, 0);
+    await tab.getByRole('button', { name: 'Save registration rules', exact: true }).click(); const savedResponse = await saved; assert.equal(savedResponse.status(), 200, JSON.stringify(await savedResponse.json()));
+    await study.getByText('Open', { exact: true }).waitFor();
+    const study_ = (await f.service.business.settings()).value.registrations.study;
+    assert.deepEqual([study_.amountMinor, study_.feeRequired, study_.status, study_.enabled, study_.privacyApproved, study_.documentsApproved], [0, false, 'active', true, true, true]);
+    assert.equal((await f.service.business.policy('study')).amountMinor, 0, 'the single Open switch makes the category available to applicants');
   });
   await t.test('main admin configures refund/franchise/tax metadata without enabling operational gates', async () => {
-    await page.getByLabel('Owner approved refund policy', { exact: true }).check();
-    await page.getByLabel('refund version', { exact: true }).fill('synthetic-browser-v1');
-    await page.getByLabel('refund effectiveFrom (UTC ISO date)', { exact: true }).fill('2020-01-01T00:00:00Z');
-    await page.getByLabel('Enable refund requests', { exact: true }).check();
-    await page.getByLabel('Enable course_plan refund review', { exact: true }).check();
-    await page.getByLabel('course_plan allowed reason categories (one per line)', { exact: true }).fill('technical_failure');
-    // Franchise fees moved to the separate Franchise Policy form (covered by franchise-workflow tests).
-    await page.getByText('Franchise eligibility, documents, agreements and fees are managed in Franchise Policy above.', { exact: true }).waitFor();
-    await page.getByLabel('Policy change reason', { exact: true }).fill('Synthetic financial configuration only');
+    await page.getByRole('group', { name: 'Settings sections' }).getByRole('button', { name: 'Payments & billing', exact: true }).click();
+    const tab = page.getByRole('region', { name: 'Payment settings' });
+    await tab.getByLabel('Accept refund requests', { exact: true }).check();
+    await tab.getByLabel('Course plans', { exact: true }).check();
+    await tab.getByLabel('Reason for this change', { exact: true }).fill('Synthetic financial configuration only');
     const response = page.waitForResponse(r => r.url().endsWith('/admin/business-policies') && r.request().method() === 'PATCH');
-    await page.getByRole('button', { name: 'Save business policies', exact: true }).click(); assert.equal((await response).status(), 200);
-    assert.equal((await f.service.business.settings()).value.refunds.courseWindowDays, 7);
+    await tab.getByRole('button', { name: 'Save payment settings', exact: true }).click(); assert.equal((await response).status(), 200);
+    await tab.getByText(/^Accepting requests since /).waitFor();
+    const refunds = (await f.service.business.settings()).value.refunds;
+    assert.equal(refunds.courseWindowDays, 7); assert.deepEqual(refunds.categories.course_plan, { enabled: true, reasons: ['duplicate_charge', 'technical_failure', 'inaccessible_content'] }); assert.equal(refunds.categories.book.enabled, false);
+    assert.ok(refunds.approved && refunds.enabled && refunds.version && Date.parse(refunds.effectiveFrom) <= Date.now(), 'version and start date are filled in automatically');
+    assert.equal((await f.service.business.settings()).value.registrations.study.status, 'active', 'saving payments keeps the registration rules');
     assert.equal((await f.service.business.franchiseFees()).affiliationState, 'blocked_pending_policy');
     for (const width of [320,375,390,414,768,1024,1280,1440]) {
       await page.setViewportSize({ width, height: 950 });
@@ -98,27 +102,28 @@ test('Stage 13 real browser/HTTP/MongoDB policy, free content and keyboard granu
     for (const width of [320,375,390,414,768,1024,1280,1440]) { await page.setViewportSize({ width, height: 950 }); assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1), false, 'Results overflow at ' + width); }
     assert.equal((await f.models.ResultRecord.findById(record._id)).status, 'draft');
   });
-  await t.test('main admin creates a default-deny invitation using grouped individual permission controls', async () => {
-    await identity(d.admin); await goto('/admin/staff'); await page.getByRole('heading', { name: 'Staff invitations', exact: true }).waitFor();
+  await t.test('main admin invites staff by job role; custom permissions stay default-deny', async () => {
+    await identity(d.admin); await goto('/admin/staff'); await page.getByRole('heading', { name: 'Invite staff', exact: true }).waitFor();
     const email = randomUUID() + '@example.invalid';
     await page.getByLabel('Staff name', { exact: true }).fill('Browser subadmin'); await page.getByLabel('Staff email', { exact: true }).fill(email);
-    await page.getByLabel('Permission preset', { exact: true }).selectOption('Content Manager');
-    assert.equal(await page.getByLabel('books.create', { exact: true }).isChecked(), true);
-    await page.getByLabel('Permission preset', { exact: true }).selectOption('Support Manager');
-    assert.equal(await page.getByLabel('books.create', { exact: true }).isChecked(), false);
-    await page.getByLabel('commerce.read', { exact: true }).uncheck();
-    await page.getByLabel('registrations.read', { exact: true }).uncheck();
-    const read = page.getByLabel('books.read', { exact: true }); await read.focus(); await page.keyboard.press('Space');
-    assert.equal(await read.isChecked(), true); assert.equal(await page.getByLabel('books.create', { exact: true }).isChecked(), false);
+    // A role selects its whole job, including publishing and the dashboard.
+    const content = page.getByLabel('Content manager', { exact: true }); await content.check();
+    await page.getByText('Custom permissions', { exact: true }).click();
+    for (const label of ['Publish books', 'Publish courses', 'View the dashboard']) assert.equal(await page.getByLabel(label, { exact: true }).isChecked(), true, label);
+    // Removing the role removes its permissions; a single custom permission stays on its own.
+    await content.uncheck(); assert.equal(await page.getByLabel('Add books', { exact: true }).isChecked(), false);
+    const read = page.getByLabel('View books', { exact: true }); await read.focus(); await page.keyboard.press('Space');
+    assert.equal(await read.isChecked(), true); assert.equal(await content.isChecked(), false);
     const response = page.waitForResponse(r => r.url().endsWith('/admin/users/invitations') && r.request().method() === 'POST');
-    await page.getByRole('button', { name: 'Invite / resend', exact: true }).click(); assert.equal((await response).status(), 201);
+    await page.getByRole('button', { name: 'Send invitation', exact: true }).click(); assert.equal((await response).status(), 201);
     const staff = await f.models.User.findOne({ emailNormalized: email }); assert.deepEqual(staff.permissions.toObject(), ['books.read']); assert.equal(staff.status, 'pending');
     assert.equal(messages.filter(m => m.to === email).length, 1);
+    await page.getByRole('button', { name: /Browser subadmin/ }).getByText(/^Custom access \//).waitFor();
   });
   await t.test('permission selector and staff controls reflow at all eight requested widths', async () => {
     for (const width of [320, 375, 390, 414, 768, 1024, 1280, 1440]) {
       await page.setViewportSize({ width, height: 950 });
-      const checkbox = page.getByLabel('books.edit', { exact: true }); await checkbox.focus(); await page.keyboard.press('Space'); assert.equal(await checkbox.isChecked(), true); await page.keyboard.press('Space');
+      const checkbox = page.getByLabel('Edit books', { exact: true }); await checkbox.focus(); await page.keyboard.press('Space'); assert.equal(await checkbox.isChecked(), true); await page.keyboard.press('Space');
       const bounds = await checkbox.boundingBox(); assert.ok(bounds && bounds.x >= 0 && bounds.x + bounds.width <= width);
       const overflow = await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1); assert.equal(overflow, false, 'Overflow at ' + width);
     }

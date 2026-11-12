@@ -42,6 +42,6 @@ test('registration and fee policy validation preserves safe fields while rejecti
   const user = { emailNormalized: 'fixture@example.invalid' };
   assert.equal(applicantInput('study', { studentName: 'Fixture', email: user.emailNormalized }, user).studentName, 'Fixture');
   for (const data of [{ aadharNumber: 'not-collected' }, { roles: ['admin'] }, { passportPhotoFile: 'fake' }, { email: 'foreign@example.invalid' }]) assert.throws(() => applicantInput('study', data, user), { status: 422 });
-  const fee = settingInput('registrationFees', { value: { study: { amountMinor: 900, approved: true } }, expectedRevision: 0 }); assert.equal(fee.value.study.amountMinor, 900);
-  assert.throws(() => settingInput('registrationFees', { value: { study: { amountMinor: 900, approved: true, gst: 18 } }, expectedRevision: 0 }), { status: 422 });
+  // Fees are set only in the registration rules; the old separate fee setting is no longer editable.
+  assert.throws(() => settingInput('registrationFees', { value: { study: { amountMinor: 900, approved: true } }, expectedRevision: 0 }), { status: 422 });
 });

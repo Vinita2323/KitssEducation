@@ -132,10 +132,12 @@ for (const [name, viewport] of [['desktop', { width: 1440, height: 1000 }], ['mo
     await t.test('super-admin invitation form invokes real contracts outside preview controls', async () => {
       user = { ...identity, roles: ['super_admin'], permissions: ['institutions.read', 'accounts.roles.manage'] };
       await goto(`${base}/admin/staff`);
-      await page.getByRole('heading', { name: 'Staff invitations', exact: true }).waitFor();
+      await page.getByRole('heading', { name: 'Invite staff', exact: true }).waitFor();
       await page.getByLabel('Staff name', { exact: true }).fill('Invited Staff');
       await page.getByLabel('Staff email', { exact: true }).fill('invited@example.invalid');
-      await page.getByRole('button', { name: 'Invite / resend' }).click();
+      await page.getByRole('button', { name: 'Send invitation', exact: true }).click(); await page.getByRole('alert').filter({ hasText: 'Choose at least one role' }).waitFor();
+      await page.getByLabel('Admissions manager', { exact: true }).check();
+      await page.getByRole('button', { name: 'Send invitation', exact: true }).click();
       await page.getByRole('status').filter({ hasText: 'Invitation submitted to SMTP' }).waitFor();
       await page.getByRole('button', { name: 'Revoke invitation' }).click();
       await page.getByRole('status').filter({ hasText: 'Invitation revoked' }).waitFor();

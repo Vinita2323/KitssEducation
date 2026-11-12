@@ -45,14 +45,7 @@ export function contentInput(kind, input, creating = false) {
   return { fields: data, expectedRevision: creating ? undefined : revision(input.expectedRevision) };
 }
 export function settingInput(keyName, input) {
-  if (keyName === 'registrationFees') {
-    object(input, ['value', 'expectedRevision'], ['value', 'expectedRevision']);
-    object(input.value, ['study', 'tuition', 'teacher', 'coaching-profile']);
-    if (!Object.keys(input.value).length) throw invalid('Configure at least one explicit fee');
-    const value = {};
-    for (const [kind, fee] of Object.entries(input.value)) { object(fee, ['amountMinor', 'approved'], ['amountMinor', 'approved']); value[kind] = { amountMinor: integer(fee.amountMinor), approved: bool(fee.approved) }; }
-    return { value, expectedRevision: integer(input.expectedRevision) };
-  }
+  // Registration fees are part of the registration rules (business policies), not a separate setting.
   const allow = { brand: ['name', 'tagline'], support: ['email', 'phone', 'address', 'hours'], footer: ['copyright', 'description', 'links'], publicFeatures: ['booksEnabled', 'institutionsEnabled'] }[keyName];
   if (!allow) throw invalid('This setting is not editable in Stage 5');
   object(input, ['value', 'expectedRevision'], ['value', 'expectedRevision']); object(input.value, allow);

@@ -159,9 +159,10 @@ export function createBusinessPolicyService(commerce) {
         if (!record || requireVerified && record.status !== 'verified' || !(await Media.exists({ _id: record?.assetId, purpose: 'registration_document', status: 'ready', 'scan.status': 'clean', ownerUserId: row.userId, ...(p.upload ? { mime: { $in: p.upload.mime }, bytes: { $lte: p.upload.maxBytes } } : {}) }))) throw blocked('Required documents must be attached, clean and verified where applicable');
       }
       const dob = row.applicant?.dob;
-      if (typeof dob !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(dob) || !Number.isFinite(Date.parse(dob)) || new Date(dob).toISOString().slice(0, 10) !== dob || Date.parse(dob) > Date.now()) throw invalid('A valid date of birth is required to determine guardian-consent requirements');
-      const adultAt = new Date(dob + 'T00:00:00Z'); adultAt.setUTCFullYear(adultAt.getUTCFullYear() + 18);
-      if ((adultAt > now() || p.guardian?.appliesTo === 'all') && (!p.guardian?.approved || row.guardianConsent?.version !== p.guardian.version || !row.guardianConsent?.acceptedAt || !row.guardianConsent?.guardianName || requireVerified && !row.guardianConsent?.verifiedAt)) throw blocked('Minor registration requires the configured guardian consent and authorized verification workflow');
+      if (typeof dob !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(dob) || !Number.isFinite(Date.parse(dob)) || new Date(dob).toISOString().slice(0, 10) !== dob || Date.parse(dob) > Date.now()) throw invalid('A valid date of birth is required');
+      // Guardian consent is optional. When an applicant gives it, it must match the current wording and be verified by staff before approval.
+      const consent = row.guardianConsent;
+      if (consent?.acceptedAt && (!p.guardian?.approved || consent.version !== p.guardian.version || !consent.guardianName || requireVerified && !consent.verifiedAt)) throw blocked('The guardian consent given must match the current wording and be verified by staff before approval');
       return p;
     },
     async submit(value, input, auth, ctx) {

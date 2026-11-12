@@ -72,7 +72,8 @@ test('Stage 6 existing UI real API and standalone MongoDB with explicitly isolat
     checkoutEnabled = false; await identity(admin); await goto('/admin/orders'); await page.getByRole('heading', { name: 'Orders & Payment Review', exact: true }).waitFor();
     await page.getByRole('button', { name: 'Payment details', exact: true }).first().click(); await page.getByText(/pay_/).first().waitFor();
     const reconcile = page.waitForResponse(r => r.url().includes('/reconcile') && r.request().method() === 'POST'); await page.getByRole('button', { name: 'Check payment status', exact: true }).first().click(); assert.equal((await reconcile).status(), 202);
-    await goto('/admin/settings'); await page.getByLabel('Setting group', { exact: true }).selectOption('registrationFees'); await page.getByLabel('study fee minor units', { exact: true }).fill('900'); const saved = page.waitForResponse(r => r.url().includes('/admin/settings/registrationFees') && r.request().method() === 'PATCH'); await page.getByRole('button', { name: 'Save Public Settings', exact: true }).click(); assert.equal((await saved).status(), 200);
+    // Registration fees are set only in the registration rules; the old separate fee setting is gone.
+    await goto('/admin/settings?tab=registrations'); await page.getByRole('region', { name: 'Study registration rules' }).waitFor(); assert.equal(await page.getByLabel('study fee minor units', { exact: true }).count(), 0);
     await goto('/admin'); await page.getByRole('heading', { name: /^Welcome back|^Dashboard$/ }).waitFor(); await page.getByText(/Simulated payments: no real money is collected/).waitFor();
     await identity(readonly); await goto('/admin/orders'); assert.equal(await page.getByRole('button', { name: 'Check payment status', exact: true }).first().isDisabled(), true);
   });

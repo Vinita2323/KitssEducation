@@ -343,11 +343,11 @@ export class PaymentService {
     for (const Model of [Order, this.models.RegistrationApplication, this.models.AccessRequest, this.models.BookEntitlement]) for await (const doc of Model.find({ 'auditOutbox.0': { $exists: true } }).cursor()) await this.flush(Model, doc);
   }
   async registrationConfig() {
-    const legacyFees = await this.publishingModule.models.SiteSettings.findOne({ key: 'registrationFees' }).lean();
+    // Fees come only from the registration rules in Site Settings; the old separate fee setting is ignored.
     const settings = await this.business.settings(), policies = settings.value?.registrations ?? {};
     const enabled = {}, unavailableReasons = {};
     for (const kind of Object.keys(registrationFields)) { try { await this.business.policy(kind); enabled[kind] = true; } catch (e) { if (e.status !== 409) throw e; enabled[kind] = false; unavailableReasons[kind] = e.message; } }
-    return { kinds: Object.keys(registrationFields), policies, enabled, unavailableReasons, fees: { ...Object.fromEntries(Object.entries(legacyFees?.value ?? {}).map(([k, p]) => [k, { amountMinor: p.amountMinor, approved: false, legacyMetadataOnly: true }])), ...Object.fromEntries(Object.entries(policies).map(([kind, p]) => [kind, { amountMinor: p.amountMinor, approved: enabled[kind] }])) }, submissionEnabled: Object.values(enabled).some(Boolean), paymentEnabled: this.provider.ready && !this.provider.simulated, reason: 'Each category requires its own approved fee/document/privacy policy; activation requires review and applicable verified payment/guardian consent', requiredDocuments: Object.fromEntries(Object.entries(policies).map(([kind, p]) => [kind, p.documents?.filter(d => d.required !== false).map(d => d.key) ?? []])) };
+    return { kinds: Object.keys(registrationFields), policies, enabled, unavailableReasons, fees: Object.fromEntries(Object.entries(policies).map(([kind, p]) => [kind, { amountMinor: p.amountMinor, approved: enabled[kind] }])),submissionEnabled: Object.values(enabled).some(Boolean), paymentEnabled: this.provider.ready && !this.provider.simulated, reason: 'Each category requires its own approved fee/document/privacy policy; activation requires review and applicable verified payment/guardian consent', requiredDocuments: Object.fromEntries(Object.entries(policies).map(([kind, p]) => [kind, p.documents?.filter(d => d.required !== false).map(d => d.key) ?? []])) };
   }
   applicationDTO(row, admin = false) { return { id: String(row._id), reference: row.reference, kind: row.kind, teacherProfileId: row.teacherProfileId ? String(row.teacherProfileId) : null, applicant: row.applicant, revision: row.revision, status: row.status, paymentState: row.paymentState, requiredDocuments: row.requiredDocuments, documents: row.documents, guardianConsent: row.guardianConsent, feeSnapshot: row.feeSnapshot, orderId: row.orderId, submittedAt: row.submittedAt, activatedAt: row.activatedAt, personalDataDeletedAt: row.personalDataDeletedAt, ...(admin ? { notes: row.notes, history: row.history, legalHold: row.legalHold, userId: String(row.userId) } : { reviewFeedback: row.history?.filter(h => ['needs_changes', 'rejected'].includes(h.status)).map(h => ({ status: h.status, reason: h.reason, at: h.at })) }), submissionEnabled: true }; }
   async freeBook(value, auth, ctx) {
@@ -366,10 +366,9 @@ export class PaymentService {
     this.eligible(auth); object(input, ['kind', 'applicant', 'idempotencyKey'], ['kind', 'applicant', 'idempotencyKey']); key(input.idempotencyKey);
     const applicant = applicantInput(input.kind, input.applicant, auth.user), requestHash = hash({ kind: input.kind, applicant: Object.fromEntries(Object.entries(applicant).sort()) });
     await this.authService.limit(ctx, String(auth.user._id), 'registration-draft', 20);
-    const fees = await this.publishingModule.models.SiteSettings.findOne({ key: 'registrationFees' }).lean();
-    const fee = fees?.value?.[input.kind];
+    // The fee is fixed from the active registration rules when the application is submitted.
     try {
-      const doc = await this.models.RegistrationApplication.create({ reference: 'STAGE6-APP-' + randomUUID(), userId: auth.user._id, kind: input.kind, applicant, ...(fee?.approved ? { feeSnapshot: { amountMinor: fee.amountMinor, currency: 'INR', revision: fees.revision } } : {}), requiredDocuments: [], idempotencyKey: input.idempotencyKey, requestHash, auditOutbox: [event('registration_draft_created', ctx)] });
+      const doc = await this.models.RegistrationApplication.create({ reference: 'STAGE6-APP-' + randomUUID(), userId: auth.user._id, kind: input.kind, applicant, requiredDocuments: [], idempotencyKey: input.idempotencyKey, requestHash, auditOutbox: [event('registration_draft_created', ctx)] });
       await this.flush(this.models.RegistrationApplication, doc); return this.applicationDTO(doc);
     } catch (error) { if (error.code !== 11000) throw error; const prior = await this.models.RegistrationApplication.findOne({ userId: auth.user._id, idempotencyKey: input.idempotencyKey }); if (!prior || prior.requestHash !== requestHash) throw conflict(); return this.applicationDTO(prior); }
   }

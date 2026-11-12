@@ -22,13 +22,20 @@ test('franchise policy and applicant/admin screens: isolated HTTP, browser, fake
   for(const c of [context,studentContext])await c.route('**/*',route=>new URL(route.request().url()).origin===base?route.continue():route.abort());
   const page=await context.newPage(),app=await studentContext.newPage();page.setDefaultTimeout(30000);app.setDefaultTimeout(30000);const errors=[];for(const p of [page,app])p.on('pageerror',e=>errors.push(e.message));
   await t.test('main admin saves and publishes explicit policy through UI',async()=>{
-    await page.goto(base+'/admin/settings',{waitUntil:'domcontentloaded',timeout:120000});
-    const policy=page.getByRole('region',{name:'Franchise policy manager'});await policy.getByLabel('Franchise policy version',{exact:true}).waitFor();
-    await policy.getByLabel('Franchise policy change reason',{exact:true}).fill('Review initial synthetic franchise terms');
-    await policy.getByRole('button',{name:'Save franchise policy draft',exact:true}).click();await policy.getByText('Franchise policy draft saved. Review it before publishing.',{exact:true}).waitFor();
+    await page.goto(base+'/admin/settings?tab=franchise',{waitUntil:'domcontentloaded',timeout:120000});
+    const policy=page.getByRole('region',{name:'Franchise settings'});await policy.getByText('Not published',{exact:true}).waitFor();
+    const agreement=policy.getByLabel('Franchise agreement',{exact:true});await agreement.fill((await agreement.inputValue())+' Synthetic review copy.');
+    await policy.getByLabel('Reason for this change',{exact:true}).fill('Review initial synthetic franchise terms');
+    await policy.getByRole('button',{name:'Save draft',exact:true}).click();await policy.getByText('Draft saved. Applicants still see the published rules until you publish.',{exact:true}).waitFor();
     assert.equal((await f.service.franchise.adminPolicy()).published,null);
-    await policy.getByLabel('Franchise policy change reason',{exact:true}).fill('Publish approved synthetic test policy');
-    await policy.getByRole('button',{name:'Publish franchise policy',exact:true}).click();await policy.getByText('Franchise policy published. Accepted application versions remain unchanged.',{exact:true}).waitFor();
+    await policy.getByLabel('Reason for this change',{exact:true}).fill('Publish approved synthetic test policy');
+    await policy.getByRole('button',{name:'Publish changes',exact:true}).click();await policy.getByText('Franchise rules published. Applications already accepted keep the terms they agreed to.',{exact:true}).waitFor();
+    await policy.getByText('Live',{exact:true}).waitFor();
+    const live=(await f.service.franchise.adminPolicy()).published;assert.match(live.agreement.text,/Synthetic review copy\.$/);assert.deepEqual(live.documents.map(d=>[d.mime.length,d.maxBytes]),[[3,10485760],[3,10485760]],'documents use the standard file rules');assert.ok(Date.parse(live.effectiveFrom)<=Date.now());
+    // Changing terms after publication creates a new version automatically instead of failing.
+    await agreement.fill(live.agreement.text+' Second revision.');await policy.getByLabel('Reason for this change',{exact:true}).fill('Synthetic second revision');
+    await policy.getByRole('button',{name:'Publish changes',exact:true}).click();await policy.getByText('Franchise rules published. Applications already accepted keep the terms they agreed to.',{exact:true}).waitFor();
+    const next=(await f.service.franchise.adminPolicy()).published;assert.notEqual(next.version,live.version);assert.match(next.agreement.text,/Second revision\.$/);assert.notEqual(next.agreement.version,live.agreement.version,'changed wording gets a new agreement version');
   });
   let id;
   await t.test('mobile applicant saves independent draft, uploads actual PDFs and accepts agreement',async()=>{

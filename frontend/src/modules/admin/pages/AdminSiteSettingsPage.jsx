@@ -1,18 +1,50 @@
-import { fieldLabel } from '../../../shared/ui/displayText';
-import { FranchisePolicyManager } from '../components/FranchisePolicyManager';
-import { AdminField, AdminInput, AdminSelect, AdminTextarea } from '../components/AdminFields';
-import { BusinessPolicyPanel } from '../components/BusinessPolicyPanel';
-import React, { useEffect, useState } from 'react';
-import { contentService } from '../../user/services/contentService';
+import React, { useCallback, useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { AdminPageHeader } from '../components/AdminUI';
 import { httpClient } from '../../../shared/api/httpClient';
 import { authenticatedWrite } from '../../user/services/authService';
 import { useAuth } from '../../user/context/AuthContext';
-import { AdminCard, AdminPageHeader } from '../components/AdminUI';
-const fields = { brand: ['name','tagline'], support: ['email','phone','address','hours'], footer: ['copyright','description'], publicFeatures: ['booksEnabled','institutionsEnabled'], registrationFees: [] };
+import { GeneralSettings } from '../components/settings/GeneralSettings';
+import { RegistrationSettings } from '../components/settings/RegistrationSettings';
+import { FranchiseSettings } from '../components/settings/FranchiseSettings';
+import { PaymentSettings } from '../components/settings/PaymentSettings';
+
+const tabs = [['general', 'General'], ['registrations', 'Registrations'], ['franchise', 'Franchise'], ['payments', 'Payments & billing']];
+// Parts of the shared policy record that the Registrations and Payments tabs save.
+const policyParts = ['registrations', 'manualAccess', 'invoice', 'refunds', 'franchise'];
+
 export function AdminSiteSettingsPage() {
-  const { can } = useAuth();
-  const [settings, setSettings] = useState({}), [key, setKey] = useState('brand'), [form, setForm] = useState({}), [error, setError] = useState(''), [message, setMessage] = useState(''), [busy, setBusy] = useState(true);
-  useEffect(() => { const controller = new AbortController(); httpClient.request('/admin/settings', { signal: controller.signal }).then(r => { if (!controller.signal.aborted) { setSettings(r.data); setForm(r.data.brand?.value || {}); } }).catch(e => { if (e.code !== 'ABORTED') setError(e.message); }).finally(() => { if (!controller.signal.aborted) setBusy(false); }); return () => controller.abort(); }, []);
-  const save = async e => { e.preventDefault(); setBusy(true); setError(''); setMessage(''); try { const row = await authenticatedWrite('/admin/settings/' + key, { value: form, expectedRevision: settings[key]?.revision ?? 0 }, 'PATCH'); setSettings(s => ({ ...s, [key]: row })); setMessage('Public settings saved.'); } catch (e) { setError(e.message); } finally { setBusy(false); } };
-  return <div className="space-y-5 text-[#0A1D3F]"><AdminPageHeader title="Public Site Settings" description="Policies, fees and the branding, contact and footer details students see." /><FranchisePolicyManager /><BusinessPolicyPanel /><AdminCard title="Branding, contact and footer" bodyClassName="space-y-4"><p className="text-xs text-[#667085]">Only branding, contact and footer presentation. Security, permissions and financial policies are not editable here.</p><AdminSelect disabled={busy} aria-label="Setting group" className="p-2 border rounded-lg" value={key} onChange={e => { setKey(e.target.value); setForm(settings[e.target.value]?.value || {}); }}>{Object.keys(fields).map(k => <option key={k} value={k} disabled={k === 'publicFeatures'}>{fieldLabel(k)}</option>)}</AdminSelect>{error && <p role="alert" className="text-red-700">{error}</p>}{message && <p role="status">{message}</p>}<form onSubmit={save} className="space-y-3 max-w-xl"><fieldset disabled={busy || !can('settings.write')} className="space-y-3">{key === 'registrationFees' && <div className="space-y-3"><p className="text-xs">Set the approved registration fees. Payments become available only when the application requirements and approval rules are ready. Confirm tax and receipt details separately.</p>{['study','tuition','teacher','coaching-profile'].map(kind=><div key={kind} className="border p-3 rounded-xl"><AdminField className="block text-xs">{kind} fee (INR minor units)<AdminInput type="number" min="0" step="1" aria-label={kind+' fee minor units'} value={form[kind]?.amountMinor ?? ''} onChange={e=>setForm(f=>({...f,[kind]:{...f[kind],amountMinor:e.target.value === '' ? '' : Number(e.target.value),approved:f[kind]?.approved ?? false}}))} className="block border rounded-lg p-2 w-full"/></AdminField><AdminField className="text-xs"><AdminInput type="checkbox" checked={form[kind]?.approved ?? false} onChange={e=>setForm(f=>({...f,[kind]:{...f[kind],approved:e.target.checked}}))}/> Price approved</AdminField></div>)}</div>}{key === 'footer' && <AdminField className="block text-sm">Footer links (type | target per line)<AdminTextarea aria-label="Footer links" rows={4} maxLength={10000} className="block w-full border rounded-xl p-2" value={(form.links || []).map(link => link.type + ' | ' + link.target).join('\n')} onChange={e => setForm(f => ({ ...f, links: e.target.value.split('\n').filter(Boolean).map(line => { const [type, ...target] = line.split('|'); return { type: type.trim(), target: target.join('|').trim() }; }) }))} /><span className="text-xs">Use internal with an approved route, or external with a complete HTTPS address. At most 10 links.</span></AdminField>}{fields[key].map(field => <AdminField key={field} className="block text-sm">{fieldLabel(field)}{field.endsWith('Enabled') ? <AdminInput aria-label={'Setting ' + field} type="checkbox" checked={Boolean(form[field])} onChange={e => setForm(f => ({ ...f, [field]: e.target.checked }))} className="ml-2" /> : <AdminInput aria-label={'Setting ' + field} value={form[field] || ''} onChange={e => setForm(f => ({ ...f, [field]: e.target.value }))} className="block w-full p-2 border rounded-xl mt-1" />}</AdminField>)}<button disabled={busy || !can('settings.write')} className="admin-btn admin-btn-primary">Save Public Settings</button></fieldset></form></AdminCard></div>;
+  const { user, can } = useAuth(), [params, setParams] = useSearchParams();
+  const tab = tabs.some(([key]) => key === params.get('tab')) ? params.get('tab') : 'general';
+  const [business, setBusiness] = useState(null), [franchise, setFranchise] = useState(null), [error, setError] = useState('');
+  const locked = !user?.roles?.includes('super_admin') || !can('settings.write');
+
+  // Franchise rules and business rules live in one record with one revision, so each save refreshes both.
+  const load = useCallback(async signal => {
+    const [b, f] = await Promise.all([httpClient.request('/admin/business-policies', { signal }), httpClient.request('/admin/franchise-policy', { signal })]);
+    if (!signal?.aborted) { setBusiness(b.data); setFranchise(f.data); setError(''); }
+  }, []);
+  useEffect(() => { const c = new AbortController(); load(c.signal).catch(e => { if (!c.signal.aborted) setError(e.message); }); return () => c.abort(); }, [load]);
+
+  const saveBusiness = async (part, reason) => {
+    const value = Object.fromEntries(policyParts.filter(k => business.value?.[k] !== undefined).map(k => [k, business.value[k]]));
+    const saved = await authenticatedWrite('/admin/business-policies', { value: { ...value, ...part }, expectedRevision: business.revision, reason }, 'PATCH');
+    setBusiness(saved);
+    // The save already succeeded; a failed refresh only means the next save asks for a reload.
+    await httpClient.request('/admin/franchise-policy').then(r => setFranchise(r.data), () => {});
+  };
+  const franchiseChanged = async record => { setFranchise(record); await httpClient.request('/admin/business-policies').then(r => setBusiness(r.data), () => {}); };
+
+  return <div className="space-y-5 text-[#0A1D3F]">
+    <AdminPageHeader title="Site Settings" description="Your public details, registration and franchise rules, and payment settings." />
+    <div className="admin-segmented" role="group" aria-label="Settings sections">{tabs.map(([key, label]) => <button key={key} type="button" aria-pressed={tab === key} onClick={() => setParams(key === 'general' ? {} : { tab: key }, { replace: true })}>{label}</button>)}</div>
+    {error && <p role="alert" className="text-red-700">{error} <button type="button" className="underline" onClick={() => load().catch(e => setError(e.message))}>Try again</button></p>}
+    {/* Tabs stay mounted so unsaved edits survive switching between them. */}
+    <section hidden={tab !== 'general'} aria-label="General settings"><GeneralSettings canWrite={can('settings.write')} /></section>
+    {business && franchise ? <>
+      <section hidden={tab !== 'registrations'} aria-label="Registration settings"><RegistrationSettings record={business} locked={locked} save={saveBusiness} /></section>
+      <section hidden={tab !== 'franchise'} aria-label="Franchise settings"><FranchiseSettings record={franchise} locked={locked} onChanged={franchiseChanged} /></section>
+      <section hidden={tab !== 'payments'} aria-label="Payment settings"><PaymentSettings record={business} locked={locked} save={saveBusiness} /></section>
+    </> : tab !== 'general' && !error && <p role="status">Loading settings…</p>}
+  </div>;
 }

@@ -28,7 +28,7 @@ test('admin field help, native upload and draft persistence (synthetic local fix
   const go = async path => { await page.goto(base + path, { waitUntil: 'domcontentloaded', timeout: 120000 }); await page.locator('#admin-main h1').first().waitFor(); };
   const help = async () => assert.deepEqual(await page.locator('#admin-main').evaluate(main => [...main.querySelectorAll('input:not([type=hidden]),select,textarea')].filter(input => input.getClientRects().length).filter(input => (input.getAttribute('aria-describedby') || '').split(' ').filter(Boolean).some(id => !document.getElementById(id))).map(input => input.getAttribute('aria-label') || input.id)), []);
   await t.test('policy and review fields have no broken description references', async () => {
-    for (const path of ['/admin/refunds', '/admin/access-requests', '/admin/settings']) { await go(path); if (path.endsWith('settings')) await page.getByLabel('Policy registration category', { exact: true }).waitFor(); await help(); }
+    for (const path of ['/admin/refunds', '/admin/access-requests', '/admin/settings']) { await go(path); if (path.endsWith('settings')) await page.getByRole('group', { name: 'Settings sections' }).waitFor(); await help(); }
   });
   await t.test('file selection and decimal price survive native form submit', async () => {
     await go('/admin/books'); await page.getByRole('button', { name: 'Add New Book', exact: true }).click();

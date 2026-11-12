@@ -72,8 +72,10 @@ test('Stage 13 policy workflows, private documents, free/paid access and granula
     row = await review(row, 'pending_verification'); row = await review(row, 'under_review'); row = await review(row, 'approved'); assert.equal(row.status, 'approved');
     await assert.rejects(() => f.media.remove(asset.id, { expectedRevision: asset.revision }, f.ctx), { code: 'MEDIA_REFERENCED' });
   });
-  await t.test('minors need approved versioned guardian consent and reviewer verification; rejection is auditable', async () => {
-    let row = await draft('study', '2015-01-01'); await assert.rejects(() => submit(row));
+  await t.test('guardian consent is optional for minors; consent that is given must be current and verified before approval', async () => {
+    const withoutConsent = await submit(await draft('study', '2015-01-01')); assert.equal(withoutConsent.status, 'submitted'); assert.equal(withoutConsent.guardianConsent, null);
+    let row = await draft('study', '2015-01-01');
+    await assert.rejects(() => b.submit(row.id, { expectedRevision: row.revision, declaration: true, guardianConsent: { guardianName: 'Synthetic guardian', relationship: 'Parent', accepted: true, version: 'synthetic-v1' } }, d.student.auth, f.ctx), { code: 'INVALID_INPUT' }, 'consent needs approved wording');
     value.registrations.study = policy({ guardian: { approved: true, version: 'synthetic-v1', text: 'Synthetic guardian consent for isolated tests only' } }); await save();
     row = await b.submit(row.id, { expectedRevision: row.revision, declaration: true, guardianConsent: { guardianName: 'Synthetic guardian', relationship: 'Parent', accepted: true, version: 'synthetic-v1' } }, d.student.auth, f.ctx);
     row = await review(row, 'pending_verification'); row = await review(row, 'under_review'); await assert.rejects(() => review(row, 'approved'));
