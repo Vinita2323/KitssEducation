@@ -118,7 +118,7 @@ test('Stage 13 real browser/HTTP/MongoDB policy, free content and keyboard granu
     await page.getByRole('button', { name: 'Send invitation', exact: true }).click(); assert.equal((await response).status(), 201);
     const staff = await f.models.User.findOne({ emailNormalized: email }); assert.deepEqual(staff.permissions.toObject(), ['books.read']); assert.equal(staff.status, 'pending');
     assert.equal(messages.filter(m => m.to === email).length, 1);
-    await page.getByRole('button', { name: /Browser subadmin/ }).getByText(/^Custom access \//).waitFor();
+    await page.getByRole('row').filter({ hasText: 'Browser subadmin' }).getByText('Custom access', { exact: true }).waitFor();
   });
   await t.test('permission selector and staff controls reflow at all eight requested widths', async () => {
     for (const width of [320, 375, 390, 414, 768, 1024, 1280, 1440]) {

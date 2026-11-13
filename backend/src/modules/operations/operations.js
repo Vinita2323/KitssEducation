@@ -50,13 +50,18 @@ export function createOperationsService(authService, { diagnostics } = {}) {
     async users(query) {
       const number = paging(query, ['q', 'status', 'role']);
       const filter = {};
-      if (query.status) filter.status = choice(query.status, ['pending', 'active', 'suspended', 'archived']);
-      if (query.role) filter.roles = choice(query.role, ['student', 'admin', 'super_admin']);
+      // "staff" covers ordinary staff and the owner, for the Staff tab of User accounts.
+      if (query.role) { const role = choice(query.role, ['student', 'admin', 'super_admin', 'staff']); filter.roles = role === 'staff' ? { $in: ['admin', 'super_admin'] } : role; }
       if (query.q) {
         const match = new RegExp(literal(query.q), 'i');
         filter.$or = [{ name: match }, { emailNormalized: match }, { publicId: match }];
       }
-      return page(User, filter, number, 'publicId name emailNormalized roles permissions status emailVerifiedAt phone profile createdAt updatedAt adminRevision lastLoginAt', accountDTO);
+      // Status counts ignore the status filter so they can be used to switch between statuses.
+      const counts = await User.aggregate([{ $match: filter }, { $group: { _id: '$status', count: { $sum: 1 } } }]);
+      const summary = Object.fromEntries(['active', 'suspended', 'pending', 'archived'].map(s => [s, counts.find(c => c._id === s)?.count ?? 0]));
+      summary.total = counts.reduce((sum, c) => sum + c.count, 0);
+      if (query.status) filter.status = choice(query.status, ['pending', 'active', 'suspended', 'archived']);
+      return { ...await page(User, filter, number, 'publicId name emailNormalized roles permissions status emailVerifiedAt phone profile createdAt updatedAt adminRevision lastLoginAt', accountDTO), summary };
     },
     async detail(value) {
       const user = await account(value);

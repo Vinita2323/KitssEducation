@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { BookOpen, GraduationCap, RotateCcw, ShieldOff, Users } from 'lucide-react';
 import { AdminField, AdminInput, AdminSelect, AdminTextarea } from '../components/AdminFields';
 import { useDialogFocus } from '../../../shared/ui/useDialogFocus';
@@ -28,8 +28,9 @@ function Dialog({ title, onClose, children, wide }) {
 }
 
 export function AdminEnrollmentsPage() {
-  const { can } = useAuth();
-  const [kind, setKind] = useState('course'), [state, setState] = useState('all'), [source, setSource] = useState(''), [q, setQ] = useState(''), [page, setPage] = useState(1);
+  const { can } = useAuth(), [params] = useSearchParams();
+  // ?q= lets other pages (such as User accounts) open this review already filtered.
+  const [kind, setKind] = useState('course'), [state, setState] = useState('all'), [source, setSource] = useState(''), [q, setQ] = useState(() => params.get('q') ?? ''), [page, setPage] = useState(1);
   const [result, setResult] = useState({ data: [], summary: null, meta: null }), [error, setError] = useState(''), [busy, setBusy] = useState(false), [version, setVersion] = useState(0);
   const [detail, setDetail] = useState(null), [change, setChange] = useState(null), [reason, setReason] = useState(''), [saving, setSaving] = useState(false), [notice, setNotice] = useState('');
   useEffect(() => {

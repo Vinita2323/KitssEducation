@@ -39,29 +39,34 @@ test('Stage 10 admin-to-user persisted workflows and responsive shared navigatio
   t.afterEach(async child => { if (child.passed === false) await page.screenshot({ path: artifacts + 'stage10-failure-' + child.name.replace(/[^a-z0-9]/gi, '-') + '.png', fullPage: true }); });
   const goto = path => page.goto(base + path, { waitUntil: 'domcontentloaded', timeout: 60000 });
   const identity = async actor => { await context.clearCookies(); await context.addCookies([{ name: actor.user.roles.includes('student') ? 'kitss_student_session' : 'kitss_staff_session', value: actor.token, url: base, httpOnly: true, sameSite: 'Lax' }]); };
-  const searchAccount = async value => { await goto('/admin/users'); await page.getByLabel('Search accounts').fill(value); await page.getByRole('button', { name: 'Search accounts', exact: true }).click(); await page.getByRole('button').filter({ hasText: value }).click(); await page.getByLabel('Account change reason').waitFor(); };
+  // Search runs as you type; opening a row shows the account details panel.
+  const searchAccount = async (value, path = '/admin/users') => { await goto(path); await page.getByLabel('Search accounts').fill(value); await page.getByRole('button').filter({ hasText: value }).click(); await page.getByRole('dialog', { name: 'Account details' }).waitFor(); return page.getByRole('dialog', { name: 'Account details' }); };
   await check('admin suspension/restore persists and revoked student session remains denied', async () => {
-    await identity(admin); await searchAccount(target.user.name);
-    await page.getByLabel('Account change reason').fill('STAGE10 reviewed suspension');
+    await identity(admin); let details = await searchAccount(target.user.name);
+    await details.getByRole('button', { name: 'Suspend account', exact: true }).click();
+    await details.getByLabel('Reason for suspending', { exact: true }).fill('STAGE10 reviewed suspension');
     const response = page.waitForResponse(r => r.url().endsWith('/status') && r.request().method() === 'PATCH');
-    await page.getByRole('button', { name: 'Suspend account', exact: true }).click(); assert.equal((await response).status(), 200);
-    await page.getByText('Account updated. Previous sessions are invalidated.', { exact: true }).waitFor();
+    await details.getByRole('button', { name: 'Confirm suspension', exact: true }).click(); assert.equal((await response).status(), 200);
+    await details.getByText('Account suspended. The person has been signed out.', { exact: true }).waitFor();
     assert.equal((await f.models.User.findById(target.user._id)).status, 'suspended');
     await identity(target); await goto('/profile'); await page.waitForURL('**/login*');
     assert.equal(await page.evaluate(async () => (await fetch('/api/v1/auth/me')).status), 401);
-    await identity(admin); await searchAccount(target.user.name);
-    await page.getByLabel('Account change reason').fill('STAGE10 reviewed restoration');
+    await identity(admin); details = await searchAccount(target.user.name);
+    await details.getByRole('button', { name: 'Restore account', exact: true }).click();
+    await details.getByLabel('Reason for restoring', { exact: true }).fill('STAGE10 reviewed restoration');
     const restored = page.waitForResponse(r => r.url().endsWith('/status') && r.request().method() === 'PATCH');
-    await page.getByRole('button', { name: 'Restore account', exact: true }).click(); assert.equal((await restored).status(), 200);
+    await details.getByRole('button', { name: 'Confirm restore', exact: true }).click(); assert.equal((await restored).status(), 200);
     await goto('/admin/audit-logs'); await page.getByLabel('Audit resource').fill(target.user.publicId); await page.getByRole('button', { name: 'Apply filters', exact: true }).click();
     await page.getByText('Reason: STAGE10 reviewed suspension', { exact: true }).waitFor(); await page.getByText('Reason: STAGE10 reviewed restoration', { exact: true }).waitFor();
   });
   await check('super-admin permission edit is enforced on a newly authenticated staff session', async () => {
-    await identity(admin); await searchAccount('STAGE10 ORDINARY STAFF');
-    const custom = page.locator('details').filter({ has: page.getByText(/^Custom permissions/) }); if (!(await custom.evaluate(d => d.open))) await custom.locator('summary').click();
-    await page.getByRole('checkbox', { name: 'View audit logs', exact: true }).check(); await page.getByLabel('Account change reason').fill('STAGE10 safe staff visibility');
+    // Roles are changed only on Staff management.
+    await identity(admin); const details = await searchAccount('STAGE10 ORDINARY STAFF', '/admin/staff');
+    await details.getByRole('button', { name: 'Change role', exact: true }).click();
+    const custom = details.locator('details').filter({ has: page.getByText(/^Custom permissions/) }); if (!(await custom.evaluate(d => d.open))) await custom.locator('summary').click();
+    await details.getByRole('checkbox', { name: 'View audit logs', exact: true }).check(); await details.getByLabel('Reason for this change', { exact: true }).fill('STAGE10 safe staff visibility');
     const response = page.waitForResponse(r => r.url().endsWith('/roles') && r.request().method() === 'PATCH');
-    await page.getByRole('button', { name: 'Save role and access', exact: true }).click(); assert.equal((await response).status(), 200);
+    await details.getByRole('button', { name: 'Save role and access', exact: true }).click(); assert.equal((await response).status(), 200);
     assert.equal(await f.auth.authenticate(staff.token, 'admin'), null);
     const signedIn = await f.auth.login({ identifier: staff.user.emailNormalized, password: 'SyntheticPassword123!', kind: 'admin' }, f.ctx);
     await identity(signedIn); await goto('/admin/audit-logs'); await page.getByRole('heading', { name: 'Audit logs', exact: true }).waitFor();

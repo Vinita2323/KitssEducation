@@ -6,7 +6,8 @@ import { AdminCoachingPage, AdminEnrollmentsPage } from '../pages/AdminCoachingP
 import { AdminOrdersPage } from '../pages/AdminOrdersPage';
 import { AdminRegistrationsPage } from '../pages/AdminRegistrationsPage';
 import React from "react";
-import { AdminUsersPage, AdminOperationsPage } from '../pages/AdminOperationsPage';
+import { AdminOperationsPage } from '../pages/AdminOperationsPage';
+import { AdminUsersPage } from '../pages/AdminUsersPage';
 import { Routes, Route, Navigate } from "react-router-dom";
 import { AdminLayout } from "../components/layout/AdminLayout";
 import { AdminDashboardPage } from "../pages/AdminDashboardPage";

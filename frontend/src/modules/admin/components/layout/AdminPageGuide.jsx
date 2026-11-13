@@ -20,7 +20,7 @@ const sections = {
   media: ['Publishing', 'Manage files safely', 'Choose the correct file purpose, upload, then check the scan result. Only clean, ready files can be used.'],
   notifications: ['Communication', 'Send clear, useful updates', 'Write a short message, check the audience, and save a draft before publishing to the intended recipients.'],
   staff: ['Administration', 'Manage staff access', 'Invite staff and give each person a job role, such as Content manager or Finance manager. Pending people still need to accept their invitation and verify their email. Use Custom permissions only for unusual cases.'],
-  users: ['Administration', 'Manage people and permissions', 'Find an account, review its details, and record a reason for changes. Grant staff only the permissions they need.'],
+  users: ['Administration', 'Find and manage accounts', 'Search students or staff, open an account to see its details and activity, and suspend or restore access with a reason. Staff roles are changed on Staff management.'],
   settings: ['Administration', 'Manage public details and business rules', 'General holds your public contact and footer details. Registrations, Franchise and Payments & billing hold the rules applicants and students follow. Each rule change needs a short reason and is kept in the change history.'],
   'audit-logs': ['Administration', 'Trace administrative changes', 'Filter the activity history by person, action, record or date to understand what changed.'],
   operations: ['Administration', 'Monitor background work', 'Review queued or failed jobs and use the existing authorized retry actions when appropriate.'],

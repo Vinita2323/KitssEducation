@@ -61,7 +61,7 @@ test('dedicated staff management (mocked HTTP; no emails sent)', { skip: !exists
     await page.getByRole('status').filter({ hasText: 'Invitation revoked' }).waitFor();
     assert.equal(writes.at(-1).method, 'DELETE');
     assert.equal(writes.at(-1).csrf, 'mock-csrf');
-    await page.getByRole('button', { name: /Pending Person/ }).getByText(/archived/).waitFor();
+    await page.getByRole('row').filter({ hasText: 'Pending Person' }).getByText(/archived/i).waitFor();
   });
   await t.test('staff page fits mobile and passes accessibility checks', async () => {
     for (const width of [390, 320]) { await page.setViewportSize({ width, height: 844 }); assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)); }
