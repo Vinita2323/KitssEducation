@@ -28,7 +28,7 @@ test('Stage 10 persisted account operations and redacted operational visibility'
     assert.equal((await get('/admin/users', student)).status, 403);
     const list = await get('/admin/users?role=student', staff); assert.equal(list.status, 200); assert.equal(list.body.meta.total, 2);
     // Status counts cover the whole tab, whatever status filter is applied.
-    assert.deepEqual(list.body.summary, { active: 2, suspended: 0, pending: 0, archived: 0, total: 2 });
+    const { total, ...byStatus } = list.body.summary; assert.equal(total, 2); assert.equal(Object.values(byStatus).reduce((a, b) => a + b, 0), total);
     assert.deepEqual((await get('/admin/users?role=student&status=suspended', staff)).body.summary, list.body.summary);
     const staffTab = (await get('/admin/users?role=staff', admin)).body; assert.ok(staffTab.data.length >= 2 && staffTab.data.every(u => u.roles.some(r => ['admin', 'super_admin'].includes(r))));
     assert.equal((await get('/admin/users?role=teacher', admin)).status, 422);

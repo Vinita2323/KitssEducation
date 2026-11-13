@@ -87,7 +87,7 @@ export function AccountDirectory({ role, refreshVersion = 0, editRoles = false, 
   return <div className="space-y-4 text-sm text-[#0A1D3F]">
     <div className="flex flex-wrap items-center gap-3">
       <div className="relative flex-1 min-w-56"><Search aria-hidden="true" size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#53647c]" /><input aria-label="Search accounts" type="search" maxLength={100} value={search} onChange={e => setSearch(e.target.value)} placeholder="Search by name, email or account ID" className="w-full rounded-xl border border-[#cbd6e5] bg-white py-2 pl-9 pr-3" /></div>
-      <div className="admin-segmented" role="group" aria-label="Account status">{statuses.filter(([value]) => value !== 'pending' || staff || summary?.pending).map(([value, label]) => <button key={value || 'all'} type="button" aria-pressed={status === value} onClick={() => { setStatus(value); setPage(1); }}>{label} {summary ? <span className="opacity-70">({value ? summary[value] : summary.total})</span> : null}</button>)}</div>
+      <div className="admin-segmented" role="group" aria-label="Account status">{statuses.filter(([value]) => value !== 'pending' || staff || summary?.pending).map(([value, label]) => <button key={value || 'all'} type="button" aria-pressed={status === value} onClick={() => { setStatus(value); setPage(1); }}>{label} {summary ? <span>({value ? summary[value] : summary.total})</span> : null}</button>)}</div>
     </div>
     {error && <p role="alert" className="text-red-700">{error}</p>}
     <AdminTable><table className="w-full"><thead><tr><th>Name</th><th>Status</th>{staff && <th>Role</th>}<th>Joined</th><th>Last sign-in</th></tr></thead>

@@ -1,5 +1,5 @@
 {
-  "purpose": "Actual axe findings and final browser scope totals; keyboard/zoom/reflow details and limits are in FINAL-TWO-GAPS-REPORT.md.",
+  "purpose": "Axe findings only; overall executed/failed/skipped tests are recorded separately",
   "focus": "complete",
   "sectionManifest": [
     "/admin",
@@ -18,7 +18,7 @@
     "/admin/taxonomies",
     "/admin/universities",
     "/admin/colleges",
-    "/admin/colleges/6adec43dcb78ae36c4255332/courses",
+    "/admin/colleges/6af69e64f31c1c9d35afa0d1/courses",
     "/admin/franchise-requests",
     "/admin/applications",
     "/admin/books"
@@ -100,7 +100,7 @@
       "violations": []
     },
     {
-      "label": "/admin/colleges/6adec43dcb78ae36c4255332/courses",
+      "label": "/admin/colleges/6af69e64f31c1c9d35afa0d1/courses",
       "violations": []
     },
     {
@@ -132,7 +132,7 @@
       "violations": []
     },
     {
-      "label": "Taxonomy editor",
+      "label": "Add board",
       "violations": []
     },
     {
@@ -157,6 +157,10 @@
     },
     {
       "label": "Book editor",
+      "violations": []
+    },
+    {
+      "label": "Remove book confirmation",
       "violations": []
     },
     {
@@ -202,37 +206,5 @@
   ],
   "pageErrors": [],
   "zoom": "Native Chrome 200% page zoom verified by devicePixelRatio=2 and <730 CSS-pixel viewport on all 20 sections; additional 720px equivalent reflow check",
-  "virtualKeyboard": "390x400 reduced viewport emulation; physical keyboard/IME not independently tested",
-  "supplementalArchiveChecks": [
-    {
-      "label": "Book editor",
-      "violations": []
-    },
-    {
-      "label": "Archive book confirmation",
-      "violations": []
-    },
-    {
-      "label": "Coaching editor",
-      "violations": []
-    },
-    {
-      "label": "Coaching editor",
-      "violations": []
-    },
-    {
-      "label": "media controls",
-      "violations": []
-    }
-  ],
-  "finalAcceptance": {
-    "passed": 34,
-    "failed": 0,
-    "skipped": 0
-  },
-  "supplementalArchiveRun": {
-    "passed": 2,
-    "failed": 0,
-    "excluded": 32
-  }
+  "virtualKeyboard": "390x400 reduced viewport emulation; physical keyboard/IME not independently tested"
 }

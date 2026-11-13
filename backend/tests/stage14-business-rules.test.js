@@ -7,7 +7,8 @@ import { accessExpiry, validDuration } from '../src/utils/accessDuration.js';
 import { inputFor } from '../src/modules/coaching/validation.js';
 import { registrationPolicy } from '../src/modules/commerce/business-policy.js';
 import { refundPolicy, franchisePolicy, franchiseFeeStatus, invoicePolicy } from '../src/modules/commerce/policy-settings.js';
-import { permissionPresets, presetSelection } from '../../frontend/src/modules/admin/components/permissionPresets.js';
+import { staffRoles, describeAccess, accessSummary, permissionLabel, ownerOnly } from '../../frontend/src/modules/admin/components/staffRoles.js';
+import { permissions } from '../src/modules/auth/security.js';
 import { stage8Fixture } from './stage8-fixture.js';
 import { serve } from './helpers.js';
 
@@ -57,13 +58,19 @@ test('tax metadata requires explicit identity and never invents tax registration
   assert.throws(() => invoicePolicy({ taxConfigurationApproved: true }));
   assert.throws(() => invoicePolicy({ gstin: 'invalid' }));
 });
-test('permission presets are allowlisted editable selections without privileged grants', () => {
-  const forbidden = ['accounts.roles.manage', 'settings.write', 'results.publish', 'access.issue', 'payments.refund'];
-  for (const [name, grants] of Object.entries(permissionPresets)) {
-    assert.equal(grants.some(p => forbidden.includes(p)), false);
-    assert.deepEqual(presetSelection(name, []), []);
-    assert.deepEqual(presetSelection(name, grants), grants);
+test('staff job roles use real permissions, never owner-only powers, and are recognised again', () => {
+  const forbidden = ['accounts.roles.manage', 'accounts.manage', 'settings.write', 'results.publish', 'access.issue', 'access.revoke', 'learning.grants.manage', 'audit.read', 'operations.read'];
+  for (const role of staffRoles) {
+    assert.equal(role.permissions.every(p => permissions.includes(p)), true, role.name + ' uses an unknown permission');
+    assert.equal(role.permissions.some(p => forbidden.includes(p)), false, role.name + ' includes an owner-only permission');
+    assert.ok(role.permissions.includes('dashboard.read'), role.name + ' can open the dashboard');
+    assert.deepEqual(describeAccess(role.permissions).roles.map(r => r.name), [role.name]);
+    assert.deepEqual(describeAccess(role.permissions).extras, []);
   }
+  assert.equal(accessSummary(['books.read']), 'Custom access');
+  assert.equal(accessSummary([]), 'No access yet');
+  // Every grantable permission has a plain-language name for the custom list.
+  for (const p of permissions.filter(p => !ownerOnly.includes(p))) assert.notEqual(permissionLabel(p), p, p + ' has no label');
 });
 
 const db = process.env.KITSS_STAGE14_TEST_DB;
