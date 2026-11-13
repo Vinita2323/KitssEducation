@@ -313,7 +313,7 @@ export const AdminUniversitiesPage = () => {
                     className="inline-flex items-center gap-1 text-xs font-semibold text-[#0A1D3F] hover:text-[#FF8A00] transition"
                   >
                     <Building2 className="w-3.5 h-3.5" />
-                    <span>Manage Colleges</span>
+                    <span>View Affiliated Colleges</span>
                     <ChevronRight className="w-3.5 h-3.5" />
                   </Link>
 

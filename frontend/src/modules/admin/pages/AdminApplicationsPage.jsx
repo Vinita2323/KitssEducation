@@ -1,6 +1,7 @@
 import { AdminInput, AdminTextarea } from '../components/AdminFields';
 import { useDialogFocus } from '../../../shared/ui/useDialogFocus';
 import React, { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
   FileText,
   Search,
@@ -27,6 +28,7 @@ import { PrimaryButton, SecondaryButton } from "../../user/components/common/Pri
 
 export const AdminApplicationsPage = () => {
   const { can } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [page, setPage] = useState(1);
   const [meta, setMeta] = useState(null);
   const [loadError, setLoadError] = useState('');
@@ -36,7 +38,18 @@ export const AdminApplicationsPage = () => {
 
   // Filter & Search
   const [statusFilter, setStatusFilter] = useState("All");
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(() => searchParams.get("search") || searchParams.get("q") || "");
+  // ?collegeId= (with ?college= as its display name) opens this list for one college, e.g. from Colleges.
+  const collegeId = searchParams.get("collegeId") || "";
+  const collegeName = searchParams.get("college") || "";
+  const urlSearch = searchParams.get("search") || searchParams.get("q") || "";
+  const clearUrl = (...keys) => setSearchParams(prev => { const next = new URLSearchParams(prev); keys.forEach(k => next.delete(k)); return next; });
+
+  useEffect(() => {
+    if (urlSearch !== search) {
+      setSearch(urlSearch);
+    }
+  }, [searchParams]);
 
   // Detail Modal State
   const [selectedApp, setSelectedApp] = useState(null);
@@ -51,6 +64,7 @@ export const AdminApplicationsPage = () => {
       const result = await adminService.page('admission-applications', { page,
         status: statusFilter,
         search,
+        ...(collegeId ? { collegeId } : {}),
        });
       const data = result.data; setMeta(result.meta); setLoadError('');
       setApplications(data);
@@ -63,11 +77,25 @@ export const AdminApplicationsPage = () => {
 
   useEffect(() => {
     fetchApplications();
-  }, [statusFilter, search, page]);
+  }, [statusFilter, search, page, collegeId]);
 
-  useEffect(() => { setPage(1); }, [statusFilter, search]);
+  useEffect(() => { setPage(1); }, [statusFilter, search, collegeId]);
   const handleSearchSubmit = (e) => {
     e.preventDefault();
+    if (search.trim()) {
+      setSearchParams(prev => {
+        const next = new URLSearchParams(prev);
+        next.set("search", search.trim());
+        return next;
+      });
+    } else {
+      setSearchParams(prev => {
+        const next = new URLSearchParams(prev);
+        next.delete("search");
+        next.delete("q");
+        return next;
+      });
+    }
     fetchApplications();
   };
 
@@ -149,6 +177,34 @@ export const AdminApplicationsPage = () => {
 
       {/* Filter Chips & Search Bar */}
       <div className="bg-white p-4 rounded-2xl border border-[#E6E8EC] shadow-xs space-y-3">
+        {collegeId && (
+          <div className="flex items-center justify-between p-2.5 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900">
+            <span>
+              Showing applications for <strong>{collegeName || "the selected college"}</strong>
+            </span>
+            <button
+              type="button"
+              onClick={() => { clearUrl("collegeId", "college"); setPage(1); }}
+              className="text-amber-800 hover:text-amber-950 font-bold underline cursor-pointer ml-2"
+            >
+              Show all colleges
+            </button>
+          </div>
+        )}
+        {urlSearch && (
+          <div className="flex items-center justify-between p-2.5 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900">
+            <span>
+              Showing applications matching: <strong>{urlSearch}</strong>
+            </span>
+            <button
+              type="button"
+              onClick={() => { clearUrl("search", "q"); setSearch(""); }}
+              className="text-amber-800 hover:text-amber-950 font-bold underline cursor-pointer ml-2"
+            >
+              Clear search
+            </button>
+          </div>
+        )}
         <form onSubmit={handleSearchSubmit} className="flex gap-2">
           <div className="relative flex-1">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#667085]" />
@@ -156,7 +212,7 @@ export const AdminApplicationsPage = () => {
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              aria-label="Search admission applications" placeholder="Search by student name, email, phone, college, or application ID..."
+              aria-label="Search admission applications" placeholder="Search by student name, email or application ID..."
               className="w-full pl-10 pr-4 py-2 bg-[#F7F8FA] border border-[#E6E8EC] rounded-xl text-xs sm:text-sm focus:outline-none focus:border-[#FF8A00]"
             />
           </div>

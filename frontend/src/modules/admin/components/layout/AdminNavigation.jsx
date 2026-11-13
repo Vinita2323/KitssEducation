@@ -17,7 +17,7 @@ const groups = [
     ['Universities', '/admin/universities', GraduationCap, 'institutions.read'],
     ['Colleges / Institutes', '/admin/colleges', Building2, 'institutions.read'],
     ['Admission Applications', '/admin/applications', FileText, 'admissions.read'],
-    ['Registration drafts', '/admin/registrations', FileText, 'registrations.read'],
+    ['Registrations', '/admin/registrations', FileText, 'registrations.read'],
     ['Franchise Requests', '/admin/franchise-requests', ShieldCheck, 'franchises.read'],
   ] },
   { id: 'commerce', label: 'Payments & access', items: [

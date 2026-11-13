@@ -15,7 +15,8 @@ import {
   X,
   ExternalLink,
   ChevronRight,
-  Filter
+  Filter,
+  FileText
 } from "lucide-react";
 import { Pagination } from '../../user/components/common/Pagination';
 import { useAuth } from '../../user/context/AuthContext';
@@ -442,17 +443,47 @@ export const AdminCollegesPage = () => {
                       </span>
                     </div>
                   </div>
+
+                  {/* Quick Popular Courses Preview */}
+                  {college.popularCourses && college.popularCourses.length > 0 && (
+                    <div className="mt-2 text-[11px] text-[#64748B] flex flex-wrap items-center gap-1">
+                      <span className="font-bold text-[#0A1D3F] text-[10px] uppercase">Programs:</span>
+                      {college.popularCourses.map((prog, pIdx) => (
+                        <span key={pIdx} className="bg-gray-100 text-[#0A1D3F] px-1.5 py-0.5 rounded text-[10px] font-medium truncate max-w-[140px]">
+                          {prog}
+                        </span>
+                      ))}
+                      {(college.totalCourses || 0) > college.popularCourses.length && (
+                        <span className="text-[10px] text-[#64748B] font-semibold">
+                          +{college.totalCourses - college.popularCourses.length} more
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {/* Bottom Actions */}
                 <div className="flex items-center justify-between pt-2.5 border-t border-[#EDF2F7]">
-                  <Link
-                    to={`/admin/colleges/${cId}/courses`}
-                    className="inline-flex items-center gap-1 text-xs font-semibold text-[#0A1D3F] hover:text-[#FF8A00] transition"
-                  >
-                    <span>Manage Courses</span>
-                    <ChevronRight className="w-3.5 h-3.5" />
-                  </Link>
+                  <div className="flex items-center gap-3">
+                    <Link
+                      to={`/admin/colleges/${cId}/courses`}
+                      className="inline-flex items-center gap-1 text-xs font-semibold text-[#0A1D3F] hover:text-[#FF8A00] transition"
+                    >
+                      <span>Manage Courses</span>
+                      <ChevronRight className="w-3.5 h-3.5" />
+                    </Link>
+
+                    {can('admissions.read') && (
+                      <Link
+                        to={`/admin/applications?collegeId=${encodeURIComponent(cId)}&college=${encodeURIComponent(college.name)}`}
+                        className="inline-flex items-center gap-1 text-xs font-semibold text-[#53647c] hover:text-[#0A1D3F] hover:underline transition"
+                        title={`View admission applications for ${college.name}`}
+                      >
+                        <FileText className="w-3 h-3 text-[#53647c]" />
+                        <span>Applications</span>
+                      </Link>
+                    )}
+                  </div>
 
                   <div className="flex items-center gap-1">
                     <button
@@ -522,6 +553,14 @@ export const AdminCollegesPage = () => {
                     </option>
                   ))}
                 </AdminSelect>
+                <p className="text-[11px] text-[#64748B] mt-1">
+                  Affiliating university or governing body. For autonomous institutes, choose the primary recognized affiliate.{editingCollege ? " Affiliation cannot be changed after creation." : ""}
+                </p>
+                {!universities.length && (
+                  <p className="text-xs text-amber-600 mt-1">
+                    No universities available. <Link to="/admin/universities" className="underline font-semibold">Add an affiliating university</Link> first.
+                  </p>
+                )}
               </div>
 
               {/* College Name & Code */}
