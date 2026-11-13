@@ -12,6 +12,7 @@
     "start": "node src/server.js",
     "test": "node --test --test-concurrency=1",
     "bootstrap:admin": "node src/modules/auth/bootstrap.js",
+    "seed:taxonomies": "node --env-file=.env scripts/seed-taxonomies.js",
     "test:client": "node --test ../frontend/src/shared/api/httpClient.test.js",
     "approve:razorpay-test": "node scripts/approve-razorpay.js"
   },

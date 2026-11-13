@@ -139,7 +139,17 @@ export const AdminBooksPage = () => {
                         <div className="min-w-0">
                           <h4 className="font-bold break-words">{book.title}</h4>
                           {book.author && <p className="text-sm">{book.author}</p>}
-                          <p className="text-sm text-[#53647c] flex items-center gap-1 mt-0.5"><Users aria-hidden="true" className="w-3.5 h-3.5" />{owned === 1 ? '1 owner' : owned + ' owners'}{book.pages ? ' · ' + book.pages + ' pages' : ''}</p>
+                          <p className="text-sm text-[#53647c] flex items-center gap-1 mt-0.5">
+                            <Users aria-hidden="true" className="w-3.5 h-3.5" />
+                            {owned > 0 && can('learning.read') ? (
+                              <Link to={`/admin/enrollments?kind=book&productId=${encodeURIComponent(book.id)}`} className="text-[#0A1D3F] font-medium hover:underline" title="View book owners">
+                                {owned === 1 ? '1 owner' : owned + ' owners'}
+                              </Link>
+                            ) : (
+                              <span>{owned === 1 ? '1 owner' : owned + ' owners'}</span>
+                            )}
+                            {book.pages ? ' · ' + book.pages + ' pages' : ''}
+                          </p>
                         </div>
                       </div>
                     </td>

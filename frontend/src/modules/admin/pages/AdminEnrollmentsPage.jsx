@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { BookOpen, GraduationCap, RotateCcw, ShieldOff, Users } from 'lucide-react';
+import { BookOpen, GraduationCap, RotateCcw, ShieldCheck, ShieldOff, Users } from 'lucide-react';
 import { AdminField, AdminInput, AdminSelect, AdminTextarea } from '../components/AdminFields';
 import { useDialogFocus } from '../../../shared/ui/useDialogFocus';
 import { httpClient } from '../../../shared/api/httpClient';
@@ -29,16 +29,43 @@ function Dialog({ title, onClose, children, wide }) {
 
 export function AdminEnrollmentsPage() {
   const { can } = useAuth(), [params] = useSearchParams();
-  // ?q= lets other pages (such as User accounts) open this review already filtered.
-  const [kind, setKind] = useState('course'), [state, setState] = useState('all'), [source, setSource] = useState(''), [q, setQ] = useState(() => params.get('q') ?? ''), [page, setPage] = useState(1);
+  // ?q= and ?productId= let other pages (such as Books, Coaching and User accounts) open this review already filtered.
+  const [kind, setKind] = useState(() => params.get('kind') === 'book' ? 'book' : 'course');
+  const [state, setState] = useState(() => params.get('state') ?? 'all');
+  const [source, setSource] = useState(() => params.get('source') ?? '');
+  const [productId, setProductId] = useState(() => params.get('productId') ?? params.get('bookId') ?? params.get('courseId') ?? '');
+  const [q, setQ] = useState(() => params.get('q') ?? '');
+  const [page, setPage] = useState(1);
   const [result, setResult] = useState({ data: [], summary: null, meta: null }), [error, setError] = useState(''), [busy, setBusy] = useState(false), [version, setVersion] = useState(0);
   const [detail, setDetail] = useState(null), [change, setChange] = useState(null), [reason, setReason] = useState(''), [saving, setSaving] = useState(false), [notice, setNotice] = useState('');
+
+  // Sync state if navigation params change while staying on the page.
   useEffect(() => {
-    const controller = new AbortController(), params = new URLSearchParams({ kind, page: String(page), ...(state !== 'all' ? { state } : {}), ...(source ? { source } : {}), ...(q.trim() ? { q: q.trim() } : {}) });
+    setKind(params.get('kind') === 'book' ? 'book' : 'course');
+    setState(params.get('state') ?? 'all');
+    setSource(params.get('source') ?? '');
+    setProductId(params.get('productId') ?? params.get('bookId') ?? params.get('courseId') ?? '');
+    setQ(params.get('q') ?? '');
+    setPage(1);
+  }, [params]);
+
+  useEffect(() => {
+    const controller = new AbortController(),
+      queryParams = new URLSearchParams({
+        kind,
+        page: String(page),
+        ...(state !== 'all' ? { state } : {}),
+        ...(source ? { source } : {}),
+        ...(productId ? { productId } : {}),
+        ...(q.trim() ? { q: q.trim() } : {})
+      });
     setBusy(true); setError('');
-    httpClient.request('/admin/enrollments?' + params, { signal: controller.signal }).then(r => { if (!controller.signal.aborted) setResult(r); }).catch(e => { if (!controller.signal.aborted) setError(e.message); }).finally(() => { if (!controller.signal.aborted) setBusy(false); });
+    httpClient.request('/admin/enrollments?' + queryParams, { signal: controller.signal })
+      .then(r => { if (!controller.signal.aborted) setResult(r); })
+      .catch(e => { if (!controller.signal.aborted) setError(e.message); })
+      .finally(() => { if (!controller.signal.aborted) setBusy(false); });
     return () => controller.abort();
-  }, [kind, state, source, q, page, version]);
+  }, [kind, state, source, productId, q, page, version]);
   const openDetail = async row => { setError(''); try { setDetail((await httpClient.request('/admin/enrollments/' + row.id + '?kind=' + kind)).data); } catch (e) { setError(e.message); } };
   const submit = async () => {
     setSaving(true); setError('');
@@ -53,9 +80,27 @@ export function AdminEnrollmentsPage() {
   const cards = [['active', 'Active', Users], ['expiring', 'Expiring in 7 days', GraduationCap], ['expired', 'Expired', BookOpen], ['revoked', 'Revoked', ShieldOff], ...(summary?.blocked ? [['blocked', 'Blocked', ShieldOff]] : [])];
 
   return <div className="space-y-5 text-[#0A1D3F]">
-    <AdminPageHeader title="Enrollment Review" description="See who has access to each course and book, follow their progress, and revoke or restore access. Revoking never changes a payment or issues a refund." />
-    <div className="admin-segmented" role="group" aria-label="Access type">{[['course', 'Courses'], ['book', 'Books']].map(([value, label]) => <button key={value} type="button" aria-pressed={kind === value} onClick={() => { setKind(value); setState('all'); setSource(''); setPage(1); }}>{label}</button>)}</div>
+    <AdminPageHeader
+      title="Enrollment Review"
+      description="See who has access to each course and book, follow their progress, and revoke or restore access. Revoking never changes a payment or issues a refund."
+      actions={can('access.read') && (
+        <Link to="/admin/access-requests" className="admin-btn admin-btn-secondary admin-btn-sm inline-flex items-center gap-1.5">
+          <ShieldCheck aria-hidden="true" size={16} />
+          <span>Exceptional access requests</span>
+        </Link>
+      )}
+    />
+    <div className="admin-segmented" role="group" aria-label="Access type">{[['course', 'Courses'], ['book', 'Books']].map(([value, label]) => <button key={value} type="button" aria-pressed={kind === value} onClick={() => { setKind(value); setState('all'); setSource(''); setProductId(''); setPage(1); }}>{label}</button>)}</div>
     {kind === 'book' && <h2 className="text-lg font-bold">Book access review</h2>}
+
+    {productId && (
+      <div className="flex items-center justify-between gap-2 text-xs bg-blue-50 border border-blue-200 text-[#0A1D3F] px-3.5 py-2 rounded-xl">
+        <span>Filtered by {product.toLowerCase()}: <strong className="font-semibold">{result.data[0]?.title || productId}</strong></span>
+        <button type="button" onClick={() => setProductId('')} className="font-bold underline text-blue-700 hover:text-blue-900 cursor-pointer">
+          Show all {kind === 'course' ? 'courses' : 'books'}
+        </button>
+      </div>
+    )}
 
     <div className={"grid grid-cols-2 gap-3 " + (cards.length > 4 ? "lg:grid-cols-5" : "lg:grid-cols-4")}>{cards.map(([value, label, Icon]) => <button key={value} type="button" aria-pressed={state === value} onClick={() => filter(state === value ? 'all' : value)} className={'!text-left !p-4 !rounded-2xl bg-white shadow-[0_6px_20px_-14px_#0a1d3f40] ' + (state === value ? '!border-[#0A1D3F] ring-2 ring-[#0A1D3F]/15' : '')}>
       <span className="flex items-center justify-between gap-2 text-sm font-semibold text-[#53647c]">{label}<Icon aria-hidden="true" size={16} /></span>
@@ -63,7 +108,7 @@ export function AdminEnrollmentsPage() {
     </button>)}</div>
 
     <div className="admin-card p-4 grid grid-cols-1 md:grid-cols-[2fr_1fr_1fr] gap-3">
-      <AdminField help="">Search<AdminInput aria-label="Search enrollments" placeholder={`Student name, email, ${kind} or order reference`} value={q} onChange={e => { setQ(e.target.value); setPage(1); }} /></AdminField>
+      <AdminField help="">Search<AdminInput aria-label="Search enrollments" placeholder={`Student name, email, ${kind} or order reference`} value={q} onChange={e => { setQ(e.target.value); setProductId(''); setPage(1); }} /></AdminField>
       <AdminField help="">Status<AdminSelect aria-label={kind === 'course' ? 'Enrollment status' : 'Book access status'} value={state} onChange={e => filter(e.target.value)}><option value="all">All statuses</option>{Object.entries(stateTone).map(([value, [label]]) => <option key={value} value={value}>{label}</option>)}</AdminSelect></AdminField>
       <AdminField help="">Source<AdminSelect aria-label="Access source" value={source} onChange={e => { setSource(e.target.value); setPage(1); }}><option value="">All sources</option>{sources[kind].map(([value, label]) => <option key={value} value={value}>{label}</option>)}</AdminSelect></AdminField>
     </div>

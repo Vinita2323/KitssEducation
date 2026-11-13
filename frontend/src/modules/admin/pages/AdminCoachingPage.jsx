@@ -1,6 +1,7 @@
 import { AdminField, AdminInput, AdminSelect, AdminTextarea } from '../components/AdminFields';
 import { useDialogFocus } from '../../../shared/ui/useDialogFocus';
 import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { ArrowDown, ArrowLeft, ArrowUp, BookOpen, CheckCircle2, Circle, FileText, GraduationCap, Plus, RotateCcw, Star, Type, UploadCloud, Users, Video } from 'lucide-react';
 import { httpClient } from '../../../shared/api/httpClient';
 import { authenticatedWrite } from '../../user/services/authService';
@@ -180,7 +181,17 @@ export function AdminCoachingPage() {
         <div className="w-28 aspect-video rounded-xl bg-gradient-to-br from-[#0A1D3F] to-[#133C8B] grid place-items-center overflow-hidden shrink-0">{detail?.thumbnailId && can('media.read') ? <img src={mediaUrl(detail.thumbnailId)} alt="" className="w-full h-full object-cover" /> : <GraduationCap aria-hidden="true" className="text-white" />}</div>
         <div className="flex-1 min-w-[12rem]">
           <h2 className="text-lg font-bold break-words">{detail?.title ?? course.title}</h2>
-          <p className="text-sm text-[#53647c]">{[detail?.category, detail && `${detail.stats.lessons.published} of ${detail.stats.lessons.total} lessons published`, detail && `${detail.stats.activeStudents} active student${detail.stats.activeStudents === 1 ? '' : 's'}`].filter(Boolean).join(' · ')}</p>
+          <p className="text-sm text-[#53647c] flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+            {detail?.category && <span>{detail.category} ·</span>}
+            {detail && <span>{detail.stats.lessons.published} of {detail.stats.lessons.total} lessons published ·</span>}
+            {detail && (can('learning.read') && detail.stats.activeStudents > 0 ? (
+              <Link to={`/admin/enrollments?kind=course&productId=${encodeURIComponent(course.id)}&state=active`} className="text-[#0A1D3F] font-medium hover:underline" title="View active students">
+                {`${detail.stats.activeStudents} active student${detail.stats.activeStudents === 1 ? '' : 's'}`}
+              </Link>
+            ) : (
+              <span>{`${detail?.stats?.activeStudents ?? 0} active student${detail?.stats?.activeStudents === 1 ? '' : 's'}`}</span>
+            ))}
+          </p>
           {detail && <div className="mt-2"><Pill {...courseState(detail)} /></div>}
         </div>
         {detail && <div className="flex flex-wrap gap-2">
@@ -204,7 +215,23 @@ export function AdminCoachingPage() {
       {kind === 'courses' && <table className="w-full text-sm"><thead><tr><th className="text-left">Course</th><th className="text-left">Lessons &amp; plans</th><th className="text-left">Students</th><th className="text-left">Status</th><th className="text-right">Actions</th></tr></thead><tbody>{rows.map(row => <tr key={row.id}>
         <td className="min-w-[15rem]"><div className="flex items-start gap-3"><div className="w-16 aspect-video rounded-lg bg-gradient-to-br from-[#0A1D3F] to-[#133C8B] grid place-items-center overflow-hidden shrink-0">{row.thumbnailId && can('media.read') ? <img src={mediaUrl(row.thumbnailId)} alt="" loading="lazy" className="w-full h-full object-cover" /> : <GraduationCap aria-hidden="true" size={16} className="text-white" />}</div><div className="min-w-0"><p className="font-bold break-words">{row.title}</p><p className="text-sm text-[#53647c]">{row.category || 'No category'}</p></div></div></td>
         <td className="min-w-[11rem]"><p>{row.stats ? `${row.stats.lessons.published} of ${row.stats.lessons.total} lessons published` : ''}</p><p className="text-sm text-[#53647c]">{row.stats?.activePlans.length ? row.stats.activePlans.slice(0, 2).map(planLabel).join(' · ') + (row.stats.activePlans.length > 2 ? ` +${row.stats.activePlans.length - 2} more` : '') : 'No plan on sale'}</p></td>
-        <td className="whitespace-nowrap"><span className="inline-flex items-center gap-1"><Users aria-hidden="true" size={14} />{row.stats?.activeStudents ?? 0}</span></td>
+        <td className="whitespace-nowrap">
+          {row.stats?.activeStudents > 0 && can('learning.read') ? (
+            <Link
+              to={`/admin/enrollments?kind=course&productId=${encodeURIComponent(row.id)}&state=active`}
+              className="inline-flex items-center gap-1 text-[#0A1D3F] font-medium hover:underline"
+              title="View active students"
+            >
+              <Users aria-hidden="true" size={14} />
+              {row.stats?.activeStudents ?? 0}
+            </Link>
+          ) : (
+            <span className="inline-flex items-center gap-1">
+              <Users aria-hidden="true" size={14} />
+              {row.stats?.activeStudents ?? 0}
+            </span>
+          )}
+        </td>
         <td><Pill {...courseState(row)} /></td>
         <td><div className="flex flex-wrap justify-end gap-2 ml-auto max-w-[19rem]">{courseActions(row)}</div></td>
       </tr>)}</tbody></table>}

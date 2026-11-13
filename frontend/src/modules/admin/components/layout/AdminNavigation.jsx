@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { BookOpen, Building2, ChevronDown, FileText, GraduationCap, LayoutDashboard, ShieldCheck } from 'lucide-react';
+import { BookOpen, Building2, ChevronDown, FileText, GraduationCap, LayoutDashboard, ShieldCheck, Users } from 'lucide-react';
 import { useAuth } from '../../../user/context/AuthContext';
 
 const groups = [
@@ -10,9 +10,8 @@ const groups = [
   { id: 'learning', label: 'Learning & results', items: [
     ['Digital Books', '/admin/books', BookOpen, 'books.read'],
     ['Coaching', '/admin/coaching', GraduationCap, 'coaching.read'],
-    ['Enrollments', '/admin/enrollments', BookOpen, 'learning.read'],
+    ['Enrollments', '/admin/enrollments', Users, 'learning.read'],
     ['Results', '/admin/results', FileText, 'results.read'],
-    ['Dropdown settings', '/admin/taxonomies', GraduationCap, 'content.read'],
   ] },
   { id: 'institutions', label: 'Institutions & admissions', items: [
     ['Universities', '/admin/universities', GraduationCap, 'institutions.read'],
@@ -35,6 +34,7 @@ const groups = [
     ['Staff management', '/admin/staff', ShieldCheck, 'accounts.roles.manage'],
     ['User accounts', '/admin/users', ShieldCheck, 'accounts.read'],
     ['Site settings', '/admin/settings', ShieldCheck, 'settings.read'],
+    ['Dropdown settings', '/admin/taxonomies', GraduationCap, 'content.read'],
     ['Audit logs', '/admin/audit-logs', FileText, 'audit.read'],
     ['Job monitoring', '/admin/operations', FileText, 'operations.read'],
   ] },
