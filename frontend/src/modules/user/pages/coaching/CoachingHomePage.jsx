@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { coachingService } from "../../services/coachingService";
 import { CourseCard } from "../../components/coaching/CourseCard";
+import { Pagination } from "../../components/common/Pagination";
 import { useAuth } from "../../context/AuthContext";
 
 export const CoachingHomePage = () => {
@@ -30,7 +31,7 @@ export const CoachingHomePage = () => {
   const [courses, setCourses] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error,setError]=useState(""),[classes,setClasses]=useState([]),[page,setPage]=useState(1),[total,setTotal]=useState(0);
+  const [error, setError] = useState(""), [classes, setClasses] = useState([]), [page, setPage] = useState(1), [total, setTotal] = useState(0), [meta, setMeta] = useState(null);
 
   // Load categories
   useEffect(() => {
@@ -58,7 +59,9 @@ export const CoachingHomePage = () => {
           classGrade: selectedClass,
           query,
         },controller.signal);
-        setCourses(result.data);setTotal(result.meta.total);
+        setCourses(result.data);
+        setTotal(result.meta?.total ?? result.data.length);
+        setMeta(result.meta);
       } catch (err) {
         if(err.code!=="ABORTED"){setError(err.message);setCourses([]);}
       } finally {
@@ -75,8 +78,7 @@ export const CoachingHomePage = () => {
 
   return (
     <div className="space-y-3.5 sm:space-y-5 max-w-7xl mx-auto">
-      {error&&<p role="alert" className="p-3 bg-red-50 border rounded-xl">{error}</p>}
-      <div className="flex gap-3 text-xs"><button disabled={page===1||loading} onClick={()=>setPage(p=>p-1)}>Previous page</button><span>Page {page} ? {total} courses</span><button disabled={page*20>=total||loading} onClick={()=>setPage(p=>p+1)}>Next page</button></div>
+      {error && <p role="alert" className="p-3 bg-red-50 border rounded-xl">{error}</p>}
       {/* 1. Compact Search & Quick Filters Bar */}
       <div className="bg-white rounded-xl border border-[#E6E8EC] p-3 sm:p-4 shadow-2xs space-y-2.5">
         {/* Search Input */}
@@ -209,10 +211,13 @@ export const CoachingHomePage = () => {
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 sm:gap-4">
-            {courses.map((course) => (
-              <CourseCard key={course.id} course={course} />
-            ))}
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 sm:gap-4">
+              {courses.map((course) => (
+                <CourseCard key={course.id} course={course} />
+              ))}
+            </div>
+            <Pagination meta={meta} onChange={setPage} loading={loading} />
           </div>
         )}
       </div>

@@ -337,6 +337,7 @@ export function createCoachingService({
         filter.$or.push(...['boardId','classId','subjectIds','languageId','stateId','programId'].map(field=>({['publishedSnapshot.'+field]:{$in:taxIds}})),{'publishedSnapshot.facultyIds':{$in:facultyIds}});
       }
       if (query.sort && !['title', 'newest'].includes(query.sort)) throw invalid('Unsupported sort');
+      const total = await Course.countDocuments(filter);
       return {
         data: await Promise.all((await Course.find(filter).sort(query.sort === 'title' ? {
           'publishedSnapshot.title': 1,
@@ -348,7 +349,8 @@ export function createCoachingService({
         meta: {
           page,
           pageSize,
-          total: await Course.countDocuments(filter)
+          total,
+          totalPages: Math.max(1, Math.ceil(total / pageSize))
         }
       };
     },
