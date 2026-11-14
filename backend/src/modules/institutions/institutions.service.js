@@ -251,11 +251,22 @@ export function createInstitutionService({ models, authService, config, logger }
     async facets(raw) {
       pageQuery(raw, ['view', 'universityId', 'stateId', 'state', 'district', 'category', 'degree']);
       const all = await College.find(await visibleColleges({ ...raw, q: undefined, state: undefined, district: undefined, stateId: undefined })).lean();
-      const states = await Taxonomy.find({ _id: { $in: all.map(c => c.stateId) } }).sort({ label: 1 }).lean();
+      // Every active state, plus any (possibly archived) state a visible college still uses, so its colleges stay filterable.
+      const activeStates = await Taxonomy.find({ kind: 'state', status: 'active', deletedAt: null }).lean();
+      const activeIds = new Set(activeStates.map(s => String(s._id)));
+      const usedStates = await Taxonomy.find({ _id: { $in: all.map(c => c.stateId).filter(id => id && !activeIds.has(String(id))) } }).lean();
+      const states = [...activeStates, ...usedStates].sort((a, b) => a.label.localeCompare(b.label));
       const universities = await University.find({ _id: { $in: all.map(c => c.universityId) } }).sort({ name: 1 }).lean();
       const selected = all.filter(c => (!raw.stateId || String(c.stateId) === raw.stateId) && (!raw.state || states.find(s => String(s._id) === String(c.stateId))?.label === raw.state));
       const programs = await CollegeProgram.find({ collegeId: { $in: selected.map(c => c._id) }, status: 'active', deletedAt: null }).lean();
-      return { states: states.map(s => ({ id: String(s._id), label: s.label })), districts: [...new Set(selected.map(c => c.district))].sort(), categories: [...new Set(all.map(c => c.category))].sort(), universities: universities.map(u => ({ id: String(u._id), name: u.name })), degrees: [...new Set(programs.map(p => p.degreeType))].sort(), policies };
+      let districts = [...new Set(selected.map(c => c.district))].filter(Boolean);
+      // Only add a state's seeded districts when a state was actually chosen.
+      const selectedStateDoc = (raw.stateId || raw.state) && states.find(s => (!raw.stateId || String(s._id) === raw.stateId) && (!raw.state || s.label === raw.state));
+      if (selectedStateDoc) {
+        const taxDistricts = (await Taxonomy.find({ kind: 'district', parentIds: selectedStateDoc._id, status: 'active', deletedAt: null }).select('label').lean()).map(d => d.label);
+        districts = [...new Set([...districts, ...taxDistricts])];
+      }
+      return { states: states.map(s => ({ id: String(s._id), label: s.label })), districts: districts.sort(), categories: [...new Set(all.map(c => c.category))].sort(), universities: universities.map(u => ({ id: String(u._id), name: u.name })), degrees: [...new Set(programs.map(p => p.degreeType))].sort(), policies };
     },
     async submitAdmission(input, auth, ctx) {
       if (!auth || auth.user.status !== 'active' || !auth.user.emailVerifiedAt) throw new AppError(401, 'UNAUTHENTICATED', 'Sign in with a verified account to apply');

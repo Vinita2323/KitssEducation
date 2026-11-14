@@ -357,25 +357,37 @@ export function createCoachingService({
         status: 'published'
       }).select('publishedSnapshot').lean();
       const unique = name => [...new Set(rows.flatMap(r => r.publishedSnapshot?.[name] ?? []).filter(Boolean))];
-      const tax = async ids => (await institutions.models.Taxonomy.find({
-        _id: {
-          $in: ids
-        },
-        status: 'active'
-      }).select('_id label kind').lean()).map(t => ({
-        id: String(t._id),
-        name: t.label
-      }));
+
+      const activeFilter = { status: 'active', deletedAt: null };
+      const getTaxItems = async (kind, publishedIds = []) => {
+        const master = await institutions.models.Taxonomy.find({ kind, ...activeFilter }).sort({ sortOrder: 1, label: 1 }).lean();
+        const masterIds = new Set(master.map(m => String(m._id)));
+        const missingIds = publishedIds.filter(id => id && !masterIds.has(String(id)));
+        let extras = [];
+        if (missingIds.length) {
+          extras = await institutions.models.Taxonomy.find({ _id: { $in: missingIds }, status: 'active' }).sort({ sortOrder: 1, label: 1 }).lean();
+        }
+        return [...master, ...extras].map(t => ({
+          id: String(t._id),
+          name: t.label,
+          label: t.label
+        }));
+      };
+
+      const masterCats = await institutions.models.Taxonomy.find({ kind: 'course_category', ...activeFilter }).sort({ sortOrder: 1, label: 1 }).lean();
+      const publishedCats = unique('category');
+      const allCatNames = [...new Set([...masterCats.map(c => c.label), ...publishedCats])];
+
       return {
-        categories: unique('category').map(n => ({
+        categories: allCatNames.map(n => ({
           id: n,
           name: n
         })),
-        subjects: await tax(unique('subjectIds')),
-        languages: await tax(unique('languageId')),
-        classes: await tax(unique('classId')),
-        boards: await tax(unique('boardId')),
-        states: await tax(unique('stateId'))
+        subjects: await getTaxItems('subject', unique('subjectIds')),
+        languages: await getTaxItems('language', unique('languageId')),
+        classes: await getTaxItems('class', unique('classId')),
+        boards: await getTaxItems('board', unique('boardId')),
+        states: await getTaxItems('state', unique('stateId'))
       };
     },
     async plans(value) {

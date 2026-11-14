@@ -51,9 +51,16 @@ export function institutionDirectory({ models, visibleColleges, decorateColleges
     } : { ...decorated.find(item => item.id === String(row._id)), admissionsAvailable: openIds.has(String(row._id)) });
     const choices = result.choices[0] || {}, stateIds = new Set((choices.stateIds || []).map(String));
     const total = result.total[0]?.count || 0;
+    const activeStates = states.map(s => ({ id: String(s._id), label: s.label })).sort((a,b) => a.label.localeCompare(b.label));
+    let districtsList = (result.districts[0]?.values || []).filter(Boolean);
+    if (selectedState) {
+      const taxonomyDistricts = (await Taxonomy.find({ kind: 'district', parentIds: selectedState._id, status: 'active', deletedAt: null }).select('label').lean()).map(d => d.label);
+      districtsList = [...new Set([...districtsList, ...taxonomyDistricts])];
+    }
     return { data, meta: { page: query.page, pageSize: query.pageSize, total, totalPages: Math.max(1, Math.ceil(total / query.pageSize)) }, facets: {
-      categories: (choices.categories || []).filter(Boolean).sort(), states: states.filter(s => stateIds.has(String(s._id))).map(s => ({ id: String(s._id), label: s.label })).sort((a,b) => a.label.localeCompare(b.label)),
-      districts: (result.districts[0]?.values || []).filter(Boolean).sort(),
+      categories: (choices.categories || []).filter(Boolean).sort(),
+      states: activeStates.length ? activeStates : states.filter(s => stateIds.has(String(s._id))).map(s => ({ id: String(s._id), label: s.label })).sort((a,b) => a.label.localeCompare(b.label)),
+      districts: districtsList.filter(Boolean).sort(),
     } };
   };
 }

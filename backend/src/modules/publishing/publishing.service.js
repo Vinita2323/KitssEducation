@@ -123,7 +123,47 @@ export function createPublishingService({ models, taxonomy, coordination, media 
       if (admin && kind === 'books') result.summary = await bookSummary();
       return result;
     },
-    async facets(query = {}) { object(query, ['boardId', 'classId', 'languageId', 'board', 'class', 'language']); const rows = await models.Book.find({ status: 'published', publishedSnapshot: { $ne: null } }).lean(); let books = rows.map(r => r.publishedSnapshot); for (const field of ['boardId', 'classId', 'languageId']) if (query[field]) books = books.filter(b => b[field] === String(id(query[field]))); for (const [f, kind] of [['board', 'board'], ['class', 'class'], ['language', 'language']]) if (query[f]) { const t = await taxonomy.findOne({ kind, label: text(query[f]), status: 'active', deletedAt: null }); books = books.filter(b => b[f + 'Id'] === String(t?._id)); } const result = {}; for (const [field, name] of [['boardId', 'boards'], ['classId', 'classes'], ['subjectId', 'subjects'], ['languageId', 'languages']]) result[name] = (await taxonomy.find({ _id: { $in: books.map(b => b[field]).filter(Boolean) }, status: 'active', deletedAt: null }).sort({ sortOrder: 1, label: 1 }).lean()).map(r => ({ id: String(r._id), name: r.label, label: r.label })); result.categories = [...new Set(books.map(b => b.category))]; return result; },
+    async facets(query = {}) {
+      object(query, ['boardId', 'classId', 'languageId', 'board', 'class', 'language']);
+      const rows = await models.Book.find({ status: 'published', publishedSnapshot: { $ne: null } }).lean();
+      let books = rows.map(r => r.publishedSnapshot);
+      for (const field of ['boardId', 'classId', 'languageId']) if (query[field]) books = books.filter(b => b[field] === String(id(query[field])));
+      for (const [f, kind] of [['board', 'board'], ['class', 'class'], ['language', 'language']]) if (query[f]) { const t = await taxonomy.findOne({ kind, label: text(query[f]), status: 'active', deletedAt: null }); books = books.filter(b => b[f + 'Id'] === String(t?._id)); }
+
+      let boardId = query.boardId ? String(id(query.boardId)) : null;
+      if (!boardId && query.board) {
+        const t = await taxonomy.findOne({ kind: 'board', label: text(query.board), status: 'active', deletedAt: null });
+        if (t) boardId = String(t._id);
+      }
+      let classId = query.classId ? String(id(query.classId)) : null;
+      if (!classId && query.class) {
+        const t = await taxonomy.findOne({ kind: 'class', label: text(query.class), status: 'active', deletedAt: null });
+        if (t) classId = String(t._id);
+      }
+
+      const activeFilter = { status: 'active', deletedAt: null };
+      const allBoards = await taxonomy.find({ kind: 'board', ...activeFilter }).sort({ sortOrder: 1, label: 1 }).lean();
+      const classQuery = { kind: 'class', ...activeFilter };
+      if (boardId) classQuery.$or = [{ parentIds: boardId }, { parentIds: { $size: 0 } }, { parentIds: { $exists: false } }];
+      const allClasses = await taxonomy.find(classQuery).sort({ sortOrder: 1, label: 1 }).lean();
+
+      const subjectQuery = { kind: 'subject', ...activeFilter };
+      if (classId) subjectQuery.$or = [{ parentIds: classId }, { parentIds: { $size: 0 } }, { parentIds: { $exists: false } }];
+      const allSubjects = await taxonomy.find(subjectQuery).sort({ sortOrder: 1, label: 1 }).lean();
+
+      const allLanguages = await taxonomy.find({ kind: 'language', ...activeFilter }).sort({ sortOrder: 1, label: 1 }).lean();
+
+      const mapItems = items => items.map(r => ({ id: String(r._id), name: r.label, label: r.label }));
+
+      const result = {
+        boards: allBoards.length ? mapItems(allBoards) : (await taxonomy.find({ _id: { $in: books.map(b => b.boardId).filter(Boolean) }, ...activeFilter }).sort({ sortOrder: 1, label: 1 }).lean()).map(r => ({ id: String(r._id), name: r.label, label: r.label })),
+        classes: allClasses.length ? mapItems(allClasses) : (await taxonomy.find({ _id: { $in: books.map(b => b.classId).filter(Boolean) }, ...activeFilter }).sort({ sortOrder: 1, label: 1 }).lean()).map(r => ({ id: String(r._id), name: r.label, label: r.label })),
+        subjects: allSubjects.length ? mapItems(allSubjects) : (await taxonomy.find({ _id: { $in: books.map(b => b.subjectId).filter(Boolean) }, ...activeFilter }).sort({ sortOrder: 1, label: 1 }).lean()).map(r => ({ id: String(r._id), name: r.label, label: r.label })),
+        languages: allLanguages.length ? mapItems(allLanguages) : (await taxonomy.find({ _id: { $in: books.map(b => b.languageId).filter(Boolean) }, ...activeFilter }).sort({ sortOrder: 1, label: 1 }).lean()).map(r => ({ id: String(r._id), name: r.label, label: r.label })),
+      };
+      result.categories = [...new Set(books.map(b => b.category))];
+      return result;
+    },
     async preview(value) { const book = await service.detail('books', value); const assets = []; for (const assetId of book.previewAssetIds ?? []) { const asset = await media.publicMetadata(assetId); if (asset) assets.push({ ...asset, url: '/api/v1/media/' + assetId + '/content' }); } return { assets }; },
     async publicPage(key) { const doc = await models.PageContent.findOne({ key, status: 'published', publishedSnapshot: { $ne: null } }); const page = doc ? publicData('pages', doc) : { key, sections: [] }; if (key === 'about') page.faculty = (await service.list('faculty', { pageSize: '100' })).data; return page; },
     async settings(admin = false) { const rows = await models.SiteSettings.find(admin ? {} : { key: { $nin: ['registrationFees', 'businessPolicies'] } }).lean(); return Object.fromEntries(rows.map(r => [r.key, admin ? cleanDTO(r) : r.value])); },

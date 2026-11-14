@@ -100,6 +100,12 @@ test('Stage 4 standalone institution/intake integration in fresh isolated MongoD
     assert.equal((await service.list('college', { q: 'absent' })).meta.total, 0);
     assert.equal((await service.list('college', { page: '2', pageSize: '1' })).data.length, 0);
     const facets = await service.facets({ state: state.label }); assert.deepEqual(facets.districts, [district.label]); assert.deepEqual(facets.degrees, ['Test Degree']);
+    // A state listed first alphabetically must not leak its districts when no state is chosen.
+    const firstState = await service.create('taxonomy', { kind: 'state', key: 'aaa-first-state', label: 'AAA First State' }, ctx);
+    await service.create('taxonomy', { kind: 'district', key: 'aaa-first-district', label: 'AAA First District', parentIds: [firstState.id] }, ctx);
+    assert.deepEqual((await service.facets({})).districts, [district.label]);
+    assert.deepEqual((await service.facets({ state: 'AAA First State' })).districts, ['AAA First District']);
+    assert.ok((await service.facets({})).states.some(s => s.label === 'AAA First State'));
     await assert.rejects(service.edit('program', program.id, { name: 'Wrong Parent', expectedRevision: program.revision }, ctx, '0'.repeat(24)), { status: 404 });
     await assert.rejects(service.edit('college', college.id, { status: 'inactive', expectedRevision: college.revision }, ctx), { code: 'ACTIVE_DEPENDENTS' });
   });

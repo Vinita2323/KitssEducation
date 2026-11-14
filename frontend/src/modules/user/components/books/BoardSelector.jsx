@@ -103,7 +103,7 @@ export const ClassDropdown = ({
           </option>
           {classes.map((cls) => (
             <option key={cls} value={cls} className="bg-white text-[#0A1D3F] font-semibold">
-              Class {cls}
+              {cls.toLowerCase().startsWith('class') || cls.toLowerCase().startsWith('undergraduate') || cls.toLowerCase().startsWith('postgraduate') || cls.toLowerCase().startsWith('diploma') ? cls : `Class ${cls}`}
             </option>
           ))}
         </select>
