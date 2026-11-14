@@ -37,20 +37,58 @@ function OperationalStatus({ version }) {
     ['Pending audit records',String(health.pendingAuditRecords??0)],
   ] : [];
   return <AdminCard aria-label="Operational readiness" title="Operational readiness" titleAs="h2">
+    <p className="text-xs text-[#53647c] -mt-1 mb-3">Real-time health telemetry of database, storage, video processors, and async workers.</p>
     {error?<p role="alert">{error}</p>:!health?<p role="status">Checking dependencies...</p>:<dl className="admin-dl">{rows.map(([label,value])=><div key={label} className="min-w-0"><dt className="font-medium">{label}</dt><dd className="break-words text-xs">{['Ready','Unavailable','Telemetry unavailable'].includes(value)?<AdminStatus tone={value==='Ready'?'success':'danger'}>{value}</AdminStatus>:value}</dd></div>)}</dl>}
   </AdminCard>;
 }
 
+const quickAuditActions = [
+  ['', 'All events'],
+  ['account_roles_changed', 'Staff roles'],
+  ['account_status_changed', 'User status'],
+  ['registration_note', 'Registration notes'],
+];
+
+const actionTitle = act => {
+  if (act === 'account_roles_changed') return 'Staff role changed';
+  if (act === 'account_status_changed') return 'Account status changed';
+  if (act === 'registration_note') return 'Registration note';
+  return act;
+};
+
 export function AdminOperationsPage({ audit = false }) {
-  const initial = { resource: new URLSearchParams(window.location.search).get('resource') || '' };
+  // ?resource= and ?action= let other pages (such as Staff management) open the audit log already filtered.
+  const address = new URLSearchParams(window.location.search);
+  const initial = { resource: address.get('resource') || '', ...(audit && address.get('action') ? { action: address.get('action') } : {}) };
   const [page, setPage] = useState(1), [filters, setFilters] = useState(initial), [draft, setDraft] = useState(initial), [version, setVersion] = useState(0);
   const { result, error, loading } = useRecords(audit ? '/admin/audit-logs' : '/admin/jobs', { page, ...filters }, version);
   return <section className="space-y-5 text-[#0A1D3F] text-sm">
     <AdminPageHeader title={audit ? 'Audit logs' : 'Job monitoring'} description={audit ? 'Read-only committed audit events; resource and actor filters use exact references. Do not enter sensitive data in change reasons.' : 'View background task progress here. Use Orders to check payment status. Only tasks with an available retry action can be retried.'} />
     {!audit && <OperationalStatus version={version} />}
+    {audit && <div className="flex flex-wrap items-center gap-2">
+      <span className="text-xs font-semibold text-[#53647c]">Quick filters:</span>
+      <div className="admin-segmented inline-flex">
+        {quickAuditActions.map(([act, label]) => (
+          <button
+            key={act}
+            type="button"
+            aria-pressed={(draft.action || '') === act}
+            className="px-3 py-1 text-xs"
+            onClick={() => {
+              const next = { ...draft, action: act };
+              setDraft(next);
+              setFilters(next);
+              setPage(1);
+            }}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+    </div>}
     <AdminToolbar><form className="contents" onSubmit={e => { e.preventDefault(); setFilters(draft); setPage(1); }}>{(audit ? ['actor', 'action', 'resource', 'from', 'to'] : ['kind', 'state']).map(key => audit ? <div key={key} className="min-w-[9rem] flex-1"><AdminField className="text-xs">{key}<AdminInput aria-label={'Audit ' + key} type={['from', 'to'].includes(key) ? 'date' : 'text'} maxLength={100} className="block border rounded-xl p-2 w-full" value={draft[key] || ''} onChange={e => setDraft(v => ({ ...v, [key]: e.target.value }))} /></AdminField></div> : <AdminSelect key={key} aria-label={'Job ' + key} className={control} value={draft[key] || ''} onChange={e => setDraft(v => ({ ...v, [key]: e.target.value }))}><option value="">All {key}s</option>{(key === 'kind' ? ['payment_event', 'result_import', 'notification_event', 'notification_push'] : ['pending', 'leased', 'done', 'dead']).map(v => <option key={v}>{v}</option>)}</AdminSelect>)}<div className="admin-actions"><button className="admin-btn admin-btn-primary">Apply filters</button><button type="button" className="admin-btn admin-btn-secondary" onClick={() => { setDraft({}); setFilters({}); setPage(1); setVersion(v => v + 1); }}>Reset / refresh</button></div></form></AdminToolbar>
     <State error={error} loading={loading} count={result.data.length} />
-    <div className="admin-list">{result.data.map(row => <article key={row.id} className="admin-list-item space-y-1 break-all text-xs"><div className="min-w-0 flex-1 space-y-1">{audit ? <><strong className="text-sm">{row.action}</strong><p>Actor: {row.actorId || 'System'}; resource: {row.resource || 'Unspecified'}</p><p className="text-[#53647c]">{row.at && new Date(row.at).toLocaleString()}</p>{row.reason && <p>Reason: {row.reason}</p>}{row.permissionChange && <p>Permissions: {(row.permissionChange.before||[]).join(', ') || 'none'} to {(row.permissionChange.after||[]).join(', ') || 'none'}</p>}</> : <><div className="flex flex-wrap items-center gap-2"><strong className="text-sm">{row.kind} / {row.state}</strong><AdminStatus value={row.state} /></div><p>Attempts: {row.attempts}; ID: {row.id}</p><p className="text-[#53647c]">Available: {row.availableAt ? new Date(row.availableAt).toLocaleString() : 'Not scheduled'}</p></>}</div></article>)}</div><Pagination meta={result.meta} onChange={setPage} loading={loading} />
+    <div className="admin-list">{result.data.map(row => <article key={row.id} className="admin-list-item space-y-1 break-all text-xs"><div className="min-w-0 flex-1 space-y-1">{audit ? <><div className="flex flex-wrap items-center gap-2"><strong className="text-sm">{actionTitle(row.action)}</strong>{row.action !== actionTitle(row.action) && <span className="text-xs text-[#53647c] font-mono">({row.action})</span>}</div><p>Actor: {row.actorId || 'System'}; resource: {row.resource || 'Unspecified'}</p><p className="text-[#53647c]">{row.at && new Date(row.at).toLocaleString()}</p>{row.reason && <p>Reason: {row.reason}</p>}{row.permissionChange && <p>Permissions: {(row.permissionChange.before||[]).join(', ') || 'none'} to {(row.permissionChange.after||[]).join(', ') || 'none'}</p>}</> : <><div className="flex flex-wrap items-center gap-2"><strong className="text-sm">{row.kind} / {row.state}</strong><AdminStatus value={row.state} /></div><p>Attempts: {row.attempts}; ID: {row.id}</p><p className="text-[#53647c]">Available: {row.availableAt ? new Date(row.availableAt).toLocaleString() : 'Not scheduled'}</p></>}</div></article>)}</div><Pagination meta={result.meta} onChange={setPage} loading={loading} />
   </section>;
 }
 

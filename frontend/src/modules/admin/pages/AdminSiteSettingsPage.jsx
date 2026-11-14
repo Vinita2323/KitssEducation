@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { AdminPageHeader } from '../components/AdminUI';
 import { httpClient } from '../../../shared/api/httpClient';
 import { authenticatedWrite } from '../../user/services/authService';
@@ -38,6 +38,12 @@ export function AdminSiteSettingsPage() {
   return <div className="space-y-5 text-[#0A1D3F]">
     <AdminPageHeader title="Site Settings" description="Your public details, registration and franchise rules, and payment settings." />
     <div className="admin-segmented" role="group" aria-label="Settings sections">{tabs.map(([key, label]) => <button key={key} type="button" aria-pressed={tab === key} onClick={() => setParams(key === 'general' ? {} : { tab: key }, { replace: true })}>{label}</button>)}</div>
+    <div className="text-xs text-[#53647c]">
+      {tab === 'general' && 'Public contact details and the footer shown on every page.'}
+      {tab === 'registrations' && <>Registration fee amounts and open/close controls. Submitted applicant dossiers are reviewed in <Link to="/admin/registrations" className="underline font-semibold text-[#0A1D3F]">Registrations</Link>.</>}
+      {tab === 'franchise' && <>Franchise eligibility criteria, deposits, and terms. Submitted partner applications are processed in <Link to="/admin/franchise-requests" className="underline font-semibold text-[#0A1D3F]">Franchise Requests</Link>.</>}
+      {tab === 'payments' && <>Refund rules, receipt details and access exceptions. Student payments are tracked in <Link to="/admin/orders" className="underline font-semibold text-[#0A1D3F]">Orders / Payments</Link>.</>}
+    </div>
     {error && <p role="alert" className="text-red-700">{error} <button type="button" className="underline" onClick={() => load().catch(e => setError(e.message))}>Try again</button></p>}
     {/* Tabs stay mounted so unsaved edits survive switching between them. */}
     <section hidden={tab !== 'general'} aria-label="General settings"><GeneralSettings canWrite={can('settings.write')} /></section>
