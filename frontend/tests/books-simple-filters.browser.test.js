@@ -22,7 +22,7 @@ test('book catalogue retains academic filters without sorting or price controls 
   });
   await page.goto(base + '/books?sort=price-low&type=paid&minPrice=10&maxPrice=100', { waitUntil: 'domcontentloaded', timeout: 120000 });
   await page.getByRole('heading', { name: 'Digital Books', exact: true, level: 1 }).waitFor();
-  assert.equal(await page.locator('select').count(), 4);
+  assert.equal(await page.getByRole('button', { name: /^Filter by (Board|Class|Subject|Language):/ }).count(), 4);
   for (const name of ['Sort books', 'Book price type', 'Minimum book price', 'Maximum book price']) assert.equal(await page.getByLabel(name, { exact: true }).count(), 0);
   const search = page.getByPlaceholder('Search books, chapters, topics, authors...');
   const searched = page.waitForRequest(r => new URL(r.url()).searchParams.get('q') === 'algebra');

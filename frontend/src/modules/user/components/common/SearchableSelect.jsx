@@ -18,7 +18,12 @@ export const SearchableSelect = ({
   disabled = false,
   error = "",
   className = "",
-  compact = false
+  compact = false,
+  // Optional: an accessible name for the field, and style overrides for pages that colour the field when a value is chosen.
+  ariaLabel,
+  triggerClassName,
+  valueClassName,
+  chevronClassName
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -247,7 +252,7 @@ export const SearchableSelect = ({
           )}
 
           <div
-            id={listId} role="listbox" aria-label={placeholder}
+            id={listId} role="listbox" aria-label={ariaLabel || placeholder}
             style={{ maxHeight: `${menuMaxHeight}px` }}
             className="overflow-y-auto overflow-x-hidden p-1 space-y-0.5 overscroll-contain"
           >
@@ -309,7 +314,7 @@ export const SearchableSelect = ({
   return (
     <div ref={containerRef} className={`relative w-full ${className}`}>
       <div
-        ref={triggerRef} aria-haspopup="listbox" aria-expanded={isOpen} aria-controls={isOpen?listId:undefined} aria-disabled={disabled}
+        ref={triggerRef} aria-label={ariaLabel ? `${ariaLabel}: ${selectedOption ? selectedOption.label : placeholder}` : undefined} aria-haspopup="listbox" aria-expanded={isOpen} aria-controls={isOpen?listId:undefined} aria-disabled={disabled}
         role="button"
         tabIndex={disabled ? -1 : 0}
         onClick={handleToggle}
@@ -322,7 +327,7 @@ export const SearchableSelect = ({
             handleToggle();
           }
         }}
-        className={`w-full ${compact ? "h-8 px-2.5 rounded-md" : "px-3 py-2 rounded-lg"} bg-[#F7F8FA] hover:bg-slate-50 border text-xs cursor-pointer transition-all duration-150 flex items-center justify-between gap-2 select-none ${
+        className={triggerClassName ? `w-full ${triggerClassName} border text-xs cursor-pointer transition-all duration-150 flex items-center justify-between gap-2 select-none ${isOpen ? "ring-1.5 ring-orange-200/60 shadow-2xs" : ""} ${disabled ? "opacity-60 cursor-not-allowed" : ""}` : `w-full ${compact ? "h-8 px-2.5 rounded-md" : "px-3 py-2 rounded-lg"} bg-[#F7F8FA] hover:bg-slate-50 border text-xs cursor-pointer transition-all duration-150 flex items-center justify-between gap-2 select-none ${
           isOpen
             ? "border-[#FF8A00] ring-1.5 ring-orange-200/60 bg-white shadow-2xs"
             : error
@@ -334,7 +339,7 @@ export const SearchableSelect = ({
           {Icon && <Icon className="w-3.5 h-3.5 text-slate-400 shrink-0" />}
           <span
             className={`truncate text-xs ${
-              selectedOption ? "text-[#0A1D3F] font-semibold" : "text-slate-400"
+              valueClassName ?? (selectedOption ? "text-[#0A1D3F] font-semibold" : "text-slate-400")
             }`}
           >
             {selectedOption ? selectedOption.label : placeholder}
@@ -342,8 +347,8 @@ export const SearchableSelect = ({
         </div>
 
         <ChevronDown
-          className={`w-3.5 h-3.5 text-slate-400 shrink-0 transition-transform duration-150 ${
-            isOpen ? "rotate-180 text-[#FF8A00]" : ""
+          className={`w-3.5 h-3.5 shrink-0 transition-transform duration-150 ${chevronClassName ?? "text-slate-400"} ${
+            isOpen ? "rotate-180" + (chevronClassName ? "" : " text-[#FF8A00]") : ""
           }`}
         />
       </div>

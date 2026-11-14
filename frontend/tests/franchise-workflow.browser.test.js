@@ -50,7 +50,7 @@ test('franchise policy and applicant/admin screens: isolated HTTP, browser, fake
     for(const [label,value] of [['Contact person','Browser applicant'],['Contact email','browser@example.invalid'],['Contact mobile','9999999999']])await app.getByLabel(label,{exact:true}).fill(value);
     await app.getByLabel('Designation',{exact:true}).selectOption('Owner');
     await app.getByRole('button',{name:'Next step',exact:true}).click();
-    await app.getByLabel('State',{exact:true}).selectOption('Synthetic State');
+    await app.getByRole('button',{name:/^State:/}).click();await app.getByRole('option',{name:'Synthetic State',exact:true}).click();
     await app.getByLabel('Campus Google Maps location',{exact:true}).fill('https://maps.google.com/?q=synthetic');
     for(const [label,value] of [['Address','Synthetic street'],['City','Synthetic City'],['Pincode','123456']])await app.getByLabel(label,{exact:true}).fill(value);
     assert.deepEqual(await app.locator('form').evaluateAll(forms=>forms.flatMap(f=>[...f.elements].filter(e=>e.willValidate&&!e.validity.valid).map(e=>({label:e.getAttribute('aria-label'),value:e.value,message:e.validationMessage})))),[]);

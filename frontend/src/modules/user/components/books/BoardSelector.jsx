@@ -1,11 +1,11 @@
 import React from "react";
+import { FilterSelect } from "../common/FilterSelect";
 import {
   GraduationCap,
   BookOpen,
   Building2,
   Library,
   Sparkles,
-  ChevronDown,
   Layers,
   Languages,
   X
@@ -35,31 +35,7 @@ export const BoardDropdown = ({
           </button>
         )}
       </div>
-      <div className="relative">
-        <select
-          value={selectedBoard}
-          onChange={(e) => onSelect(e.target.value)}
-          className={`w-full pl-3 pr-8 py-2.5 rounded-xl text-xs font-bold transition appearance-none cursor-pointer border focus:outline-none focus:ring-1 ${
-            selectedBoard !== "All"
-              ? "bg-[#0A1D3F] text-white border-[#0A1D3F] focus:ring-[#0A1D3F]"
-              : "bg-[#F7F8FA] text-[#0A1D3F] border-[#E6E8EC] hover:border-gray-300 focus:ring-[#0A1D3F] focus:border-[#0A1D3F]"
-          }`}
-        >
-          <option value="All" className="bg-white text-[#0A1D3F] font-semibold">
-            All Boards
-          </option>
-          {boards.map((b) => (
-            <option key={b.id} value={b.id} className="bg-white text-[#0A1D3F] font-semibold">
-              {b.name}
-            </option>
-          ))}
-        </select>
-        <ChevronDown
-          className={`w-4 h-4 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none transition ${
-            selectedBoard !== "All" ? "text-white" : "text-[#667085]"
-          }`}
-        />
-      </div>
+      <FilterSelect label="Filter by Board" value={selectedBoard} onChange={onSelect} searchPlaceholder="Search board" options={[{ value: "All", label: "All Boards" }, ...boards.map(b => ({ value: b.id, label: b.name }))]} />
     </div>
   );
 };
@@ -88,31 +64,7 @@ export const ClassDropdown = ({
           </button>
         )}
       </div>
-      <div className="relative">
-        <select
-          value={selectedClass}
-          onChange={(e) => onSelect(e.target.value)}
-          className={`w-full pl-3 pr-8 py-2.5 rounded-xl text-xs font-bold transition appearance-none cursor-pointer border focus:outline-none focus:ring-1 ${
-            selectedClass !== "All"
-              ? "bg-[#FF8A00] text-white border-[#FF8A00] focus:ring-[#FF8A00]"
-              : "bg-[#F7F8FA] text-[#0A1D3F] border-[#E6E8EC] hover:border-gray-300 focus:ring-[#0A1D3F] focus:border-[#0A1D3F]"
-          }`}
-        >
-          <option value="All" className="bg-white text-[#0A1D3F] font-semibold">
-            All Classes
-          </option>
-          {classes.map((cls) => (
-            <option key={cls} value={cls} className="bg-white text-[#0A1D3F] font-semibold">
-              {cls.toLowerCase().startsWith('class') || cls.toLowerCase().startsWith('undergraduate') || cls.toLowerCase().startsWith('postgraduate') || cls.toLowerCase().startsWith('diploma') ? cls : `Class ${cls}`}
-            </option>
-          ))}
-        </select>
-        <ChevronDown
-          className={`w-4 h-4 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none transition ${
-            selectedClass !== "All" ? "text-white" : "text-[#667085]"
-          }`}
-        />
-      </div>
+      <FilterSelect label="Filter by Class" tone="orange" value={selectedClass} onChange={onSelect} searchPlaceholder="Search class" options={[{ value: "All", label: "All Classes" }, ...classes.map(cls => ({ value: cls, label: (cls.toLowerCase().startsWith('class') || cls.toLowerCase().startsWith('undergraduate') || cls.toLowerCase().startsWith('postgraduate') || cls.toLowerCase().startsWith('diploma') ? cls : `Class ${cls}`) }))]} />
     </div>
   );
 };
@@ -141,31 +93,7 @@ export const SubjectDropdown = ({
           </button>
         )}
       </div>
-      <div className="relative">
-        <select
-          value={selectedSubject}
-          onChange={(e) => onSelect(e.target.value)}
-          className={`w-full pl-3 pr-8 py-2.5 rounded-xl text-xs font-bold transition appearance-none cursor-pointer border focus:outline-none focus:ring-1 ${
-            selectedSubject !== "All"
-              ? "bg-[#0A1D3F] text-white border-[#0A1D3F] focus:ring-[#0A1D3F]"
-              : "bg-[#F7F8FA] text-[#0A1D3F] border-[#E6E8EC] hover:border-gray-300 focus:ring-[#0A1D3F] focus:border-[#0A1D3F]"
-          }`}
-        >
-          <option value="All" className="bg-white text-[#0A1D3F] font-semibold">
-            All Subjects
-          </option>
-          {subjects.map((sub) => (
-            <option key={sub.id} value={sub.id} className="bg-white text-[#0A1D3F] font-semibold">
-              {sub.name}
-            </option>
-          ))}
-        </select>
-        <ChevronDown
-          className={`w-4 h-4 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none transition ${
-            selectedSubject !== "All" ? "text-white" : "text-[#667085]"
-          }`}
-        />
-      </div>
+      <FilterSelect label="Filter by Subject" value={selectedSubject} onChange={onSelect} searchPlaceholder="Search subject" options={[{ value: "All", label: "All Subjects" }, ...subjects.map(sub => ({ value: sub.id, label: sub.name }))]} />
     </div>
   );
 };
@@ -194,27 +122,7 @@ export const LanguageDropdown = ({
           </button>
         )}
       </div>
-      <div className="relative">
-        <select
-          value={selectedLanguage}
-          onChange={(e) => onSelect(e.target.value)}
-          className={`w-full pl-3 pr-8 py-2.5 rounded-xl text-xs font-bold transition appearance-none cursor-pointer border focus:outline-none focus:ring-1 ${
-            selectedLanguage !== "All"
-              ? "bg-[#0A1D3F] text-white border-[#0A1D3F] focus:ring-[#0A1D3F]"
-              : "bg-[#F7F8FA] text-[#0A1D3F] border-[#E6E8EC] hover:border-gray-300 focus:ring-[#0A1D3F] focus:border-[#0A1D3F]"
-          }`}
-        >
-          <option value="All" className="bg-white text-[#0A1D3F] font-semibold">
-            All Languages
-          </option>
-          {languages.map(language => <option key={language.id} value={language.id}>{language.name}</option>)}
-        </select>
-        <ChevronDown
-          className={`w-4 h-4 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none transition ${
-            selectedLanguage !== "All" ? "text-white" : "text-[#667085]"
-          }`}
-        />
-      </div>
+      <FilterSelect label="Filter by Language" value={selectedLanguage} onChange={onSelect} searchPlaceholder="Search language" options={[{ value: "All", label: "All Languages" }, ...languages.map(language => ({ value: language.id, label: language.name }))]} />
     </div>
   );
 };

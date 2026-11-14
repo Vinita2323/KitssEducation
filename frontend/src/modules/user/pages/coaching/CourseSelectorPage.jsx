@@ -16,6 +16,7 @@ import {
 import { coachingService } from "../../services/coachingService";
 
 import { CourseCard } from "../../components/coaching/CourseCard";
+import { FilterSelect } from "../../components/common/FilterSelect";
 import { SearchableSelect } from "../../components/common/SearchableSelect";
 import { useToast } from "../../context/ToastContext";
 
@@ -178,14 +179,7 @@ export const CourseSelectorPage = () => {
             <label className="text-[11px] font-bold uppercase text-[#667085]">
               State
             </label>
-            <select
-              aria-label="Course selector state" value={selectedState}
-              onChange={(e) => handleStateChange(e.target.value)}
-              className="w-full h-8 px-2.5 rounded-md bg-[#F7F8FA] border border-[#E6E8EC] text-xs font-semibold text-[#0A1D3F] focus:outline-none focus:border-[#FF8A00]"
-            >
-              <option value="All">All States</option>
-              {facets.states.map(s=><option key={s.id} value={s.name}>{s.name}</option>)}
-            </select>
+            <FilterSelect plain label="Course selector state" triggerSize="h-8 rounded-md" value={selectedState} onChange={handleStateChange} searchPlaceholder="Search state" options={[{ value: "All", label: "All States" }, ...facets.states.map(s => ({ value: s.name, label: s.name }))]} />
           </div>
 
           {/* Board Filter — options follow the selected state */}
@@ -193,18 +187,7 @@ export const CourseSelectorPage = () => {
             <label className="text-[11px] font-bold uppercase text-[#667085]">
               Board
             </label>
-            <select
-              aria-label="Course selector board" value={selectedBoard}
-              onChange={(e) => setSelectedBoard(e.target.value)}
-              className="w-full h-8 px-2.5 rounded-md bg-[#F7F8FA] border border-[#E6E8EC] text-xs font-semibold text-[#0A1D3F] focus:outline-none focus:border-[#FF8A00]"
-            >
-              <option value="All">All Boards</option>
-              {boardOptions.map((board) => (
-                <option key={board} value={board}>
-                  {board}
-                </option>
-              ))}
-            </select>
+            <FilterSelect plain label="Course selector board" triggerSize="h-8 rounded-md" value={selectedBoard} onChange={setSelectedBoard} searchPlaceholder="Search board" options={[{ value: "All", label: "All Boards" }, ...boardOptions.map(board => ({ value: board, label: board }))]} />
           </div>
 
           {/* Course Type — replaces the class field */}
@@ -219,6 +202,7 @@ export const CourseSelectorPage = () => {
               onChange={setSelectedType}
               placeholder="All Courses"
               searchPlaceholder="Search course"
+              forceOpenDirection="down"
               options={[{value:'All',label:'All Courses'},...facets.classes.map(c=>({value:c.name,label:c.name}))]}
             />
           </div>
@@ -228,18 +212,7 @@ export const CourseSelectorPage = () => {
             <label className="text-[11px] font-bold uppercase text-[#667085]">
               Subject
             </label>
-            <select
-              aria-label="Course selector subject" value={selectedSubject}
-              onChange={(e) => setSelectedSubject(e.target.value)}
-              className="w-full h-8 px-2.5 rounded-md bg-[#F7F8FA] border border-[#E6E8EC] text-xs font-semibold text-[#0A1D3F] focus:outline-none focus:border-[#FF8A00]"
-            >
-              <option value="All">All Subjects</option>
-              {subjectOptions.map((subject) => (
-                <option key={subject} value={subject}>
-                  {subject}
-                </option>
-              ))}
-            </select>
+            <FilterSelect plain label="Course selector subject" triggerSize="h-8 rounded-md" value={selectedSubject} onChange={setSelectedSubject} searchPlaceholder="Search subject" options={[{ value: "All", label: "All Subjects" }, ...subjectOptions.map(subject => ({ value: subject, label: subject }))]} />
           </div>
 
           {/* Language — replaces the old course type field */}
@@ -247,14 +220,7 @@ export const CourseSelectorPage = () => {
             <label className="text-[11px] font-bold uppercase text-[#667085]">
               Language
             </label>
-            <select
-              aria-label="Course selector language" value={selectedLanguage}
-              onChange={(e) => setSelectedLanguage(e.target.value)}
-              className="w-full h-8 px-2.5 rounded-md bg-[#F7F8FA] border border-[#E6E8EC] text-xs font-semibold text-[#0A1D3F] focus:outline-none focus:border-[#FF8A00]"
-            >
-              <option value="All">All Languages</option>
-              {facets.languages.map(l=><option key={l.id} value={l.name}>{l.name}</option>)}
-            </select>
+            <FilterSelect plain label="Course selector language" triggerSize="h-8 rounded-md" value={selectedLanguage} onChange={setSelectedLanguage} searchPlaceholder="Search language" options={[{ value: "All", label: "All Languages" }, ...facets.languages.map(l => ({ value: l.name, label: l.name }))]} />
           </div>
         </div>
 

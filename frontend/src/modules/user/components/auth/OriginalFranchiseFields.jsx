@@ -34,6 +34,7 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { readOptions } from '../../services/collegeService';
+import { SearchableSelect } from '../common/SearchableSelect';
 
 // The original fields and layout share the current application state and workflow.
 export function OriginalFranchiseFields({ form, setForm, step, policy, linked, setLinked, universities, colleges, onNext, onPrevious, logo, onLogo, onLogoError }) {
@@ -826,20 +827,10 @@ export function OriginalFranchiseFields({ form, setForm, step, policy, linked, s
                 <label className="block text-xs font-semibold text-[#0A1D3F] mb-1">
                   State <span className="text-red-500">*</span>
                 </label>
-                <div className="relative">
-                  <select
-                    aria-label="State" value={formData.state}
-                    onChange={(e) => handleInputChange("state", e.target.value)}
-                    className="w-full px-3 py-2.5 text-xs bg-white border border-[#CBD5E1] rounded-md text-[#0A1D3F] focus:outline-none focus:border-[#FF8A00] focus:ring-2 focus:ring-[#FF8A00]/15 transition cursor-pointer appearance-none"
-                  >
-                    <option value="">Select state</option>{INDIAN_STATES.map((st) => (
-                      <option key={st} value={st}>
-                        {st}
-                      </option>
-                    ))}
-                  </select>
-                  <ChevronDown className="w-4 h-4 text-[#64748B] absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                </div>
+                {/* Opens below the field with a search box; a plain <select> opens this 36-item list upward over the form. */}
+                <SearchableSelect ariaLabel="State" value={formData.state} onChange={value => handleInputChange("state", value)} placeholder="Select state" searchPlaceholder="Search state" forceOpenDirection="down"
+                  options={INDIAN_STATES.map(st => ({ value: st, label: st }))}
+                  triggerClassName="px-3 py-2.5 bg-white border-[#CBD5E1] rounded-md" valueClassName={formData.state ? "text-[#0A1D3F]" : "text-slate-400"} chevronClassName="text-[#64748B]" />
               </div>
 
               <div>

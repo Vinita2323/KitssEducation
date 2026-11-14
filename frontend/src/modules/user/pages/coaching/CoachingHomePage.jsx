@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { FilterSelect } from "../../components/common/FilterSelect";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import {
   Video,
@@ -10,7 +11,6 @@ import {
   Users,
   ShieldCheck,
   CheckCircle2,
-  ChevronDown,
   GraduationCap,
   Layers,
   X
@@ -118,28 +118,7 @@ export const CoachingHomePage = () => {
                 </button>
               )}
             </div>
-            <div className="relative">
-              <select
-                value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value)}
-                className={`w-full pl-3 pr-8 py-2 rounded-xl text-xs font-bold transition appearance-none cursor-pointer border focus:outline-none focus:ring-1 ${
-                  selectedCategory !== "All"
-                    ? "bg-[#0A1D3F] text-white border-[#0A1D3F] focus:ring-[#0A1D3F]"
-                    : "bg-[#F7F8FA] text-[#0A1D3F] border-[#E6E8EC] hover:border-gray-300 focus:ring-[#0A1D3F] focus:border-[#0A1D3F]"
-                }`}
-              >
-                {categories.map((cat) => (
-                  <option key={cat.id} value={cat.id} className="bg-white text-[#0A1D3F] font-semibold">
-                    {cat.name}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown
-                className={`w-4 h-4 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none transition ${
-                  selectedCategory !== "All" ? "text-white" : "text-[#667085]"
-                }`}
-              />
-            </div>
+            <FilterSelect label="Filter by Category" triggerSize="py-2 rounded-xl" value={selectedCategory} onChange={setSelectedCategory} searchPlaceholder="Search category" options={categories.map(cat => ({ value: cat.id, label: cat.id === "All" ? "All Categories" : cat.name }))} />
           </div>
 
           {/* Class / Grade Dropdown */}
@@ -161,31 +140,7 @@ export const CoachingHomePage = () => {
                 </button>
               )}
             </div>
-            <div className="relative">
-              <select
-                value={selectedClass}
-                onChange={(e) => setSelectedClass(e.target.value)}
-                className={`w-full pl-3 pr-8 py-2 rounded-xl text-xs font-bold transition appearance-none cursor-pointer border focus:outline-none focus:ring-1 ${
-                  selectedClass !== "All"
-                    ? "bg-[#FF8A00] text-white border-[#FF8A00] focus:ring-[#FF8A00]"
-                    : "bg-[#F7F8FA] text-[#0A1D3F] border-[#E6E8EC] hover:border-gray-300 focus:ring-[#0A1D3F] focus:border-[#0A1D3F]"
-                }`}
-              >
-                <option value="All" className="bg-white text-[#0A1D3F] font-semibold">
-                  All Classes
-                </option>
-                {classes.map(c=>c.name).map((cls) => (
-                  <option key={cls} value={cls} className="bg-white text-[#0A1D3F] font-semibold">
-                    {cls}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown
-                className={`w-4 h-4 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none transition ${
-                  selectedClass !== "All" ? "text-white" : "text-[#667085]"
-                }`}
-              />
-            </div>
+            <FilterSelect label="Filter by Class" tone="orange" triggerSize="py-2 rounded-xl" value={selectedClass} onChange={setSelectedClass} searchPlaceholder="Search class" options={[{ value: "All", label: "All Classes" }, ...classes.map(c => ({ value: c.name, label: c.name }))]} />
           </div>
         </div>
       </div>

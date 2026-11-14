@@ -1,4 +1,5 @@
 import { FranchiseProfileModal } from '../../components/college/FranchiseProfileModal';
+import { FilterSelect } from "../../components/common/FilterSelect";
 import React, { useState, useEffect } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import {
@@ -11,7 +12,6 @@ import {
   ArrowRight,
   Sparkles,
   CheckCircle2,
-  ChevronDown,
   X
 } from "lucide-react";
 import { collegeService } from "../../services/collegeService";
@@ -69,12 +69,6 @@ export const CollegesListingPage = () => {
   const handleSearchSubmit = (e) => {
     e.preventDefault();
     fetchColleges();
-  };
-
-  const handleStateChange = (e) => {
-    const newState = e.target.value;
-    setSelectedState(newState);
-    setSelectedDistrict("All");
   };
 
   const handleClearFilters = () => {
@@ -174,32 +168,7 @@ export const CollegesListingPage = () => {
                 </button>
               )}
             </div>
-            <div className="relative">
-              <select
-                aria-label="Filter by Institution Type"
-                value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value)}
-                className={`w-full pl-3 pr-8 py-2 rounded-lg text-xs font-bold transition appearance-none cursor-pointer border focus:outline-none focus:ring-1 ${
-                  selectedCategory !== "All"
-                    ? "bg-[#0A1D3F] text-white border-[#0A1D3F] focus:ring-[#0A1D3F]"
-                    : "bg-[#F7F8FA] text-[#0A1D3F] border-[#E6E8EC] hover:border-gray-300 focus:ring-[#0A1D3F] focus:border-[#0A1D3F]"
-                }`}
-              >
-                <option value="All" className="bg-white text-[#0A1D3F] font-semibold">
-                  All Types
-                </option>
-                {categories.filter((c) => c !== "All").map((cat) => (
-                  <option key={cat} value={cat} className="bg-white text-[#0A1D3F] font-semibold">
-                    {cat}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown
-                className={`w-4 h-4 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none transition ${
-                  selectedCategory !== "All" ? "text-white" : "text-[#667085]"
-                }`}
-              />
-            </div>
+            <FilterSelect label="Filter by Institution Type" triggerSize="py-2 rounded-lg" value={selectedCategory} onChange={setSelectedCategory} searchPlaceholder="Search type" options={categories.map(cat => ({ value: cat, label: cat === "All" ? "All Types" : cat }))} />
           </div>
 
           {/* 2. State Dropdown */}
@@ -224,32 +193,7 @@ export const CollegesListingPage = () => {
                 </button>
               )}
             </div>
-            <div className="relative">
-              <select
-                aria-label="Filter by State"
-                value={selectedState}
-                onChange={handleStateChange}
-                className={`w-full pl-3 pr-8 py-2 rounded-lg text-xs font-bold transition appearance-none cursor-pointer border focus:outline-none focus:ring-1 ${
-                  selectedState !== "All"
-                    ? "bg-[#FF8A00] text-white border-[#FF8A00] focus:ring-[#FF8A00]"
-                    : "bg-[#F7F8FA] text-[#0A1D3F] border-[#E6E8EC] hover:border-gray-300 focus:ring-[#0A1D3F] focus:border-[#0A1D3F]"
-                }`}
-              >
-                <option value="All" className="bg-white text-[#0A1D3F] font-semibold">
-                  All States
-                </option>
-                {states.filter((s) => s !== "All").map((st) => (
-                  <option key={st} value={st} className="bg-white text-[#0A1D3F] font-semibold">
-                    {st}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown
-                className={`w-4 h-4 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none transition ${
-                  selectedState !== "All" ? "text-white" : "text-[#667085]"
-                }`}
-              />
-            </div>
+            <FilterSelect label="Filter by State" tone="orange" triggerSize="py-2 rounded-lg" value={selectedState} onChange={value => { setSelectedState(value); setSelectedDistrict("All"); }} searchPlaceholder="Search state" options={states.map(st => ({ value: st, label: st === "All" ? "All States" : st }))} />
           </div>
 
           {/* 3. District Dropdown */}
@@ -271,32 +215,7 @@ export const CollegesListingPage = () => {
                 </button>
               )}
             </div>
-            <div className="relative">
-              <select
-                aria-label="Filter by District"
-                value={selectedDistrict}
-                onChange={(e) => setSelectedDistrict(e.target.value)}
-                className={`w-full pl-3 pr-8 py-2 rounded-lg text-xs font-bold transition appearance-none cursor-pointer border focus:outline-none focus:ring-1 ${
-                  selectedDistrict !== "All"
-                    ? "bg-[#0A1D3F] text-white border-[#0A1D3F] focus:ring-[#0A1D3F]"
-                    : "bg-[#F7F8FA] text-[#0A1D3F] border-[#E6E8EC] hover:border-gray-300 focus:ring-[#0A1D3F] focus:border-[#0A1D3F]"
-                }`}
-              >
-                <option value="All" className="bg-white text-[#0A1D3F] font-semibold">
-                  All Districts
-                </option>
-                {availableDistricts.filter((d) => d !== "All").map((dist) => (
-                  <option key={dist} value={dist} className="bg-white text-[#0A1D3F] font-semibold">
-                    {dist}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown
-                className={`w-4 h-4 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none transition ${
-                  selectedDistrict !== "All" ? "text-white" : "text-[#667085]"
-                }`}
-              />
-            </div>
+            <FilterSelect label="Filter by District" triggerSize="py-2 rounded-lg" value={selectedDistrict} onChange={setSelectedDistrict} searchPlaceholder="Search district" options={availableDistricts.map(dist => ({ value: dist, label: dist === "All" ? "All Districts" : dist }))} />
           </div>
         </div>
       </div>

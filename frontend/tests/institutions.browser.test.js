@@ -83,7 +83,7 @@ test('Stage 4 existing UI with REAL API/MongoDB and responsive matrix', { skip: 
   });
   await t.test('public filters/details and signed-in admission confirmation persist', async () => {
     await identity(student); await goto(base + '/colleges'); await page.getByText('Test College', { exact: true }).waitFor();
-    await page.getByLabel('Filter by State').selectOption('Test State');
+    await page.getByRole('button', { name: /^Filter by State:/ }).click(); await page.getByRole('option', { name: 'Test State', exact: true }).click();
     await page.getByRole('button', { name: 'View Details', exact: true }).click(); await page.getByRole('button', { name: 'Close modal' }).waitFor(); await page.getByRole('button', { name: 'Close modal' }).click();
     await page.getByRole('button', { name: 'Apply Now', exact: true }).click();
     await page.getByRole('dialog', { name: 'Admission application' }).getByText('Test Program', { exact: true }).click(); await page.getByRole('button', { name: 'Continue', exact: true }).click();
