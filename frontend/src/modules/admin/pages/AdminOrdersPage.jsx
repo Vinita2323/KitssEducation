@@ -1,6 +1,7 @@
 import { statusLabel, userMessage } from '../../../shared/ui/displayText';
 import { AdminSelect } from '../components/AdminFields';
 import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { httpClient } from '../../../shared/api/httpClient';
 import { authenticatedWrite } from '../../user/services/authService';
 import { useAuth } from '../../user/context/AuthContext';
@@ -24,7 +25,7 @@ export function AdminOrdersPage() {
     <AdminTable><table className="w-full text-sm"><thead><tr>{['Order','Product / historical amount','Payment / access','Payment checks','Actions'].map(t=><th key={t} className="p-3 text-left">{t}</th>)}</tr></thead><tbody>{data.data.map(row=><tr key={row.id}>
       <td><p className="font-semibold break-all">{row.reference}</p><AdminMeta>{row.simulated?'Simulated Test Mode':'Razorpay Test Mode'}</AdminMeta></td>
       <td><p className="break-words">{row.product.title}</p><p className="font-semibold tabular-nums">INR {(row.amountMinor/100).toFixed(2)}</p></td>
-      <td><p>{statusLabel(row.orderStatus)} / {statusLabel(row.activationStatus)}</p><AdminMeta>Payment: {statusLabel(row.paymentStatus)}</AdminMeta></td>
+      <td><p>{statusLabel(row.orderStatus)} / {statusLabel(row.activationStatus)}</p><AdminMeta>Payment: {statusLabel(row.paymentStatus)}</AdminMeta>{row.refundRequest && <div className="mt-1">{can('refunds.read') ? <Link to="/admin/refunds" className="inline-flex items-center text-[10px] font-bold text-amber-800 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200 hover:bg-amber-100">Refund: {statusLabel(row.refundRequest.status)}</Link> : <span className="inline-flex items-center text-[10px] font-bold text-amber-800 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">Refund: {statusLabel(row.refundRequest.status)}</span>}</div>}</td>
       <td><AdminStatus value={row.reconciliation.state} /><AdminMeta>{userMessage(row.reconciliation.lastError)}</AdminMeta></td>
       <td><div className="admin-actions"><button onClick={()=>detail(row)} className="admin-btn admin-btn-ghost admin-btn-sm">Payment details</button><button disabled={!can('commerce.reconcile')} onClick={()=>reconcile(row)} className="admin-btn admin-btn-secondary admin-btn-sm">Check payment status</button></div></td>
     </tr>)}</tbody></table>{!data.data.length&&<AdminEmpty icon={Receipt}><p>No matching orders.</p></AdminEmpty>}</AdminTable>

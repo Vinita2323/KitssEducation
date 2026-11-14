@@ -16,7 +16,15 @@ export function AdminNotificationsPage() {
     [meta, setMeta] = useState(null),
     [form, setForm] = useState(null),
     [busy, setBusy] = useState(false),
-    [error, setError] = useState('');
+    [error, setError] = useState(''),
+    [courses, setCourses] = useState([]);
+  useEffect(() => {
+    const c = new AbortController();
+    httpClient.request('/coaching/courses?pageSize=100', { signal: c.signal })
+      .then(r => { if (!c.signal.aborted) setCourses(r.data || []); })
+      .catch(() => {});
+    return () => c.abort();
+  }, []);
   const load = async () => {
     const r = await httpClient.request('/admin/notifications?page=' + page);
     setRows(r.data);
@@ -100,8 +108,35 @@ export function AdminNotificationsPage() {
         }))} className="block w-full border rounded-xl p-2">{['all_students', 'users', 'course'].map(v => <option key={v}>{v}</option>)}</AdminSelect></AdminField>{form.kind === 'users' && <AdminField className="block text-sm">User database IDs (comma separated)<AdminInput aria-label="Notification recipients" value={form.recipients} onChange={e => setForm(p => ({
           ...p,
           recipients: e.target.value
-        }))} className="block w-full border p-2 rounded-xl" /></AdminField>}{form.kind === 'course' && <AdminField className="block text-sm">Course ID<AdminInput value={form.courseId} onChange={e => setForm(p => ({
-          ...p,
-          courseId: e.target.value
-        }))} className="block w-full border p-2 rounded-xl" /></AdminField>}<p className="text-xs">Optional links use approved internal routes only. Publication requires a separate permission.</p><div className="admin-actions"><button disabled={busy} className="admin-btn admin-btn-primary">Save notification draft</button><button type="button" onClick={() => setForm(null)} className="admin-btn admin-btn-ghost">Cancel</button></div></form>}</div>;
+        }))} className="block w-full border p-2 rounded-xl" /></AdminField>}{form.kind === 'course' && (
+          <div className="space-y-2">
+            {/* Only published courses can be targeted, which is exactly what the public catalogue lists. */}
+            {courses.length > 0 && <AdminField className="block text-sm">
+              Course
+              <AdminSelect
+                aria-label="Notification course selector"
+                value={courses.some(c => c.id === form.courseId) ? form.courseId : ''}
+                onChange={e => setForm(p => ({ ...p, courseId: e.target.value }))}
+                className="block w-full border rounded-xl p-2 mt-1 bg-white"
+              >
+                <option value="">Choose a published course</option>
+                {courses.map(c => (
+                  <option key={c.id} value={c.id}>
+                    {c.title}{c.class ? ` (${c.class})` : ''}
+                  </option>
+                ))}
+              </AdminSelect>
+            </AdminField>}
+            {/* Fallback: the list could not load, or this draft targets a course not in it. */}
+            {(!courses.length || (form.courseId && !courses.some(c => c.id === form.courseId))) && <AdminField className="block text-sm">
+              Course ID
+              <AdminInput
+                aria-label="Notification course"
+                value={form.courseId}
+                onChange={e => setForm(p => ({ ...p, courseId: e.target.value }))}
+                className="block w-full border p-2 rounded-xl font-mono bg-white mt-1"
+              />
+            </AdminField>}
+          </div>
+        )}<p className="text-xs">Optional links use approved internal routes only. Publication requires a separate permission.</p><div className="admin-actions"><button disabled={busy} className="admin-btn admin-btn-primary">Save notification draft</button><button type="button" onClick={() => setForm(null)} className="admin-btn admin-btn-ghost">Cancel</button></div></form>}</div>;
 }

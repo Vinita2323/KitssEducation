@@ -1,4 +1,4 @@
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { HomeSectionFields } from '../components/HomeSectionFields';
 import { FileText, Plus } from 'lucide-react';
 import { AdminEmpty, AdminPageHeader, AdminStatus, AdminTable } from '../components/AdminUI';
@@ -15,9 +15,23 @@ const paths = { pages: '/admin/content/pages', banners: '/admin/content/banners'
 const empty = kind => kind === 'pages' ? { key: 'home', sections: [{ key: 'intro', type: 'text', heading: '', body: '', items: [], mediaAssetIds: [] }] } : kind === 'banners' ? { placement: 'home', title: '', subtitle: '', ctaText: '', tag: '', imageAssetId: null, link: { type: 'internal', target: '/books' }, variant: 'navy', sortOrder: 0 } : { name: '', role: '', qualifications: '', experience: '', specialty: '', badge: '', trackTags: [], portraitAssetId: null, sourceNote: '', sortOrder: 0 };
 export function AdminContentPage() {
   const { can } = useAuth();
-  const [params] = useSearchParams();
-  const [categoriesMode, setCategoriesMode] = useState(false);
-  const [kind, setKind] = useState(() => params.get('tab') === 'faculty' ? 'faculty' : 'pages'), [rows, setRows] = useState([]), [meta, setMeta] = useState(null), [page, setPage] = useState(1), [status, setStatus] = useState('');
+  const [params, setParams] = useSearchParams();
+  const [categoriesMode, setCategoriesMode] = useState(() => params.get('tab') === 'categories');
+  const [kind, setKind] = useState(() => {
+    const tab = params.get('tab');
+    if (tab === 'banners') return 'banners';
+    if (tab === 'faculty') return 'faculty';
+    return 'pages';
+  }), [rows, setRows] = useState([]), [meta, setMeta] = useState(null), [page, setPage] = useState(1), [status, setStatus] = useState('');
+  // The ?tab= address is the source of truth, so links, refresh and Back/Forward all land on the right tab.
+  const switchTab = k => setParams({ tab: k }, { replace: true });
+  const tab = params.get('tab');
+  useEffect(() => {
+    setCategoriesMode(tab === 'categories');
+    if (tab !== 'categories') setKind(tab === 'banners' || tab === 'faculty' ? tab : 'pages');
+    setPage(1);
+    setForm(null);
+  }, [tab]);
   const [form, setForm] = useState(null), [editing, setEditing] = useState(null), [error, setError] = useState(''), [busy, setBusy] = useState(false), [version, setVersion] = useState(0);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const deleteDialog = useDialogFocus(Boolean(deleteTarget), () => { if (!busy) setDeleteTarget(null); });
@@ -39,7 +53,41 @@ export function AdminContentPage() {
   const editorDialog = useDialogFocus(Boolean(form), () => setForm(null));
   return <div className="space-y-4 text-[#0A1D3F]">
     <AdminPageHeader title="Content Management" description="Approved plain text and safe media. Saved draft edits do not replace published snapshots." actions={<button hidden={categoriesMode} disabled={!can('content.write')} className="admin-btn admin-btn-accent" onClick={() => { setEditing(null); setForm(empty(kind)); }}><Plus aria-hidden="true" size={16} />Add Content</button>} />
-    <div className="flex flex-wrap items-center gap-3"><div className="admin-segmented">{Object.keys(paths).map(k => <button aria-pressed={!categoriesMode && kind === k} key={k} className="px-4 py-2" onClick={() => { setCategoriesMode(false); setKind(k); setPage(1); setForm(null); }}>{k === 'faculty' ? 'Faculty' : k === 'pages' ? 'Page sections' : 'Banners'}</button>)}<button type="button" aria-pressed={categoriesMode} className="px-4 py-2" onClick={() => { setCategoriesMode(true); setForm(null); }}>Categories</button></div>{!categoriesMode && <AdminSelect aria-label="Content status" value={status} onChange={e => { setStatus(e.target.value); setPage(1); }}><option value="">All states</option>{['draft','published','archived'].map(s => <option key={s}>{s}</option>)}</AdminSelect>}</div>
+    <div className="flex flex-wrap items-center gap-3">
+      <div className="admin-segmented">
+        {Object.keys(paths).map(k => (
+          <button
+            aria-pressed={!categoriesMode && kind === k}
+            key={k}
+            className="px-4 py-2"
+            onClick={() => switchTab(k)}
+          >
+            {k === 'faculty' ? 'Faculty' : k === 'pages' ? 'Page sections' : 'Banners'}
+          </button>
+        ))}
+        <button
+          type="button"
+          aria-pressed={categoriesMode}
+          className="px-4 py-2"
+          onClick={() => switchTab('categories')}
+        >
+          Categories
+        </button>
+      </div>
+      {!categoriesMode && (
+        <AdminSelect aria-label="Content status" value={status} onChange={e => { setStatus(e.target.value); setPage(1); }}>
+          <option value="">All states</option>
+          {['draft','published','archived'].map(s => <option key={s}>{s}</option>)}
+        </AdminSelect>
+      )}
+    </div>
+    {!categoriesMode && (
+      <div className="text-xs text-[#53647c]">
+        {kind === 'banners' && 'Manage hero carousels and promotional campaign banners shown across the student portal.'}
+        {kind === 'faculty' && <>Manage public faculty directory cards. Verified educators from registrations can also be reviewed in <Link to="/admin/registrations" className="underline font-semibold text-[#0A1D3F]">Registrations</Link>.</>}
+        {kind === 'pages' && 'Manage approved text sections and card items for marketing pages (home, about).'}
+      </div>
+    )}
     {categoriesMode ? <CategoryCardsManager /> : <>
     {error && <p role="alert" className="p-3 bg-red-50 text-red-700 rounded-xl">{error}</p>}{busy && <p role="status">Loading…</p>}
     <Pagination meta={meta} onChange={setPage} loading={busy} />
