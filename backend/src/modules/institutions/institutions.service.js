@@ -2,7 +2,7 @@ import { institutionDirectory } from './directory.js';
 import { escapeRegex } from '../../utils/escapeRegex.js';
 import { generateTaxonomyKey } from './taxonomy-key.js';
 import { randomUUID } from 'node:crypto';
-import { setTimeout as delay } from 'node:timers/promises';
+import { withDomainLock, userScope, ownerScope } from '../../utils/domain-lock.js';
 import { AppError } from '../../utils/AppError.js';
 import { digest, mac } from '../auth/security.js';
 import { id, invalid, definitionInput, pageQuery, admissionInput, franchiseInput, revision, object, noteText, key } from './validation.js';
@@ -33,20 +33,10 @@ export function createInstitutionService({ models, authService, config, logger }
       } catch { logger.error({ event: 'institution_audit_pending' }, 'Domain audit remains durably pending'); break; }
     }
   }
-  async function serialize(work) {
-    const owner = randomUUID();
-    const until = Date.now() + 3000;
-    let acquired;
-    do {
-      acquired = await DomainLock.findOneAndUpdate({ _id: 'stage4-hierarchy', owner: null }, { $set: { owner, acquiredAt: new Date() } }, { returnDocument: 'after' });
-      if (!acquired) await delay(30);
-    } while (!acquired && Date.now() < until);
-    if (!acquired) throw new AppError(503, 'DOMAIN_BUSY', 'Institution changes are temporarily busy; retry later');
-    try { return await work(); }
-    finally {
-      try { await DomainLock.updateOne({ _id: 'stage4-hierarchy', owner }, { $set: { owner: null }, $unset: { acquiredAt: 1 } }); }
-      catch { logger.error({ event: 'domain_lock_release_failed' }, 'Institution writes require operator lock recovery'); }
-    }
+  // Same lock as publishing coordination; see utils/domain-lock.js for when a scope may be used.
+  const serialize = work => serializeAs(undefined, work);
+  async function serializeAs(scope, work) {
+    return withDomainLock({ lockModel: DomainLock, logger, scope, busyMessage: 'Institution changes are temporarily busy; retry later', releaseFailedMessage: 'Institution writes require operator recovery' }, work);
   }
   async function find(kind, value) { const doc = await modelFor(kind).findById(id(value)); if (!doc) throw missing(); return doc; }
   async function activeTax(value, kind) {
@@ -250,7 +240,7 @@ export function createInstitutionService({ models, authService, config, logger }
     },
     async facets(raw) {
       pageQuery(raw, ['view', 'universityId', 'stateId', 'state', 'district', 'category', 'degree']);
-      const all = await College.find(await visibleColleges({ ...raw, q: undefined, state: undefined, district: undefined, stateId: undefined })).lean();
+      const all = await College.find(await visibleColleges({ ...raw, q: undefined, state: undefined, district: undefined, stateId: undefined })).select('_id stateId universityId category district').lean();
       // Every active state, plus any (possibly archived) state a visible college still uses, so its colleges stay filterable.
       const activeStates = await Taxonomy.find({ kind: 'state', status: 'active', deletedAt: null }).lean();
       const activeIds = new Set(activeStates.map(s => String(s._id)));
@@ -272,7 +262,7 @@ export function createInstitutionService({ models, authService, config, logger }
       if (!auth || auth.user.status !== 'active' || !auth.user.emailVerifiedAt) throw new AppError(401, 'UNAUTHENTICATED', 'Sign in with a verified account to apply');
       const fields = admissionInput(input);
       await authService.limit(ctx, String(auth.user._id), 'admission', 10);
-      return serialize(async () => {
+      return serializeAs(userScope(auth), async () => {
         const ownerKey = String(auth.user._id), requestHash = hash(fields);
         const prior = await AdmissionApplication.findOne({ ownerKey, idempotencyKey: fields.idempotencyKey }).select('+requestHash');
         if (prior) { if (prior.requestHash !== requestHash) throw new AppError(409, 'IDEMPOTENCY_CONFLICT', 'Submission key was already used for different information'); return { id: String(prior._id), reference: prior.reference, status: prior.status }; }
@@ -337,7 +327,12 @@ export function createInstitutionService({ models, authService, config, logger }
     reviewDetail: async (kind, value) => reviewDTO(await find(kind, value)),
     async review(kind, value, input, ctx, noteOnly = false) {
       object(input, noteOnly ? ['text', 'idempotencyKey'] : ['status', 'reason', 'rejectionReason', 'note', 'expectedRevision'], noteOnly ? ['text', 'idempotencyKey'] : ['status', 'expectedRevision']);
-      return serialize(async () => {
+      // Reviews and notes share the applicant's lane (the same lane as the applicant's own actions and the
+      // franchise workflow reviews of this record); an application without an account gets its own lane.
+      // Different applications are reviewed in parallel. Nothing here changes other records.
+      const ownerField = kind === 'admission' ? 'userId' : 'applicantUserId';
+      const owner = (await modelFor(kind).findById(id(value)).select(ownerField).lean())?.[ownerField];
+      return serializeAs(ownerScope(owner) ?? 'application:' + kind + ':' + String(id(value)), async () => {
         const Model = modelFor(kind), doc = await find(kind, value);
         if (doc.status === 'draft') throw new AppError(409, 'DRAFT_ONLY', 'Only submitted applications can be reviewed');
         if (doc.notes.length >= 200 || doc.statusHistory.length >= 100) throw new AppError(409, 'HISTORY_LIMIT', 'Application history requires operator archival review');

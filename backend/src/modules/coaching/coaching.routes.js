@@ -2,6 +2,7 @@ import express from 'express';
 import { requireSession, requirePermission } from '../auth/auth.routes.js';
 import { object, key } from '../publishing/validation.js';
 import { AppError } from '../../utils/AppError.js';
+import { heavyReadLimit, cachedPublicRead } from '../../utils/public-reads.js';
 export function createCoachingRouter(service) {
   const router = express.Router(),
     ctx = req => ({
@@ -25,7 +26,7 @@ export function createCoachingRouter(service) {
     if (req.auth && !['GET', 'HEAD', 'OPTIONS'].includes(req.method)) await service.limit(ctx(req), req.auth);
     next();
   });
-  router.get('/coaching/facets', async (req, res) => send(req, res, await service.facets()));
+  router.get('/coaching/facets', heavyReadLimit, async (req, res) => send(req, res, await cachedPublicRead('coaching-facets', {}, () => service.facets())));
   router.get('/coaching/courses', async (req, res) => page(req, res, await service.catalogue(req.query)));
   router.get('/coaching/courses/:id', async (req, res) => send(req, res, await service.publicDTO(await service.courseFor(req.params.id, req.auth))));
   router.get('/coaching/courses/:id/plans', async (req, res) => send(req, res, await service.plans(req.params.id)));

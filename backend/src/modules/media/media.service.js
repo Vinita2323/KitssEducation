@@ -2,6 +2,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import { Readable } from 'node:stream';
 import { AppError } from '../../utils/AppError.js';
 import { grantsFor } from '../auth/security.js';
+import { userScope } from '../../utils/domain-lock.js';
 import { cleanDTO } from '../publishing/publishing.service.js';
 import { id, key as validateKey, invalid, object, revision } from '../publishing/validation.js';
 import { inspectVideo } from './video-inspection.js';
@@ -14,6 +15,25 @@ export function createMediaService({ models, storage, coordination, config, auth
   const maxUploadBytes = Math.min(storage.maxBytes, config.media?.videoMaxBytes ?? purposes.lesson_video.max);
   const inspectionFields = i => Object.fromEntries(['width','height','pageCount','durationSeconds','videoCodec','audioCodec','inspectionVersion'].filter(k => i[k] !== undefined).map(k => [k,i[k]]));
   const missing = () => new AppError(404, 'NOT_FOUND', 'Media was not found');
+  // A full SHA-256 read of the stored file proves it was not altered. For large videos that is very
+  // expensive, so once a file has passed, later opens only compare its size and modification time;
+  // any change on disk triggers a full re-check. Results live in memory only, so each restart starts fresh.
+  const verified = new Map();
+  async function verifyIntegrity(doc) {
+    const integrityFailed = () => new AppError(503, 'MEDIA_INTEGRITY_FAILED', 'Media is temporarily unavailable');
+    const quick = typeof storage.stat === 'function' ? await storage.stat({ key: doc.key }) : null;
+    const known = quick && verified.get(doc.key);
+    if (known && known.bytes === quick.bytes && known.mtimeMs === quick.mtimeMs && known.checksum === doc.checksum) {
+      if (quick.bytes !== doc.bytes) throw integrityFailed();
+      return;
+    }
+    const meta = await storage.getMetadata({ key: doc.key });
+    if (meta.bytes !== doc.bytes || meta.checksum !== doc.checksum) { verified.delete(doc.key); throw integrityFailed(); }
+    if (quick) {
+      if (verified.size >= 5000) verified.delete(verified.keys().next().value);
+      verified.set(doc.key, { bytes: quick.bytes, mtimeMs: quick.mtimeMs, checksum: meta.checksum });
+    }
+  }
   const find = async value => { const doc = await Media.findById(id(value)).select('+key +cleanupKeys'); if (!doc || ['deleted', 'failed', 'deleting'].includes(doc.status)) throw missing(); return doc; };
   const fieldsByModel = { Book: ['coverAssetId', 'documentAssetId', 'previewAssetIds'], Banner: ['imageAssetId'], FacultyProfile: ['portraitAssetId'], PageContent: ['sections.mediaAssetIds', 'categoryCards.imageAssetId'] };
   const conditions = (fields, value, prefix = '') => fields.map(field => ({ [prefix + field]: prefix ? String(value) : id(String(value)) }));
@@ -33,7 +53,7 @@ export function createMediaService({ models, storage, coordination, config, auth
     async assertDocumentManagement(value, auth) { const doc = await find(String(value)); if (doc.purpose === 'franchise_document' && !grantsFor(auth.user).some(p => ['franchises.review','franchises.approve'].includes(p))) throw missing(); if (doc.purpose === 'registration_document' && !grantsFor(auth.user).includes('registrations.documents.review')) throw missing(); },
     maxUploadBytes,
     references,
-    async linkable(value, purpose, auth) { const doc = await find(String(value)); if (doc.purpose !== purpose || doc.status !== 'ready' || doc.scan.status !== 'clean' || purpose === 'lesson_video' && (!doc.durationSeconds || doc.inspectionVersion !== 'mp4-h264-aac-v1')) throw invalid('Select a clean, ready asset with the correct purpose'); if (!auth || String(doc.ownerUserId) !== String(auth.user._id) && !grantsFor(auth.user).includes('media.write')) throw new AppError(403, 'FORBIDDEN', 'Media linking is not authorized'); const meta = await storage.getMetadata({key:doc.key}); if(meta.bytes !== doc.bytes || meta.checksum !== doc.checksum) throw new AppError(503,'MEDIA_INTEGRITY_FAILED','Media is temporarily unavailable'); return doc; },
+    async linkable(value, purpose, auth) { const doc = await find(String(value)); if (doc.purpose !== purpose || doc.status !== 'ready' || doc.scan.status !== 'clean' || purpose === 'lesson_video' && (!doc.durationSeconds || doc.inspectionVersion !== 'mp4-h264-aac-v1')) throw invalid('Select a clean, ready asset with the correct purpose'); if (!auth || String(doc.ownerUserId) !== String(auth.user._id) && !grantsFor(auth.user).includes('media.write')) throw new AppError(403, 'FORBIDDEN', 'Media linking is not authorized'); await verifyIntegrity(doc); return doc; },
     async upload({ purpose, originalName, mime, stream, idempotencyKey, auth, ctx }) {
       if (purpose === 'franchise_document') { if (!service.franchiseUploadAllowed) throw new AppError(409, 'BUSINESS_POLICY_PENDING', 'Franchise documents are unavailable'); await service.franchiseUploadAllowed(auth); }
       if (purpose === 'registration_document') { if (!service.registrationUploadAllowed) throw new AppError(409, 'BUSINESS_POLICY_PENDING', 'Registration document collection is not configured'); await service.registrationUploadAllowed(); }
@@ -47,7 +67,8 @@ export function createMediaService({ models, storage, coordination, config, auth
       const reservedKey = storage.createKey({ visibility:'quarantine', purpose:purpose.replaceAll('_','-'), extension });
       // Persist an IO intent before writing bytes. Even a lost DB response/crash
       // leaves a known generated key for bounded, idempotent reconciliation.
-      attempt = await coordination.run(async () => {
+      const scope = userScope(auth); // an upload only touches the uploader's own records
+      attempt = await coordination.runAs(scope, async () => {
         if (await Media.countDocuments({ownerUserId:auth.user._id,status:{$nin:['deleted','failed']}})>=200) throw new AppError(429,'MEDIA_QUOTA','Unreleased media quota reached');
         const row = await Media.create({key:reservedKey,purpose,visibility:['franchise_document','registration_document','book_full','lesson_document','lesson_video','result_import'].includes(purpose)?'private':'public',originalName,mime,sourceMime:mime,ownerUserId:auth.user._id,uploadActor:ctx.actorId,idempotencyKey:'attempt-'+randomUUID(),status:'staged',auditOutbox:[coordination.event('media_upload_intent',ctx)]});
         await coordination.flush(Media,row);return row;
@@ -58,34 +79,34 @@ export function createMediaService({ models, storage, coordination, config, auth
         if(!stored.bytes)throw invalid('Empty files are not permitted');
         const inspection=await inspect(stored.key,mime);
         const requestHash=createHash('sha256').update(JSON.stringify({purpose,originalName,mime,checksum:stored.checksum})).digest('hex');
-        asset=await coordination.run(async()=>{
+        asset=await coordination.runAs(scope,async()=>{
           const prior=await Media.findOne({ownerUserId:auth.user._id,idempotencyKey});
           if(prior){if(prior.requestHash!==requestHash)throw new AppError(409,'IDEMPOTENCY_CONFLICT','Upload key was used for another file');return prior;}
           return coordination.update(Media,attempt,{idempotencyKey,requestHash,bytes:stored.bytes,checksum:stored.checksum,sourceChecksum:stored.checksum,sourceBytes:stored.bytes,status:'quarantined',...inspectionFields(inspection)},attempt.revision,'media_quarantined',ctx);
         });
         if(String(asset._id)!==String(attempt._id))return cleanDTO(asset);
         const result=await scanner.scan((await storage.getFile({key:stored.key})).stream);
-        if(result!=='clean')return cleanDTO(await coordination.run(()=>coordination.update(Media,asset,{scan:{status:result,checkedAt:new Date(),engine:scanner.configured?'clamav':'not_configured'}},asset.revision,'media_scan_'+result,ctx)));
-        return await service.promote(asset,inspection,ctx);
+        if(result!=='clean')return cleanDTO(await coordination.runAs(scope,()=>coordination.update(Media,asset,{scan:{status:result,checkedAt:new Date(),engine:scanner.configured?'clamav':'not_configured'}},asset.revision,'media_scan_'+result,ctx)));
+        return await service.promote(asset,inspection,ctx,scope);
       } finally {
         clearTimeout(timer);
         if(!asset||String(asset._id)!==String(attempt._id)) {
-          try {await coordination.run(async()=>{const current=await Media.findById(attempt._id).select('+key');if(!current||!['staged','deleting'].includes(current.status))return;const deleting=current.status==='deleting'?current:await coordination.update(Media,current,{status:'deleting'},current.revision,'media_attempt_cleanup',ctx);await storage.delete({key:reservedKey});await coordination.update(Media,deleting,{status:'deleted'},deleting.revision,'media_attempt_deleted',ctx);});}
+          try {await coordination.runAs(scope,async()=>{const current=await Media.findById(attempt._id).select('+key');if(!current||!['staged','deleting'].includes(current.status))return;const deleting=current.status==='deleting'?current:await coordination.update(Media,current,{status:'deleting'},current.revision,'media_attempt_cleanup',ctx);await storage.delete({key:reservedKey});await coordination.update(Media,deleting,{status:'deleted'},deleting.revision,'media_attempt_deleted',ctx);});}
           catch { /* Durable intent remains; maintenance retries without guessing paths. */ }
         }
       }
     },
-    async promote(doc, inspection, ctx) {
+    async promote(doc, inspection, ctx, scope) { // scope: the uploader during upload; none (global) for staff rescans
       const key=doc.key;
       const destination=storage.createKey({visibility:doc.visibility,purpose:doc.purpose.replaceAll('_','-'),extension:inspection.mime==='video/mp4'?'mp4':inspection.mime==='application/json'?'json':inspection.data?'png':'pdf'});
       // Journal the destination before IO. The current source remains quarantined
       // unless the single-record CAS commits the clean destination.
-      const prepared=await coordination.run(()=>coordination.update(Media,doc,{cleanupKeys:[...(doc.cleanupKeys??[]),destination],cleanupAfterAt:new Date(Date.now()+900000)},doc.revision,'media_promotion_intent',ctx));
+      const prepared=await coordination.runAs(scope,()=>coordination.update(Media,doc,{cleanupKeys:[...(doc.cleanupKeys??[]),destination],cleanupAfterAt:new Date(Date.now()+900000)},doc.revision,'media_promotion_intent',ctx));
       let safe;
       try {
         const source=inspection.data?Readable.from(Buffer.from(inspection.data,'base64')):(await storage.getFile({key})).stream;
         safe=await storage.upload({stream:source,key:destination,contentType:inspection.mime,maxBytes:Math.min(doc.purpose === 'lesson_video' ? maxUploadBytes : 50*1024*1024,storage.maxBytes)});
-        const updated=await coordination.run(()=>coordination.update(Media,prepared,{key:safe.key,cleanupKeys:[key],cleanupAfterAt:new Date(),mime:inspection.mime,bytes:safe.bytes,checksum:safe.checksum,...inspectionFields(inspection),status:'ready',scan:{status:'clean',checkedAt:new Date(),engine:'clamav'}},prepared.revision,'media_ready',ctx));
+        const updated=await coordination.runAs(scope,()=>coordination.update(Media,prepared,{key:safe.key,cleanupKeys:[key],cleanupAfterAt:new Date(),mime:inspection.mime,bytes:safe.bytes,checksum:safe.checksum,...inspectionFields(inspection),status:'ready',scan:{status:'clean',checkedAt:new Date(),engine:'clamav'}},prepared.revision,'media_ready',ctx));
         try {await storage.delete({key});await Media.updateOne({_id:updated._id,key:destination},{$pull:{cleanupKeys:key}});} catch { /* Ready bytes are valid; durable source cleanup retries. */ }
         return cleanDTO(updated);
       } catch(error) {throw error;}
@@ -99,7 +120,7 @@ export function createMediaService({ models, storage, coordination, config, auth
       const entitled = !publiclyReadable && (doc.purpose === 'franchise_document' ? doc.status === 'ready' && doc.scan.status === 'clean' && await service.authorizeFranchise?.(doc, auth) : doc.purpose === 'registration_document' ? await service.authorizeRegistration?.(doc, auth) : await service.authorizeEntitlement?.(doc, auth));
       if (['franchise_document','registration_document'].includes(doc.purpose) && !entitled) throw missing();
       if (!publiclyReadable && !entitled && (!auth || !grantsFor(auth.user).includes('media.read') || doc.status !== 'ready' || doc.scan.status !== 'clean')) throw missing();
-      const meta = await storage.getMetadata({ key: doc.key }); if (meta.bytes !== doc.bytes || meta.checksum !== doc.checksum) throw new AppError(503, 'MEDIA_INTEGRITY_FAILED', 'Media is temporarily unavailable');
+      await verifyIntegrity(doc);
       let range;
       if (rangeHeader) {
         const match = /^bytes=(\d*)-(\d*)$/.exec(rangeHeader); if (!match || !match[1] && !match[2]) throw Object.assign(new AppError(416, 'INVALID_RANGE', 'Range is not satisfiable'), { rangeBytes: doc.bytes });
@@ -118,6 +139,6 @@ export function createMediaService({ models, storage, coordination, config, auth
         await storage.delete({key:current.key});await coordination.update(Media,current,{status:'deleted'},current.revision,'media_deleted_retry',{actorId:'system'});
       });
     },
-    async list(query = {}, auth) { object(query, ['page', 'pageSize', 'status', 'purpose']); const page = Number(query.page ?? 1), pageSize = Number(query.pageSize ?? 20); if (!Number.isInteger(page) || page < 1 || !Number.isInteger(pageSize) || pageSize < 1 || pageSize > 100) throw invalid('Invalid pagination'); const filter = grantsFor(auth?.user ?? {roles:[],permissions:[]}).includes('registrations.documents.review') ? {} : { purpose: { $ne: 'registration_document' } }; if (query.status) { if (!['staged', 'quarantined', 'ready', 'deleting', 'deleted', 'failed'].includes(query.status)) throw invalid('Invalid media status'); filter.status = query.status; } if (query.purpose) { if (!purposes[query.purpose]) throw invalid('Invalid purpose'); if (query.purpose === 'registration_document' && !grantsFor(auth?.user ?? {roles:[],permissions:[]}).includes('registrations.documents.review')) throw missing(); filter.purpose = query.purpose; } const total = await Media.countDocuments(filter); return { data: (await Media.find(filter).sort({ createdAt: -1, _id: -1 }).skip((page - 1) * pageSize).limit(pageSize)).map(cleanDTO), meta: { total, page, pageSize, totalPages: Math.max(1, Math.ceil(total / pageSize)) }, scannerConfigured: scanner.configured }; },
+    async list(query = {}, auth) { object(query, ['page', 'pageSize', 'status', 'purpose']); const page = Number(query.page ?? 1), pageSize = Number(query.pageSize ?? 20); if (!Number.isInteger(page) || page < 1 || !Number.isInteger(pageSize) || pageSize < 1 || pageSize > 100) throw invalid('Invalid pagination'); const filter = grantsFor(auth?.user ?? {roles:[],permissions:[]}).includes('registrations.documents.review') ? {} : { purpose: { $ne: 'registration_document' } }; if (query.status) { if (!['staged', 'quarantined', 'ready', 'deleting', 'deleted', 'failed'].includes(query.status)) throw invalid('Invalid media status'); filter.status = query.status; } if (query.purpose) { if (!purposes[query.purpose]) throw invalid('Invalid purpose'); if (query.purpose === 'registration_document' && !grantsFor(auth?.user ?? {roles:[],permissions:[]}).includes('registrations.documents.review')) throw missing(); filter.purpose = query.purpose; } const total = await Media.countDocuments(filter); return { data: (await Media.find(filter).sort({ createdAt: -1, _id: -1 }).skip((page - 1) * pageSize).limit(pageSize)).map(cleanDTO), meta: { total, page, pageSize, totalPages: Math.max(1, Math.ceil(total / pageSize)) }, scannerConfigured: scanner.configured, scannerAvailable: scanner.configured && (typeof scanner.ready === 'function' ? await scanner.ready() : true) }; },
   }; return service;
 }

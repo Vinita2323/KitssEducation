@@ -21,7 +21,9 @@ export function LessonVideo({ courseId, lesson, canSave }) {
   };
   useEffect(() => {
     const controller = new AbortController(); lifecycle.current = controller;
-    const tick = setInterval(() => { if (!element.current?.paused) save(); }, 15000);
+    // Background save while playing. Pause, tab switch, end of video and the button still save at once;
+    // 30 s keeps two open tabs well inside the 120-per-15-minutes learning write limit.
+    const tick = setInterval(() => { if (!element.current?.paused) save(); }, 30000);
     const hide = () => { if (document.visibilityState === 'hidden') save(); };
     document.addEventListener('visibilitychange', hide);
     return () => { controller.abort(); clearInterval(tick); document.removeEventListener('visibilitychange', hide); };

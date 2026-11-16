@@ -3,6 +3,7 @@ import { httpClient } from '../../../shared/api/httpClient';
 import { queryString } from './collegeService';
 import { contentService } from './contentService';
 import { authenticatedWrite } from './authService';
+import { cachedRequest } from '../../../shared/api/requestCache';
 const palette = { navy: 'from-[#0A1D3F] to-[#133C8B]', orange: 'from-amber-600 to-orange-700', teal: 'from-teal-700 to-teal-800' };
 export const bookDTO = row => ({ ...row, price: row.priceMinor === undefined ? undefined : row.priceMinor / 100, originalPrice: row.originalPriceMinor === undefined ? undefined : row.originalPriceMinor / 100, isFree: row.priceMinor === 0, coverIcon: row.iconKey || 'BookOpen', coverColor: palette[row.coverVariant] || palette.navy, chapters: (row.toc ?? []).map(c => c.title), pages: row.pageCount, format: 'PDF', canReadFull: false, fileSize: 'Private PDF', discount: row.originalPriceMinor > row.priceMinor ? Math.round((1 - row.priceMinor / row.originalPriceMinor) * 100) + '% OFF' : '' });
 const filters = input => {
@@ -14,7 +15,8 @@ export const bookService = {
   async getBooksPage(input = {}, signal) { const result = await httpClient.request('/books' + queryString(filters(input)), { signal }); return { ...result, data: result.data.map(bookDTO) }; },
   async getBooks(input) { return (await this.getBooksPage(input)).data; },
   async getBookById(id, signal) { return bookDTO((await httpClient.request('/books/' + encodeURIComponent(id), { signal })).data); },
-  async getFacets(input = {}, signal) { return (await httpClient.request('/books/facets' + queryString(input), { signal })).data; },
+  // Filter menus are shared for a minute so changing one filter does not re-fetch the same lists.
+  async getFacets(input = {}) { const path = '/books/facets' + queryString(input); return cachedRequest(path, 60000, async () => (await httpClient.request(path)).data); },
   async getBoards() { return (await this.getFacets()).boards; },
   async getAvailableClasses(board) { const query = board && board !== 'All' ? /^[a-f0-9]{24}$/i.test(board) ? { boardId: board } : { board } : {}; return (await this.getFacets(query)).classes.map(c => c.name); },
   async getAvailableSubjects(board, className) { const query = {}; for (const [k, v] of [['board', board], ['class', className]]) if (v && v !== 'All') query[/^[a-f0-9]{24}$/i.test(v) ? k + 'Id' : k] = v; return (await this.getFacets(query)).subjects; },

@@ -15,7 +15,7 @@ export function createAuthModels(connection) {
     permissions: { type: [String], default: [] }, status: { type: String, enum: ['pending', 'active', 'suspended', 'archived'], default: 'pending' },
     emailVerifiedAt: Date, passwordChangedAt: Date, lastLoginAt: Date, securityVersion: { type: Number, default: 0 },
     activeSessionId: { type: String, default: null }, activeSessionExpiresAt: Date,
-    phone: String, profile: { board: String, class: String },
+    phone: String, profile: { board: String, class: String, dob: String },
     preferences: { notification: { examAlerts: { type: Boolean, default: true }, courseUpdates: { type: Boolean, default: true }, promoAlerts: { type: Boolean, default: false } }, courseSelector: { boardId: String, classId: String, stateId: String, languageId: String, subjectId: String } },
     challenges: { verify: challenge, reset: challenge, transfer: challenge, invite: challenge, emailChange: challenge },
     auditOutbox: { type: [event], default: [] }, bootstrapKey: String, adminRevision: { type: Number, default: 0 },
@@ -31,6 +31,12 @@ export function createAuthModels(connection) {
   const throttleSchema = new Schema({ _id: String, count: Number, expiresAt: Date }, { versionKey: false, bufferCommands: false });
   throttleSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
   const auditSchema = new Schema({ _id: String, action: String, actorId: String, subjectId: String, requestId: String, permissionChange: { before: [String], after: [String] }, reason: { type: String, maxlength: 500 }, at: Date }, { versionKey: false, bufferCommands: false });
+  // The audit log only grows; these serve the audit page filters, per-record history panels and the
+  // business-event notifier, all of which sort newest first.
+  auditSchema.index({ at: -1 });
+  auditSchema.index({ subjectId: 1, at: -1 });
+  auditSchema.index({ actorId: 1, at: -1 });
+  auditSchema.index({ action: 1, at: -1 });
   const model = (name, schema) => connection.models[name] ?? connection.model(name, schema);
   return { User: model('User', userSchema), Session: model('Session', sessionSchema),
     AuthThrottle: model('AuthThrottle', throttleSchema), AuditLog: model('AuditLog', auditSchema) };

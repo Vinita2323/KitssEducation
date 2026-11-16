@@ -1,5 +1,4 @@
-import { initializeApp, getApps } from 'firebase/app';
-import { getMessaging, isSupported } from 'firebase/messaging';
+// Firebase is loaded on demand so it never weighs down the first page load.
 
 export const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY || '',
@@ -28,6 +27,10 @@ export async function getFirebaseMessaging() {
   if (!isFirebaseConfigured) return null;
   if (typeof window === 'undefined') return null;
 
+  let firebaseApp, firebaseMessaging;
+  try { [firebaseApp, firebaseMessaging] = await Promise.all([import('firebase/app'), import('firebase/messaging')]); }
+  catch { return null; }
+  const { initializeApp, getApps } = firebaseApp, { getMessaging, isSupported } = firebaseMessaging;
   const supported = await isSupported().catch(() => false);
   if (!supported) return null;
 

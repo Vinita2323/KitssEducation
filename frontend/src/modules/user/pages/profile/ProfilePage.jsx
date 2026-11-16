@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   Mail,
@@ -10,8 +10,7 @@ import {
   Video,
   LogOut,
   ChevronRight,
-  Flame,
-  Coins,
+  TrendingUp,
   BookOpen,
   Edit3
 } from "lucide-react";
@@ -22,6 +21,16 @@ import { Modal } from "../../components/common/Modal";
 import { PrimaryButton, SecondaryButton } from "../../components/common/PrimaryButton";
 
 import { authService } from '../../services/authService';
+import { collegeService } from '../../services/collegeService';
+import { coachingService } from '../../services/coachingService';
+
+// Today as YYYY-MM-DD in the viewer's own calendar, for the date-of-birth upper bound.
+const localToday = () => { const d = new Date(); return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10); };
+const formatDob = value => /^\d{4}-\d{2}-\d{2}$/.test(value || '') ? new Date(value + 'T00:00:00Z').toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }) : '';
+// Saved values stay selectable even if the dropdown entry was later renamed or deactivated.
+const withSaved = (labels, saved) => saved && !labels.includes(saved) ? [saved, ...labels] : labels;
+const profileForm = user => ({ name: user?.name || "", email: user?.email || "", phone: user?.phone || "", board: user?.board || "", class: user?.class || "", dob: user?.dob || "" });
+
 export const ProfilePage = () => {
   const { user, updateProfile, logout } = useAuth();
   const navigate = useNavigate();
@@ -29,18 +38,45 @@ export const ProfilePage = () => {
   const { purchasedBookIds } = useLibrary();
   const purchasedCount = purchasedBookIds?.length || 0;
 
+  // Learning summary from the student's real course enrollments (null while loading, false if it failed).
+  const [learning, setLearning] = useState(null);
+  useEffect(() => {
+    const controller = new AbortController();
+    coachingService.getMyCourses(controller.signal).then(rows => {
+      const active = rows.filter(row => row.isEnrolled);
+      const lectures = active.reduce((n, row) => n + (Number(row.completedLectures) || 0), 0);
+      const progress = active.length ? Math.round(active.reduce((n, row) => n + (Number(row.progressPercentage) || 0), 0) / active.length) : 0;
+      setLearning({ courses: active.length, lectures, progress });
+    }).catch(() => { if (!controller.signal.aborted) setLearning(false); });
+    return () => controller.abort();
+  }, [user?.id]);
+  const stat = value => learning ? value : '—';
+
   const [showEditModal, setShowEditModal] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   // Edit form state
-  const [editData, setEditData] = useState({
-    name: user?.name || "",
-    email: user?.email || "",
-    phone: user?.phone || "",
-    board: user?.board || "",
-    class: user?.class || ""
-  });
+  const [editData, setEditData] = useState(() => profileForm(user));
+  const openEditModal = () => { setEditData(profileForm(user)); setShowEditModal(true); };
+
+  // Board and class choices come from the admin Dropdown settings. Classes follow the chosen board.
+  const [boards, setBoards] = useState([]), [classes, setClasses] = useState([]), [choicesError, setChoicesError] = useState('');
+  useEffect(() => {
+    if (!showEditModal) return;
+    let active = true;
+    collegeService.getTaxonomies('board').then(rows => { if (active) setBoards(rows); }).catch(() => { if (active) setChoicesError('Board and class choices could not be loaded. Your saved values are kept.'); });
+    return () => { active = false; };
+  }, [showEditModal]);
+  const selectedBoardId = boards.find(b => b.label === editData.board)?.id;
+  useEffect(() => {
+    if (!showEditModal) return;
+    let active = true;
+    collegeService.getTaxonomies('class', selectedBoardId).then(rows => { if (active) setClasses(rows); }).catch(() => { if (active) setChoicesError('Board and class choices could not be loaded. Your saved values are kept.'); });
+    return () => { active = false; };
+  }, [showEditModal, selectedBoardId]);
+  const boardOptions = withSaved(boards.map(b => b.label), editData.board);
+  const classOptions = withSaved([...new Set(classes.map(c => c.label))], editData.class);
 
   const [savingProfile, setSavingProfile] = useState(false);
   // Password state
@@ -51,7 +87,7 @@ export const ProfilePage = () => {
     e.preventDefault();
     setSavingProfile(true);
     try {
-      await updateProfile({ name: editData.name, phone: editData.phone, profile: { board: editData.board, class: editData.class } });
+      await updateProfile({ name: editData.name, phone: editData.phone.trim(), profile: { board: editData.board, class: editData.class, dob: editData.dob } });
       showSuccess("Profile updated successfully!");
       setShowEditModal(false);
     } catch (err) {
@@ -94,7 +130,7 @@ export const ProfilePage = () => {
             />
             <button
               type="button"
-              onClick={() => setShowEditModal(true)}
+              onClick={openEditModal}
               className="absolute -bottom-1 -right-1 p-1 rounded-full bg-[#0A1D3F] text-white hover:bg-[#133C8B] transition shadow-xs"
               aria-label="Edit Profile"
             >
@@ -115,7 +151,7 @@ export const ProfilePage = () => {
 
               <button
                 type="button"
-                onClick={() => setShowEditModal(true)}
+                onClick={openEditModal}
                 className="hidden sm:inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-[#E6E8EC] bg-white text-xs font-bold text-[#0A1D3F] hover:bg-gray-50 transition active:scale-95"
               >
                 <Edit3 className="w-3 h-3" />
@@ -141,24 +177,24 @@ export const ProfilePage = () => {
         <div className="grid grid-cols-4 gap-1.5 sm:gap-2 mt-3.5 pt-3 border-t border-[#E6E8EC]">
           <div className="p-2 bg-[#F7F8FA] rounded-xl text-center">
             <div className="flex items-center justify-center gap-1 text-orange-500 font-bold text-xs sm:text-sm">
-              <Flame className="w-3.5 h-3.5 fill-orange-500" />
-              <span aria-label="Streak unavailable">—</span>
+              <GraduationCap className="w-3.5 h-3.5" />
+              <span aria-label={learning ? learning.courses + ' active courses' : 'Active courses unavailable'}>{stat(learning?.courses)}</span>
             </div>
-            <span className="text-[9px] text-[#667085] block mt-0.5 truncate">Streak</span>
+            <span className="text-[9px] text-[#667085] block mt-0.5 truncate">Courses</span>
           </div>
 
           <div className="p-2 bg-[#F7F8FA] rounded-xl text-center">
             <div className="flex items-center justify-center gap-1 text-amber-500 font-bold text-xs sm:text-sm">
-              <Coins className="w-3.5 h-3.5 fill-amber-400" />
-              <span aria-label="Coins unavailable">—</span>
+              <TrendingUp className="w-3.5 h-3.5" />
+              <span aria-label={learning ? 'Average course progress ' + learning.progress + ' percent' : 'Course progress unavailable'}>{learning ? learning.progress + '%' : '—'}</span>
             </div>
-            <span className="text-[9px] text-[#667085] block mt-0.5 truncate">Coins</span>
+            <span className="text-[9px] text-[#667085] block mt-0.5 truncate">Progress</span>
           </div>
 
           <div className="p-2 bg-[#F7F8FA] rounded-xl text-center">
             <div className="flex items-center justify-center gap-1 text-[#0A1D3F] font-bold text-xs sm:text-sm">
               <Video className="w-3.5 h-3.5" />
-              <span aria-label="Lecture total unavailable">—</span>
+              <span aria-label={learning ? learning.lectures + ' lectures completed' : 'Lecture total unavailable'}>{stat(learning?.lectures)}</span>
             </div>
             <span className="text-[9px] text-[#667085] block mt-0.5 truncate">Lectures</span>
           </div>
@@ -204,7 +240,7 @@ export const ProfilePage = () => {
               <Calendar className="w-3.5 h-3.5 text-gray-400 shrink-0" />
               <div className="min-w-0">
                 <span className="text-[9px] text-[#667085] block leading-none mb-0.5">Date of Birth</span>
-                <span className="font-semibold text-[#0A1D3F] text-[11px]">Not provided</span>
+                <span className="font-semibold text-[#0A1D3F] text-[11px]">{formatDob(user.dob) || 'Not provided'}</span>
               </div>
             </div>
           </div>
@@ -354,42 +390,59 @@ export const ProfilePage = () => {
           </div>
 
           <div>
-            <label className="font-bold block mb-1">Mobile Number</label>
+            <label htmlFor="profile-phone" className="font-bold block mb-1">Mobile Number <span className="font-normal text-[#667085]">(optional)</span></label>
             <input
+              id="profile-phone"
               type="tel"
+              inputMode="tel"
+              autoComplete="tel"
+              maxLength={24}
               aria-label="Profile phone" value={editData.phone}
               onChange={(e) => setEditData({ ...editData, phone: e.target.value })}
               className="w-full p-2.5 bg-[#F7F8FA] border border-[#E6E8EC] rounded-xl text-xs"
-              required
             />
           </div>
 
+          <div>
+            <label htmlFor="profile-dob" className="font-bold block mb-1">Date of Birth <span className="font-normal text-[#667085]">(optional)</span></label>
+            <input
+              id="profile-dob"
+              type="date"
+              min="1900-01-01"
+              max={localToday()}
+              aria-label="Profile date of birth" value={editData.dob}
+              onChange={(e) => setEditData({ ...editData, dob: e.target.value })}
+              className="w-full p-2.5 bg-[#F7F8FA] border border-[#E6E8EC] rounded-xl text-xs"
+            />
+          </div>
+
+          {choicesError && <p role="status" className="text-[11px] text-amber-700">{choicesError}</p>}
           <div className="grid grid-cols-2 gap-2 pt-1">
             <div>
-              <label className="font-bold block mb-1">Board</label>
+              <label htmlFor="profile-board" className="font-bold block mb-1">Board</label>
               <select
+                id="profile-board"
+                aria-label="Profile board"
                 value={editData.board}
-                onChange={(e) => setEditData({ ...editData, board: e.target.value })}
+                onChange={(e) => setEditData({ ...editData, board: e.target.value, class: "" })}
                 className="w-full p-2 bg-[#F7F8FA] border border-[#E6E8EC] rounded-xl text-xs"
               >
-                <option value="CBSE">CBSE</option>
-                <option value="ICSE">ICSE</option>
-                <option value="State Board">State Board</option>
-                <option value="NCERT">NCERT</option>
+                <option value="">Select board</option>
+                {boardOptions.map(label => <option key={label} value={label}>{label}</option>)}
               </select>
             </div>
 
             <div>
-              <label className="font-bold block mb-1">Class</label>
+              <label htmlFor="profile-class" className="font-bold block mb-1">Class</label>
               <select
+                id="profile-class"
+                aria-label="Profile class"
                 value={editData.class}
                 onChange={(e) => setEditData({ ...editData, class: e.target.value })}
                 className="w-full p-2 bg-[#F7F8FA] border border-[#E6E8EC] rounded-xl text-xs"
               >
-                <option value="Class 9">Class 9</option>
-                <option value="Class 10">Class 10</option>
-                <option value="Class 11">Class 11</option>
-                <option value="Class 12">Class 12</option>
+                <option value="">Select class</option>
+                {classOptions.map(label => <option key={label} value={label}>{label}</option>)}
               </select>
             </div>
           </div>

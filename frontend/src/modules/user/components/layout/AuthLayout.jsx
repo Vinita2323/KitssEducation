@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
+import { PageSuspense } from "../../../../shared/ui/lazyPage";
 
 export const AuthLayout = ({ title, showBack = true, backPath }) => {
   const navigate = useNavigate();
@@ -36,7 +37,7 @@ export const AuthLayout = ({ title, showBack = true, backPath }) => {
 
       {/* Auth Content Card */}
       <main className={`${isRegisterPage ? "max-w-2xl lg:max-w-3xl" : "max-w-md"} w-full mx-auto my-auto py-1 transition-all duration-300`}>
-        <Outlet context={outletContext} />
+        <PageSuspense><Outlet context={outletContext} /></PageSuspense>
       </main>
 
       {/* Footer */}

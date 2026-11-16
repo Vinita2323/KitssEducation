@@ -42,6 +42,6 @@ export const permissions = Object.freeze([...granularNames,
 export const grantsFor = user => user.roles.includes('super_admin') ? [...permissions] : user.roles.includes('admin') ? user.permissions.filter(p => permissions.includes(p) && p !== 'accounts.roles.manage') : [];
 export function userDTO(user) {
   return { id: user.publicId, name: user.name, email: user.emailNormalized, roles: user.roles,
-    createdAt: user.createdAt, phone: user.phone ?? '', profile: user.profile?.toObject?.() ?? user.profile ?? {}, board: user.profile?.board ?? '', class: user.profile?.class ?? '',
+    createdAt: user.createdAt, phone: user.phone ?? '', profile: user.profile?.toObject?.() ?? user.profile ?? {}, board: user.profile?.board ?? '', class: user.profile?.class ?? '', dob: user.profile?.dob ?? '',
     status: user.status, emailVerified: Boolean(user.emailVerifiedAt), permissions: grantsFor(user) };
 }

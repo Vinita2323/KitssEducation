@@ -20,7 +20,7 @@ export function AuthProvider({ children }) {
     const refresh = () => { const ticket = epoch.current; return authService.getCurrentUser().then(value => { if (alive && ticket === epoch.current) { setUser(value); setError(''); } }).catch(() => { if (alive && ticket === epoch.current) { clear(); setError('Unable to check your session. Please retry.'); } }).finally(() => { if (alive) setLoading(false); }); };
     const expired = () => { if (alive) { clear(); setDeviceConflict(null); } };
     refresh();
-    const timer = setInterval(refresh, 60000);
+    const timer = setInterval(() => { if (document.visibilityState !== 'hidden') refresh(); }, 60000); // focus still refreshes immediately
     window.addEventListener('focus', refresh);
     window.addEventListener('kitss:session-expired', expired);
     return () => { alive = false; clearInterval(timer); window.removeEventListener('focus', refresh); window.removeEventListener('kitss:session-expired', expired); };

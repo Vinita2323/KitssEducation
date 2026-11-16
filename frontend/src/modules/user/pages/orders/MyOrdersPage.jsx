@@ -1,6 +1,6 @@
 import { RefundRequest } from '../../components/common/RefundRequest';
 import { useAuth } from '../../context/AuthContext';
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { ShoppingBag, FileText, Download, CheckCircle2, AlertCircle, Clock, ExternalLink } from "lucide-react";
 import { orderService } from "../../services/orderService";
 import { useToast } from "../../context/ToastContext";
@@ -13,15 +13,16 @@ export const MyOrdersPage = () => {
   const { user } = useAuth();
   const [error,setError] = useState(''), [page,setPage] = useState(1);
   const [orders, setOrders] = useState([]);
+  const latestOrders = useRef([]); latestOrders.current = orders;
   const [loading, setLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const { showSuccess } = useToast();
 
   useEffect(() => {
     const controller=new AbortController();setOrders([]);setSelectedOrder(null);
-    const fetchOrders = async () => {
+    const fetchOrders = async (background = false) => {
       try {
-        setLoading(true);
+        if (!background) setLoading(true);
         const data = await orderService.getOrders({page},controller.signal);
         if(!controller.signal.aborted)setOrders(data);
       } catch (err) {
@@ -30,7 +31,9 @@ export const MyOrdersPage = () => {
         if(!controller.signal.aborted)setLoading(false);
       }
     };
-    fetchOrders(); const timer=setInterval(fetchOrders,15000);return()=>{controller.abort();clearInterval(timer);};
+    // Re-check every 15 s only while the tab is visible and an order or refund can still change.
+    const settled = row => row.orderStatus === 'captured' && row.activationStatus === 'applied' && row.refundRequest?.status !== 'pending';
+    fetchOrders(); const timer=setInterval(()=>{ if (document.visibilityState === 'hidden' || (latestOrders.current.length && latestOrders.current.every(settled))) return; fetchOrders(true); },15000);return()=>{controller.abort();clearInterval(timer);};
   }, [user?.id,page]);
 
   const handleDownloadInvoice = async order => {

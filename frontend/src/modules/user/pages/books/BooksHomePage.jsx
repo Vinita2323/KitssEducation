@@ -1,3 +1,4 @@
+import { useDebouncedValue } from '../../../../shared/ui/useDebouncedValue';
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import { bookService } from "../../services/bookService";
@@ -12,6 +13,7 @@ export const BooksHomePage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [query, setQuery] = useState(searchParams.get("q") || "");
+  const searchTerm = useDebouncedValue(query); // search once typing pauses
   const [selectedBoard, setSelectedBoard] = useState(searchParams.get("board") || "All");
   const [selectedClass, setSelectedClass] = useState(searchParams.get("class") || "All");
   const [selectedSubject, setSelectedSubject] = useState(searchParams.get("subject") || "All");
@@ -103,7 +105,7 @@ export const BooksHomePage = () => {
           board: selectedBoard,
           className: selectedClass,
           subject: selectedSubject,
-          query,
+          query: searchTerm,
           language: selectedLanguage,
         }, controller.signal);
         if (!isCurrent) return;
@@ -124,11 +126,11 @@ export const BooksHomePage = () => {
     selectedBoard,
     selectedClass,
     selectedSubject,
-    query,
+    searchTerm,
     selectedLanguage,
     page
   ]);
-  useEffect(() => setPage(1), [selectedBoard, selectedClass, selectedSubject, query, selectedLanguage]);
+  useEffect(() => setPage(1), [selectedBoard, selectedClass, selectedSubject, searchTerm, selectedLanguage]);
 
   // Handlers for Board, Class, Subject, and Language dropdowns
   const handleBoardClick = (boardId) => {

@@ -550,11 +550,16 @@ export async function createResultService({
       }).sort({
         publishedAt: -1
       }).skip((page - 1) * pageSize).limit(pageSize);
+      // Each exam and institution is loaded once for the page, not once per result.
+      const exams = new Map((records.length ? await Exam.find({ _id: { $in: [...new Set(records.map(r => String(r.examId)))] } }) : []).map(e => [String(e._id), e]));
+      const issuers = new Map((exams.size ? await Issuer.find({ _id: { $in: [...new Set([...exams.values()].map(e => String(e.issuerId)))] } }) : []).map(i => [String(i._id), i]));
+      const ready = new Map();
       const available = [];
       for (const record of records) {
-        const exam = await get(Exam, record.examId),
-          issuer = await get(Issuer, exam.issuerId);
-        if (record.review?.status === 'approved' && record.review.academicRevision === record.revision && exam.status === 'published' && issuer.status === 'active' && (await publicationReady(issuer))) available.push({
+        const exam = exams.get(String(record.examId)), issuer = exam && issuers.get(String(exam.issuerId));
+        if (!exam || !issuer) throw absent(); // unchanged: a missing exam or institution makes history unavailable
+        const isReady = () => { const key = String(issuer._id); if (!ready.has(key)) ready.set(key, publicationReady(issuer)); return ready.get(key); };
+        if (record.review?.status === 'approved' && record.review.academicRevision === record.revision && exam.status === 'published' && issuer.status === 'active' && (await isReady())) available.push({
           ...dto(record),
           issuerId: String(issuer._id),
           issuerName: issuer.name,

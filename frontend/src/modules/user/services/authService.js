@@ -1,4 +1,5 @@
 import { httpClient, setCsrfToken, getIdentityEpoch, ApiError } from '../../../shared/api/httpClient';
+import { clearRequestCache } from '../../../shared/api/requestCache';
 let csrfReady;
 async function csrf() {
   csrfReady ??= httpClient.request('/auth/csrf').then(({ data }) => setCsrfToken(data.csrfToken)).catch(error => { csrfReady = null; throw error; });
@@ -10,7 +11,7 @@ export async function authenticatedWrite(path, json, method = 'POST', retry = tr
   await csrf();
   signal?.throwIfAborted();
   if (expectedIdentityEpoch !== getIdentityEpoch()) throw new ApiError('Account changed; retry from the current account', { code: 'ABORTED' });
-  try { return (await httpClient.request(path, { method, json, headers, signal })).data; }
+  try { const data = (await httpClient.request(path, { method, json, headers, signal })).data; clearRequestCache(); return data; }
   catch (error) {
     if (retry && error.code === 'CSRF_INVALID') { csrfReady = null; return authenticatedWrite(path, json, method, false, headers, { signal, expectedIdentityEpoch }); }
     throw error;
@@ -18,7 +19,7 @@ export async function authenticatedWrite(path, json, method = 'POST', retry = tr
 }
 export async function authenticatedUpload(path, formData, retry = true, onUploadProgress) {
   await csrf();
-  try { return (await httpClient.request(path, { method: 'POST', formData, onUploadProgress, timeout: 720000 })).data; }
+  try { const data = (await httpClient.request(path, { method: 'POST', formData, onUploadProgress, timeout: 720000 })).data; clearRequestCache(); return data; }
   catch (error) { if (retry && error.code === 'CSRF_INVALID') { csrfReady = null; return authenticatedUpload(path, formData, false, onUploadProgress); } throw error; }
 }
 export function clearLegacyAuthStorage() {

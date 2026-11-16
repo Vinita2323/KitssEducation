@@ -42,6 +42,7 @@ import { OriginalDocumentNotes } from './OriginalDocumentNotes';
 export const TuitionCoachingForm = ({ onBack }) => {
 
   const [step, setStep] = useState(1);
+  const [completedSteps, setCompletedSteps] = useState(() => new Set());
 
   // 20 Required Fields State
   const [formData, setFormData] = useState({
@@ -144,7 +145,7 @@ export const TuitionCoachingForm = ({ onBack }) => {
   const canChooseDocument = workflow.canChooseDocument;
   const INDIAN_STATES = workflow.choices('state',formData.state || formData.stateName), BOARDS = workflow.choices('board',formData.studyBoard), CLASSES = workflow.choices('class',formData.studentClass), AVAILABLE_COURSES = workflow.choices('program',formData.applyCourseName), STUDY_LANGUAGES = workflow.choices('language',formData.studyLanguage), COACHING_COURSES = workflow.choices('program',formData.coachingCourse), EXPERIENCE_YEARS = workflow.choices('experience',formData.coachingExperience);
   const beforeSubmit = () => { for (let index = 1; index < 4; index++) if (!validateStep(index)) { setStep(index); return false; } return true; };
-  const handleNext = () => { if (step === 4 || validateStep(step)) setStep(v => Math.min(v + 1, 5)); };
+  const handleNext = () => { if (step === 4 || validateStep(step)) { setCompletedSteps(prev => new Set([...prev, step])); setStep(v => Math.min(v + 1, 5)); } };
   const handlePrev = () => setStep(v => Math.max(v - 1, 1));
   const locked = Boolean(workflow.application && !['draft', 'needs_changes'].includes(workflow.application.status));
   const stepDefinitions = STEP_DEFINITIONS.map(s => s.id === 5 ? { ...s, title: workflow.policy?.feeRequired ? 'Checkout & Pay' : 'Review & Submit' } : s);
@@ -188,25 +189,23 @@ export const TuitionCoachingForm = ({ onBack }) => {
             <div className="absolute top-1/2 left-4 right-4 -translate-y-1/2 h-0.5 bg-slate-100 -z-0" />
             
             {stepDefinitions.map((s) => {
-              const isCompleted = step > s.id;
+              const isCompleted = completedSteps.has(s.id);
               const isCurrent = step === s.id;
 
               return (
                 <div
                   key={s.id}
-                  role="button" tabIndex={0} aria-label={s.title} aria-current={step === s.id ? "step" : undefined} onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); if (s.id < step) setStep(s.id); } }}
-                  className="flex flex-col items-center relative z-10 cursor-pointer"
-                  onClick={() => {
-                    if (s.id < step) setStep(s.id);
-                  }}
+                  role="button" tabIndex={0} aria-label={s.title} aria-current={isCurrent ? "step" : undefined} onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setStep(s.id); } }}
+                  className="flex flex-col items-center relative z-10 cursor-pointer group"
+                  onClick={() => setStep(s.id)}
                 >
                   <div
                     className={`w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center text-[11px] font-bold transition-all duration-150 ${
                       isCurrent
                         ? "bg-[#0A1D3F] text-white ring-2 ring-orange-200 scale-105 shadow-2xs"
                         : isCompleted
-                        ? "bg-emerald-600 text-white"
-                        : "bg-slate-100 text-slate-400 border border-slate-200"
+                        ? "bg-emerald-600 text-white group-hover:bg-emerald-700"
+                        : "bg-slate-100 text-slate-500 border border-slate-200 group-hover:border-slate-400 group-hover:bg-slate-200"
                     }`}
                   >
                     {isCompleted ? <Check className="w-3 h-3 stroke-[3]" /> : s.id}
@@ -216,8 +215,8 @@ export const TuitionCoachingForm = ({ onBack }) => {
                       isCurrent
                         ? "text-[#0A1D3F] font-bold"
                         : isCompleted
-                        ? "text-emerald-700"
-                        : "text-slate-400"
+                        ? "text-emerald-700 group-hover:text-emerald-800"
+                        : "text-slate-500 group-hover:text-slate-800"
                     }`}
                   >
                     {s.title}

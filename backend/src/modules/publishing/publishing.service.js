@@ -16,6 +16,13 @@ function adminDTO(kind, doc) {
   return data;
 }
 export function createPublishingService({ models, taxonomy, coordination, media }) {
+  const labelFields = [['boardId', 'board'], ['classId', 'class'], ['subjectId', 'subject'], ['languageId', 'language']];
+  async function withTaxonomyLabels(books) {
+    const ids = [...new Set(books.flatMap(book => labelFields.map(([field]) => book?.[field] ? String(book[field]) : null)).filter(value => value && /^[a-f0-9]{24}$/i.test(value)))];
+    const labels = new Map(ids.length ? (await taxonomy.find({ _id: { $in: ids } }).select('label').lean()).map(row => [String(row._id), row.label]) : []);
+    for (const book of books) if (book) for (const [field, label] of labelFields) if (book[field]) book[label] = labels.get(String(book[field])) ?? '';
+    return books;
+  }
   const Model = kind => models[modelNames[kind]];
   const notFound = () => new AppError(404, 'NOT_FOUND', 'The requested content was not found');
   const find = async (kind, value) => { const doc = await Model(kind).findById(id(value)); if (!doc || (kind === 'banners' && doc.deletedAt)) throw notFound(); return doc; };
@@ -95,6 +102,17 @@ export function createPublishingService({ models, taxonomy, coordination, media 
       });
     },
     async detail(kind, value, admin = false) { const doc = await find(kind, value); if (!admin && (doc.status !== 'published' || !doc.publishedSnapshot)) throw notFound(); const data = admin ? adminDTO(kind, doc) : publicData(kind, doc); if (kind === 'books') for (const [field, label] of [['boardId','board'],['classId','class'],['subjectId','subject'],['languageId','language']]) if (data[field]) data[label] = (await taxonomy.findById(data[field]).select('label').lean())?.label ?? ''; return data; },
+    // Several published books in one request (for example the handbooks linked to a course), in the order asked.
+    // Unknown, unpublished or removed books are simply left out, exactly as separate detail requests would 404.
+    async publicBooks(query = {}) {
+      object(query, ['ids'], ['ids']);
+      if (typeof query.ids !== 'string' || query.ids.length > 2600) throw invalid('Invalid book list');
+      const ids = [...new Set(query.ids.split(',').map(v => v.trim()).filter(Boolean))];
+      if (!ids.length || ids.length > 100 || ids.some(v => !/^[a-f0-9]{24}$/i.test(v))) throw invalid('Choose 1 to 100 valid books');
+      const docs = await Model('books').find({ _id: { $in: ids }, status: 'published', publishedSnapshot: { $ne: null } });
+      const byId = new Map(docs.map(doc => [String(doc._id), publicData('books', doc)]));
+      return withTaxonomyLabels(ids.map(v => byId.get(v.toLowerCase())).filter(Boolean));
+    },
     async list(kind, query = {}, admin = false) {
       object(query, ['page', 'pageSize', 'q', 'status', 'sort', 'boardId', 'classId', 'subjectId', 'languageId', 'board', 'class', 'subject', 'language', 'category', 'type', 'minPriceMinor', 'maxPriceMinor', 'placement']);
       for (const v of Object.values(query)) if (typeof v !== 'string' || v.length > 160) throw invalid('Invalid query');
@@ -118,14 +136,14 @@ export function createPublishingService({ models, taxonomy, coordination, media 
       if (query.sort && !Object.hasOwn(sorts, query.sort)) throw invalid('Unsupported sort; ratings require an approved source');
       const total = await Model(kind).countDocuments(filter), rows = await Model(kind).find(filter).sort({ ...(kind === 'banners' || kind === 'faculty' ? { [prefix + 'sortOrder']: 1 } : sorts[query.sort ?? 'featured']), _id: 1 }).skip((page - 1) * pageSize).limit(pageSize).lean();
       let data = rows.map(row => admin ? adminDTO(kind, row) : publicData(kind, row));
-      if (kind === 'books') data = await Promise.all(data.map(async book => { for (const [field, label] of [['boardId', 'board'], ['classId', 'class'], ['subjectId', 'subject'], ['languageId', 'language']]) if (book[field]) book[label] = (await taxonomy.findById(book[field]).select('label').lean())?.label ?? ''; return book; }));
+      if (kind === 'books') await withTaxonomyLabels(data); // one lookup for the whole page, not four per book
       const result = { data, meta: { page, pageSize, total, totalPages: Math.max(1, Math.ceil(total / pageSize)) } };
       if (admin && kind === 'books') result.summary = await bookSummary();
       return result;
     },
     async facets(query = {}) {
       object(query, ['boardId', 'classId', 'languageId', 'board', 'class', 'language']);
-      const rows = await models.Book.find({ status: 'published', publishedSnapshot: { $ne: null } }).lean();
+      const rows = await models.Book.find({ status: 'published', publishedSnapshot: { $ne: null } }).select('publishedSnapshot.boardId publishedSnapshot.classId publishedSnapshot.subjectId publishedSnapshot.languageId publishedSnapshot.category').lean();
       let books = rows.map(r => r.publishedSnapshot);
       for (const field of ['boardId', 'classId', 'languageId']) if (query[field]) books = books.filter(b => b[field] === String(id(query[field])));
       for (const [f, kind] of [['board', 'board'], ['class', 'class'], ['language', 'language']]) if (query[f]) { const t = await taxonomy.findOne({ kind, label: text(query[f]), status: 'active', deletedAt: null }); books = books.filter(b => b[f + 'Id'] === String(t?._id)); }

@@ -14,7 +14,8 @@ export function usePublishedContent(key) {
         .finally(() => { if (!signal.aborted) setLoading(false); });
     };
     setData({ sections: [], faculty: [] }); setError(''); setLoading(true); refresh();
-    const timer = setInterval(refresh, 60000);
+    // Returning to the tab refreshes at once; the background check only covers pages left open and visible.
+    const timer = setInterval(refresh, 300000);
     window.addEventListener('focus', refresh); document.addEventListener('visibilitychange', refresh);
     return () => { controller?.abort(); clearInterval(timer); window.removeEventListener('focus', refresh); document.removeEventListener('visibilitychange', refresh); };
   }, [key]);

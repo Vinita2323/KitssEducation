@@ -5,6 +5,7 @@ import { providerId, unavailable } from './payment-provider.js';
 import { applicantInput, documentRequirements, registrationBlocked, registrationFields } from './registration.js';
 import { dashboardFilters } from './dashboard-filters.js';
 import { retireLegacyIndexes } from '../../utils/legacy-indexes.js';
+import { userScope } from '../../utils/domain-lock.js';
 
 const hash = value => createHash('sha256').update(JSON.stringify(value)).digest('hex');
 const missing = () => new AppError(404, 'NOT_FOUND', 'Order or application was not found');
@@ -84,7 +85,7 @@ export class PaymentService {
     await this.authService.limit(ctx, String(auth.user._id), 'order-create', 30);
     const prior = await this.models.Order.findOne({ userId: auth.user._id, idempotencyKey: input.idempotencyKey });
     if (prior) { if (prior.requestHash !== requestHash) throw conflict(); return orderDTO(prior); }
-    return this.publishingModule.coordination.run(async () => {
+    return this.publishingModule.coordination.runAs(userScope(auth), async () => {
       const quote = await this.resolve(canonical, auth);
       try {
         const doc = await this.models.Order.create({ ...quote, reference: 'K6-' + randomUUID().replaceAll('-', ''), userId: auth.user._id, idempotencyKey: input.idempotencyKey, requestHash, provider: this.provider.name, paymentMode: 'test', providerScope: this.provider.scope, simulated: this.provider.simulated, expiresAt: new Date(Date.now() + 86400000), auditOutbox: [event('order_created', ctx)] });
@@ -228,9 +229,13 @@ export class PaymentService {
   }
   async ownedBooks(auth) {
     const rows = await this.models.BookEntitlement.find({ userId: auth.user._id, revokedAt: null }).lean(), result = [];
+    // Books and their files are loaded in two queries for the whole library, not two per book.
+    const books = new Map((rows.length ? await this.publishingModule.models.Book.find({ _id: { $in: rows.map(r => r.bookId) } }).lean() : []).map(b => [String(b._id), b]));
+    const assetIds = [...new Set([...books.values()].map(b => b.publishedSnapshot?.documentAssetId).filter(v => v && /^[a-f0-9]{24}$/i.test(String(v))).map(String))];
+    const assets = new Map((assetIds.length ? await this.publishingModule.models.MediaAsset.find({ _id: { $in: assetIds } }) : []).map(a => [String(a._id), a]));
     for (const row of rows) {
-      const book = await this.publishingModule.models.Book.findById(row.bookId).lean();
-      const asset = book?.publishedSnapshot?.documentAssetId && await this.publishingModule.models.MediaAsset.findById(book.publishedSnapshot.documentAssetId);
+      const book = books.get(String(row.bookId)) ?? null;
+      const asset = book?.publishedSnapshot?.documentAssetId && assets.get(String(book.publishedSnapshot.documentAssetId));
       // Display details come from the owner's snapshot so off-sale books still render in the library.
       if (asset && await this.canReadAsset(asset, auth)) result.push({ ...this.publishingModule.publishing.publicData('books', book), onSale: book.status === 'published', id: String(row.bookId), title: book.publishedSnapshot.title, canReadFull: true, contentUrl: '/api/v1/media/' + asset._id + '/content', simulated: row.simulated, readingState: this.learning && Number.isSafeInteger(asset.pageCount) && asset.pageCount > 0 ? await this.learning.bookState(String(row.bookId),auth) : null });
     } return result;
@@ -352,7 +357,7 @@ export class PaymentService {
   applicationDTO(row, admin = false) { return { id: String(row._id), reference: row.reference, kind: row.kind, teacherProfileId: row.teacherProfileId ? String(row.teacherProfileId) : null, applicant: row.applicant, revision: row.revision, status: row.status, paymentState: row.paymentState, requiredDocuments: row.requiredDocuments, documents: row.documents, guardianConsent: row.guardianConsent, feeSnapshot: row.feeSnapshot, orderId: row.orderId, submittedAt: row.submittedAt, activatedAt: row.activatedAt, personalDataDeletedAt: row.personalDataDeletedAt, ...(admin ? { notes: row.notes, history: row.history, legalHold: row.legalHold, userId: String(row.userId) } : { reviewFeedback: row.history?.filter(h => ['needs_changes', 'rejected'].includes(h.status)).map(h => ({ status: h.status, reason: h.reason, at: h.at })) }), submissionEnabled: true }; }
   async freeBook(value, auth, ctx) {
     this.eligible(auth);
-    return this.publishingModule.coordination.run(async () => {
+    return this.publishingModule.coordination.runAs(userScope(auth), async () => {
       const book = await this.publishingModule.models.Book.findById(id(value)), data = book?.publishedSnapshot;
       if (book?.status !== 'published' || !data?.pricingApproved || data.priceMinor !== 0 || !data.rightsConfirmed || !data.rightsNote || !await this.publishingModule.models.MediaAsset.exists({ _id: data.documentAssetId, purpose: 'book_full', status: 'ready', 'scan.status': 'clean' })) throw new AppError(409, 'FREE_ACCESS_UNAVAILABLE', 'This book is not an eligible published free book');
       const prior = await this.models.BookEntitlement.findOne({ userId: auth.user._id, bookId: book._id });

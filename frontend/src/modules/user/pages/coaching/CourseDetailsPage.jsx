@@ -1,49 +1,31 @@
 import { VerifiedCoursePurchase } from '../../components/coaching/VerifiedCoursePurchase';
-import React, { useState, useEffect } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import React, { useState, useEffect, useRef } from "react";
+import { useParams, Link } from "react-router-dom";
 import {
   ArrowLeft,
   Video,
   BookOpen,
   Clock,
-  GraduationCap,
   Sparkles,
   CheckCircle2,
-  Users,
   ShieldCheck,
-  Star,
-  User,
   Share2,
-  Lock,
-  ArrowRight,
-  CreditCard,
-  Zap,
-  Check
+  ArrowRight
 } from "lucide-react";
 import { coachingService } from "../../services/coachingService";
-import { orderService } from "../../services/orderService";
-import { openRazorpayCheckout, RAZORPAY_CONFIG } from "../../services/razorpayService";
 import { useAuth } from "../../context/AuthContext";
-import { useLibrary } from "../../context/LibraryContext";
 import { useToast } from "../../context/ToastContext";
 
 export const CourseDetailsPage = () => {
   const { id } = useParams();
-  const navigate = useNavigate();
-  const { user, isAuthenticated } = useAuth();
-  const { markCourseSubscribed } = useLibrary();
-  const { showSuccess, showError, showInfo } = useToast();
+  const { isAuthenticated } = useAuth();
+  const { showInfo } = useToast();
 
   const [course, setCourse] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
-  // Enrollment & Razorpay modal state
-  const [showConfirmModal, setShowConfirmModal] = useState(false);
-  const [joining, setJoining] = useState(false);
-  const [joinedSuccess, setJoinedSuccess] = useState(false);
-  const [selectedPlanId, setSelectedPlanId] = useState("plan-12m");
-  const [paymentDetails, setPaymentDetails] = useState(null);
+  // Plans are chosen and paid for only in the Course access section (VerifiedCoursePurchase).
+  const courseAccess = useRef(null);
 
   useEffect(() => {
     const fetchCourse = async () => {
@@ -75,9 +57,15 @@ export const CourseDetailsPage = () => {
     }
   };
 
-  const availablePlans=course?.subscriptionPlans??[];
-  const currentSelectedPlan=availablePlans.find(p=>p.id===selectedPlanId)??availablePlans[0]??{name:'No approved plan',features:[],price:null};
-  const handleRazorpayPayment=async()=>showError('Razorpay Test Mode is disabled. No enrollment is granted.');
+  const availablePlans = course?.subscriptionPlans ?? [];
+  const lowestPlan = availablePlans.reduce((low, plan) => (low === null || plan.priceMinor < low.priceMinor ? plan : low), null);
+  const showCourseAccess = () => {
+    const section = courseAccess.current;
+    if (!section) return;
+    const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    section.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
+    section.focus({ preventScroll: true });
+  };
 
   if (loading) {
     return (
@@ -108,8 +96,10 @@ export const CourseDetailsPage = () => {
 
   return (
     <div className="max-w-5xl mx-auto space-y-3 sm:space-y-4">
-      <section className="bg-white border border-[#E6E8EC] rounded-xl p-4 space-y-2"><h2 className="font-bold text-[#0A1D3F]">Course syllabus</h2>{course.syllabus?.lessons.map(lesson=><div key={lesson.id} className="p-2 border-b text-sm">{lesson.locked?<span>{lesson.title} ? Enrollment required</span>:<Link to={`/coaching/${course.id}/lecture/${lesson.id}`}>{lesson.title}{lesson.previewAllowed?' ? Public preview':''}</Link>}</div>)}</section>
-      <VerifiedCoursePurchase course={course} onRefresh={async () => setCourse(await coachingService.getCourseById(id))} />
+      <section className="bg-white border border-[#E6E8EC] rounded-xl p-4 space-y-2"><h2 className="font-bold text-[#0A1D3F]">Course syllabus</h2>{course.syllabus?.lessons.map(lesson=><div key={lesson.id} className="p-2 border-b text-sm">{lesson.locked?<span>{lesson.title} — Enrollment required</span>:<Link to={`/coaching/${course.id}/lecture/${lesson.id}`}>{lesson.title}{lesson.previewAllowed?' — Public preview':''}</Link>}</div>)}</section>
+      <div id="course-access" ref={courseAccess} tabIndex={-1} className="scroll-mt-20 rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF8A00]">
+        <VerifiedCoursePurchase course={course} onRefresh={async () => setCourse(await coachingService.getCourseById(id))} />
+      </div>
       {/* Top Breadcrumb & Share */}
       <div className="flex items-center justify-between">
         <Link
@@ -311,30 +301,23 @@ export const CourseDetailsPage = () => {
               </div>
             </div>
 
-            {/* Pricing & Plan Highlight */}
+            {/* Plan price summary. Plans are chosen and paid for in the Course access section. */}
             {!isEnrolled && (
               <div className="pt-2 border-t border-[#E6E8EC] space-y-1">
-                <div className="flex items-baseline justify-between">
-                  <div className="flex items-baseline gap-2">
+                {lowestPlan ? (
+                  <>
                     <span className="text-xl sm:text-2xl font-black text-[#0A1D3F]">
-                      ₹{currentSelectedPlan.price}
+                      {lowestPlan.priceMinor === 0 ? "Free" : (availablePlans.length > 1 ? "From " : "") + "₹" + lowestPlan.price}
                     </span>
-                    {currentSelectedPlan.originalPrice && (
-                      <span className="text-xs text-[#667085] line-through">
-                        ₹{currentSelectedPlan.originalPrice}
-                      </span>
-                    )}
-                  </div>
-                  {currentSelectedPlan.discount && (
-                    <span className="text-[10px] font-bold text-[#17B26A] bg-[#17B26A]/10 px-2 py-0.5 rounded-full border border-[#17B26A]/20">
-                      {currentSelectedPlan.discount}
-                    </span>
-                  )}
-                </div>
-                <p className="text-[11px] text-[#667085] font-medium">
-                  Selected Plan: <span className="font-bold text-[#0A1D3F]">{currentSelectedPlan.name}</span>
-                </p>
-                {currentSelectedPlan.features?.length > 0 && <ul aria-label="Selected plan benefits" className="list-disc pl-4 text-xs text-[#667085] space-y-1">{currentSelectedPlan.features.map((feature,index)=><li key={index}>{feature}</li>)}</ul>}
+                    <p className="text-[11px] text-[#667085] font-medium">
+                      {availablePlans.length} approved plan{availablePlans.length === 1 ? "" : "s"} available
+                      {lowestPlan.name ? <> · <span className="font-bold text-[#0A1D3F]">{lowestPlan.name}</span></> : null}
+                    </p>
+                    {lowestPlan.features?.length > 0 && <ul aria-label="Selected plan benefits" className="list-disc pl-4 text-xs text-[#667085] space-y-1">{lowestPlan.features.map((feature, index) => <li key={index}>{feature}</li>)}</ul>}
+                  </>
+                ) : (
+                  <p className="text-xs text-[#667085]">No plan is on sale for this course yet.</p>
+                )}
               </div>
             )}
 
@@ -364,11 +347,11 @@ export const CourseDetailsPage = () => {
                   <span>Go to Course Dashboard</span>
                 </Link>
               ) : (
-                /* Logged in, not yet enrolled - Open Razorpay Purchase Modal */
+                /* Logged in, not yet enrolled - take the student to the Course access section */
                 <div className="space-y-2">
                   <button
                     type="button"
-                    onClick={() => setShowConfirmModal(true)}
+                    onClick={showCourseAccess}
                     className="w-full py-2.5 px-3 rounded-md bg-[#FF8A00] hover:bg-[#E67C00] text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 shadow-2xs transition active:scale-98 cursor-pointer"
                   >
                     <span>View approved plans</span>
@@ -376,7 +359,7 @@ export const CourseDetailsPage = () => {
                   </button>
                   <div className="flex items-center justify-center gap-1.5 text-[10px] text-[#667085]">
                     <ShieldCheck className="w-3.5 h-3.5 text-[#17B26A]" />
-                    <span>Secured by <strong>Razorpay</strong> (Test Key Active)</span>
+                    <span>Choose a plan in the Course access section</span>
                   </div>
                 </div>
               )}
@@ -385,214 +368,6 @@ export const CourseDetailsPage = () => {
         </div>
       </div>
 
-      {/* Razorpay Plan Selection & Checkout Modal */}
-      {showConfirmModal && (
-        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
-          <div className="bg-white rounded-lg border border-[#E6E8EC] p-5 sm:p-6 max-w-lg w-full shadow-2xl space-y-4 animate-in fade-in duration-150 my-8">
-            {joinedSuccess ? (
-              <div className="text-center space-y-4 py-2">
-                <div className="w-14 h-14 rounded-full bg-[#17B26A]/10 text-[#17B26A] flex items-center justify-center mx-auto ring-8 ring-[#17B26A]/5">
-                  <CheckCircle2 className="w-8 h-8 stroke-[2.5]" />
-                </div>
-                <div>
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-[#17B26A] bg-[#17B26A]/10 px-2.5 py-0.5 rounded-full">
-                    Payment Verified
-                  </span>
-                  <h3 className="text-lg sm:text-xl font-black text-[#0A1D3F] mt-1.5">
-                    Course Enrolled Successfully!
-                  </h3>
-                  <p className="text-xs text-[#667085] mt-1 max-w-sm mx-auto">
-                    You now have complete access to all video lectures, chapter notes, and study material for {course.title}.
-                  </p>
-                </div>
-
-                {/* Receipt Summary Box */}
-                <div className="p-3.5 rounded-md bg-[#F7F8FA] border border-[#E6E8EC] text-left space-y-2 text-xs text-[#0A1D3F]">
-                  <div className="flex items-center justify-between pb-2 border-b border-[#E6E8EC]">
-                    <span className="text-[#667085]">Payment Gateway:</span>
-                    <span className="font-bold text-[#133C8B] flex items-center gap-1">
-                      <CreditCard className="w-3.5 h-3.5" /> Razorpay (Test Mode)
-                    </span>
-                  </div>
-                  {paymentDetails?.paymentId && (
-                    <div className="flex items-center justify-between">
-                      <span className="text-[#667085]">Payment ID:</span>
-                      <span className="font-mono font-bold text-[#0A1D3F] bg-white px-2 py-0.5 rounded border border-[#E6E8EC]">
-                        {paymentDetails.paymentId}
-                      </span>
-                    </div>
-                  )}
-                  <div className="flex items-center justify-between">
-                    <span className="text-[#667085]">Plan Subscribed:</span>
-                    <span className="font-semibold text-[#0A1D3F]">{paymentDetails?.planName || currentSelectedPlan.name}</span>
-                  </div>
-                  <div className="flex items-center justify-between pt-1 border-t border-[#E6E8EC]">
-                    <span className="font-bold text-[#0A1D3F]">Amount Paid:</span>
-                    <span className="font-black text-sm text-[#17B26A]">₹{paymentDetails?.amount || currentSelectedPlan.price}</span>
-                  </div>
-                </div>
-
-                <div className="pt-2 flex flex-col sm:flex-row gap-2">
-                  <Link
-                    to={`/coaching/${course.id}/dashboard`}
-                    className="flex-1 py-2.5 px-4 rounded-md bg-[#FF8A00] hover:bg-[#E67C00] text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-xs transition"
-                  >
-                    <span>Go to Course Dashboard</span>
-                    <ArrowRight className="w-4 h-4" />
-                  </Link>
-                  <button
-                    type="button"
-                    onClick={() => setShowConfirmModal(false)}
-                    className="py-2.5 px-4 rounded-md border border-[#E6E8EC] text-xs font-semibold text-[#667085] hover:text-[#0A1D3F] transition"
-                  >
-                    Close
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {/* Modal Header */}
-                <div className="border-b border-[#E6E8EC] pb-3 flex items-center justify-between">
-                  <div>
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-[#FF8A00]">
-                      Checkout & Enrollment
-                    </span>
-                    <h3 className="text-base sm:text-lg font-black text-[#0A1D3F]">
-                      Choose Your Plan
-                    </h3>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setShowConfirmModal(false)}
-                    className="p-1 rounded-md text-[#667085] hover:text-[#0A1D3F] hover:bg-[#F7F8FA] transition text-sm font-bold"
-                  >
-                    ✕
-                  </button>
-                </div>
-
-                {/* Course Mini Badge */}
-                <div className="p-2.5 rounded-md bg-[#F7F8FA] border border-[#E6E8EC] flex items-center justify-between text-xs">
-                  <div className="min-w-0 pr-2">
-                    <h4 className="font-bold text-[#0A1D3F] truncate">{course.title}</h4>
-                    <p className="text-[11px] text-[#667085]">{course.board} • {course.class} • {course.duration}</p>
-                  </div>
-                  <span className="shrink-0 px-2 py-0.5 rounded text-[10px] font-bold bg-[#133C8B]/10 text-[#133C8B]">
-                    {course.courseType || "Standard"}
-                  </span>
-                </div>
-
-                {/* Subscription Plans Selection */}
-                <div className="space-y-2">
-                  <label className="text-xs font-bold text-[#0A1D3F] block">
-                    Available Access Plans:
-                  </label>
-                  <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
-                    {availablePlans.map((plan) => {
-                      const isSelected = plan.id === currentSelectedPlan.id;
-                      return (
-                        <div
-                          key={plan.id}
-                          onClick={() => setSelectedPlanId(plan.id)}
-                          className={`p-3 rounded-md border text-xs cursor-pointer transition flex items-center justify-between ${
-                            isSelected
-                              ? "bg-[#FFF8F0] border-[#FF8A00] shadow-xs ring-1 ring-[#FF8A00]"
-                              : "bg-white border-[#E6E8EC] hover:border-[#FF8A00]/50"
-                          }`}
-                        >
-                          <div className="flex items-start gap-2.5">
-                            <div
-                              className={`w-4 h-4 rounded-full border mt-0.5 flex items-center justify-center shrink-0 ${
-                                isSelected
-                                  ? "border-[#FF8A00] bg-[#FF8A00]"
-                                  : "border-[#D0D5DD] bg-white"
-                              }`}
-                            >
-                              {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
-                            </div>
-                            <div className="space-y-0.5">
-                              <div className="flex items-center gap-1.5 flex-wrap">
-                                <span className="font-bold text-[#0A1D3F]">{plan.name}</span>
-                                {plan.isPopular && (
-                                  <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.2 rounded bg-[#FF8A00] text-white">
-                                    Best Value
-                                  </span>
-                                )}
-                              </div>
-                              <p className="text-[11px] text-[#667085]">{plan.duration}</p>
-                            </div>
-                          </div>
-
-                          <div className="text-right shrink-0 pl-2">
-                            <div className="font-black text-sm text-[#0A1D3F]">
-                              ₹{plan.price}
-                            </div>
-                            {plan.originalPrice && (
-                              <div className="text-[10px] text-[#667085] line-through">
-                                ₹{plan.originalPrice}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Price Breakdown */}
-                <div className="p-3 rounded-md bg-[#F7F8FA] border border-[#E6E8EC] space-y-1.5 text-xs text-[#0A1D3F]">
-                  <div className="flex justify-between pt-1.5 border-t border-[#E6E8EC] font-black text-sm">
-                    <span className="text-[#0A1D3F]">Total Amount:</span>
-                    <span className="text-[#FF8A00]">₹{currentSelectedPlan.price}</span>
-                  </div>
-                </div>
-
-                {/* Razorpay Gateway Badge & Credential Info */}
-                <div className="p-2.5 rounded-md bg-[#0A1D3F]/5 border border-[#0A1D3F]/10 flex items-center justify-between text-[11px] text-[#0A1D3F]">
-                  <div className="flex items-center gap-2">
-                    <ShieldCheck className="w-4 h-4 text-[#FF8A00] shrink-0" />
-                    <div>
-                      <p className="font-bold">Razorpay Test Gateway</p>
-                      <p className="text-[10px] text-[#667085]">Key: <code className="font-mono bg-white px-1 rounded border border-[#E6E8EC]">rzp_test_TRZdg2aAOYv4KK</code></p>
-                    </div>
-                  </div>
-                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#17B26A]/10 text-[#17B26A] border border-[#17B26A]/20 shrink-0">
-                    Live Test
-                  </span>
-                </div>
-
-                {/* Action Buttons */}
-                <div className="flex items-center gap-2 pt-1">
-                  <button
-                    type="button"
-                    onClick={() => setShowConfirmModal(false)}
-                    className="flex-1 py-2.5 px-3 rounded-md border border-[#E6E8EC] text-[#667085] hover:text-[#0A1D3F] font-semibold text-xs transition cursor-pointer"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleRazorpayPayment}
-                    disabled
-                    className="flex-2 py-2.5 px-3 rounded-md bg-[#FF8A00] hover:bg-[#E67C00] text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-xs transition active:scale-98 cursor-pointer disabled:opacity-50"
-                  >
-                    {joining ? (
-                      <>
-                        <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                        <span>Opening Razorpay...</span>
-                      </>
-                    ) : (
-                      <>
-                        <CreditCard className="w-4 h-4" />
-                        <span>Test payments unavailable</span>
-                      </>
-                    )}
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
     </div>
   );
 };

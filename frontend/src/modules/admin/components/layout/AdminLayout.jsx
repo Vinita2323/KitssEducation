@@ -16,6 +16,7 @@ import {
 
 import { useAuth } from '../../../user/context/AuthContext';
 
+import { PageSuspense } from "../../../../shared/ui/lazyPage";
 import { AdminNavigation } from './AdminNavigation';
 import { AdminPageGuide } from './AdminPageGuide';
 import { useDialogFocus } from '../../../../shared/ui/useDialogFocus';
@@ -157,7 +158,7 @@ export const AdminLayout = () => {
         <main ref={content} id="admin-main" tabIndex={-1} className="flex-1 min-w-0 overflow-y-auto overscroll-contain p-4 sm:p-6 lg:p-8">
           <AdminPageGuide />
           {!isStage4 && <p role="status" className="mb-4 p-3 bg-amber-50 border rounded-xl text-xs text-[#0A1D3F]">This section is not available yet. Changes cannot be saved here.</p>}
-          <fieldset disabled={!isStage4} className="min-w-0"><Outlet /></fieldset>
+          <fieldset disabled={!isStage4} className="min-w-0"><PageSuspense><Outlet /></PageSuspense></fieldset>
         </main>
       </div>
     </div></MotionConfig>

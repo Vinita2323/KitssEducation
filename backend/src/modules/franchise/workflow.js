@@ -6,6 +6,7 @@ import { dto } from '../institutions/institutions.service.js';
 import { workflowPolicy, initialWorkflowPolicy } from './policy.js';
 import { accessExpiry } from '../../utils/accessDuration.js';
 import { grantsFor } from '../auth/security.js';
+import { userScope, ownerScope } from '../../utils/domain-lock.js';
 const blocked = message => new AppError(409, 'FRANCHISE_REQUIREMENTS', message);
 const missing = () => new AppError(404, 'NOT_FOUND', 'Franchise application not found');
 const plain = row => row?.toObject?.() ?? row;
@@ -16,6 +17,8 @@ export function createFranchiseWorkflow(commerce, institutions) {
   const Settings = publishing.models.SiteSettings, coordination = publishing.coordination, media = publishing.media;
   const verified = auth => commerce.eligible(auth);
   const get = async value => { const row = await Application.findById(id(value)); if (!row) throw missing(); return row; };
+  // Staff decisions on an application share the applicant's lane with the applicant's own actions.
+  const applicantScope = async value => ownerScope((await Application.findById(id(value)).select('applicantUserId').lean())?.applicantUserId);
   const owned = async (value, auth) => { verified(auth); const row = await get(value); if (String(row.applicantUserId) !== String(auth.user._id)) throw missing(); return row; };
   const update = (row, fields, expected, action, ctx) => coordination.update(Application, row, fields, revision(expected), action, ctx);
   async function policyRecord() { return await Settings.findOne({ key: 'businessPolicies' }); }
@@ -118,7 +121,7 @@ export function createFranchiseWorkflow(commerce, institutions) {
     async create(input, auth, ctx) {
       verified(auth); const p = await policy(); if (!p.acceptingApplications) throw blocked('New franchise applications are currently paused.'); const fields = franchiseInput(input, true, true), requestHash = hash(fields);
       await commerce.authService.limit(ctx, String(auth.user._id), 'franchise', 10);
-      return coordination.run(async () => {
+      return coordination.runAs(userScope(auth), async () => {
         const prior = await Application.findOne({ ownerKey: String(auth.user._id), idempotencyKey: fields.idempotencyKey }).select('+requestHash');
         if (prior) { if (prior.requestHash !== requestHash) throw blocked('Draft key was already used with different details'); return result(prior); }
         await eligibility(fields, p, false, auth.user._id);
@@ -128,13 +131,13 @@ export function createFranchiseWorkflow(commerce, institutions) {
     },
     async edit(value, input, auth, ctx) {
       const fields = franchiseInput(input, false, true);
-      return coordination.run(async () => { const row = await owned(value, auth); if (row.workflowVersion !== 1 || !['draft','needs_changes'].includes(row.status)) throw blocked('Only draft applications or requested corrections can be edited');
+      return coordination.runAs(userScope(auth), async () => { const row = await owned(value, auth); if (row.workflowVersion !== 1 || !['draft','needs_changes'].includes(row.status)) throw blocked('Only draft applications or requested corrections can be edited');
         const { expectedRevision, ...changes } = fields; await eligibility({ ...row.toObject(), ...changes }, row.policySnapshot ?? await policy());
         return result(await update(row, changes, expectedRevision, 'franchise_draft_updated', ctx)); });
     },
     async attach(value, input, auth, ctx) {
       object(input, ['expectedRevision','key','assetId'], ['expectedRevision','key','assetId']);
-      return coordination.run(async () => { const row = await owned(value, auth); if (row.workflowVersion !== 1 || !['draft','needs_changes'].includes(row.status)) throw blocked('Only editable applications accept documents');
+      return coordination.runAs(userScope(auth), async () => { const row = await owned(value, auth); if (row.workflowVersion !== 1 || !['draft','needs_changes'].includes(row.status)) throw blocked('Only editable applications accept documents');
         const p = row.policySnapshot ?? await policy(), requirement = p.documents.find(d => d.key === input.key); if (!requirement) throw invalid('Choose a configured document requirement');
         const asset = await media.linkable(input.assetId, 'franchise_document', auth);
         if (String(asset.ownerUserId) !== String(auth.user._id) || !requirement.mime.includes(asset.mime) || asset.bytes > requirement.maxBytes) throw invalid('Document ownership, format or size does not match policy');
@@ -143,7 +146,7 @@ export function createFranchiseWorkflow(commerce, institutions) {
     },
     async submit(value, input, auth, ctx) {
       object(input, ['expectedRevision','declaration'], ['expectedRevision','declaration']); object(input.declaration, ['version','accepted'], ['version','accepted']);
-      return coordination.run(async () => { const row = await owned(value, auth); if (!['draft','needs_changes'].includes(row.status)) return result(row);
+      return coordination.runAs(userScope(auth), async () => { const row = await owned(value, auth); if (!['draft','needs_changes'].includes(row.status)) return result(row);
         const p = row.policySnapshot ?? await policy(); if (input.declaration.accepted !== true || input.declaration.version !== p.agreement.version) throw invalid('Read and accept the current agreement');
         await eligibility(row, p, true); await documents(row, p);
         return result(await update(row, { status: 'pending', submittedAt: new Date(), policySnapshot: p, agreementAcceptance: { version: p.agreement.version, policyVersion: p.version, acceptedAt: new Date(), userId: String(auth.user._id) } }, input.expectedRevision, 'franchise_submitted', ctx)); });
@@ -153,14 +156,14 @@ export function createFranchiseWorkflow(commerce, institutions) {
     async reviewDocument(value, input, auth, ctx) {
       object(input, ['expectedRevision','key','state','reason'], ['expectedRevision','key','state','reason']);
       if (!['verified','rejected'].includes(input.state)) throw invalid('Choose verified or rejected');
-      return coordination.run(async () => { const row = await get(value); if (row.workflowVersion !== 1 || !['pending','needs_changes'].includes(row.status)) throw blocked('Review documents on submitted applications');
+      return coordination.runAs(await applicantScope(value), async () => { const row = await get(value); if (row.workflowVersion !== 1 || !['pending','needs_changes'].includes(row.status)) throw blocked('Review documents on submitted applications');
         const reason = noteText(input.reason); if (!row.documents.some(d => d.key === input.key)) throw invalid('Document not attached');
         const documents = row.documents.map(d => d.key === input.key ? { ...plain(d), state: input.state, reason, reviewedBy: ctx.actorId, reviewedAt: new Date() } : plain(d));
         return result(await update(row, { documents }, input.expectedRevision, 'franchise_document_reviewed', ctx)); });
     },
     async review(value, input, ctx) {
       object(input, ['expectedRevision','status','reason','note','rejectionReason'], ['expectedRevision','status']);
-      return coordination.run(async () => { const row = await get(value); const reason = noteText(input.reason ?? input.rejectionReason ?? input.note ?? '');
+      return coordination.runAs(await applicantScope(value), async () => { const row = await get(value); const reason = noteText(input.reason ?? input.rejectionReason ?? input.note ?? '');
         if (row.workflowVersion !== 1 || row.status !== 'pending' || !['approved','rejected','needs_changes'].includes(input.status)) throw blocked('Choose an allowed review action for a submitted application');
         if (input.status === 'approved') { const account = await commerce.authService.models.User.findById(row.applicantUserId); if (!account || account.status !== 'active' || !account.emailVerifiedAt) throw blocked('A verified active applicant account is required'); await eligibility(row, row.policySnapshot, true); await documents(row, row.policySnapshot, true); }
         const freeActivation = input.status === 'approved' && row.policySnapshot.joining.amountMinor === 0 ? { activatedAt: new Date(), affiliationState: 'active', renewalTerms: row.policySnapshot.renewal, nextFranchiseCheckAt: new Date(), renewalDueAt: row.policySnapshot.renewal.enabled ? accessExpiry(new Date(), { durationMonths: row.policySnapshot.renewal.months }) : null } : {};
@@ -169,19 +172,19 @@ export function createFranchiseWorkflow(commerce, institutions) {
     },
     async activate(value, input, auth, ctx) {
       object(input, ['expectedRevision'], ['expectedRevision']);
-      return coordination.run(async () => { const row = await owned(value, auth); await ready(row); if (row.activatedAt) return result(row);
+      return coordination.runAs(userScope(auth), async () => { const row = await owned(value, auth); await ready(row); if (row.activatedAt) return result(row);
         if (row.policySnapshot.joining.amountMinor !== 0) throw blocked('Complete verified joining payment before activation');
         const terms = row.policySnapshot.renewal;
         return result(await update(row, { activatedAt: new Date(), affiliationState: 'active', renewalTerms: terms, nextFranchiseCheckAt: new Date(), renewalDueAt: terms.enabled ? accessExpiry(new Date(), { durationMonths: terms.months }) : null }, input.expectedRevision, 'franchise_activated', ctx)); });
     },
     async reviewRenewal(value, input, ctx) {
       object(input, ['expectedRevision','reason'], ['expectedRevision','reason']);
-      return coordination.run(async () => { const row = await get(value); if (state(row) !== 'renewal_review' || !row.renewalDueAt) throw blocked('Only expired renewals requiring manual review can be approved');
+      return coordination.runAs(await applicantScope(value), async () => { const row = await get(value); if (state(row) !== 'renewal_review' || !row.renewalDueAt) throw blocked('Only expired renewals requiring manual review can be approved');
         return result(await update(row, { renewalReview: { period: row.renewalDueAt.toISOString(), approvedBy: ctx.actorId, reason: noteText(input.reason), at: new Date() } }, input.expectedRevision, 'franchise_renewal_reviewed', ctx)); });
     },
     async acceptRenewal(value, input, auth, ctx) {
       object(input, ['expectedRevision','agreementVersion','accepted'], ['expectedRevision','agreementVersion','accepted']);
-      return coordination.run(async () => { const row = await owned(value, auth), p = await policy(); await ready(row);
+      return coordination.runAs(userScope(auth), async () => { const row = await owned(value, auth), p = await policy(); await ready(row);
         if (!row.activatedAt || !row.renewalDueAt || input.accepted !== true || input.agreementVersion !== p.agreement.version) throw blocked('Read and accept the current renewal agreement');
         return result(await update(row, { renewalAcceptance: { period: row.renewalDueAt.toISOString(), policy: p, at: new Date(), userId: String(auth.user._id) } }, input.expectedRevision, 'franchise_renewal_agreement', ctx)); });
     },
@@ -209,7 +212,7 @@ export function createFranchiseWorkflow(commerce, institutions) {
     },
     async freeRenew(value, input, auth, ctx) {
       object(input, ['expectedRevision','agreementVersion','accepted'], ['expectedRevision','agreementVersion','accepted']);
-      return coordination.run(async () => { const row = await owned(value, auth); await ready(row); const p = await policy();
+      return coordination.runAs(userScope(auth), async () => { const row = await owned(value, auth); await ready(row); const p = await policy();
         if (!row.activatedAt || !row.renewalDueAt || !row.renewalTerms?.enabled || p.renewal.amountMinor !== 0 || input.accepted !== true || input.agreementVersion !== p.agreement.version || row.renewalDueAt.getTime() - row.policySnapshot.reminderDays * 86400000 > Date.now()) throw blocked('Free renewal requires a due renewal period and accepted current agreement');
         const period = row.renewalDueAt.toISOString();
         if (state(row) === 'renewal_review' && row.renewalReview?.period !== period) throw blocked('Staff approval is required before renewing this expired affiliation');

@@ -1,4 +1,5 @@
 import React from "react";
+import { lazyPage } from '../../../shared/ui/lazyPage';
 import { Routes, Route, Navigate } from "react-router-dom";
 
 import { RouteGuard } from '../../../shared/auth/RouteGuard';
@@ -14,35 +15,35 @@ import { ForgotPasswordPage, ResetPasswordPage } from "../pages/auth/ForgotPassw
 
 // Main & Domain Pages
 import { HomeDashboardPage } from "../pages/dashboard/HomeDashboardPage";
-import { AboutPage } from "../pages/about/AboutPage";
-import { CategoriesPage } from "../pages/categories/CategoriesPage";
-import { CollegesListingPage } from "../pages/college/CollegesListingPage";
-import { BooksHomePage } from "../pages/books/BooksHomePage";
-import { BookDetailsPage } from "../pages/books/BookDetailsPage";
-import { BookCheckoutPage } from "../pages/books/BookCheckoutPage";
-import { PdfReaderPage } from "../pages/books/PdfReaderPage";
-import { MyPurchasedBooksPage } from "../pages/books/MyPurchasedBooksPage";
+const AboutPage = lazyPage(() => import("../pages/about/AboutPage"), "AboutPage");
+const CategoriesPage = lazyPage(() => import("../pages/categories/CategoriesPage"), "CategoriesPage");
+const CollegesListingPage = lazyPage(() => import("../pages/college/CollegesListingPage"), "CollegesListingPage");
+const BooksHomePage = lazyPage(() => import("../pages/books/BooksHomePage"), "BooksHomePage");
+const BookDetailsPage = lazyPage(() => import("../pages/books/BookDetailsPage"), "BookDetailsPage");
+const BookCheckoutPage = lazyPage(() => import("../pages/books/BookCheckoutPage"), "BookCheckoutPage");
+const PdfReaderPage = lazyPage(() => import("../pages/books/PdfReaderPage"), "PdfReaderPage");
+const MyPurchasedBooksPage = lazyPage(() => import("../pages/books/MyPurchasedBooksPage"), "MyPurchasedBooksPage");
 
 // Online Coaching Module Pages
-import { CoachingHomePage } from "../pages/coaching/CoachingHomePage";
-import { CourseDetailsPage } from "../pages/coaching/CourseDetailsPage";
-import { CourseRegistrationPage } from "../pages/coaching/CourseRegistrationPage";
-import { CourseSelectorPage } from "../pages/coaching/CourseSelectorPage";
-import { MyCoursesPage } from "../pages/coaching/MyCoursesPage";
-import { CourseDashboardPage } from "../pages/coaching/CourseDashboardPage";
-import { LecturePlayerPage } from "../pages/coaching/LecturePlayerPage";
-import { BookReaderPage } from "../pages/coaching/BookReaderPage";
-import { CourseSubscribePage } from "../pages/coaching/CourseSubscribePage";
-import { CoursePlayerPage } from "../pages/coaching/CoursePlayerPage";
+const CoachingHomePage = lazyPage(() => import("../pages/coaching/CoachingHomePage"), "CoachingHomePage");
+const CourseDetailsPage = lazyPage(() => import("../pages/coaching/CourseDetailsPage"), "CourseDetailsPage");
+const CourseRegistrationPage = lazyPage(() => import("../pages/coaching/CourseRegistrationPage"), "CourseRegistrationPage");
+const CourseSelectorPage = lazyPage(() => import("../pages/coaching/CourseSelectorPage"), "CourseSelectorPage");
+const MyCoursesPage = lazyPage(() => import("../pages/coaching/MyCoursesPage"), "MyCoursesPage");
+const CourseDashboardPage = lazyPage(() => import("../pages/coaching/CourseDashboardPage"), "CourseDashboardPage");
+const LecturePlayerPage = lazyPage(() => import("../pages/coaching/LecturePlayerPage"), "LecturePlayerPage");
+const BookReaderPage = lazyPage(() => import("../pages/coaching/BookReaderPage"), "BookReaderPage");
+const CourseSubscribePage = lazyPage(() => import("../pages/coaching/CourseSubscribePage"), "CourseSubscribePage");
+const CoursePlayerPage = lazyPage(() => import("../pages/coaching/CoursePlayerPage"), "CoursePlayerPage");
 
 // Other Pages
-import { ResultsPage } from "../pages/results/ResultsPage";
-import { MyOrdersPage } from "../pages/orders/MyOrdersPage";
-import { NotificationsPage } from "../pages/notifications/NotificationsPage";
-import { ProfilePage } from "../pages/profile/ProfilePage";
-import { SettingsPage } from "../pages/profile/SettingsPage";
+const ResultsPage = lazyPage(() => import("../pages/results/ResultsPage"), "ResultsPage");
+const MyOrdersPage = lazyPage(() => import("../pages/orders/MyOrdersPage"), "MyOrdersPage");
+const NotificationsPage = lazyPage(() => import("../pages/notifications/NotificationsPage"), "NotificationsPage");
+const ProfilePage = lazyPage(() => import("../pages/profile/ProfilePage"), "ProfilePage");
+const SettingsPage = lazyPage(() => import("../pages/profile/SettingsPage"), "SettingsPage");
 
-import { MyApplicationsPage } from '../pages/auth/MyApplicationsPage';
+const MyApplicationsPage = lazyPage(() => import('../pages/auth/MyApplicationsPage'), "MyApplicationsPage");
 import { useAuth } from "../context/AuthContext";
 export const UserRoutes = () => {
   const {user}=useAuth();

@@ -1,3 +1,4 @@
+import { escapeRegex } from '../../utils/escapeRegex.js';
 import { randomUUID } from 'node:crypto';
 import { businessActions, businessNotice } from './business-events.js';
 import mongoose from 'mongoose';
@@ -75,6 +76,12 @@ export async function createNotificationService({
     'audience.userIds': 1,
     status: 1
   });
+  // Course-targeted notices for a student's active courses.
+  schema.index({
+    'audience.courseId': 1,
+    status: 1,
+    publishedAt: -1
+  });
   const receipt = new Schema({
     notificationId: {
       type: ref,
@@ -112,6 +119,27 @@ export async function createNotificationService({
       id: String(_id)
     };
   };
+  // Admin screens show who a targeted notice goes to by account ID, name and email, never raw database ids.
+  const User = () => authService.models.User;
+  async function recipientNames(rows) {
+    const ids = [...new Set(rows.filter(row => row.audience?.kind === 'users').flatMap(row => (row.audience.userIds ?? []).map(String)))];
+    if (!ids.length) return new Map();
+    return new Map((await User().find({ _id: { $in: ids } }).select('publicId name emailNormalized').lean()).map(u => [String(u._id), { id: u.publicId, name: u.name, email: u.emailNormalized }]));
+  }
+  const withNames = (data, names) => data.audience?.kind !== 'users' ? data : {
+    ...data,
+    recipients: (data.audience.userIds ?? []).map(u => names.get(String(u)) ?? { id: String(u), name: 'Account no longer available', email: '' })
+  };
+  // Recipients may be given by their account ID (as shown to admins) or by database id.
+  async function resolveRecipients(values) {
+    if (!Array.isArray(values) || !values.length || values.length > 100) throw invalid('Choose 1 to 100 recipients');
+    const raw = [...new Set(values.map(v => { if (typeof v !== 'string' || !v.trim() || v.length > 40) throw invalid('Invalid recipient'); return v.trim(); }))];
+    const dbIds = raw.filter(v => /^[a-f0-9]{24}$/i.test(v)).map(v => String(id(v))), publicIds = raw.filter(v => !/^[a-f0-9]{24}$/i.test(v)).map(v => v.toUpperCase());
+    const users = await User().find({ status: 'active', $or: [{ _id: { $in: dbIds } }, { publicId: { $in: publicIds } }] }).select('_id publicId').lean();
+    const found = new Set(users.flatMap(u => [String(u._id), u.publicId]));
+    if ([...dbIds, ...publicIds].some(v => !found.has(v))) throw invalid('Recipients must exist and be active');
+    return [...new Set(users.map(u => String(u._id)))];
+  }
   const paging = query => {
     const page = Number(query.page ?? 1),
       pageSize = Number(query.pageSize ?? 20);
@@ -238,29 +266,40 @@ export async function createNotificationService({
       const filter = admin ? {} : await audience(auth);
       if (admin && query.status) filter.status = text(query.status, 30);
       if (admin && query.category) filter.category = text(query.category, 30);
-      const readIds = admin ? [] : (await Receipt.find({
-        userId: auth.user._id,
-        readAt: {
-          $ne: null
+      // Read state is joined inside the database (unique notificationId+userId receipt index) instead of
+      // loading every receipt the student ever made and sending it back as a growing $nin list.
+      const readLookup = {
+        $lookup: {
+          from: Receipt.collection.name,
+          let: { notice: '$_id' },
+          pipeline: [{ $match: { $expr: { $and: [{ $eq: ['$notificationId', '$$notice'] }, { $eq: ['$userId', auth.user._id] }] }, readAt: { $ne: null } } }, { $limit: 1 }, { $project: { _id: 1 } }],
+          as: 'readReceipt'
         }
-      }).select('notificationId')).map(r => r.notificationId);
-      const unreadCount = admin ? undefined : await Notification.countDocuments({
-        ...filter,
-        _id: {
-          $nin: readIds
-        }
-      });
+      };
+      const readState = read => ({ $match: { 'readReceipt.0': { $exists: read } } });
+      const countUnread = async () => (await Notification.aggregate([{ $match: filter }, readLookup, readState(false), { $count: 'n' }]))[0]?.n ?? 0;
+      const unreadCount = admin ? undefined : await countUnread();
+      const order = { publishedAt: -1, _id: -1 };
+      let total, rows;
       if (!admin && query.read !== undefined) {
         if (!['true', 'false'].includes(query.read)) throw invalid('Invalid read filter');
-        filter._id = {
-          [query.read === 'true' ? '$in' : '$nin']: readIds
-        };
+        const [result] = await Notification.aggregate([{ $match: filter }, readLookup, readState(query.read === 'true'), { $facet: {
+          total: [{ $count: 'n' }],
+          rows: [{ $sort: order }, { $skip: (page - 1) * pageSize }, { $limit: pageSize }, { $project: { readReceipt: 0 } }]
+        } }]);
+        total = result.total[0]?.n ?? 0; rows = result.rows;
+      } else {
+        total = await Notification.countDocuments(filter);
+        rows = await Notification.find(filter).sort(order).skip((page - 1) * pageSize).limit(pageSize);
       }
-      const total = await Notification.countDocuments(filter);
-      const data = (await Notification.find(filter).sort({
-        publishedAt: -1,
-        _id: -1
-      }).skip((page - 1) * pageSize).limit(pageSize)).map(row => admin ? dto(row) : {
+      // Only this page's notifications are checked for a read receipt.
+      const readOnPage = admin || !rows.length ? new Set() : new Set((await Receipt.find({
+        userId: auth.user._id,
+        notificationId: { $in: rows.map(row => row._id) },
+        readAt: { $ne: null }
+      }).select('notificationId').lean()).map(r => String(r.notificationId)));
+      const names = admin ? await recipientNames(rows) : null;
+      const data = rows.map(row => admin ? withNames(dto(row), names) : {
         id: String(row._id),
         title: row.title,
         message: row.message,
@@ -268,7 +307,7 @@ export async function createNotificationService({
         link: row.link,
         publishedAt: row.publishedAt,
         createdAt: row.publishedAt,
-        isRead: readIds.some(v => String(v) === String(row._id)),
+        isRead: readOnPage.has(String(row._id)),
         icon: 'Megaphone',
         color: '#0A1D3F'
       });
@@ -345,7 +384,16 @@ export async function createNotificationService({
     async detail(value) {
       const row = await Notification.findById(id(value));
       if (!row) throw new AppError(404, 'NOT_FOUND', 'Notification was not found');
-      return dto(row);
+      return withNames(dto(row), await recipientNames([row]));
+    },
+    // Active accounts an admin can pick as recipients (name, email or account ID search).
+    async recipientSearch(query = {}) {
+      object(query, ['q']);
+      const q = text(query.q ?? '', 80);
+      if (q.length < 2) return [];
+      const match = new RegExp(escapeRegex(q), 'i');
+      return (await User().find({ status: 'active', $or: [{ name: match }, { emailNormalized: match }, { publicId: match }] }).select('publicId name emailNormalized roles').sort({ name: 1 }).limit(20).lean())
+        .map(u => ({ id: u.publicId, name: u.name, email: u.emailNormalized, student: (u.roles ?? []).includes('student') }));
     },
     async mutate(value, input, ctx, archive = false) {
       object(input, ['title', 'message', 'category', 'link', 'audience', 'expectedRevision'], value ? ['expectedRevision'] : ['title', 'message', 'category', 'audience']);
@@ -370,15 +418,7 @@ export async function createNotificationService({
           kind: input.audience.kind
         };
         if (input.audience.kind === 'users') {
-          if (!Array.isArray(input.audience.userIds) || !input.audience.userIds.length || input.audience.userIds.length > 100) throw invalid('Choose 1 to 100 recipients');
-          const ids = [...new Set(input.audience.userIds.map(v => String(id(v))))];
-          if ((await authService.models.User.countDocuments({
-            _id: {
-              $in: ids
-            },
-            status: 'active'
-          })) !== ids.length) throw invalid('Recipients must exist and be active');
-          fields.audience.userIds = ids;
+          fields.audience.userIds = await resolveRecipients(input.audience.userIds);
         }
         if (input.audience.kind === 'course') {
           await coachingService.course(input.audience.courseId, true);
@@ -447,6 +487,7 @@ export function createNotificationRouter(service) {
     ...(await service.list(req.query, req.auth, true)),
     requestId: req.requestId
   }));
+  router.get('/admin/notification-recipients', requirePermission('notifications.write'), async (req, res) => send(req, res, await service.recipientSearch(req.query)));
   router.get('/admin/notifications/:id', requirePermission('notifications.read'), async (req, res) => send(req, res, await service.detail(req.params.id)));
   router.post('/admin/notifications', requirePermission('notifications.write'), async (req, res) => send(req, res, await service.mutate(null, req.body, ctx(req))));
   router.patch('/admin/notifications/:id', requirePermission('notifications.write'), async (req, res) => send(req, res, await service.mutate(req.params.id, req.body, ctx(req))));

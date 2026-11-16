@@ -60,7 +60,7 @@ export const HeroBannerCarousel = () => {
     }
   };
 
-  if (!banners.length) return <div className="p-6 rounded-xl bg-[#0A1D3F] text-white text-sm" role={error ? 'alert' : 'status'}>{error || (loading ? 'Loading announcements?' : 'No published announcements.')}</div>;
+  if (!banners.length) return <div className="p-6 rounded-xl bg-[#0A1D3F] text-white text-sm" role={error ? 'alert' : 'status'}>{error || (loading ? 'Loading announcements…' : 'No published announcements.')}</div>;
   const activeBanner = banners[current % banners.length];
   const TagIcon = activeBanner.tagIcon;
 

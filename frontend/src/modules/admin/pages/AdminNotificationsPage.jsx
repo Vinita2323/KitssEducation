@@ -7,6 +7,37 @@ import { useAuth } from '../../user/context/AuthContext';
 import { Pagination } from '../../user/components/common/Pagination';
 import { Bell, Plus } from 'lucide-react';
 import { AdminEmpty, AdminPageHeader, AdminStatus, AdminTable } from '../components/AdminUI';
+import { useDebouncedValue } from '../../../shared/ui/useDebouncedValue';
+// Account IDs (as shown in User accounts) or database ids pasted into the search box are also accepted.
+const looksLikeId = value => /^[a-f0-9]{24}$/i.test(value) || /^[A-Z]{3,10}[0-9A-F]{16}$/i.test(value);
+const pastedIds = text => (text || '').split(/[\s,]+/).map(v => v.trim()).filter(looksLikeId);
+function RecipientPicker({ recipients, query, onChange }) {
+  const [results, setResults] = useState([]), [error, setError] = useState(''), [searching, setSearching] = useState(false);
+  const term = useDebouncedValue(query.trim());
+  useEffect(() => {
+    setError('');
+    if (term.length < 2 || looksLikeId(term)) { setResults([]); return undefined; }
+    const c = new AbortController(); setSearching(true);
+    httpClient.request('/admin/notification-recipients?q=' + encodeURIComponent(term), { signal: c.signal })
+      .then(r => { if (!c.signal.aborted) setResults(r.data || []); })
+      .catch(e => { if (!c.signal.aborted) { setResults([]); setError(e.message); } })
+      .finally(() => { if (!c.signal.aborted) setSearching(false); });
+    return () => c.abort();
+  }, [term]);
+  const chosen = new Set(recipients.map(r => r.id.toUpperCase()));
+  const add = person => onChange({ recipients: [...recipients, person], query: '' });
+  const remove = person => onChange({ recipients: recipients.filter(r => r !== person), query });
+  return <div className="space-y-2 text-sm">
+    <AdminField className="block text-sm">Recipients
+      <AdminInput aria-label="Notification recipients" value={query} placeholder="Search by name, email or account ID" onChange={e => onChange({ recipients, query: e.target.value })} className="block w-full border p-2 rounded-xl" />
+    </AdminField>
+    {searching && <p role="status" className="text-xs">Searching…</p>}
+    {error && <p role="alert" className="text-xs text-red-700">{error}</p>}
+    {results.length > 0 && <ul aria-label="Recipient search results" className="border rounded-xl divide-y max-h-56 overflow-auto">{results.map(person => <li key={person.id} className="flex items-center justify-between gap-2 p-2"><span className="min-w-0 break-words"><strong>{person.name}</strong> <span className="text-xs text-[#667085]">{person.email} · {person.id}{person.student ? '' : ' · staff'}</span></span><button type="button" className="admin-btn admin-btn-secondary admin-btn-sm" disabled={chosen.has(person.id.toUpperCase())} onClick={() => add(person)} aria-label={'Add recipient ' + person.name}>{chosen.has(person.id.toUpperCase()) ? 'Added' : 'Add'}</button></li>)}</ul>}
+    {term.length >= 2 && !looksLikeId(term) && !searching && !error && !results.length && <p className="text-xs text-[#667085]">No active accounts match “{term}”.</p>}
+    {recipients.length > 0 && <ul aria-label="Selected recipients" className="flex flex-wrap gap-2">{recipients.map(person => <li key={person.id} className="inline-flex items-center gap-1 border rounded-full px-2 py-1 text-xs"><span>{person.name}{person.email ? ' (' + person.email + ')' : ''}</span><button type="button" className="px-1" onClick={() => remove(person)} aria-label={'Remove recipient ' + person.name}>×</button></li>)}</ul>}
+  </div>;
+}
 export function AdminNotificationsPage() {
   const {
     can
@@ -63,7 +94,8 @@ export function AdminNotificationsPage() {
     category: row?.category ?? 'general',
     link: row?.link ?? '',
     kind: row?.audience?.kind ?? 'all_students',
-    recipients: row?.audience?.userIds?.join(',') ?? '',
+    recipients: row?.recipients ?? (row?.audience?.userIds ?? []).map(value => ({ id: String(value), name: String(value), email: '' })),
+    recipientQuery: '',
     courseId: row?.audience?.courseId ?? ''
   });
   const save = e => {
@@ -72,7 +104,7 @@ export function AdminNotificationsPage() {
       const audience = {
         kind: form.kind,
         ...(form.kind === 'users' ? {
-          userIds: form.recipients.split(',').map(x => x.trim()).filter(Boolean)
+          userIds: [...new Set([...form.recipients.map(r => r.id), ...pastedIds(form.recipientQuery)])]
         } : {}),
         ...(form.kind === 'course' ? {
           courseId: form.courseId
@@ -105,10 +137,7 @@ export function AdminNotificationsPage() {
         }))} className="block w-full border rounded-xl p-2">{['general', 'exam', 'course', 'promotion'].map(v => <option key={v}>{v}</option>)}</AdminSelect></AdminField><AdminField className="block text-sm">Audience<AdminSelect aria-label="Notification audience" value={form.kind} onChange={e => setForm(p => ({
           ...p,
           kind: e.target.value
-        }))} className="block w-full border rounded-xl p-2">{['all_students', 'users', 'course'].map(v => <option key={v}>{v}</option>)}</AdminSelect></AdminField>{form.kind === 'users' && <AdminField className="block text-sm">User database IDs (comma separated)<AdminInput aria-label="Notification recipients" value={form.recipients} onChange={e => setForm(p => ({
-          ...p,
-          recipients: e.target.value
-        }))} className="block w-full border p-2 rounded-xl" /></AdminField>}{form.kind === 'course' && (
+        }))} className="block w-full border rounded-xl p-2">{['all_students', 'users', 'course'].map(v => <option key={v}>{v}</option>)}</AdminSelect></AdminField>{form.kind === 'users' && <RecipientPicker recipients={form.recipients} query={form.recipientQuery} onChange={next => setForm(p => ({ ...p, recipients: next.recipients, recipientQuery: next.query }))} />}{form.kind === 'course' && (
           <div className="space-y-2">
             {/* Only published courses can be targeted, which is exactly what the public catalogue lists. */}
             {courses.length > 0 && <AdminField className="block text-sm">

@@ -180,6 +180,15 @@ export class LocalStorageProvider extends StorageProvider {
     } catch (error) { await handle?.close().catch(() => {}); throw safeError(error); }
   }
 
+  // Cheap size and modification time, without reading the file (used to skip repeated full checksums).
+  async stat({ key } = {}) {
+    try {
+      const info = await lstat(await this.filePath(key));
+      if (!info.isFile() || info.isSymbolicLink()) throw new AppError(503, 'UNSAFE_STORAGE_PATH', 'Stored file is not safe');
+      return { bytes: info.size, mtimeMs: info.mtimeMs };
+    } catch (error) { throw safeError(error); }
+  }
+
   async getMetadata({ key } = {}) {
     try {
       const { stream, metadata } = await this.getFile({ key });

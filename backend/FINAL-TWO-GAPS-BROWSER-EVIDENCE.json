@@ -18,7 +18,7 @@
     "/admin/taxonomies",
     "/admin/universities",
     "/admin/colleges",
-    "/admin/colleges/6af69e64f31c1c9d35afa0d1/courses",
+    "/admin/colleges/6afaf48251dd04a64c35ec0b/courses",
     "/admin/franchise-requests",
     "/admin/applications",
     "/admin/books"
@@ -100,7 +100,7 @@
       "violations": []
     },
     {
-      "label": "/admin/colleges/6af69e64f31c1c9d35afa0d1/courses",
+      "label": "/admin/colleges/6afaf48251dd04a64c35ec0b/courses",
       "violations": []
     },
     {

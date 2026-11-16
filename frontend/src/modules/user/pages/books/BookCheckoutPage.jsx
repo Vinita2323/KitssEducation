@@ -1,4 +1,5 @@
 import { commerceService } from '../../services/commerceService';
+import { authenticatedWrite } from '../../services/authService';
 import { openRazorpayCheckout } from '../../services/razorpayService';
 import { useAuth } from '../../context/AuthContext';
 import { useSearchParams } from 'react-router-dom';
@@ -45,6 +46,7 @@ export const BookCheckoutPage = () => {
   const [processing, setProcessing] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [completedOrder, setCompletedOrder] = useState(null);
+  const [claiming, setClaiming] = useState(false), [claimError, setClaimError] = useState("");
 
   useEffect(() => {
     const fetchBook = async () => {
@@ -116,6 +118,36 @@ export const BookCheckoutPage = () => {
           <Link to="/books">
             <button className="px-4 py-2 border border-[#E6E8EC] rounded-xl text-xs font-semibold text-[#0A1D3F] hover:bg-gray-50">
               Browse More
+            </button>
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  // Free books need no payment: grant access the same way the book details page does, then open the reader.
+  if (isFree && !order) {
+    const claimFree = async () => {
+      setClaiming(true); setClaimError("");
+      try { await authenticatedWrite("/books/" + book.id + "/access", {}); navigate(`/books/${book.id}/read`); }
+      catch (e) { setClaimError(e.message); }
+      finally { setClaiming(false); }
+    };
+    return (
+      <div className="max-w-md mx-auto py-8 text-center space-y-4">
+        <div className="w-16 h-16 rounded-full bg-emerald-50 border border-emerald-200 flex items-center justify-center text-[#17B26A] mx-auto shadow-xs">
+          <BookOpen className="w-8 h-8" />
+        </div>
+        <h2 className="text-lg font-extrabold text-[#0A1D3F]">This Book is Free</h2>
+        <p className="text-xs text-[#667085]">No payment is needed for "{book.title}". Add it to your library and start reading.</p>
+        {claimError && <p role="alert" className="text-xs text-red-700">{claimError}</p>}
+        <div className="pt-2 flex justify-center gap-3">
+          <PrimaryButton variant="green" size="md" icon={BookOpen} loading={claiming} disabled={claiming} onClick={claimFree}>
+            Read Free PDF
+          </PrimaryButton>
+          <Link to={`/books/${book.id}`}>
+            <button className="px-4 py-2 border border-[#E6E8EC] rounded-xl text-xs font-semibold text-[#0A1D3F] hover:bg-gray-50">
+              Book details
             </button>
           </Link>
         </div>
@@ -262,7 +294,6 @@ export const BookCheckoutPage = () => {
 
         {paymentMessage && <p role="status" className="text-xs text-amber-800">{paymentMessage}</p>}
         {!availability?.available && <p role="status" className="p-3 rounded-xl bg-amber-50 text-xs">Payments unavailable: fresh rotated Test Mode credentials and operator validation are pending.</p>}
-        {isFree && <p role="status" className="text-xs">Free access is not available for this book yet.</p>}
         {order && <p role="status" className="text-xs break-words">{order.simulated ? 'Simulated Test Mode - ' : 'Test Mode - '}Order {order.reference}: {order.orderStatus}; payment: {order.paymentStatus}; fulfillment: {order.activationStatus}</p>}
         {/* CTA */}
         <div>

@@ -38,11 +38,12 @@ export const CourseDashboardPage = () => {
     const loadDashboardData = async () => {
       try {
         setLoading(true);
-        const [courseData, profileData, myCoursesData] = await Promise.all([
+        const [courseData, myCoursesData] = await Promise.all([
           coachingService.getCourseById(id),
-          coachingService.getStudentProfile(),
           coachingService.getMyCourses(),
         ]);
+        // Reuse the course list instead of requesting it a second time.
+        const profileData = await coachingService.getStudentProfile(myCoursesData);
         setCourse(courseData);
         setStudent(profileData);
         setAllEnrolled(myCoursesData);

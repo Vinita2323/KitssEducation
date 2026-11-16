@@ -2,6 +2,12 @@ import { randomInt, randomUUID } from 'node:crypto';
 import { AppError } from '../../utils/AppError.js';
 import { object, text, invalid, id } from '../publishing/validation.js';
 import { email, checkPassword, mac, opaque, userDTO } from './security.js';
+// A real calendar date between 1900-01-01 and today (UTC).
+export function validBirthDate(value) {
+  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const date = new Date(value + 'T00:00:00.000Z');
+  return Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === value && value >= '1900-01-01' && date.getTime() <= Date.now();
+}
 export function createAccountService({
   authService,
   config,
@@ -55,8 +61,10 @@ export function createAccountService({
         if (fields.phone && (!/^\+?[0-9 ()-]{7,24}$/.test(fields.phone) || digits.length < 7 || digits.length > 15)) throw invalid('Invalid phone number');
       }
       if (input.profile) {
-        object(input.profile, ['board', 'class']);
+        object(input.profile, ['board', 'class', 'dob']);
         for (const k of Object.keys(input.profile)) fields['profile.' + k] = text(input.profile[k], 80);
+        // Optional calendar date (YYYY-MM-DD); an empty string clears it.
+        if (fields['profile.dob'] && !validBirthDate(fields['profile.dob'])) throw invalid('Enter a valid date of birth (not in the future)');
       }
       return {
         user: userDTO(await update(auth, fields, 'profile_updated', ctx))

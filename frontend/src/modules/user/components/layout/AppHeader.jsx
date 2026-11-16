@@ -13,7 +13,7 @@ export const AppHeader = ({ onOpenDrawer, brand }) => {
     const controller = new AbortController(); let active = true;
     setUnreadCount(0);
     const refresh = () => { if (user) notificationService.list(1, controller.signal).then(r => { if (active) setUnreadCount(r.meta.unreadCount); }).catch(() => { if (active) setUnreadCount(0); }); };
-    refresh(); const timer = setInterval(refresh, 60000);
+    refresh(); const timer = setInterval(() => { if (document.visibilityState !== 'hidden') refresh(); }, 60000);
     window.addEventListener('kitss:notifications-changed', refresh);
     return () => { active = false; controller.abort(); clearInterval(timer); window.removeEventListener('kitss:notifications-changed', refresh); };
   }, [user?.id]);

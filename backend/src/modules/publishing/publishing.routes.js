@@ -4,6 +4,7 @@ import { pipeline } from 'node:stream/promises';
 import { requirePermission, requireSession } from '../auth/auth.routes.js';
 import { AppError } from '../../utils/AppError.js';
 import { purposes } from '../media/media.service.js';
+import { heavyReadLimit, cachedPublicRead } from '../../utils/public-reads.js';
 
 export function createPublishingRouter({ publishing, media }) {
   const router = express.Router();
@@ -19,7 +20,8 @@ export function createPublishingRouter({ publishing, media }) {
     router.post(path + '/:id/publish', requirePermission(publish), async (req, res) => reply(req, res, await publishing.publish(kind, req.params.id, req.body, req.auth, ctx(req))));
   }
   router.post('/admin/books/:id/restore', requirePermission('books.archive'), async (req, res) => reply(req, res, await publishing.restore('books', req.params.id, req.body, ctx(req))));
-  router.get('/books/facets', async (req, res) => reply(req, res, await publishing.facets(req.query)));
+  router.get('/books/facets', heavyReadLimit, async (req, res) => reply(req, res, await cachedPublicRead('books-facets', req.query, () => publishing.facets(req.query))));
+  router.get('/books/by-ids', async (req, res) => reply(req, res, await publishing.publicBooks(req.query)));
   router.get('/books', async (req, res) => list(req, res, await publishing.list('books', req.query)));
   router.get('/books/:id/preview', async (req, res) => reply(req, res, await publishing.preview(req.params.id)));
   router.get('/books/:id', async (req, res) => reply(req, res, await publishing.detail('books', req.params.id)));

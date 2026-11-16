@@ -21,8 +21,25 @@ export async function probeFile(storage, key, mime) {
 }
 
 export function createScanner(config = {}) {
+  let readyValue = false, readyUntil = 0;
   return {
     configured: config.enabled === true,
+    // Cheap liveness check (clamd PING/PONG) so admin screens can tell "configured" from "actually running".
+    // Cached briefly; a scan still fails closed on its own if the daemon disappears in between.
+    async ready() {
+      if (!config.enabled) return false;
+      if (Date.now() < readyUntil) return readyValue;
+      readyValue = await new Promise(resolve => {
+        const socket = net.createConnection({ host: '127.0.0.1', port: config.port ?? 3310 }); let reply = '', done = false;
+        const finish = value => { if (done) return; done = true; clearTimeout(timer); socket.destroy(); resolve(value); };
+        const timer = setTimeout(() => finish(false), 1500);
+        socket.on('error', () => finish(false)); socket.on('close', () => finish(false));
+        socket.on('connect', () => socket.write('zPING\0'));
+        socket.on('data', chunk => { reply += chunk.toString(); if (reply.length > 64) return finish(false); if (reply.includes('\0')) finish(reply.startsWith('PONG')); });
+      });
+      readyUntil = Date.now() + 10000;
+      return readyValue;
+    },
     async scan(stream) {
       if (!config.enabled) { stream.destroy(); return 'pending'; }
       const socket = net.createConnection({ host: '127.0.0.1', port: config.port ?? 3310 });

@@ -22,7 +22,6 @@ export const LecturePlayerPage = () => {
   const [course, setCourse] = useState(null);
   const [currentLecture, setCurrentLecture] = useState(null);
   const [currentSubject, setCurrentSubject] = useState(location.state?.subjectName || "");
-  const [student, setStudent] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -31,14 +30,10 @@ export const LecturePlayerPage = () => {
     const loadLectureData = async () => {
       try {
         setLoading(true);setError('');setCurrentLecture(null);setCourse(null);
-        const [courseData, profileData] = await Promise.all([
-          coachingService.getCourseById(courseId,controller.signal),
-          coachingService.getStudentProfile(),
-        ]);
+        const courseData = await coachingService.getCourseById(courseId,controller.signal);
 
         if(!active)return;
         setCourse(courseData);
-        setStudent(profileData);
 
         // Find current lecture
         let foundLecture = null;

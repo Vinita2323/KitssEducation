@@ -1,6 +1,7 @@
 import { httpClient, getIdentityEpoch } from '../../../shared/api/httpClient';
 import { authService, authenticatedWrite } from './authService';
 import { queryString, readOptions } from './collegeService';
+import { cachedRequest } from '../../../shared/api/requestCache';
 const get = async (url, signal) => (await httpClient.request(url, {
   signal
 })).data;
@@ -28,8 +29,9 @@ const view = row => ({
   subjectsData: []
 });
 export const coachingService = {
-  async getFacets(signal) {
-    return get('/coaching/facets', signal);
+  // Filter menus are shared for a minute; every course search used to re-fetch them first.
+  async getFacets() {
+    return cachedRequest('/coaching/facets', 60000, () => get('/coaching/facets'));
   },
   async getCoursesPage(input = {}, signal) {
     const f = await this.getFacets(signal);
@@ -71,13 +73,9 @@ export const coachingService = {
   async getCourseById(id, signal) {
     const [row, syllabus, plans] = await Promise.all([get('/coaching/courses/' + id, signal), this.getSyllabus(id, signal), get('/coaching/courses/' + id + '/plans', signal)]);
     const enrollment = syllabus.enrollment;
-    const books = await Promise.all((row.linkedBookIds ?? []).map(async bookId => {
-      try {
-        return await get('/books/' + bookId, signal);
-      } catch {
-        return null;
-      }
-    }));
+    // All linked handbooks in one request; unpublished ones are left out, as before.
+    const linked = row.linkedBookIds ?? [];
+    const books = linked.length ? await get('/books/by-ids?ids=' + linked.map(encodeURIComponent).join(','), signal).catch(e => { if (e.code === 'ABORTED') throw e; return []; }) : [];
     return {
       ...view(row),
       ...computeSubscriptionExpiry(enrollment ?? {}),
@@ -117,11 +115,11 @@ export const coachingService = {
       enrollment: e
     }));
   },
-  async getStudentProfile() {
+  async getStudentProfile(myCourses) {
     const user = await authService.getCurrentUser();
     return user ? {
       ...user,
-      enrolledCourseIds: (await this.getMyCourses()).filter(c => c.isEnrolled).map(c => c.id),
+      enrolledCourseIds: (myCourses ?? await this.getMyCourses()).filter(c => c.isEnrolled).map(c => c.id),
       completedLectureIds: [],
       readingProgress: {}
     } : null;

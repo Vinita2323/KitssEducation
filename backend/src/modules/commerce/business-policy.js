@@ -4,6 +4,7 @@ import { AppError } from '../../utils/AppError.js';
 import { object, text, id, revision, key, invalid } from '../publishing/validation.js';
 import { registrationFields } from './registration.js';
 import { grantsFor } from '../auth/security.js';
+import { userScope, ownerScope } from '../../utils/domain-lock.js';
 import { contentInput } from '../publishing/validation.js';
 
 const blocked = message => new AppError(409, 'BUSINESS_POLICY_PENDING', message);
@@ -138,7 +139,7 @@ export function createBusinessPolicyService(commerce) {
     },
     async attach(value, input, auth, ctx) {
       object(input, ['expectedRevision', 'key', 'assetId'], ['expectedRevision', 'key', 'assetId']);
-      return coordination.run(async () => {
+      return coordination.runAs(userScope(auth), async () => {
         const row = await commerce.application(value, auth), p = await api.policy(row.kind);
         if (!['draft', 'needs_changes'].includes(row.status)) throw blocked('Only editable applications accept replacement documents');
         if (!p.documents.some(d => d.key === input.key)) throw invalid('Select a configured document requirement');
@@ -168,7 +169,7 @@ export function createBusinessPolicyService(commerce) {
     async submit(value, input, auth, ctx) {
       object(input, ['expectedRevision', 'declaration', 'guardianConsent'], ['expectedRevision', 'declaration']);
       if (input.declaration !== true) throw invalid('Accept the registration declaration');
-      return coordination.run(async () => {
+      return coordination.runAs(userScope(auth), async () => {
         const row = await commerce.application(value, auth), p = await api.policy(row.kind);
         if (!['draft', 'needs_changes'].includes(row.status)) throw blocked('This application is already submitted');
         let guardianConsent;
@@ -187,7 +188,9 @@ export function createBusinessPolicyService(commerce) {
     async review(value, input, auth, ctx) {
       object(input, ['expectedRevision', 'status', 'reason', 'documentKey', 'documentStatus', 'guardianVerified', 'legalHold'], ['expectedRevision', 'reason']);
       const reason = text(input.reason, 1000); if (!reason.trim()) throw invalid('Review reason required');
-      return coordination.run(async () => {
+      // Shares the applicant's lane, so it queues with that applicant's own edits and fee payment.
+      const owner = (await Application.findById(id(value)).select('userId').lean())?.userId;
+      return coordination.runAs(ownerScope(owner), async () => {
         const row = await Application.findById(id(value)); if (!row) throw missing();
         const fields = {}, grants = grantsFor(auth.user);
         if (row.history.length >= 100) throw blocked('Review history requires archival');

@@ -1,6 +1,7 @@
 import { accessExpiry, validDuration } from '../../utils/accessDuration.js';
 import { retireLegacyIndexes } from '../../utils/legacy-indexes.js';
 import { escapeRegex } from '../../utils/escapeRegex.js';
+import { userScope, ownerScope } from '../../utils/domain-lock.js';
 import { AppError } from '../../utils/AppError.js';
 import { object, id, revision, text, invalid } from '../publishing/validation.js';
 import { inputFor, integer, pagination } from './validation.js';
@@ -357,7 +358,7 @@ export function createCoachingService({
     async facets() {
       const rows = await Course.find({
         status: 'published'
-      }).select('publishedSnapshot').lean();
+      }).select('publishedSnapshot.category publishedSnapshot.subjectIds publishedSnapshot.languageId publishedSnapshot.classId publishedSnapshot.boardId publishedSnapshot.stateId').lean();
       const unique = name => [...new Set(rows.flatMap(r => r.publishedSnapshot?.[name] ?? []).filter(Boolean))];
 
       const activeFilter = { status: 'active', deletedAt: null };
@@ -407,33 +408,33 @@ export function createCoachingService({
         free: p.priceMinor === 0, renewalEnabled: p.priceMinor > 0
       }));
     },
+    // One place decides whether an enrollment currently grants access, for single and batched reads.
+    accessState(row, { order, owner, manualOk }) {
+      // Free enrollment is only granted from an approved zero-priced plan; later plan changes keep it.
+      const verifiedSource = row.source === 'free' ? true : row.source === 'manual' ? manualOk : order;
+      const now = new Date();
+      const active = owner?.status === 'active' && !!owner.emailVerifiedAt && !row.revokedAt && row.startsAt <= now && row.expiresAt > now && !!verifiedSource;
+      return { state: row.revokedAt ? 'revoked' : row.expiresAt <= now ? 'expired' : active ? 'active' : 'blocked', canAccess: active };
+    },
+    // The captured order that paid for this enrollment period, matched exactly as the access check requires.
+    paidOrderMatches(order, row) {
+      return !!order && same(order._id, row.orderId) && same(order.userId, row.userId) && order.status === 'captured' && order.product?.kind === 'course_plan' && same(order.product.courseId, row.courseId) && same(order.product.id, row.planId) && order.simulated === row.simulated;
+    },
     async enrollment(value, auth, required = true) {
       if (!auth) throw denied();
       const row = await Enrollment.findOne({
         userId: auth.user._id,
         courseId: id(value)
       });
-      const source = row && (await commerce.models.Order.findOne({
-        _id: row.orderId,
-        userId: row.userId,
-        status: 'captured',
-        'product.kind': 'course_plan',
-        'product.courseId': row.courseId,
-        'product.id': row.planId,
-        simulated: row.simulated
-      }));
-      let verifiedSource = source;
-      // Free enrollment is only granted from an approved zero-priced plan; later plan changes keep it.
-      if (row?.source === 'free') verifiedSource = true;
-      if (row?.source === 'manual') verifiedSource = await commerce.business.manualValid(row);
-      const owner = row && (await authService.models.User.findById(row.userId).select('status emailVerifiedAt'));
-      const active = owner?.status === 'active' && !!owner.emailVerifiedAt && !!row && !row.revokedAt && row.startsAt <= new Date() && row.expiresAt > new Date() && !!verifiedSource;
-      if (required && !active) throw denied();
-      return row ? {
-        ...dto(row),
-        state: row.revokedAt ? 'revoked' : row.expiresAt <= new Date() ? 'expired' : active ? 'active' : 'blocked',
-        canAccess: active
-      } : null;
+      if (!row) { if (required) throw denied(); return null; }
+      const [order, owner, manualOk] = await Promise.all([
+        row.source === 'free' || row.source === 'manual' || !row.orderId ? null : commerce.models.Order.findOne({ _id: row.orderId, userId: row.userId, status: 'captured', 'product.kind': 'course_plan', 'product.courseId': row.courseId, 'product.id': row.planId, simulated: row.simulated }),
+        authService.models.User.findById(row.userId).select('status emailVerifiedAt'),
+        row.source === 'manual' ? commerce.business.manualValid(row) : false
+      ]);
+      const access = service.accessState(row, { order, owner, manualOk });
+      if (required && !access.canAccess) throw denied();
+      return { ...dto(row), ...access };
     },
     async enrollments(query, auth, admin = false) {
       const {
@@ -461,34 +462,41 @@ export function createCoachingService({
       const rows = await Enrollment.find(filter).sort({
         createdAt: -1
       }).skip((page - 1) * pageSize).limit(pageSize);
+      // Load everything the page needs in a few batched queries instead of several per enrollment.
+      const courseIds = [...new Set(rows.map(r => String(r.courseId)))].map(value => id(value));
+      const userIds = [...new Set(rows.map(r => String(r.userId)))].map(value => id(value));
+      const orderIds = rows.filter(r => r.orderId && r.source !== 'free' && r.source !== 'manual').map(r => r.orderId);
+      const [lessons, progress, courses, owners, orders, total] = await Promise.all([
+        rows.length ? Lesson.find({ courseId: { $in: courseIds }, status: 'published' }).select('_id courseId videoAssetId') : [],
+        rows.length ? LearningProgress.find({ userId: { $in: userIds }, courseId: { $in: courseIds }, resourceType: 'lesson' }).sort({ lastActivityAt: -1 }) : [],
+        rows.length ? Course.find({ _id: { $in: courseIds } }) : [],
+        rows.length ? authService.models.User.find({ _id: { $in: userIds } }).select('status emailVerifiedAt') : [],
+        orderIds.length ? commerce.models.Order.find({ _id: { $in: orderIds }, status: 'captured', 'product.kind': 'course_plan' }) : [],
+        Enrollment.countDocuments(filter)
+      ]);
+      const courseViews = new Map();
+      const courseView = courseId => {
+        const key = String(courseId);
+        if (!courseViews.has(key)) {
+          const course = courses.find(c => same(c._id, courseId));
+          courseViews.set(key, course?.publishedSnapshot ? service.publicDTO(course) : Promise.resolve({ id: key, title: 'Unavailable course' }));
+        }
+        return courseViews.get(key);
+      };
       return {
         data: await Promise.all(rows.map(async r => {
-          const lessons = await Lesson.find({
-            courseId: r.courseId,
-            status: 'published'
-          }).select('_id videoAssetId');
-          const progress = await LearningProgress.find({
-            userId: r.userId,
-            courseId: r.courseId,
-            resourceType: 'lesson',
-            lessonId: {
-              $in: lessons.map(l => l._id)
-            }
-          }).sort({
-            lastActivityAt: -1
-          });
-          const completed = progress.filter(p => currentProgress(p,lessons.find(l => same(l._id,p.lessonId)))?.status === 'completed').length;
+          const courseLessons = lessons.filter(l => same(l.courseId, r.courseId));
+          const mine = progress.filter(p => same(p.userId, r.userId) && same(p.courseId, r.courseId) && courseLessons.some(l => same(l._id, p.lessonId)));
+          const completed = mine.filter(p => currentProgress(p, courseLessons.find(l => same(l._id, p.lessonId)))?.status === 'completed').length;
+          const order = orders.find(o => service.paidOrderMatches(o, r)) ?? null;
+          const manualOk = r.source === 'manual' ? await commerce.business.manualValid(r) : false;
           return {
             ...dto(r),
-            state: (await service.enrollment(String(r.courseId), {
-              user: {
-                _id: r.userId
-              }
-            }, false))?.state ?? 'blocked',
-            progressPercentage: lessons.length ? Math.round(completed / lessons.length * 100) : 0,
+            state: service.accessState(r, { order, owner: owners.find(u => same(u._id, r.userId)), manualOk }).state,
+            progressPercentage: courseLessons.length ? Math.round(completed / courseLessons.length * 100) : 0,
             completedLectures: completed,
-            lastLessonId: progress[0] ? String(progress[0].lessonId) : null,
-            lastActivityAt: progress[0]?.lastActivityAt,
+            lastLessonId: mine[0] ? String(mine[0].lessonId) : null,
+            lastActivityAt: mine[0]?.lastActivityAt,
             auditHistory: admin ? (await authService.models.AuditLog.find({
               subjectId: String(r._id)
             }).select('action actorId at requestId').sort({
@@ -499,16 +507,13 @@ export function createCoachingService({
               at: a.at,
               requestId: a.requestId
             })) : undefined,
-            course: await Course.findById(r.courseId).then(c => c?.publishedSnapshot ? service.publicDTO(c) : {
-              id: String(r.courseId),
-              title: 'Unavailable course'
-            })
+            course: await courseView(r.courseId)
           };
         })),
         meta: {
           page,
           pageSize,
-          total: await Enrollment.countDocuments(filter)
+          total
         }
       };
     },
@@ -798,7 +803,7 @@ export function createCoachingService({
     },
     async enrollFree(value, auth, ctx) {
       commerce.eligible(auth);
-      return coordination.run(async () => {
+      return coordination.runAs(userScope(auth), async () => {
         const course = await service.course(value, true); await service.deliveryReady(course);
         const plans = await CoursePlan.find({ courseId: course._id, status: 'active', rulesApproved: true, priceMinor: 0, eligibility: 'verified_account' }).sort({ sortOrder: 1, _id: 1 });
         const plan = plans[0]; if (!plan) throw new AppError(409, 'PAID_ENROLLMENT_REQUIRED', 'No approved zero-priced plan is available'); await service.validatePlan(plan);
@@ -940,7 +945,9 @@ export function createCoachingService({
       const reason = text(input.reason, 2000);
       if (!reason) throw invalid('Revocation reason required');
       const Model = input.kind === 'course' ? Enrollment : commerce.models.BookEntitlement;
-      return coordination.run(async () => {
+      // Shares the student's lane, so it queues with that student's own enrolment and purchase actions.
+      const owner = (await Model.findById(id(value)).select('userId').lean())?.userId;
+      return coordination.runAs(ownerScope(owner), async () => {
         const row = await Model.findById(id(value));
         if (!row) throw missing();
         if ((input.kind === 'book' || row.source === 'paid') && !(await commerce.business.settings()).value?.manualAccess?.paidRevocationApproved) throw new AppError(409, 'ACCESS_REVOCATION_POLICY_PENDING', 'Approved paid access revocation policy required');

@@ -239,12 +239,21 @@ export const BookCard = ({
         </div>
 
         {/* CTA Logic:
-            1. Free Book: [ Read ] -> /books/:id/read
-            2. Paid Book (Purchased): [ ✓ Purchased / Read ] -> /books/:id/read
-            3. Paid Book (Unpurchased): [ Pay Now ] -> /books/:id/checkout (or details)
-            NEVER show "Read" for unpaid paid books!
+            1. Owned book (purchased or claimed): [ Read Book ] -> /books/:id/read
+            2. Free book, not yet claimed: [ Read Free ] -> /books/:id (the details page claims access)
+            3. Paid book, not owned: [ View & Buy ] -> /books/:id (the details page checks payment availability)
+            NEVER link straight to the reader for an unowned book.
         */}
-        <button type="button" disabled className="w-full py-1.5 bg-[#FF8A00] text-white text-xs font-bold rounded-lg opacity-70">{isFree ? 'Reading pending' : 'Purchasing pending'}</button>
+        <Link
+          to={owned ? `/books/${book.id}/read` : `/books/${book.id}`}
+          aria-label={(owned ? 'Read book: ' : isFree ? 'Read free: ' : 'View and buy: ') + book.title}
+          className={`w-full py-1.5 text-white text-xs font-bold rounded-lg flex items-center justify-center gap-1 transition active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0A1D3F] ${
+            owned ? "bg-[#0A1D3F] hover:bg-[#133C8B]" : "bg-[#FF8A00] hover:bg-[#E67C00]"
+          }`}
+        >
+          {owned && <CheckCircle2 aria-hidden="true" className="w-3.5 h-3.5" />}
+          <span>{owned ? 'Read Book' : isFree ? 'Read Free' : 'View & Buy'}</span>
+        </Link>
       </div>
     </div>
   );

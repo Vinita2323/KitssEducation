@@ -4,6 +4,7 @@ import { Outlet, Link, useLocation } from "react-router-dom";
 import { AppHeader } from "./AppHeader";
 import { BottomNavigation } from "./BottomNavigation";
 import { SideDrawer } from "./SideDrawer";
+import { PageSuspense } from "../../../../shared/ui/lazyPage";
 
 export const UserLayout = () => {
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -19,7 +20,7 @@ export const UserLayout = () => {
     return (
       <div className="h-screen w-full max-w-full overflow-hidden bg-[#F1F3F7] flex flex-col font-sans text-slate-900 antialiased select-none">
         <main className="flex-1 w-full h-full min-w-0 overflow-hidden flex flex-col">
-          <Outlet />
+          <PageSuspense><Outlet /></PageSuspense>
         </main>
       </div>
     );
@@ -37,7 +38,7 @@ export const UserLayout = () => {
 
       {/* Main Content Area */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-3 sm:py-5 pb-28 md:pb-12 min-w-0 overflow-x-hidden">
-        <Outlet />
+        <PageSuspense><Outlet /></PageSuspense>
       </main>
 
       {settingsError && <p role="status" className="text-xs text-amber-700 px-4">Public contact information is temporarily unavailable.</p>}

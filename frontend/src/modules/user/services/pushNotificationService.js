@@ -1,4 +1,5 @@
-import { getToken, deleteToken, onMessage } from 'firebase/messaging';
+// firebase/messaging is imported on demand inside each function so it stays out of the first page load.
+const messagingApi = () => import('firebase/messaging');
 import { getFirebaseMessaging, firebaseConfig, vapidKey, isFirebaseConfigured } from '../../../shared/push/firebase';
 import workerUrl from '../../../shared/push/firebase-sw.js?worker&url';
 import { httpClient, getIdentityEpoch } from '../../../shared/api/httpClient';
@@ -17,6 +18,7 @@ export async function registerFCMToken() {
   const url = new URL(workerUrl, window.location.href);
   url.searchParams.set('config', JSON.stringify(firebaseConfig));
   const registration = await navigator.serviceWorker.register(url.href);
+  const { getToken } = await messagingApi();
   const token = await getToken(messaging, { vapidKey, serviceWorkerRegistration: registration });
   if (!token) throw new Error('Could not register this device');
   await authenticatedWrite('/me/fcm-tokens', { token, platform: 'web', deviceLabel: 'Browser' }, 'POST', true, {}, { expectedIdentityEpoch: epoch });
@@ -29,12 +31,14 @@ export async function unregisterFCMToken({ removeProvider = true } = {}) {
   if (token) await authenticatedWrite('/me/fcm-tokens', { token }, 'DELETE');
   if (removeProvider) {
     const messaging = await getFirebaseMessaging();
-    if (messaging) await deleteToken(messaging);
+    if (messaging) { const { deleteToken } = await messagingApi(); await deleteToken(messaging); }
   }
 }
 export async function setupForegroundNotificationHandler(handler) {
   const messaging = await getFirebaseMessaging();
-  return messaging ? onMessage(messaging, () => handler()) : () => {};
+  if (!messaging) return () => {};
+  const { onMessage } = await messagingApi();
+  return onMessage(messaging, () => handler());
 }
 export const pushNotificationService = {
   isConfigured: isFirebaseConfigured,

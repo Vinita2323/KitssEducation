@@ -1,3 +1,4 @@
+import { useDebouncedValue } from '../../../../shared/ui/useDebouncedValue';
 import React, { useState, useEffect } from "react";
 import { FilterSelect } from "../../components/common/FilterSelect";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
@@ -26,6 +27,7 @@ export const CoachingHomePage = () => {
   const { user } = useAuth();
 
   const [query, setQuery] = useState(searchParams.get("q") || "");
+  const searchTerm = useDebouncedValue(query); // search once typing pauses
   const [selectedCategory, setSelectedCategory] = useState(searchParams.get("category") || "All");
   const [selectedClass, setSelectedClass] = useState("All");
   const [courses, setCourses] = useState([]);
@@ -46,7 +48,7 @@ export const CoachingHomePage = () => {
     loadCats();
   }, []);
 
-  useEffect(()=>setPage(1),[selectedCategory,selectedClass,query]);
+  useEffect(()=>setPage(1),[selectedCategory,selectedClass,searchTerm]);
   // Fetch courses with filter
   useEffect(() => {
     const controller=new AbortController();
@@ -57,7 +59,7 @@ export const CoachingHomePage = () => {
           page,
           category: selectedCategory,
           classGrade: selectedClass,
-          query,
+          query: searchTerm,
         },controller.signal);
         setCourses(result.data);
         setTotal(result.meta?.total ?? result.data.length);
@@ -69,7 +71,7 @@ export const CoachingHomePage = () => {
       }
     };
     fetchCourses();return()=>controller.abort();
-  }, [selectedCategory, selectedClass, query,page]);
+  }, [selectedCategory, selectedClass, searchTerm,page]);
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();

@@ -1,3 +1,4 @@
+import { useDebouncedValue } from '../../../../shared/ui/useDebouncedValue';
 import { FranchiseProfileModal } from '../../components/college/FranchiseProfileModal';
 import { FilterSelect } from "../../components/common/FilterSelect";
 import React, { useState, useEffect } from "react";
@@ -33,6 +34,7 @@ export const CollegesListingPage = () => {
   const pending = React.useRef();
   // Filters state
   const [searchQuery, setSearchQuery] = useState("");
+  const searchTerm = useDebouncedValue(searchQuery); // search once typing pauses
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [selectedState, setSelectedState] = useState("All");
   const [selectedDistrict, setSelectedDistrict] = useState("All");
@@ -62,8 +64,8 @@ export const CollegesListingPage = () => {
     } catch (error) { if (error.code !== 'ABORTED') { setColleges([]); setLoadError(error.message); } }
     finally { if (!controller.signal.aborted) setLoading(false); }
   };
-  useEffect(() => { fetchColleges(); return () => pending.current?.abort(); }, [selectedCategory, selectedState, selectedDistrict, searchQuery, page, network]);
-  useEffect(() => { setPage(1); }, [selectedCategory, selectedState, selectedDistrict, searchQuery, network]);
+  useEffect(() => { fetchColleges(); return () => pending.current?.abort(); }, [selectedCategory, selectedState, selectedDistrict, searchTerm, page, network]);
+  useEffect(() => { setPage(1); }, [selectedCategory, selectedState, selectedDistrict, searchTerm, network]);
 
   // Debounced or on-submit search
   const handleSearchSubmit = (e) => {

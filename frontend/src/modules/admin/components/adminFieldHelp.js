@@ -19,7 +19,7 @@ export function adminFieldHelp(label, props = {}) {
   if (/field schema|\bjson\b/.test(name)) return 'Use the supported JSON format; do not include scripts or secrets.';
   if (/^source$/.test(name)) return 'Use the supported source JSON with its authorization reference.';
   if (/section key \d+|^key$|content key/.test(name)) return 'Use a stable, unique reference; lessons and sections may depend on it.';
-  if (/notification recipients|user database ids/.test(name)) return 'Separate existing user database IDs with commas. Check recipients before publishing.';
+  if (/notification recipients/.test(name)) return 'Search by name, email or account ID and add each person, or paste account IDs separated by commas. Check recipients before publishing.';
   if (/effective from|effective to/.test(name)) return 'Use a UTC date such as 2026-01-01T00:00:00Z; leave blank only when allowed.';
   if (/access after (?:confirmed )?(?:provider )?refund/.test(name)) return 'This controls access after a confirmed refund; it does not issue a refund.';
   if (/duration days/.test(name)) return 'Prepaid access in days. Use the approved plan duration.';

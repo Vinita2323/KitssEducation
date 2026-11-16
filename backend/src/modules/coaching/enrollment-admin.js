@@ -1,5 +1,6 @@
 import { escapeRegex } from '../../utils/escapeRegex.js';
 import { AppError } from '../../utils/AppError.js';
+import { ownerScope } from '../../utils/domain-lock.js';
 import { object, id, revision, text, invalid } from '../publishing/validation.js';
 import { integer } from './validation.js';
 
@@ -128,7 +129,8 @@ export function createEnrollmentAdmin({ models, commerce, publishing, authServic
       object(input, ['kind', 'reason', 'expectedRevision'], ['kind', 'reason', 'expectedRevision']);
       const k = kindOf(input.kind), reason = text(input.reason, 2000);
       if (!reason.trim()) throw invalid('A reason is required to restore access');
-      return coordination.run(async () => {
+      const owner = (await k.Model.findById(id(value)).select('userId').lean())?.userId;
+      return coordination.runAs(ownerScope(owner), async () => {
         const row = await k.Model.findById(id(value));
         if (!row) throw new AppError(404, 'NOT_FOUND', 'Access record was not found');
         if (!row.revokedAt) throw invalid('Access is not revoked');

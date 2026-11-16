@@ -359,7 +359,7 @@ export const CollegeFranchiseForm = ({ onBack }) => {
 
   // Direct step jump from Stepper or Review screen
   const jumpToStep = (targetStep) => {
-    if (targetStep <= highestStepReached || targetStep <= currentStep || targetStep === 6) {
+    if (targetStep >= 1 && targetStep <= 6) {
       setCurrentStep(targetStep);
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
@@ -579,25 +579,32 @@ export const CollegeFranchiseForm = ({ onBack }) => {
         <div className="hidden sm:flex items-center justify-between relative">
           <div className="absolute left-0 top-1/2 -translate-y-1/2 h-0.5 w-full bg-[#E2E8F0] -z-0" />
           {STEPS.map((step) => {
-            const isCompleted = currentStep > step.id;
+            const isCompleted = step.id < highestStepReached;
             const isActive = currentStep === step.id;
-            const isClickable = step.id <= highestStepReached || currentStep === 6;
 
             return (
               <div
                 key={step.id}
-                onClick={() => isClickable && jumpToStep(step.id)}
-                className={`flex flex-col items-center relative z-10 ${
-                  isClickable ? "cursor-pointer" : "cursor-default"
-                }`}
+                role="button"
+                tabIndex={0}
+                aria-label={step.title}
+                aria-current={isActive ? "step" : undefined}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    jumpToStep(step.id);
+                  }
+                }}
+                onClick={() => jumpToStep(step.id)}
+                className="flex flex-col items-center relative z-10 cursor-pointer group"
               >
                 <div
                   className={`w-9 h-9 rounded-full flex items-center justify-center font-bold text-xs transition-all duration-200 ${
                     isCompleted
-                      ? "bg-[#0A1D3F] text-white shadow-xs"
+                      ? "bg-[#0A1D3F] text-white shadow-xs group-hover:bg-[#133C8B]"
                       : isActive
                       ? "bg-[#FF8A00] text-white ring-4 ring-[#FF8A00]/20 shadow-xs"
-                      : "bg-[#F1F5F9] text-[#64748B] border border-[#E2E8F0]"
+                      : "bg-[#F1F5F9] text-[#64748B] border border-[#E2E8F0] group-hover:border-slate-400 group-hover:bg-slate-200"
                   }`}
                 >
                   {isCompleted ? <Check className="w-4 h-4 stroke-[2.5]" /> : step.id}
@@ -607,8 +614,8 @@ export const CollegeFranchiseForm = ({ onBack }) => {
                     isActive
                       ? "text-[#FF8A00] font-bold"
                       : isCompleted
-                      ? "text-[#0A1D3F] font-semibold"
-                      : "text-[#94A3B8]"
+                      ? "text-[#0A1D3F] font-semibold group-hover:text-[#133C8B]"
+                      : "text-[#94A3B8] group-hover:text-slate-700"
                   }`}
                 >
                   {step.id} {step.title}
@@ -631,7 +638,31 @@ export const CollegeFranchiseForm = ({ onBack }) => {
               {currentStep <= 5 ? `${Math.round((currentStep / 5) * 100)}% Complete` : "Ready to Submit"}
             </span>
           </div>
-          <div className="w-full bg-[#F1F5F9] h-2 rounded-full overflow-hidden border border-[#E2E8F0]">
+          <div className="flex items-center justify-between gap-1.5 pt-0.5">
+            {STEPS.map((step) => {
+              const isCompleted = step.id < highestStepReached;
+              const isActive = currentStep === step.id;
+              return (
+                <button
+                  key={step.id}
+                  type="button"
+                  aria-label={`Step ${step.id}: ${step.title}`}
+                  aria-current={isActive ? "step" : undefined}
+                  onClick={() => jumpToStep(step.id)}
+                  className={`flex-1 py-1 rounded text-xs font-bold text-center transition-all cursor-pointer ${
+                    isActive
+                      ? "bg-[#FF8A00] text-white shadow-xs"
+                      : isCompleted
+                      ? "bg-[#0A1D3F] text-white"
+                      : "bg-[#F1F5F9] text-[#64748B] border border-[#E2E8F0] hover:bg-slate-200"
+                  }`}
+                >
+                  {isCompleted ? "✓" : step.id}
+                </button>
+              );
+            })}
+          </div>
+          <div className="w-full bg-[#F1F5F9] h-1.5 rounded-full overflow-hidden border border-[#E2E8F0]">
             <div
               className="bg-gradient-to-r from-[#0A1D3F] to-[#FF8A00] h-full transition-all duration-300 rounded-full"
               style={{

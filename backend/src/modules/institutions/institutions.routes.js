@@ -1,5 +1,6 @@
 import express from 'express';
 import { requirePermission, requireSession } from '../auth/auth.routes.js';
+import { heavyReadLimit, cachedPublicRead } from '../../utils/public-reads.js';
 
 // Mounted after the existing auth router so every mutation already has verified
 // Origin/CSRF and every authenticated actor comes from the persistent session.
@@ -26,8 +27,8 @@ export function createInstitutionRouter(service) {
     await service.detail('university', req.params.id);
     list(req, res, await service.list('college', { ...req.query, universityId: req.params.id }));
   });
-  router.get('/public/institutions', async (req, res) => res.json({ ...await service.directory(req.query), requestId: req.requestId }));
-  router.get('/institutions/facets', async (req, res) => send(req, res, await service.facets(req.query)));
+  router.get('/public/institutions', heavyReadLimit, async (req, res) => res.json({ ...await cachedPublicRead('institution-directory', req.query, () => service.directory(req.query)), requestId: req.requestId }));
+  router.get('/institutions/facets', heavyReadLimit, async (req, res) => send(req, res, await cachedPublicRead('institution-facets', req.query, () => service.facets(req.query))));
   router.get('/colleges', async (req, res) => list(req, res, await service.list('college', req.query)));
   router.get('/colleges/:id', async (req, res) => send(req, res, await service.detail('college', req.params.id)));
   router.get('/colleges/:id/programs', async (req, res) => list(req, res, await service.list('program', req.query, false, req.params.id)));
