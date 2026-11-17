@@ -57,7 +57,22 @@ export function useAdminAccessibility(root, route) {
       field.setAttribute('aria-describedby',[...new Set([...(field.getAttribute('aria-describedby')||'').split(' ').filter(Boolean),errorId])].join(' '));
     };
     const input=event=>{const field=event.target,errorId=field.id+'-validation';if(field.validity?.valid&&document.getElementById(errorId)){field.removeAttribute('aria-invalid');document.getElementById(errorId)?.remove();const remaining=(field.getAttribute('aria-describedby')||'').split(' ').filter(id=>id&&id!==errorId);if(remaining.length)field.setAttribute('aria-describedby',remaining.join(' '));else field.removeAttribute('aria-describedby');}};
-    node.addEventListener('invalid',invalid,true);node.addEventListener('input',input);
-    return()=>{observer.disconnect();window.removeEventListener('resize',review);node.removeEventListener('invalid',invalid,true);node.removeEventListener('input',input);};
+    // Dropdowns styled as customisable selects (admin-workspace.css) would open their list on Up/Down.
+    // Keep the usual behaviour: on a closed dropdown the arrows change the choice directly, while
+    // Alt+Down, Enter and Space open the list.
+    const arrows=event=>{
+      const field=event.target;
+      if(event.defaultPrevented||event.altKey||event.ctrlKey||event.metaKey||(event.key!=='ArrowDown'&&event.key!=='ArrowUp'))return;
+      if(!(field instanceof HTMLSelectElement)||field.multiple||field.size>1||field.disabled)return;
+      if(getComputedStyle(field).appearance!=='base-select'||field.matches(':open'))return;
+      event.preventDefault();
+      const options=field.options,step=event.key==='ArrowDown'?1:-1;let index=field.selectedIndex;
+      do index+=step;while(index>=0&&index<options.length&&(options[index].disabled||options[index].hidden||options[index].parentElement?.disabled));
+      if(index<0||index>=options.length)return;
+      field.selectedIndex=index;
+      field.dispatchEvent(new Event('input',{bubbles:true}));field.dispatchEvent(new Event('change',{bubbles:true}));
+    };
+    node.addEventListener('invalid',invalid,true);node.addEventListener('input',input);node.addEventListener('keydown',arrows);
+    return()=>{observer.disconnect();window.removeEventListener('resize',review);node.removeEventListener('invalid',invalid,true);node.removeEventListener('input',input);node.removeEventListener('keydown',arrows);};
   },[root,route]);
 }
