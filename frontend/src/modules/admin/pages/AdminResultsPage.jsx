@@ -9,6 +9,7 @@ import { Pagination } from '../../user/components/common/Pagination';
 import { ResultDefinitionEditor } from '../components/ResultDefinitionEditor';
 import { ResultEntryEditor } from '../components/ResultEntryEditor';
 import { FileText, X } from 'lucide-react';
+import { useDialogFocus } from '../../../shared/ui/useDialogFocus';
 import { AdminEmpty, AdminPageHeader, AdminStatus, AdminTable } from '../components/AdminUI';
 const paths={issuers:'/admin/result-issuers',exams:'/admin/exams',records:'/admin/results/records'};
 const labels={issuers:'Result institutions',exams:'Examinations',records:'Student results'};
@@ -19,17 +20,10 @@ export function AdminResultsPage(){
   const [exams,setExams]=useState([]),[examId,setExamId]=useState(''),[assetId,setAssetId]=useState(null),[dryRun,setDryRun]=useState(null),[importKey,setImportKey]=useState(()=>crypto.randomUUID());
   const alive=useRef(true),identity=useRef(user?.id),pending=useRef(null);identity.current=user?.id;
   useEffect(()=>{alive.current=true;return()=>{alive.current=false;};},[]);
-  useEffect(()=>{
-    const onKey=e=>{
-      if(e.key==='Escape'){
-        if(form)setForm(null);
-        else if(entry)setEntry(false);
-        else if(detail)setDetail(null);
-      }
-    };
-    window.addEventListener('keydown',onKey);
-    return()=>window.removeEventListener('keydown',onKey);
-  },[form,entry,detail]);
+  // Proper modals like the other admin dialogs: focus stays inside, the page behind is inert and Escape closes
+  // only the top one (a correction opened from a review closes back to the review). A stray backdrop click
+  // does not discard typed marks or reasons.
+  const formDialog=useDialogFocus(Boolean(form),()=>setForm(null)),detailDialog=useDialogFocus(Boolean(detail),()=>setDetail(null)),entryDialog=useDialogFocus(Boolean(entry),()=>setEntry(false));
   const refresh=async()=>{const r=await httpClient.request(paths[tab]+'?page='+page+(tab==='records'&&reviewStatus?'&reviewStatus='+reviewStatus:''));if(alive.current){setRows(r.data);setMeta(r.meta);}};
   useEffect(()=>{const c=new AbortController();setError('');setRows([]);httpClient.request(paths[tab]+'?page='+page+(tab==='records'&&reviewStatus?'&reviewStatus='+reviewStatus:''),{signal:c.signal}).then(r=>{if(!c.signal.aborted){setRows(r.data);setMeta(r.meta);}}).catch(e=>{if(!c.signal.aborted)setError(e.message);});if(tab==='records')readOptions('/admin/exams',{},c.signal).then(v=>{if(!c.signal.aborted)setExams(v);}).catch(e=>{if(!c.signal.aborted)setError(e.message);});return()=>c.abort();},[tab,page,reviewStatus]);
   const run=async work=>{setBusy(true);setError('');setMessage('');try{await work();if(alive.current)await refresh();}catch(e){if(alive.current)setError(e.message);}finally{if(alive.current)setBusy(false);}};
@@ -63,14 +57,15 @@ export function AdminResultsPage(){
     {tab==='records'&&<label className="block text-sm">Review queue<select aria-label="Result review status" className="block border border-slate-200 rounded-lg p-2 w-full" value={reviewStatus} onChange={e=>{setReviewStatus(e.target.value);setPage(1);}}><option value="">All records</option>{['draft','submitted','approved','rejected'].map(s=><option key={s}>{s}</option>)}</select></label>}
     <AdminTable><table className="w-full text-sm"><thead><tr><th className="p-3 text-left">{tab==='records'?'Student / Roll number':tab==='exams'?'Examination':'Institution'}</th><th>Status</th><th>Actions</th></tr></thead><tbody>{rows.map(row=><tr key={row.id} className="border-t border-slate-100"><td className="p-3 break-words">{row.fullName||row.title||row.student?.name}<p className="text-xs text-slate-500">{row.rollNormalized||row.level||''}</p></td><td className="p-2"><AdminStatus value={row.status}>{row.status}</AdminStatus>{tab==='records'&&<p className="text-xs admin-meta">Review: {row.review?.status||'draft'}</p>}</td><td className="p-2"><div className="flex flex-wrap gap-2"><button className={button} disabled={busy} onClick={()=>inspect(row)}>Review</button>{tab!=='records'&&can('results.manage')&&<><button className={button} disabled={busy} onClick={()=>{setForm(row);setDetail(null);}}>Edit</button><button className={button} disabled={busy} onClick={()=>window.confirm('Archive this configuration?')&&run(()=>authenticatedWrite(paths[tab]+'/'+row.id,{expectedRevision:row.revision},'DELETE'))}>Archive</button></>}</div></td></tr>)}</tbody></table>{!rows.length&&<AdminEmpty icon={FileText}><p className="text-sm">No records.</p></AdminEmpty>}</AdminTable><Pagination meta={meta} onChange={setPage} loading={busy}/>
     {form && (
-      <div className="fixed inset-0 z-50 bg-[#0A1D3F]/70 p-3 sm:p-4 flex items-center justify-center overflow-y-auto animate-in fade-in duration-150" onClick={e => { if (e.target === e.currentTarget) setForm(null); }}>
-        <div className="w-full max-w-2xl max-h-[92vh] overflow-y-auto shadow-2xl rounded-2xl">
+      <div className="fixed inset-0 z-50 bg-[#0A1D3F]/70 p-3 sm:p-4 flex items-center justify-center overflow-y-auto animate-in fade-in duration-150">
+        <div ref={formDialog} role="dialog" aria-modal="true" tabIndex={-1} aria-label={(form.id?'Edit ':'Add ')+(tab==='issuers'?'result institution':'examination')} className="admin-dialog w-full max-w-2xl max-h-[92vh] overflow-y-auto shadow-2xl rounded-2xl">
           <ResultDefinitionEditor key={tab+':'+(form.id||'new')} kind={tab} record={form} busy={busy} onSave={saveDefinition} onCancel={()=>setForm(null)}/>
         </div>
       </div>
     )}
     {detail && (
-      <div className="fixed inset-0 z-50 bg-[#0A1D3F]/70 p-3 sm:p-4 flex items-center justify-center overflow-y-auto animate-in fade-in duration-150" onClick={e => { if (e.target === e.currentTarget) setDetail(null); }}>
+      <div className="fixed inset-0 z-50 bg-[#0A1D3F]/70 p-3 sm:p-4 flex items-center justify-center overflow-y-auto animate-in fade-in duration-150">
+        <div ref={detailDialog} role="dialog" aria-modal="true" tabIndex={-1} aria-label={'Review '+(detail.student?.name||detail.fullName||detail.title||'record')} className="admin-dialog w-full max-w-2xl">
         <section aria-label="Result review" className="admin-card p-5 sm:p-6 space-y-4 w-full max-w-2xl max-h-[92vh] overflow-y-auto shadow-2xl bg-white rounded-2xl text-left">
           <div className="flex items-start justify-between gap-3 pb-3 border-b border-[#E6E8EC]">
             <h2 className="text-base sm:text-lg font-bold text-[#0A1D3F]">{detail.student?.name||detail.fullName||detail.title}</h2>
@@ -81,11 +76,12 @@ export function AdminResultsPage(){
           {tab==='records'?<><p className="text-sm">Roll number: {detail.rollNormalized} · Academic version: {detail.revision}</p><p className="text-sm">Student User ID: {detail.candidatePublicId}</p><div className="overflow-x-auto"><table className="w-full text-sm"><thead><tr><th>Subject</th><th>Maximum</th><th>Obtained</th><th>Grade</th></tr></thead><tbody>{detail.subjects.map(s=><tr key={s.code}><td>{s.name}</td><td>{s.maxMarks}</td><td>{s.obtained}</td><td>{s.grade||'—'}</td></tr>)}</tbody></table></div><p>Total: {detail.totals.obtained} / {detail.totals.max} ({detail.totals.percentage}%) · {detail.totals.status}</p><p className="text-sm">Review: {detail.review?.status||'draft'}{detail.review?.reason?' — '+detail.review.reason:''}</p>{can('media.read')&&detail.source?.assetId&&<a className="underline text-sm block" href={'/api/v1/media/'+detail.source.assetId+'/content'} target="_blank" rel="noreferrer">View uploaded marks file</a>}
           <label className="block text-sm">Review / correction reason<input aria-label="Result action reason" disabled={busy} className="block w-full border border-slate-200 rounded-lg p-2 disabled:bg-slate-100" value={reason} onChange={e=>setReason(e.target.value)}/></label><div className="flex flex-wrap gap-2">{can('results.manage')&&<button className={button} disabled={busy||!reason.trim()||detail.status!=='draft'||!['draft','rejected'].includes(detail.review?.status||'draft')} onClick={()=>act('submit')}>Submit for main-admin review</button>}{user?.roles.includes('super_admin')&&detail.review?.status==='submitted'&&['approve','reject'].map(a=><button key={a} className={button} disabled={busy||!reason.trim()} onClick={()=>act(a)}>{a==='approve'?'Approve result':'Reject result'}</button>)}{user?.roles.includes('super_admin')&&can('results.publish')&&<><button className={button} disabled={busy||detail.status!=='draft'||detail.review?.status!=='approved'} onClick={()=>act('publish')}>Publish result</button><button className={button} disabled={busy||!reason.trim()||detail.status==='withdrawn'} onClick={()=>window.confirm('Withdraw this result from the student’s account?')&&act('withdraw')}>Withdraw result</button></>}{can('results.manage')&&<button className={button} disabled={busy||!reason.trim()||detail.status==='withdrawn'} onClick={()=>setEntry('correction')}>Create correction draft</button>}</div><p className="text-xs text-slate-500">To replace a published result, create and approve a correction draft, withdraw the previous version, then publish the correction.</p></>:<div className="text-sm space-y-1">{detail.type&&<p>Category: {detail.type==='university'?'University':detail.type==='institute'?'Institute / School / Coaching':'Board'}</p>}{detail.level&&<p>Class / course / batch: {detail.level}</p>}{detail.session&&<p>Session: {detail.session}</p>}{detail.source&&<p>Result source: {detail.source.description} · Reference: {detail.source.authorizationReference}</p>}</div>}{detail.audit?.length>0&&<details><summary className="text-sm cursor-pointer">Activity history</summary>{detail.audit.map((a,i)=><p className="text-xs py-1" key={i}>{a.action.replaceAll('_',' ')} — {new Date(a.at).toLocaleString()}</p>)}</details>}
         </section>
+        </div>
       </div>
     )}
     {entry && (
-      <div className="fixed inset-0 z-50 bg-[#0A1D3F]/70 p-3 sm:p-4 flex items-center justify-center overflow-y-auto animate-in fade-in duration-150" onClick={e => { if (e.target === e.currentTarget) setEntry(false); }}>
-        <div className="w-full max-w-3xl max-h-[92vh] overflow-y-auto shadow-2xl rounded-2xl">
+      <div className="fixed inset-0 z-50 bg-[#0A1D3F]/70 p-3 sm:p-4 flex items-center justify-center overflow-y-auto animate-in fade-in duration-150">
+        <div ref={entryDialog} role="dialog" aria-modal="true" tabIndex={-1} aria-label={entry==='new'?'Enter student marks':'Create corrected result'} className="admin-dialog w-full max-w-3xl max-h-[92vh] overflow-y-auto shadow-2xl rounded-2xl">
           <ResultEntryEditor key={entry==='new'?'new':detail.id} record={entry==='new'?null:detail} onSave={saveRow} onCancel={()=>setEntry(false)}/>
         </div>
       </div>

@@ -71,6 +71,8 @@ test('Stage 6 existing UI real API and standalone MongoDB with explicitly isolat
   await t.test('admin history, reconciliation, pricing and financial summaries use persisted simulated records only', async () => {
     checkoutEnabled = false; await identity(admin); await goto('/admin/orders'); await page.getByRole('heading', { name: 'Orders & Payment Review', exact: true }).waitFor();
     await page.getByRole('button', { name: 'Payment details', exact: true }).first().click(); await page.getByText(/pay_/).first().waitFor();
+    // Payment details is a modal over the table: close it before using the table again.
+    await page.getByRole('button', { name: 'Close payment details', exact: true }).click(); await page.getByRole('dialog', { name: 'Payment details' }).waitFor({ state: 'detached' });
     const reconcile = page.waitForResponse(r => r.url().includes('/reconcile') && r.request().method() === 'POST'); await page.getByRole('button', { name: 'Check payment status', exact: true }).first().click(); assert.equal((await reconcile).status(), 202);
     // Registration fees are set only in the registration rules; the old separate fee setting is gone.
     await goto('/admin/settings?tab=registrations'); await page.getByRole('region', { name: 'Study registration rules' }).waitFor(); assert.equal(await page.getByLabel('study fee minor units', { exact: true }).count(), 0);

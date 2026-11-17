@@ -111,6 +111,9 @@ test('Stage 10 admin-to-user persisted workflows and responsive shared navigatio
       await page.getByRole('button', { name: 'Add review note', exact: true }).click(); assert.equal((await response).status(), 200);
       await page.getByText('STAGE10 reviewed safe draft ' + draft.kind, { exact: true }).waitFor();
       assert.equal((await f.models.RegistrationApplication.findById(draft.id)).notes.length, 1);
+      // The review is a modal over the list: close it before opening the next application.
+      await page.getByRole('button', { name: 'Close registration review', exact: true }).first().click();
+      await page.getByRole('region', { name: 'Registration review' }).waitFor({ state: 'detached' });
     }
   });
   await check('public settings update the real header; job/book/order administration is usable', async () => {

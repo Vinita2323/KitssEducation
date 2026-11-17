@@ -15,7 +15,7 @@ const hash = value => createHash('sha256').update(JSON.stringify(canonical(value
 export function createFranchiseWorkflow(commerce, institutions) {
   const { publishingModule: publishing } = commerce, { FranchiseApplication: Application, College, University } = institutions.models;
   const Settings = publishing.models.SiteSettings, coordination = publishing.coordination, media = publishing.media;
-  const runInScope = (scope, work) => (typeof coordination.runAs === 'function' ? runInScope(scope, work) : coordination.run(work));
+  const runInScope = (scope, work) => (typeof coordination.runAs === 'function' ? coordination.runAs(scope, work) : coordination.run(work));
   const verified = auth => commerce.eligible(auth);
   const get = async value => { const row = await Application.findById(id(value)); if (!row) throw missing(); return row; };
   // Staff decisions on an application share the applicant's lane with the applicant's own actions.

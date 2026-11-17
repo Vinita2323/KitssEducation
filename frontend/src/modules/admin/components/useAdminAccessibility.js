@@ -72,7 +72,15 @@ export function useAdminAccessibility(root, route) {
       field.selectedIndex=index;
       field.dispatchEvent(new Event('input',{bubbles:true}));field.dispatchEvent(new Event('change',{bubbles:true}));
     };
+    // Escape on an open list only closes the list (the browser does that); it must not also reach a dialog's
+    // Escape handler and close the whole editor. Plain browser lists never passed this key to the page.
+    const listEscape=event=>{
+      if(event.key!=='Escape')return;
+      const field=event.target instanceof Element?event.target.closest('select'):null;
+      if(field&&node.contains(field)&&getComputedStyle(field).appearance==='base-select'&&field.matches(':open'))event.stopPropagation();
+    };
+    window.addEventListener('keydown',listEscape,true);
     node.addEventListener('invalid',invalid,true);node.addEventListener('input',input);node.addEventListener('keydown',arrows);
-    return()=>{observer.disconnect();window.removeEventListener('resize',review);node.removeEventListener('invalid',invalid,true);node.removeEventListener('input',input);node.removeEventListener('keydown',arrows);};
+    return()=>{observer.disconnect();window.removeEventListener('resize',review);window.removeEventListener('keydown',listEscape,true);node.removeEventListener('invalid',invalid,true);node.removeEventListener('input',input);node.removeEventListener('keydown',arrows);};
   },[root,route]);
 }

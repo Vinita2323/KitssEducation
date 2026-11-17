@@ -7,18 +7,14 @@ import { authenticatedWrite } from '../../user/services/authService';
 import { useAuth } from '../../user/context/AuthContext';
 import { Pagination } from '../../user/components/common/Pagination';
 import { RefreshCw, Receipt } from 'lucide-react';
+import { useDialogFocus } from '../../../shared/ui/useDialogFocus';
 import { AdminCard, AdminEmpty, AdminMeta, AdminPageHeader, AdminStatus, AdminTable, AdminToolbar } from '../components/AdminUI';
 
 export function AdminOrdersPage() {
   const {can}=useAuth();const [page,setPage]=useState(1),[status,setStatus]=useState(''),[queue,setQueue]=useState(''),[data,setData]=useState({data:[]}),[error,setError]=useState(''),[version,setVersion]=useState(0),[selected,setSelected]=useState(null);
   useEffect(()=>{const c=new AbortController();setSelected(null);const q=new URLSearchParams({page:String(page),...(status?{status}:{}),...(queue?{reconciliation:queue}:{})});httpClient.request('/admin/orders?'+q,{signal:c.signal}).then(setData).catch(e=>{if(e.code!=='ABORTED')setError(e.message);});return()=>c.abort();},[page,status,queue,version]);
-  useEffect(()=>{
-    const onKey=e=>{
-      if(e.key==='Escape'&&selected)setSelected(null);
-    };
-    window.addEventListener('keydown',onKey);
-    return()=>window.removeEventListener('keydown',onKey);
-  },[selected]);
+  // A proper modal (focus kept inside, page behind inert, Escape closes) like the other admin dialogs.
+  const detailsDialog=useDialogFocus(Boolean(selected),()=>setSelected(null));
   const detail=async row=>{try{setSelected((await httpClient.request('/admin/orders/'+row.id)).data);}catch(e){setError(e.message);}};
   const reconcile=async row=>{try{await authenticatedWrite('/admin/orders/'+row.id+'/reconcile',{});setVersion(v=>v+1);}catch(e){setError(e.message);}};
   return <div className="space-y-5 text-[#0A1D3F]">
@@ -43,6 +39,10 @@ export function AdminOrdersPage() {
         onClick={e => { if (e.target === e.currentTarget) setSelected(null); }}
       >
         <AdminCard
+          ref={detailsDialog}
+          role="dialog"
+          aria-modal="true"
+          tabIndex={-1}
           aria-label="Payment details"
           title="Payment details"
           actions={<button type="button" onClick={() => setSelected(null)} className="admin-btn admin-btn-ghost admin-btn-sm" aria-label="Close payment details">Close</button>}

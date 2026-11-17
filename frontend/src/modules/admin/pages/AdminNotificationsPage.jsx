@@ -1,5 +1,5 @@
 import { AdminField, AdminInput, AdminSelect } from '../components/AdminFields';
-import { useEditorFocus } from '../components/useAdminAccessibility';
+import { useDialogFocus } from '../../../shared/ui/useDialogFocus';
 import React, { useEffect, useState } from 'react';
 import { httpClient } from '../../../shared/api/httpClient';
 import { authenticatedWrite } from '../../user/services/authService';
@@ -123,25 +123,18 @@ export function AdminNotificationsPage() {
       setForm(null);
     });
   };
-  const inlineEditor=useEditorFocus(Boolean(form));
-  useEffect(()=>{
-    const onKey=e=>{
-      if(e.key==='Escape'&&form)setForm(null);
-    };
-    window.addEventListener('keydown',onKey);
-    return()=>window.removeEventListener('keydown',onKey);
-  },[form]);
+  // A proper modal like the other admin editors: focus stays inside, the page behind is inert and Escape closes.
+  // A stray click on the backdrop does not discard what was typed.
+  const editorDialog=useDialogFocus(Boolean(form),()=>setForm(null));
   return <div className="space-y-5 min-w-0 text-[#0A1D3F]"><AdminPageHeader title="Notifications" description="Write short updates for students, choose who receives them, then publish when ready." actions={can('notifications.write') && <button disabled={busy} onClick={() => edit(null)} className="admin-btn admin-btn-accent"><Plus aria-hidden="true" size={16} />Compose notification</button>} />{error && <p role="alert" className="border rounded-xl bg-amber-50 p-3">{error}</p>}<AdminTable><table className="w-full text-sm"><thead><tr><th className="p-3 text-left">Title</th><th>Audience</th><th>Status</th><th>Actions</th></tr></thead><tbody>{rows.map(row => <tr key={row.id}><td className="p-3 font-semibold break-words">{row.title}</td><td>{row.audience.kind}</td><td><AdminStatus value={row.status}>{row.status}</AdminStatus></td><td><div className="admin-actions">{can('notifications.write') && <><button className="admin-btn admin-btn-secondary admin-btn-sm" disabled={busy || row.status !== 'draft'} onClick={() => edit(row)}>Edit</button><button className="admin-btn admin-btn-ghost admin-btn-sm" disabled={busy || row.status === 'archived'} onClick={() => window.confirm('Archive this notice?') && run(() => authenticatedWrite('/admin/notifications/' + row.id, {
                     expectedRevision: row.revision
                   }, 'DELETE'))}>Archive</button></>}{can('notifications.publish') && <button className="admin-btn admin-btn-primary admin-btn-sm" disabled={busy || row.status !== 'draft'} onClick={() => window.confirm('Publish to the selected recipients?') && run(() => authenticatedWrite('/admin/notifications/' + row.id + '/publish', {
                   expectedRevision: row.revision
                 }))}>Publish</button>}</div></td></tr>)}</tbody></table>{!rows.length && <AdminEmpty icon={Bell}><p>No notifications.</p></AdminEmpty>}</AdminTable><Pagination meta={meta} loading={busy} onChange={setPage} />
     {form && (
-      <div
-        className="fixed inset-0 z-50 bg-[#0A1D3F]/70 p-3 sm:p-4 flex items-center justify-center overflow-y-auto animate-in fade-in duration-150"
-        onClick={e => { if (e.target === e.currentTarget) setForm(null); }}
-      >
-        <form onSubmit={save} ref={inlineEditor} aria-label="Notification editor" className="admin-card p-5 sm:p-6 space-y-4 w-full max-w-2xl max-h-[92vh] overflow-y-auto bg-white rounded-2xl shadow-2xl text-left">
+      <div className="fixed inset-0 z-50 bg-[#0A1D3F]/70 p-3 sm:p-4 flex items-center justify-center overflow-y-auto animate-in fade-in duration-150">
+        <div ref={editorDialog} role="dialog" aria-modal="true" tabIndex={-1} aria-label={(form.id ? 'Edit' : 'Compose') + ' notification'} className="admin-dialog w-full max-w-2xl">
+        <form onSubmit={save} aria-label="Notification editor" className="admin-card p-5 sm:p-6 space-y-4 w-full max-w-2xl max-h-[92vh] overflow-y-auto bg-white rounded-2xl shadow-2xl text-left">
           <div className="flex items-start justify-between gap-3 pb-3 border-b border-[#E6E8EC]">
             <h2 className="admin-card-title text-base sm:text-lg font-bold text-[#0A1D3F]">{form.id ? 'Edit' : 'Compose'} notification</h2>
             <button type="button" onClick={() => setForm(null)} className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition cursor-pointer" aria-label="Close notification editor">
@@ -198,6 +191,7 @@ export function AdminNotificationsPage() {
             <button disabled={busy} className="admin-btn admin-btn-primary">Save notification draft</button>
           </div>
         </form>
+        </div>
       </div>
     )}
   </div>;

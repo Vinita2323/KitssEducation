@@ -1,7 +1,7 @@
 import { TeacherListingControls } from '../components/TeacherListingControls';
 import { Link } from 'react-router-dom';
 import { AdminField, AdminInput, AdminTextarea } from '../components/AdminFields';
-import { useEditorFocus } from '../components/useAdminAccessibility';
+import { useDialogFocus } from '../../../shared/ui/useDialogFocus';
 import React,{useEffect,useState} from 'react';
 import {httpClient} from '../../../shared/api/httpClient';
 import {authenticatedWrite} from '../../user/services/authService';
@@ -13,21 +13,13 @@ export function AdminRegistrationsPage(){
   useEffect(()=>{const c=new AbortController();httpClient.request('/admin/registration-applications?page='+page,{signal:c.signal}).then(r=>{setRows(r.data.items);setTotal(r.data.total);}).catch(e=>{if(e.code!=='ABORTED')setError(e.message);});return()=>c.abort();},[page]);
   const addNote=async()=>{try{const row=await authenticatedWrite('/admin/registration-applications/'+selected.id+'/notes',{text:note,idempotencyKey:crypto.randomUUID()});setSelected(row);setNote('');}catch(e){setError(e.message);}};
   const change=async fields=>{setBusy(true);setError('');try{const row=await authenticatedWrite('/admin/registration-applications/'+selected.id+'/status',{...fields,reason:reviewReason,expectedRevision:selected.revision},'PATCH');setSelected(row);setRows(old=>old.map(r=>r.id===row.id?row:r));setReviewReason('');}catch(e){setError(e.message);}finally{setBusy(false);}};
-  const reviewFocus=useEditorFocus(Boolean(selected));
-  useEffect(()=>{
-    const onKey=e=>{
-      if(e.key==='Escape'&&selected)setSelected(null);
-    };
-    window.addEventListener('keydown',onKey);
-    return()=>window.removeEventListener('keydown',onKey);
-  },[selected]);
+  // A proper modal like the other admin dialogs: focus stays inside, the page behind is inert and Escape closes.
+  // A stray click on the backdrop does not discard a typed reason or note.
+  const reviewDialog=useDialogFocus(Boolean(selected),()=>setSelected(null));
   return <section className="space-y-5 text-[#0A1D3F]"><AdminPageHeader title="Registration Review" description="Review student study and tuition requests, and teacher and coaching applications. Activation requires approval, verified documents (and verified guardian consent when applicable); publishing public teacher profiles is managed below." />{error&&<p role="alert">{error}</p>}<div className="admin-list">{rows.map(row=><button key={row.id} aria-current={selected?.id===row.id?'true':undefined} onClick={()=>setSelected(row)} className="admin-list-item text-left text-sm break-all"><span className="min-w-0">{row.reference} - {row.kind} - {row.status} - payment {row.paymentState}</span><ChevronRight aria-hidden="true" size={16} className="shrink-0 text-[#53647c]" /></button>)}</div>{!rows.length&&<AdminEmpty icon={ClipboardList}><p>No registration drafts.</p></AdminEmpty>}<div className="admin-pager text-sm"><button className="admin-btn admin-btn-secondary admin-btn-sm" disabled={page===1} onClick={()=>setPage(p=>p-1)}>Previous</button><span className="admin-meta">Page {page}</span><button className="admin-btn admin-btn-secondary admin-btn-sm" disabled={page*20>=total} onClick={()=>setPage(p=>p+1)}>Next</button></div>    {selected && (
-      <div
-        className="fixed inset-0 z-50 bg-[#0A1D3F]/70 p-3 sm:p-4 flex items-center justify-center overflow-y-auto animate-in fade-in duration-150"
-        onClick={e => { if (e.target === e.currentTarget) setSelected(null); }}
-      >
+      <div className="fixed inset-0 z-50 bg-[#0A1D3F]/70 p-3 sm:p-4 flex items-center justify-center overflow-y-auto animate-in fade-in duration-150">
+        <div ref={reviewDialog} role="dialog" aria-modal="true" tabIndex={-1} aria-label={'Registration ' + selected.reference} className="admin-dialog w-full max-w-2xl">
         <div
-          ref={reviewFocus}
           role="region"
           aria-label="Registration review"
           className="admin-card p-5 sm:p-6 space-y-4 text-sm w-full max-w-2xl max-h-[92vh] overflow-y-auto bg-white rounded-2xl shadow-2xl text-left"
@@ -63,6 +55,7 @@ export function AdminRegistrationsPage(){
             <button type="button" className="admin-btn admin-btn-ghost" onClick={()=>setSelected(null)}>Close registration review</button>
             <button disabled={!can('registrations.write')||!note.trim()} onClick={addNote} className="admin-btn admin-btn-primary">Add review note</button>
           </div>
+        </div>
         </div>
       </div>
     )}
