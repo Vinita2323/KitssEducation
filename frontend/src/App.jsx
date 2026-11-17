@@ -25,7 +25,7 @@ function App() {
           <PushNotificationManager />
           <Routes>
             {/* Public registration manages its own account changes so guest input survives sign-in. */}
-            <Route element={<AuthLayout />}>
+            <Route element={<AuthLayout backPath="/home" />}>
               <Route path="/register" element={<RegisterPage />} />
             </Route>
             <Route path="/*" element={<SessionLibrary>

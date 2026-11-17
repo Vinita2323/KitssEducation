@@ -40,7 +40,7 @@ export const RegisterPage = () => {
 
   const chooseForm = type => {
     setSelectedType(type);
-    setSearchParams(type ? { type } : {});
+    setSearchParams(type ? { type } : {}, { replace: true });
   };
 
   const registrationOptions = [

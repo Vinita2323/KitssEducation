@@ -14,6 +14,8 @@ export const AuthLayout = ({ title, showBack = true, backPath }) => {
   const handleBack = () => {
     if (backPath) {
       navigate(backPath);
+    } else if (isRegisterPage) {
+      navigate("/home");
     } else {
       navigate(-1);
     }
