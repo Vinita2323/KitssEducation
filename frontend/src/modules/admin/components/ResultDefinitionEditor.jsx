@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { X } from 'lucide-react';
 import { readOptions } from '../../user/services/collegeService';
 
 const input='block w-full border border-slate-200 rounded-lg p-2 mt-1 bg-white';
@@ -10,7 +11,14 @@ export function ResultDefinitionEditor({kind,record,onSave,onCancel,busy}) {
   const change=(key,value)=>setV(p=>({...p,[key]:value}));
   const field=(key,label,type='text',required=true)=><label className="block text-sm">{label}<input aria-label={label} type={type} required={required} className={input} value={v[key]} onChange={e=>change(key,e.target.value)}/></label>;
   const submit=e=>{e.preventDefault();onSave(issuer?{key:v.key,type:v.type,sourceMode:v.sourceMode,...(v.sourceMode==='admin'?{organizationKind:v.organizationKind,organizationId:v.organizationId}:{}),name:v.name,fullName:v.fullName,status:v.status,fieldSchema:v.questions,source:{description:v.description,authorizationReference:v.reference}}:{...v,year:Number(v.year)});};
-  return <form aria-label="Result definition editor" onSubmit={submit} className="bg-white border border-slate-200 rounded-xl p-4 space-y-3"><h2 className="font-bold">{record?.id?'Edit':'Add'} {issuer?'result institution':'examination'}</h2>{error&&<p role="alert">{error}</p>}<fieldset disabled={busy} className="space-y-3 min-w-0">
+  return <form aria-label="Result definition editor" onSubmit={submit} className="bg-white border border-slate-200 rounded-2xl p-5 sm:p-6 space-y-4 text-left">
+    <div className="flex items-center justify-between pb-3 border-b border-[#E6E8EC]">
+      <h2 className="text-base sm:text-lg font-bold text-[#0A1D3F]">{record?.id?'Edit':'Add'} {issuer?'result institution':'examination'}</h2>
+      <button type="button" onClick={onCancel} className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition cursor-pointer" aria-label="Close editor">
+        <X className="w-4 h-4" />
+      </button>
+    </div>
+    {error&&<p role="alert">{error}</p>}<fieldset disabled={busy} className="space-y-3 min-w-0">
     {issuer?<><label className="block text-sm">Result category<select aria-label="Result category" className={input} disabled={Boolean(record?.id)} value={v.type} onChange={e=>setV(p=>({...p,type:e.target.value,organizationKind:e.target.value==='university'?'university':'college',organizationId:''}))}><option value="university">University Result</option><option value="institute">Institute / School / Coaching</option>{v.type==='school'&&<option value="school">Board Result</option>}</select></label>
       {v.sourceMode==='external'?<p className="text-sm bg-amber-50 p-3 rounded-lg">Results for this institution are not available to students yet. Its current settings are retained.</p>:<><label className="block text-sm">Institution type<select aria-label="Result institution type" className={input} disabled={Boolean(record?.id)||v.type==='university'} value={v.organizationKind} onChange={e=>setV(p=>({...p,organizationKind:e.target.value,organizationId:''}))}>{(v.type==='university'?[['university','University']]:[['college','College / Institute / School'],['franchise','Approved KITSS Franchise'],['course','Published Coaching Course']]).map(([key,label])=><option key={key} value={key}>{label}</option>)}</select></label>
       <label className="block text-sm">Platform institution<select aria-label="Platform institution" required className={input} disabled={Boolean(record?.id)} value={v.organizationId} onChange={e=>{const item=options.find(r=>r.id===e.target.value);setV(p=>({...p,organizationId:e.target.value,fullName:item?.name||'',name:item?.name||''}));}}><option value="">Select institution</option>{v.organizationId&&!options.some(r=>r.id===v.organizationId)&&<option value={v.organizationId}>{v.fullName||'Current institution'}</option>}{options.map(r=><option key={r.id} value={r.id}>{r.name}</option>)}</select></label></>}

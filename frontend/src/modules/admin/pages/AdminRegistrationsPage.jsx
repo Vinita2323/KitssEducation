@@ -6,7 +6,7 @@ import React,{useEffect,useState} from 'react';
 import {httpClient} from '../../../shared/api/httpClient';
 import {authenticatedWrite} from '../../user/services/authService';
 import {useAuth} from '../../user/context/AuthContext';
-import { ChevronRight, ClipboardList } from 'lucide-react';
+import { ChevronRight, ClipboardList, X } from 'lucide-react';
 import { AdminEmpty, AdminPageHeader, AdminStatus } from '../components/AdminUI';
 export function AdminRegistrationsPage(){
   const {can}=useAuth();const [rows,setRows]=useState([]),[page,setPage]=useState(1),[total,setTotal]=useState(0),[error,setError]=useState(''),[selected,setSelected]=useState(null),[note,setNote]=useState(''),[busy,setBusy]=useState(false),[reviewReason,setReviewReason]=useState('');
@@ -14,5 +14,57 @@ export function AdminRegistrationsPage(){
   const addNote=async()=>{try{const row=await authenticatedWrite('/admin/registration-applications/'+selected.id+'/notes',{text:note,idempotencyKey:crypto.randomUUID()});setSelected(row);setNote('');}catch(e){setError(e.message);}};
   const change=async fields=>{setBusy(true);setError('');try{const row=await authenticatedWrite('/admin/registration-applications/'+selected.id+'/status',{...fields,reason:reviewReason,expectedRevision:selected.revision},'PATCH');setSelected(row);setRows(old=>old.map(r=>r.id===row.id?row:r));setReviewReason('');}catch(e){setError(e.message);}finally{setBusy(false);}};
   const reviewFocus=useEditorFocus(Boolean(selected));
-  return <section className="space-y-5 text-[#0A1D3F]"><AdminPageHeader title="Registration Review" description="Review student study and tuition requests, and teacher and coaching applications. Activation requires approval, verified documents (and verified guardian consent when applicable); publishing public teacher profiles is managed below." />{error&&<p role="alert">{error}</p>}<div className="admin-list">{rows.map(row=><button key={row.id} aria-current={selected?.id===row.id?'true':undefined} onClick={()=>setSelected(row)} className="admin-list-item text-left text-sm break-all"><span className="min-w-0">{row.reference} - {row.kind} - {row.status} - payment {row.paymentState}</span><ChevronRight aria-hidden="true" size={16} className="shrink-0 text-[#53647c]" /></button>)}</div>{!rows.length&&<AdminEmpty icon={ClipboardList}><p>No registration drafts.</p></AdminEmpty>}<div className="admin-pager text-sm"><button className="admin-btn admin-btn-secondary admin-btn-sm" disabled={page===1} onClick={()=>setPage(p=>p-1)}>Previous</button><span className="admin-meta">Page {page}</span><button className="admin-btn admin-btn-secondary admin-btn-sm" disabled={page*20>=total} onClick={()=>setPage(p=>p+1)}>Next</button></div>{selected&&<div ref={reviewFocus} role="region" aria-label="Registration review" className="admin-card p-5 space-y-3 text-sm"><div className="flex flex-wrap items-center gap-2"><h2 className="text-lg font-bold break-all">{selected.reference}</h2><AdminStatus value={selected.status}>{selected.status}</AdminStatus></div>{Object.entries(selected.applicant||{}).map(([k,v])=><p key={k} className="break-words">{k}: {String(v)}</p>)}<p>Outstanding required documents: {selected.requiredDocuments.join(', ')||'Requirements are not available yet'}</p>{selected.notes.map(n=><p key={n.id}>{n.text}</p>)}<AdminField className="block">Decision reason<AdminTextarea aria-label="Registration decision reason" className="w-full border rounded-lg p-2" value={reviewReason} onChange={e=>setReviewReason(e.target.value)} maxLength={1000}/></AdminField>{selected.documents?.map(d=><section key={d.key} className="border border-[#e1e7f0] p-3 rounded-xl space-y-2 bg-[#f8faff]"><p>{d.key}: {d.status} {d.reason}</p>{can('registrations.documents.review')&&<><a className="underline" href={'/api/v1/media/'+d.assetId+'/content'} target="_blank" rel="noreferrer">Review private {d.key}</a>{['verified','rejected'].map(status=><button key={status} disabled={busy||!reviewReason.trim()} className={'admin-btn admin-btn-sm m-1 '+(status==='verified'?'admin-btn-primary':'admin-btn-danger')} onClick={()=>change({documentKey:d.key,documentStatus:status})}>{status} {d.key}</button>)}</>}</section>)}{selected.guardianConsent?.acceptedAt&&can('registrations.documents.review')&&<button disabled={busy||!reviewReason.trim()} onClick={()=>change({guardianVerified:true})}>Verify guardian consent evidence</button>}<div className="admin-actions">{['pending_verification','under_review','needs_changes','approved','rejected','activated'].map(status=><button className={'admin-btn admin-btn-sm '+(['approved','activated'].includes(status)?'admin-btn-primary':status==='rejected'?'admin-btn-danger':'admin-btn-secondary')} disabled={busy||!reviewReason.trim()||!can(['approved','activated'].includes(status)?'registrations.approve':'registrations.review')} onClick={()=>change({status})} key={status}>{status}</button>)}</div>{can('registrations.documents.review')&&<><AdminField className="flex gap-2"><AdminInput type="checkbox" checked={selected.legalHold??false} disabled={busy||!reviewReason.trim()} onChange={e=>change({legalHold:e.target.checked})}/>Legal hold</AdminField><button className="admin-btn admin-btn-danger admin-btn-sm" disabled={busy||!reviewReason.trim()} onClick={async()=>{setBusy(true);try{setSelected(await authenticatedWrite('/admin/registration-applications/'+selected.id+'/purge',{expectedRevision:selected.revision,reason:reviewReason}));}catch(e){setError(e.message);}finally{setBusy(false);}}}>Delete personal data under approved retention policy</button></>}{selected.kind==='study'&&<p>KITSS handles further guidance and study arrangements directly. Use review notes to record contact and follow-up.</p>}{selected.kind==='tuition'&&<Link to="/admin/coaching" className="block underline">Manage coaching courses and enrollments</Link>}<TeacherListingControls key={selected.id} application={selected} onChange={row=>{setSelected(row);setRows(old=>old.map(item=>item.id===row.id?row:item));}} />{selected.history?.map((h,i)=><p key={i}>{h.status}: {h.reason} ({h.actorId})</p>)}<AdminField className="block">Review note<AdminTextarea aria-label="Registration review note" value={note} onChange={e=>setNote(e.target.value)} className="border rounded-lg w-full p-2"/></AdminField><div className="admin-actions"><button disabled={!can('registrations.write')||!note.trim()} onClick={addNote} className="admin-btn admin-btn-primary">Add review note</button><button type="button" className="admin-btn admin-btn-ghost" onClick={()=>setSelected(null)}>Close registration review</button></div></div>}</section>;
+  useEffect(()=>{
+    const onKey=e=>{
+      if(e.key==='Escape'&&selected)setSelected(null);
+    };
+    window.addEventListener('keydown',onKey);
+    return()=>window.removeEventListener('keydown',onKey);
+  },[selected]);
+  return <section className="space-y-5 text-[#0A1D3F]"><AdminPageHeader title="Registration Review" description="Review student study and tuition requests, and teacher and coaching applications. Activation requires approval, verified documents (and verified guardian consent when applicable); publishing public teacher profiles is managed below." />{error&&<p role="alert">{error}</p>}<div className="admin-list">{rows.map(row=><button key={row.id} aria-current={selected?.id===row.id?'true':undefined} onClick={()=>setSelected(row)} className="admin-list-item text-left text-sm break-all"><span className="min-w-0">{row.reference} - {row.kind} - {row.status} - payment {row.paymentState}</span><ChevronRight aria-hidden="true" size={16} className="shrink-0 text-[#53647c]" /></button>)}</div>{!rows.length&&<AdminEmpty icon={ClipboardList}><p>No registration drafts.</p></AdminEmpty>}<div className="admin-pager text-sm"><button className="admin-btn admin-btn-secondary admin-btn-sm" disabled={page===1} onClick={()=>setPage(p=>p-1)}>Previous</button><span className="admin-meta">Page {page}</span><button className="admin-btn admin-btn-secondary admin-btn-sm" disabled={page*20>=total} onClick={()=>setPage(p=>p+1)}>Next</button></div>    {selected && (
+      <div
+        className="fixed inset-0 z-50 bg-[#0A1D3F]/70 p-3 sm:p-4 flex items-center justify-center overflow-y-auto animate-in fade-in duration-150"
+        onClick={e => { if (e.target === e.currentTarget) setSelected(null); }}
+      >
+        <div
+          ref={reviewFocus}
+          role="region"
+          aria-label="Registration review"
+          className="admin-card p-5 sm:p-6 space-y-4 text-sm w-full max-w-2xl max-h-[92vh] overflow-y-auto bg-white rounded-2xl shadow-2xl text-left"
+        >
+          <div className="flex items-start justify-between gap-3 pb-3 border-b border-[#E6E8EC]">
+            <div className="flex flex-wrap items-center gap-2">
+              <h2 className="text-base sm:text-lg font-bold text-[#0A1D3F] break-all">{selected.reference}</h2>
+              <AdminStatus value={selected.status}>{selected.status}</AdminStatus>
+            </div>
+            <button
+              type="button"
+              onClick={() => setSelected(null)}
+              className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition cursor-pointer"
+              aria-label="Close registration review"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+          {Object.entries(selected.applicant||{}).map(([k,v])=><p key={k} className="break-words">{k}: {String(v)}</p>)}
+          <p>Outstanding required documents: {selected.requiredDocuments.join(', ')||'Requirements are not available yet'}</p>
+          {selected.notes.map(n=><p key={n.id}>{n.text}</p>)}
+          <AdminField className="block">Decision reason<AdminTextarea aria-label="Registration decision reason" className="w-full border rounded-lg p-2" value={reviewReason} onChange={e=>setReviewReason(e.target.value)} maxLength={1000}/></AdminField>
+          {selected.documents?.map(d=><section key={d.key} className="border border-[#e1e7f0] p-3 rounded-xl space-y-2 bg-[#f8faff]"><p>{d.key}: {d.status} {d.reason}</p>{can('registrations.documents.review')&&<><a className="underline" href={'/api/v1/media/'+d.assetId+'/content'} target="_blank" rel="noreferrer">Review private {d.key}</a>{['verified','rejected'].map(status=><button key={status} disabled={busy||!reviewReason.trim()} className={'admin-btn admin-btn-sm m-1 '+(status==='verified'?'admin-btn-primary':'admin-btn-danger')} onClick={()=>change({documentKey:d.key,documentStatus:status})}>{status} {d.key}</button>)}</>}</section>)}
+          {selected.guardianConsent?.acceptedAt&&can('registrations.documents.review')&&<button disabled={busy||!reviewReason.trim()} onClick={()=>change({guardianVerified:true})}>Verify guardian consent evidence</button>}
+          <div className="admin-actions flex flex-wrap gap-1.5">{['pending_verification','under_review','needs_changes','approved','rejected','activated'].map(status=><button className={'admin-btn admin-btn-sm '+(['approved','activated'].includes(status)?'admin-btn-primary':status==='rejected'?'admin-btn-danger':'admin-btn-secondary')} disabled={busy||!reviewReason.trim()||!can(['approved','activated'].includes(status)?'registrations.approve':'registrations.review')} onClick={()=>change({status})} key={status}>{status}</button>)}</div>
+          {can('registrations.documents.review')&&<><AdminField className="flex gap-2"><AdminInput type="checkbox" checked={selected.legalHold??false} disabled={busy||!reviewReason.trim()} onChange={e=>change({legalHold:e.target.checked})}/>Legal hold</AdminField><button className="admin-btn admin-btn-danger admin-btn-sm" disabled={busy||!reviewReason.trim()} onClick={async()=>{setBusy(true);try{setSelected(await authenticatedWrite('/admin/registration-applications/'+selected.id+'/purge',{expectedRevision:selected.revision,reason:reviewReason}));}catch(e){setError(e.message);}finally{setBusy(false);}}}>Delete personal data under approved retention policy</button></>}
+          {selected.kind==='study'&&<p>KITSS handles further guidance and study arrangements directly. Use review notes to record contact and follow-up.</p>}
+          {selected.kind==='tuition'&&<Link to="/admin/coaching" className="block underline">Manage coaching courses and enrollments</Link>}
+          <TeacherListingControls key={selected.id} application={selected} onChange={row=>{setSelected(row);setRows(old=>old.map(item=>item.id===row.id?row:item));}} />
+          {selected.history?.map((h,i)=><p key={i}>{h.status}: {h.reason} ({h.actorId})</p>)}
+          <AdminField className="block">Review note<AdminTextarea aria-label="Registration review note" value={note} onChange={e=>setNote(e.target.value)} className="border rounded-lg w-full p-2"/></AdminField>
+          <div className="admin-actions flex justify-end gap-2 pt-2">
+            <button type="button" className="admin-btn admin-btn-ghost" onClick={()=>setSelected(null)}>Close registration review</button>
+            <button disabled={!can('registrations.write')||!note.trim()} onClick={addNote} className="admin-btn admin-btn-primary">Add review note</button>
+          </div>
+        </div>
+      </div>
+    )}
+  </section>;
 }

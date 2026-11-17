@@ -12,6 +12,13 @@ import { AdminCard, AdminEmpty, AdminMeta, AdminPageHeader, AdminStatus, AdminTa
 export function AdminOrdersPage() {
   const {can}=useAuth();const [page,setPage]=useState(1),[status,setStatus]=useState(''),[queue,setQueue]=useState(''),[data,setData]=useState({data:[]}),[error,setError]=useState(''),[version,setVersion]=useState(0),[selected,setSelected]=useState(null);
   useEffect(()=>{const c=new AbortController();setSelected(null);const q=new URLSearchParams({page:String(page),...(status?{status}:{}),...(queue?{reconciliation:queue}:{})});httpClient.request('/admin/orders?'+q,{signal:c.signal}).then(setData).catch(e=>{if(e.code!=='ABORTED')setError(e.message);});return()=>c.abort();},[page,status,queue,version]);
+  useEffect(()=>{
+    const onKey=e=>{
+      if(e.key==='Escape'&&selected)setSelected(null);
+    };
+    window.addEventListener('keydown',onKey);
+    return()=>window.removeEventListener('keydown',onKey);
+  },[selected]);
   const detail=async row=>{try{setSelected((await httpClient.request('/admin/orders/'+row.id)).data);}catch(e){setError(e.message);}};
   const reconcile=async row=>{try{await authenticatedWrite('/admin/orders/'+row.id+'/reconcile',{});setVersion(v=>v+1);}catch(e){setError(e.message);}};
   return <div className="space-y-5 text-[#0A1D3F]">
@@ -30,12 +37,38 @@ export function AdminOrdersPage() {
       <td><div className="admin-actions"><button onClick={()=>detail(row)} className="admin-btn admin-btn-ghost admin-btn-sm">Payment details</button><button disabled={!can('commerce.reconcile')} onClick={()=>reconcile(row)} className="admin-btn admin-btn-secondary admin-btn-sm">Check payment status</button></div></td>
     </tr>)}</tbody></table>{!data.data.length&&<AdminEmpty icon={Receipt}><p>No matching orders.</p></AdminEmpty>}</AdminTable>
     <Pagination meta={data.meta} onChange={setPage}/>
-    {selected&&<AdminCard aria-label="Payment details" title="Payment details" bodyClassName="space-y-2 text-sm">
-      <p className="break-all">{selected.reference} / {selected.providerOrderId||'No Razorpay order'} / {selected.capturedPaymentId||'No confirmed payment'}</p>
-      <p>{selected.investigation||'No investigation flag'}</p>
-      {selected.attempts.map((a,i)=><p key={i} className="break-all">{a.paymentId}: {a.status}; verified through {a.source}</p>)}
-      {selected.eventHistory?.map(e=><p key={e.id} className="break-all">Event {e.id}: {e.state}; attempts {e.attempts}; {e.lastError||'No processing error'}</p>)}
-      <AdminMeta>Tax invoices and refunds are not available here yet. Contact your finance administrator.</AdminMeta>
-    </AdminCard>}
+    {selected && (
+      <div
+        className="fixed inset-0 z-50 bg-[#0A1D3F]/70 p-3 sm:p-4 flex items-center justify-center overflow-y-auto animate-in fade-in duration-150"
+        onClick={e => { if (e.target === e.currentTarget) setSelected(null); }}
+      >
+        <AdminCard
+          aria-label="Payment details"
+          title="Payment details"
+          actions={<button type="button" onClick={() => setSelected(null)} className="admin-btn admin-btn-ghost admin-btn-sm" aria-label="Close payment details">Close</button>}
+          bodyClassName="space-y-3 text-sm"
+          className="w-full max-w-lg max-h-[92vh] overflow-y-auto bg-white rounded-2xl shadow-2xl text-left"
+        >
+          <div className="p-3 bg-[#F8FAFC] rounded-xl border border-[#E2E8F0] space-y-1">
+            <span className="text-[10px] font-bold text-[#64748B] uppercase tracking-wider block">Reference & Provider</span>
+            <p className="font-mono text-xs break-all text-[#0A1D3F]">
+              {selected.reference} / {selected.providerOrderId||'No Razorpay order'} / {selected.capturedPaymentId||'No confirmed payment'}
+            </p>
+          </div>
+          {selected.investigation && <p className="p-2.5 rounded-lg bg-amber-50 text-amber-800 text-xs font-semibold">{selected.investigation}</p>}
+          <div className="space-y-1.5">
+            <span className="text-[10px] font-bold text-[#64748B] uppercase tracking-wider block">Payment Verification Attempts</span>
+            {selected.attempts?.length ? selected.attempts.map((a,i)=><p key={i} className="text-xs text-[#53647c] break-all p-1.5 bg-gray-50 rounded-lg">{a.paymentId}: <strong className="text-[#0A1D3F]">{a.status}</strong>; verified through {a.source}</p>) : <p className="text-xs text-[#64748B]">No attempts recorded.</p>}
+          </div>
+          {selected.eventHistory?.length > 0 && (
+            <div className="space-y-1.5">
+              <span className="text-[10px] font-bold text-[#64748B] uppercase tracking-wider block">Event History</span>
+              {selected.eventHistory.map(e=><p key={e.id} className="text-xs text-[#53647c] break-all p-1.5 bg-gray-50 rounded-lg">Event {e.id}: <strong className="text-[#0A1D3F]">{e.state}</strong>; attempts {e.attempts}; {e.lastError||'No processing error'}</p>)}
+            </div>
+          )}
+          <AdminMeta>Tax invoices and refunds are not available here yet. Contact your finance administrator.</AdminMeta>
+        </AdminCard>
+      </div>
+    )}
   </div>;
 }

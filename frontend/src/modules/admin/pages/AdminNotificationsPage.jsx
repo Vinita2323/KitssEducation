@@ -5,7 +5,7 @@ import { httpClient } from '../../../shared/api/httpClient';
 import { authenticatedWrite } from '../../user/services/authService';
 import { useAuth } from '../../user/context/AuthContext';
 import { Pagination } from '../../user/components/common/Pagination';
-import { Bell, Plus } from 'lucide-react';
+import { Bell, Plus, X } from 'lucide-react';
 import { AdminEmpty, AdminPageHeader, AdminStatus, AdminTable } from '../components/AdminUI';
 import { useDebouncedValue } from '../../../shared/ui/useDebouncedValue';
 // Account IDs (as shown in User accounts) or database ids pasted into the search box are also accepted.
@@ -124,48 +124,81 @@ export function AdminNotificationsPage() {
     });
   };
   const inlineEditor=useEditorFocus(Boolean(form));
+  useEffect(()=>{
+    const onKey=e=>{
+      if(e.key==='Escape'&&form)setForm(null);
+    };
+    window.addEventListener('keydown',onKey);
+    return()=>window.removeEventListener('keydown',onKey);
+  },[form]);
   return <div className="space-y-5 min-w-0 text-[#0A1D3F]"><AdminPageHeader title="Notifications" description="Write short updates for students, choose who receives them, then publish when ready." actions={can('notifications.write') && <button disabled={busy} onClick={() => edit(null)} className="admin-btn admin-btn-accent"><Plus aria-hidden="true" size={16} />Compose notification</button>} />{error && <p role="alert" className="border rounded-xl bg-amber-50 p-3">{error}</p>}<AdminTable><table className="w-full text-sm"><thead><tr><th className="p-3 text-left">Title</th><th>Audience</th><th>Status</th><th>Actions</th></tr></thead><tbody>{rows.map(row => <tr key={row.id}><td className="p-3 font-semibold break-words">{row.title}</td><td>{row.audience.kind}</td><td><AdminStatus value={row.status}>{row.status}</AdminStatus></td><td><div className="admin-actions">{can('notifications.write') && <><button className="admin-btn admin-btn-secondary admin-btn-sm" disabled={busy || row.status !== 'draft'} onClick={() => edit(row)}>Edit</button><button className="admin-btn admin-btn-ghost admin-btn-sm" disabled={busy || row.status === 'archived'} onClick={() => window.confirm('Archive this notice?') && run(() => authenticatedWrite('/admin/notifications/' + row.id, {
                     expectedRevision: row.revision
                   }, 'DELETE'))}>Archive</button></>}{can('notifications.publish') && <button className="admin-btn admin-btn-primary admin-btn-sm" disabled={busy || row.status !== 'draft'} onClick={() => window.confirm('Publish to the selected recipients?') && run(() => authenticatedWrite('/admin/notifications/' + row.id + '/publish', {
                   expectedRevision: row.revision
-                }))}>Publish</button>}</div></td></tr>)}</tbody></table>{!rows.length && <AdminEmpty icon={Bell}><p>No notifications.</p></AdminEmpty>}</AdminTable><Pagination meta={meta} loading={busy} onChange={setPage} />{form && <form onSubmit={save} ref={inlineEditor} aria-label="Notification editor" className="admin-card p-5 space-y-4"><h2 className="admin-card-title">{form.id ? 'Edit' : 'Compose'} notification</h2>{['title', 'message', 'link'].map(k => <AdminField key={k} className="block text-sm">{k}<AdminInput aria-label={'Notification ' + k} required={k !== 'link'} value={form[k]} onChange={e => setForm(p => ({
-          ...p,
-          [k]: e.target.value
-        }))} className="block w-full border rounded-xl p-2" /></AdminField>)}<AdminField className="block text-sm">Category<AdminSelect aria-label="Notification category" value={form.category} onChange={e => setForm(p => ({
-          ...p,
-          category: e.target.value
-        }))} className="block w-full border rounded-xl p-2">{['general', 'exam', 'course', 'promotion'].map(v => <option key={v}>{v}</option>)}</AdminSelect></AdminField><AdminField className="block text-sm">Audience<AdminSelect aria-label="Notification audience" value={form.kind} onChange={e => setForm(p => ({
-          ...p,
-          kind: e.target.value
-        }))} className="block w-full border rounded-xl p-2">{['all_students', 'users', 'course'].map(v => <option key={v}>{v}</option>)}</AdminSelect></AdminField>{form.kind === 'users' && <RecipientPicker recipients={form.recipients} query={form.recipientQuery} onChange={next => setForm(p => ({ ...p, recipients: next.recipients, recipientQuery: next.query }))} />}{form.kind === 'course' && (
-          <div className="space-y-2">
-            {/* Only published courses can be targeted, which is exactly what the public catalogue lists. */}
-            {courses.length > 0 && <AdminField className="block text-sm">
-              Course
-              <AdminSelect
-                aria-label="Notification course selector"
-                value={courses.some(c => c.id === form.courseId) ? form.courseId : ''}
-                onChange={e => setForm(p => ({ ...p, courseId: e.target.value }))}
-                className="block w-full border rounded-xl p-2 mt-1 bg-white"
-              >
-                <option value="">Choose a published course</option>
-                {courses.map(c => (
-                  <option key={c.id} value={c.id}>
-                    {c.title}{c.class ? ` (${c.class})` : ''}
-                  </option>
-                ))}
-              </AdminSelect>
-            </AdminField>}
-            {/* Fallback: the list could not load, or this draft targets a course not in it. */}
-            {(!courses.length || (form.courseId && !courses.some(c => c.id === form.courseId))) && <AdminField className="block text-sm">
-              Course ID
-              <AdminInput
-                aria-label="Notification course"
-                value={form.courseId}
-                onChange={e => setForm(p => ({ ...p, courseId: e.target.value }))}
-                className="block w-full border p-2 rounded-xl font-mono bg-white mt-1"
-              />
-            </AdminField>}
+                }))}>Publish</button>}</div></td></tr>)}</tbody></table>{!rows.length && <AdminEmpty icon={Bell}><p>No notifications.</p></AdminEmpty>}</AdminTable><Pagination meta={meta} loading={busy} onChange={setPage} />
+    {form && (
+      <div
+        className="fixed inset-0 z-50 bg-[#0A1D3F]/70 p-3 sm:p-4 flex items-center justify-center overflow-y-auto animate-in fade-in duration-150"
+        onClick={e => { if (e.target === e.currentTarget) setForm(null); }}
+      >
+        <form onSubmit={save} ref={inlineEditor} aria-label="Notification editor" className="admin-card p-5 sm:p-6 space-y-4 w-full max-w-2xl max-h-[92vh] overflow-y-auto bg-white rounded-2xl shadow-2xl text-left">
+          <div className="flex items-start justify-between gap-3 pb-3 border-b border-[#E6E8EC]">
+            <h2 className="admin-card-title text-base sm:text-lg font-bold text-[#0A1D3F]">{form.id ? 'Edit' : 'Compose'} notification</h2>
+            <button type="button" onClick={() => setForm(null)} className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition cursor-pointer" aria-label="Close notification editor">
+              <X className="w-4 h-4" />
+            </button>
           </div>
-        )}<p className="text-xs">Optional links use approved internal routes only. Publication requires a separate permission.</p><div className="admin-actions"><button disabled={busy} className="admin-btn admin-btn-primary">Save notification draft</button><button type="button" onClick={() => setForm(null)} className="admin-btn admin-btn-ghost">Cancel</button></div></form>}</div>;
+          {['title', 'message', 'link'].map(k => <AdminField key={k} className="block text-sm">{k}<AdminInput aria-label={'Notification ' + k} required={k !== 'link'} value={form[k]} onChange={e => setForm(p => ({
+            ...p,
+            [k]: e.target.value
+          }))} className="block w-full border rounded-xl p-2" /></AdminField>)}
+          <AdminField className="block text-sm">Category<AdminSelect aria-label="Notification category" value={form.category} onChange={e => setForm(p => ({
+            ...p,
+            category: e.target.value
+          }))} className="block w-full border rounded-xl p-2">{['general', 'exam', 'course', 'promotion'].map(v => <option key={v}>{v}</option>)}</AdminSelect></AdminField>
+          <AdminField className="block text-sm">Audience<AdminSelect aria-label="Notification audience" value={form.kind} onChange={e => setForm(p => ({
+            ...p,
+            kind: e.target.value
+          }))} className="block w-full border rounded-xl p-2">{['all_students', 'users', 'course'].map(v => <option key={v}>{v}</option>)}</AdminSelect></AdminField>
+          {form.kind === 'users' && <RecipientPicker recipients={form.recipients} query={form.recipientQuery} onChange={next => setForm(p => ({ ...p, recipients: next.recipients, recipientQuery: next.query }))} />}
+          {form.kind === 'course' && (
+            <div className="space-y-2">
+              {/* Only published courses can be targeted, which is exactly what the public catalogue lists. */}
+              {courses.length > 0 && <AdminField className="block text-sm">
+                Course
+                <AdminSelect
+                  aria-label="Notification course selector"
+                  value={courses.some(c => c.id === form.courseId) ? form.courseId : ''}
+                  onChange={e => setForm(p => ({ ...p, courseId: e.target.value }))}
+                  className="block w-full border rounded-xl p-2 mt-1 bg-white"
+                >
+                  <option value="">Choose a published course</option>
+                  {courses.map(c => (
+                    <option key={c.id} value={c.id}>
+                      {c.title}{c.class ? ` (${c.class})` : ''}
+                    </option>
+                  ))}
+                </AdminSelect>
+              </AdminField>}
+              {/* Fallback: the list could not load, or this draft targets a course not in it. */}
+              {(!courses.length || (form.courseId && !courses.some(c => c.id === form.courseId))) && <AdminField className="block text-sm">
+                Course ID
+                <AdminInput
+                  aria-label="Notification course"
+                  value={form.courseId}
+                  onChange={e => setForm(p => ({ ...p, courseId: e.target.value }))}
+                  className="block w-full border p-2 rounded-xl font-mono bg-white mt-1"
+                />
+              </AdminField>}
+            </div>
+          )}
+          <p className="text-xs text-[#53647c]">Optional links use approved internal routes only. Publication requires a separate permission.</p>
+          <div className="admin-actions flex justify-end gap-2 pt-2">
+            <button type="button" onClick={() => setForm(null)} className="admin-btn admin-btn-ghost">Cancel</button>
+            <button disabled={busy} className="admin-btn admin-btn-primary">Save notification draft</button>
+          </div>
+        </form>
+      </div>
+    )}
+  </div>;
 }
