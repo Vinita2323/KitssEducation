@@ -55,3 +55,31 @@
 .kitss-admin.admin-login-page > div { border-radius:20px; padding:2rem; box-shadow:0 15px 60px -20px #162b4d44; }
 .kitss-admin.admin-login-page input:not([type=checkbox]) { min-height:48px; font-size:1rem; }
 @media(max-width:480px) { .kitss-admin .admin-page-guide { gap:.25rem; } .kitss-admin .admin-page-help { width:100%; max-width:none; } .kitss-admin #admin-main th,.kitss-admin #admin-main td { padding:.75rem; } }
+
+/* Dropdown lists. A plain browser list opens upwards whenever the list is taller than the space below the
+   field, often covering the page header. Where the browser supports a customisable <select> (Chrome/Edge 135+),
+   the list opens below the field and scrolls; it only opens upwards when there is too little room below
+   (under about 9rem). It is still a real <select>, so values, forms, keyboard use and screen readers are
+   unchanged. Touch devices keep their own picker and other browsers keep their usual list. */
+@supports (appearance: base-select) and selector(::picker(select)) {
+  @media (pointer: fine) {
+    .kitss-admin #admin-main select:not([multiple]):not([size]),
+    .kitss-admin #admin-main select:not([multiple]):not([size])::picker(select) { appearance: base-select; }
+    .kitss-admin #admin-main select:not([multiple]):not([size]) { cursor: pointer; }
+    .kitss-admin #admin-main select:not([multiple]):not([size]):open { border-color: #0d9488; }
+    .kitss-admin #admin-main select::picker(select) {
+      position-area: block-end span-inline-end; position-try-order: normal;
+      position-try-fallbacks: --kitss-list-below, --kitss-list-above, --kitss-list-fit;
+      max-block-size: 20rem; max-inline-size: 100%; overflow-y: auto; margin-block: .25rem;
+      border: 1px solid #cbd6e5; border-radius: 10px; background: #fff; padding: .3rem; box-shadow: 0 14px 34px -14px #1d355773;
+    }
+    .kitss-admin #admin-main select:not([multiple]):not([size]) option { padding: .5rem .65rem; border-radius: 7px; font-size: .9375rem; line-height: 1.4; color: #0a1d3f; }
+    .kitss-admin #admin-main select:not([multiple]):not([size]) option:hover { background: #eef3fa; }
+    .kitss-admin #admin-main select:not([multiple]):not([size]) option:focus-visible { background: #e6f4f2; outline: 2px solid #0d9488; outline-offset: -2px; }
+    .kitss-admin #admin-main select:not([multiple]):not([size]) option:checked { font-weight: 650; }
+    .kitss-admin #admin-main select:not([multiple]):not([size]) option:disabled { color: #8a97a8; }
+  }
+}
+@position-try --kitss-list-below { position-area: block-end span-inline-end; max-block-size: min(20rem, calc(100% - .5rem)); min-block-size: 9rem; }
+@position-try --kitss-list-above { position-area: block-start span-inline-end; max-block-size: min(20rem, calc(100% - .5rem)); }
+@position-try --kitss-list-fit { position-area: block-end span-inline-end; max-block-size: calc(100% - .5rem); }

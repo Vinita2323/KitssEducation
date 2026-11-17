@@ -256,7 +256,6 @@ export const AdminCollegesPage = () => {
   return (
     <div className="space-y-6">
       {loadError && <p role="alert" className="p-3 bg-red-50 text-red-700 rounded-xl">{loadError}</p>}
-      <Pagination meta={meta} onChange={setPage} loading={loading} />
       {/* Header Banner */}
       <div className="bg-white rounded-2xl border border-[#E6E8EC] p-5 sm:p-6 shadow-2xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
@@ -288,26 +287,28 @@ export const AdminCollegesPage = () => {
       <div className="bg-white rounded-2xl border border-[#E6E8EC] p-4 shadow-2xs flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
         {/* Search */}
         <form onSubmit={handleSearchSubmit} className="relative flex-1 max-w-md">
-          <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
-          <AdminInput
+          <Search className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+          <input
             type="text"
-            aria-label="Search colleges" placeholder="Search colleges by name, code, or city..."
+            aria-label="Search colleges"
+            placeholder="Search colleges by name, code, or city..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 text-xs sm:text-sm bg-[#F7F8FA] border border-[#E6E8EC] rounded-xl focus:outline-none focus:border-[#0A1D3F] transition"
+            className="w-full pl-10 pr-4 py-2 text-xs sm:text-sm bg-[#F7F8FA] border border-[#E6E8EC] rounded-xl text-[#0A1D3F] placeholder-[#667085] focus:outline-none focus:border-[#0A1D3F] transition"
           />
         </form>
 
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2.5">
           {/* University Dropdown Filter */}
-          <div className="flex items-center gap-1.5">
-            <span className="text-xs font-bold text-[#64748B] hidden sm:inline">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-bold text-[#64748B] hidden sm:inline shrink-0">
               University:
             </span>
-            <AdminSelect
-              aria-label="Filter colleges by university" value={selectedUniFilter}
+            <select
+              aria-label="Filter colleges by university"
+              value={selectedUniFilter}
               onChange={(e) => handleUniFilterChange(e.target.value)}
-              className="px-3 py-2 bg-[#F7F8FA] border border-[#E6E8EC] rounded-xl text-xs text-[#0A1D3F] font-semibold focus:outline-none focus:border-[#0A1D3F]"
+              className="px-3 py-2 bg-[#F7F8FA] border border-[#E6E8EC] rounded-xl text-xs sm:text-sm text-[#0A1D3F] font-semibold focus:outline-none focus:border-[#0A1D3F] transition cursor-pointer"
             >
               <option value="All">All Universities</option>
               {universities.map((uni) => (
@@ -315,11 +316,11 @@ export const AdminCollegesPage = () => {
                   {uni.shortName} - {uni.name}
                 </option>
               ))}
-            </AdminSelect>
+            </select>
           </div>
 
           {/* Status Filter */}
-          <div className="flex items-center gap-1 p-1 bg-[#F7F8FA] rounded-xl border border-[#E6E8EC]">
+          <div className="flex items-center gap-1.5 p-1 bg-[#F7F8FA] rounded-xl border border-[#E6E8EC] shrink-0">
             {["All", "active", "inactive"].map((st) => (
               <button
                 key={st} aria-pressed={statusFilter === st}
@@ -507,6 +508,8 @@ export const AdminCollegesPage = () => {
           })}
         </div>
       )}
+
+      <Pagination meta={meta} onChange={setPage} loading={loading} />
 
       {/* ========================================================
           CREATE / EDIT COLLEGE MODAL

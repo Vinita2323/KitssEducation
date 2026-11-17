@@ -164,7 +164,6 @@ export const AdminApplicationsPage = () => {
   return (
     <div className="space-y-6">
       {loadError && <p role="alert" className="p-3 bg-red-50 text-red-700 rounded-xl">{loadError}</p>}
-      <Pagination meta={meta} onChange={setPage} loading={loading} />
       {/* Page Title */}
       <div>
         <h1 className="text-xl sm:text-2xl font-extrabold text-[#0A1D3F] tracking-tight">
@@ -205,15 +204,16 @@ export const AdminApplicationsPage = () => {
             </button>
           </div>
         )}
-        <form onSubmit={handleSearchSubmit} className="flex gap-2">
+        <form onSubmit={handleSearchSubmit} className="flex items-center gap-2">
           <div className="relative flex-1">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#667085]" />
-            <AdminInput
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#667085] pointer-events-none" />
+            <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              aria-label="Search admission applications" placeholder="Search by student name, email or application ID..."
-              className="w-full pl-10 pr-4 py-2 bg-[#F7F8FA] border border-[#E6E8EC] rounded-xl text-xs sm:text-sm focus:outline-none focus:border-[#FF8A00]"
+              aria-label="Search admission applications"
+              placeholder="Search by student name, email or application ID..."
+              className="w-full pl-10 pr-4 py-2 bg-[#F7F8FA] border border-[#E6E8EC] rounded-xl text-xs sm:text-sm text-[#0A1D3F] placeholder-[#667085] focus:outline-none focus:border-[#FF8A00] transition"
             />
           </div>
           <PrimaryButton variant="navy" size="sm" type="submit">
@@ -347,6 +347,8 @@ export const AdminApplicationsPage = () => {
           </div>
         </div>
       )}
+
+      <Pagination meta={meta} onChange={setPage} loading={loading} />
 
       {/* DETAIL & STATUS WORKFLOW MODAL */}
       {selectedApp && (

@@ -143,7 +143,7 @@ export const AdminCollegeCoursesPage = () => {
   };
   const editorDialog = useDialogFocus(modalOpen, () => setModalOpen(false));
   return (
-    <div className="space-y-6"><Pagination meta={meta} onChange={setPage} loading={loading} />
+    <div className="space-y-6">
       {/* Back Link & Title */}
       <div>
         <Link
@@ -279,6 +279,8 @@ export const AdminCollegeCoursesPage = () => {
           </div>
         </div>
       )}
+
+      <Pagination meta={meta} onChange={setPage} loading={loading} />
 
       {/* CREATE / EDIT COURSE MODAL */}
       {modalOpen && (

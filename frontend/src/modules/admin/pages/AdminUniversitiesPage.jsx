@@ -156,7 +156,6 @@ export const AdminUniversitiesPage = () => {
   return (
     <div className="space-y-6">
       {loadError && <p role="alert" className="p-3 bg-red-50 text-red-700 rounded-xl">{loadError}</p>}
-      <Pagination meta={meta} onChange={setPage} loading={loading} />
       {/* Header Banner */}
       <div className="bg-white rounded-2xl border border-[#E6E8EC] p-5 sm:p-6 shadow-2xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
@@ -188,18 +187,19 @@ export const AdminUniversitiesPage = () => {
       <div className="bg-white rounded-2xl border border-[#E6E8EC] p-4 shadow-2xs flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
         {/* Search */}
         <form onSubmit={handleSearchSubmit} className="relative flex-1 max-w-md">
-          <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
-          <AdminInput
+          <Search className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+          <input
             type="text"
-            aria-label="Search universities" placeholder="Search universities by name or acronym..."
+            aria-label="Search universities"
+            placeholder="Search universities by name or acronym..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 text-xs sm:text-sm bg-[#F7F8FA] border border-[#E6E8EC] rounded-xl focus:outline-none focus:border-[#0A1D3F] transition"
+            className="w-full pl-10 pr-4 py-2 text-xs sm:text-sm bg-[#F7F8FA] border border-[#E6E8EC] rounded-xl text-[#0A1D3F] placeholder-[#667085] focus:outline-none focus:border-[#0A1D3F] transition"
           />
         </form>
 
         {/* Status Filter Tabs */}
-        <div className="flex items-center gap-1.5 p-1 bg-[#F7F8FA] rounded-xl border border-[#E6E8EC] self-start sm:self-auto">
+        <div className="flex items-center gap-1.5 p-1 bg-[#F7F8FA] rounded-xl border border-[#E6E8EC] self-start sm:self-auto shrink-0">
           {["All", "active", "inactive"].map((st) => (
             <button
               key={st} aria-pressed={statusFilter === st}
@@ -339,6 +339,8 @@ export const AdminUniversitiesPage = () => {
           })}
         </div>
       )}
+
+      <Pagination meta={meta} onChange={setPage} loading={loading} />
 
       {/* ========================================================
           CREATE / EDIT UNIVERSITY MODAL
