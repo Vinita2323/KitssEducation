@@ -1,3 +1,4 @@
+import { placeholderImages } from '../../../../shared/ui/placeholders';
 import React from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -54,7 +55,7 @@ export const CourseCard = ({
             <img
               src={
                 thumbnail ||
-                "https://images.unsplash.com/photo-1532094349884-543bc11b234d?w=600&auto=format&fit=crop&q=80"
+                placeholderImages.course
               }
               alt={title}
               className="w-full h-full object-cover group-hover:scale-106 transition-transform duration-500 ease-out"
@@ -176,7 +177,7 @@ export const CourseCard = ({
         <img
           src={
             thumbnail ||
-            "https://images.unsplash.com/photo-1532094349884-543bc11b234d?w=600&auto=format&fit=crop&q=80"
+            placeholderImages.course
           }
           alt={title}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"

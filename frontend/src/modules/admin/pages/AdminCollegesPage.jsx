@@ -86,7 +86,7 @@ export const AdminCollegesPage = () => {
       const data = await adminService.getUniversities();
       setUniversities(data || []);
     } catch (err) {
-      console.error("Failed to load universities", err);
+      showError("Universities could not be loaded: " + (err?.message || "please refresh and try again."));
     }
   };
 

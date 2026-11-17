@@ -1,3 +1,4 @@
+import { placeholderImages } from '../../../../shared/ui/placeholders';
 import { useDebouncedValue } from '../../../../shared/ui/useDebouncedValue';
 import { FranchiseProfileModal } from '../../components/college/FranchiseProfileModal';
 import { FilterSelect } from "../../components/common/FilterSelect";
@@ -269,7 +270,7 @@ export const CollegesListingPage = () => {
                   {/* Banner Image */}
                   <div className="relative h-40 sm:h-44 w-full overflow-hidden bg-gray-100">
                     {college.franchiseOnly ? <div className="h-full w-full flex items-center justify-center bg-gradient-to-br from-slate-100 to-blue-100"><Building2 className="w-16 h-16 text-blue-800/50" aria-hidden="true"/></div> : <img
-                      src={college.banner || college.image || "https://images.unsplash.com/photo-1541339907198-e08756dedf3f?w=600&auto=format&fit=crop&q=80"}
+                      src={college.banner || college.image || placeholderImages.college}
                       alt={college.name}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                       loading="lazy"

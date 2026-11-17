@@ -33,11 +33,14 @@ export const CourseDashboardPage = () => {
   const [allEnrolled, setAllEnrolled] = useState([]);
   const [activeTab, setActiveTab] = useState("lectures"); // 'lectures' | 'books' | 'progress' | 'overview' | 'profile'
   const [loading, setLoading] = useState(true);
+  // A failed load (for example a dropped connection) is shown as such, not as "Course Not Found".
+  const [loadError, setLoadError] = useState(""), [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     const loadDashboardData = async () => {
       try {
         setLoading(true);
+        setLoadError("");
         const [courseData, myCoursesData] = await Promise.all([
           coachingService.getCourseById(id),
           coachingService.getMyCourses(),
@@ -48,13 +51,14 @@ export const CourseDashboardPage = () => {
         setStudent(profileData);
         setAllEnrolled(myCoursesData);
       } catch (err) {
-        console.error("Dashboard data load error:", err);
+        setCourse(null);
+        setLoadError(err?.message || "The course could not be loaded.");
       } finally {
         setLoading(false);
       }
     };
     loadDashboardData();
-  }, [id]);
+  }, [id, attempt]);
 
   const handleSelectLecture = (lecture, subjectName) => {
     if (course?.isExpired) {
@@ -75,6 +79,30 @@ export const CourseDashboardPage = () => {
       <div className="max-w-7xl mx-auto p-4 space-y-4">
         <div className="h-28 bg-slate-200 rounded-md animate-pulse" />
         <div className="h-64 bg-slate-200 rounded-md animate-pulse" />
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div role="alert" className="max-w-md mx-auto p-6 text-center bg-white rounded-md border border-[#E6E8EC] shadow-xs space-y-3 my-6">
+        <h3 className="font-bold text-base text-[#0A1D3F]">We couldn't load this course</h3>
+        <p className="text-xs text-[#667085] break-words">{loadError}</p>
+        <div className="flex flex-wrap justify-center gap-2">
+          <button
+            type="button"
+            onClick={() => setAttempt((n) => n + 1)}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-[#FF8A00] text-white font-bold text-xs"
+          >
+            Try again
+          </button>
+          <Link
+            to="/coaching/my-courses"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-[#0A1D3F] text-white font-bold text-xs"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" /> Go to My Courses
+          </Link>
+        </div>
       </div>
     );
   }

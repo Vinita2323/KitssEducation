@@ -1,3 +1,4 @@
+import { placeholderImages } from '../../../../shared/ui/placeholders';
 import { VerifiedCoursePurchase } from '../../components/coaching/VerifiedCoursePurchase';
 import React, { useState, useEffect, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
@@ -35,7 +36,6 @@ export const CourseDetailsPage = () => {
         const data = await coachingService.getCourseById(id);
         setCourse(data);
       } catch (err) {
-        console.error("Course load error:", err);
         setError(err.message || "Failed to load course details.");
       } finally {
         setLoading(false);
@@ -224,7 +224,7 @@ export const CourseDetailsPage = () => {
               <img
                 src={
                   course.teacherAvatar ||
-                  "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"
+                  placeholderImages.person
                 }
                 alt={course.teacher}
                 className="w-12 h-12 rounded-md object-cover border border-[#0A1D3F]/10 shadow-2xs shrink-0"

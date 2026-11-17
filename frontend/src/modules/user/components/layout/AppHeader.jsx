@@ -1,3 +1,4 @@
+import { placeholderImages } from '../../../../shared/ui/placeholders';
 import React, { useEffect, useState } from "react";
 import { notificationService } from "../../services/notificationService";
 import { Link, useLocation } from "react-router-dom";
@@ -131,7 +132,7 @@ export const AppHeader = ({ onOpenDrawer, brand }) => {
                       className="w-full h-full object-cover"
                       onError={(e) => {
                         e.target.onerror = null;
-                        e.target.src = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80";
+                        e.target.src = placeholderImages.person;
                       }}
                     />
                   ) : (

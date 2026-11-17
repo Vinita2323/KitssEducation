@@ -414,7 +414,7 @@ export const AdminUniversitiesPage = () => {
                   onChange={(e) =>
                     setFormData({ ...formData, logo: e.target.value })
                   }
-                  placeholder="https://images.unsplash.com/..."
+                  placeholder="https://example.com/logo.png"
                   className="w-full px-3 py-2 bg-[#F7F8FA] border border-[#E6E8EC] rounded-xl text-xs sm:text-sm text-[#0A1D3F] focus:outline-none focus:border-[#0A1D3F] transition"
                 />
               </div>

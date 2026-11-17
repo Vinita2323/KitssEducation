@@ -1,3 +1,4 @@
+import { placeholderImages } from '../../../../shared/ui/placeholders';
 import React from "react";
 import { Link } from "react-router-dom";
 import {
@@ -26,7 +27,7 @@ export const StudentProfile = ({ student, enrolledCourses = [] }) => {
             <img
               src={
                 student.avatar ||
-                "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"
+                placeholderImages.person
               }
               alt={student.name}
               className="w-14 h-14 sm:w-16 sm:h-16 rounded-md object-cover border border-[#133C8B] shadow-2xs"

@@ -145,7 +145,7 @@ export const CourseSelectorPage = () => {
       setJoinSuccess(true);
       showSuccess("Course Joined Successfully!");
     } catch (err) {
-      console.error("Enrollment error:", err);
+      showError(err?.message || "Could not join the course. Please try again.");
     } finally {
       setJoining(false);
     }

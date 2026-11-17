@@ -4,7 +4,7 @@
       "route": "/",
       "path": "/",
       "portal": "student",
-      "finalPath": "/"
+      "finalPath": "/home"
     },
     {
       "route": "/splash",
@@ -46,7 +46,7 @@
       "route": "/register-success",
       "path": "/register-success",
       "portal": "student",
-      "finalPath": "/account/verify"
+      "finalPath": "/register-success"
     },
     {
       "route": "/forgot-password",
@@ -88,7 +88,7 @@
       "route": "/franchises",
       "path": "/franchises",
       "portal": "student",
-      "finalPath": "/colleges"
+      "finalPath": "/franchises"
     },
     {
       "route": "/my-applications",
@@ -98,7 +98,7 @@
     },
     {
       "route": "/institutes/:id",
-      "path": "/institutes/6afaf2f3eb49226e278763be",
+      "path": "/institutes/6afbe4e59c0d91fcc346df8d",
       "portal": "student",
       "finalPath": "/colleges"
     },
@@ -110,7 +110,7 @@
     },
     {
       "route": "/colleges/:id",
-      "path": "/colleges/6afaf2f3eb49226e278763be",
+      "path": "/colleges/6afbe4e59c0d91fcc346df8d",
       "portal": "student",
       "finalPath": "/colleges"
     },
@@ -122,21 +122,21 @@
     },
     {
       "route": "/books/:id",
-      "path": "/books/6afaf2f0eb49226e278763ba",
+      "path": "/books/6afbe4e29c0d91fcc346df89",
       "portal": "student",
-      "finalPath": "/books/6afaf2f0eb49226e278763ba"
+      "finalPath": "/books/6afbe4e29c0d91fcc346df89"
     },
     {
       "route": "/books/:id/checkout",
-      "path": "/books/6afaf2f0eb49226e278763ba/checkout",
+      "path": "/books/6afbe4e29c0d91fcc346df89/checkout",
       "portal": "student",
-      "finalPath": "/books/6afaf2f0eb49226e278763ba/checkout"
+      "finalPath": "/books/6afbe4e29c0d91fcc346df89/checkout"
     },
     {
       "route": "/books/:id/read",
-      "path": "/books/6afaf2f0eb49226e278763ba/read",
+      "path": "/books/6afbe4e29c0d91fcc346df89/read",
       "portal": "student",
-      "finalPath": "/books/6afaf2f0eb49226e278763ba/read"
+      "finalPath": "/books/6afbe4e29c0d91fcc346df89/read"
     },
     {
       "route": "/my-books",
@@ -176,39 +176,39 @@
     },
     {
       "route": "/coaching/:id",
-      "path": "/coaching/6afaf2f3eb49226e278763be",
+      "path": "/coaching/6afbe4e59c0d91fcc346df8d",
       "portal": "student",
-      "finalPath": "/coaching/6afaf2f3eb49226e278763be"
+      "finalPath": "/coaching/6afbe4e59c0d91fcc346df8d"
     },
     {
       "route": "/coaching/:id/dashboard",
-      "path": "/coaching/6afaf2f3eb49226e278763be/dashboard",
+      "path": "/coaching/6afbe4e59c0d91fcc346df8d/dashboard",
       "portal": "student",
-      "finalPath": "/coaching/6afaf2f3eb49226e278763be/dashboard"
+      "finalPath": "/coaching/6afbe4e59c0d91fcc346df8d/dashboard"
     },
     {
       "route": "/coaching/:id/lecture/:lectureId",
-      "path": "/coaching/6afaf2f3eb49226e278763be/lecture/6afaf2f4eb49226e278763c0",
+      "path": "/coaching/6afbe4e59c0d91fcc346df8d/lecture/6afbe4e69c0d91fcc346df8f",
       "portal": "student",
-      "finalPath": "/coaching/6afaf2f3eb49226e278763be/lecture/6afaf2f4eb49226e278763c0"
+      "finalPath": "/coaching/6afbe4e59c0d91fcc346df8d/lecture/6afbe4e69c0d91fcc346df8f"
     },
     {
       "route": "/coaching/:id/book/:bookId",
-      "path": "/coaching/6afaf2f3eb49226e278763be/book/6afaf2f0eb49226e278763ba",
+      "path": "/coaching/6afbe4e59c0d91fcc346df8d/book/6afbe4e29c0d91fcc346df89",
       "portal": "student",
-      "finalPath": "/coaching/6afaf2f3eb49226e278763be/book/6afaf2f0eb49226e278763ba"
+      "finalPath": "/coaching/6afbe4e59c0d91fcc346df8d/book/6afbe4e29c0d91fcc346df89"
     },
     {
       "route": "/coaching/:id/subscribe",
-      "path": "/coaching/6afaf2f3eb49226e278763be/subscribe",
+      "path": "/coaching/6afbe4e59c0d91fcc346df8d/subscribe",
       "portal": "student",
-      "finalPath": "/coaching/6afaf2f3eb49226e278763be/subscribe"
+      "finalPath": "/coaching/6afbe4e59c0d91fcc346df8d/subscribe"
     },
     {
       "route": "/coaching/:id/player",
-      "path": "/coaching/6afaf2f3eb49226e278763be/player",
+      "path": "/coaching/6afbe4e59c0d91fcc346df8d/player",
       "portal": "student",
-      "finalPath": "/coaching/6afaf2f3eb49226e278763be/player"
+      "finalPath": "/coaching/6afbe4e59c0d91fcc346df8d/player"
     },
     {
       "route": "/subscriptions",
@@ -366,9 +366,9 @@
     },
     {
       "route": "/admin/colleges/:collegeId/courses",
-      "path": "/admin/colleges/6afaf315eb49226e278763cc/courses",
+      "path": "/admin/colleges/6afbe5099c0d91fcc346df9b/courses",
       "portal": "admin",
-      "finalPath": "/admin/colleges/6afaf315eb49226e278763cc/courses"
+      "finalPath": "/admin/colleges/6afbe5099c0d91fcc346df9b/courses"
     },
     {
       "route": "/admin/franchise-requests",

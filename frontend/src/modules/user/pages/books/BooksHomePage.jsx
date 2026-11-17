@@ -26,6 +26,9 @@ export const BooksHomePage = () => {
   const [availableClasses, setAvailableClasses] = useState([]);
   const [availableSubjects, setAvailableSubjects] = useState([]);
   const [loading, setLoading] = useState(true);
+  // Which filter lists failed to load (boards, classes, subjects); books themselves still load.
+  const [filterFailed, setFilterFailed] = useState({});
+  const markFilter = (key, failed) => setFilterFailed(prev => (Boolean(prev[key]) === failed ? prev : { ...prev, [key]: failed }));
 
   // Load static board list once
   useEffect(() => {
@@ -34,8 +37,9 @@ export const BooksHomePage = () => {
         const bData = await bookService.getBoards();
         setBoards(bData);
         setLanguages((await bookService.getFacets()).languages);
-      } catch (err) {
-        console.error("Error loading boards:", err);
+        markFilter("boards", false);
+      } catch {
+        markFilter("boards", true);
       }
     };
     loadBoards();
@@ -49,13 +53,14 @@ export const BooksHomePage = () => {
         const clsList = await bookService.getAvailableClasses(selectedBoard);
         if (!isCurrent) return;
         setAvailableClasses(clsList);
+        markFilter("classes", false);
 
         // Auto-reset class if current selection is invalid under the newly selected board
         if (selectedClass !== "All" && !clsList.includes(String(selectedClass))) {
           setSelectedClass("All");
         }
-      } catch (err) {
-        console.error("Error updating dependent classes:", err);
+      } catch {
+        if (isCurrent) markFilter("classes", true);
       }
     };
     updateClasses();
@@ -72,6 +77,7 @@ export const BooksHomePage = () => {
         const subList = await bookService.getAvailableSubjects(selectedBoard, selectedClass);
         if (!isCurrent) return;
         setAvailableSubjects(subList);
+        markFilter("subjects", false);
 
         // Auto-reset subject if current selection is invalid under board + class
         if (
@@ -84,8 +90,8 @@ export const BooksHomePage = () => {
         ) {
           setSelectedSubject("All");
         }
-      } catch (err) {
-        console.error("Error updating dependent subjects:", err);
+      } catch {
+        if (isCurrent) markFilter("subjects", true);
       }
     };
     updateSubjects();
@@ -292,6 +298,7 @@ export const BooksHomePage = () => {
         </div>
 
         {loadError && <p role="alert" className="p-3 bg-red-50 text-red-700 rounded-xl">{loadError}</p>}
+        {Object.values(filterFailed).some(Boolean) && <p role="status" className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900">Some filter choices could not be loaded. Refresh the page to try again.</p>}
         <Pagination meta={meta} onChange={setPage} loading={loading} />
         {/* Book Grid */}
         {loading ? (

@@ -1,3 +1,4 @@
+import { placeholderImages } from '../../../../shared/ui/placeholders';
 import React from "react";
 import { BookOpen, Lock, CheckCircle2, ArrowRight } from "lucide-react";
 
@@ -26,7 +27,7 @@ export const BookCard = ({ book, onReadOnline }) => {
           <img
             src={
               cover ||
-              "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=400&auto=format&fit=crop&q=80"
+              placeholderImages.book
             }
             alt={title}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"

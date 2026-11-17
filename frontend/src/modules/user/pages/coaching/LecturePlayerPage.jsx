@@ -10,7 +10,6 @@ import {
   List
 } from "lucide-react";
 import { coachingService } from "../../services/coachingService";
-import { ProtectedVideoPlayer } from "../../components/coaching/ProtectedVideoPlayer";
 import { useToast } from "../../context/ToastContext";
 
 export const LecturePlayerPage = () => {

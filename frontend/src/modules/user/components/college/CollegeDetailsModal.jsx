@@ -1,3 +1,4 @@
+import { placeholderImages } from '../../../../shared/ui/placeholders';
 import React from "react";
 import {
   X,
@@ -88,7 +89,7 @@ export const CollegeDetailsModal = ({ college: selectedCollege, isOpen, onClose 
             title={`Visit ${college.name} official website`}
           >
             <img
-              src={college.banner || college.image || "https://images.unsplash.com/photo-1541339907198-e08756dedf3f?w=1200&auto=format&fit=crop&q=80"}
+              src={college.banner || college.image || placeholderImages.college}
               alt={college.name}
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
             />

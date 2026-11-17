@@ -33,6 +33,7 @@ export const CoachingHomePage = () => {
   const [courses, setCourses] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [filterError, setFilterError] = useState("");
   const [error, setError] = useState(""), [classes, setClasses] = useState([]), [page, setPage] = useState(1), [total, setTotal] = useState(0), [meta, setMeta] = useState(null);
 
   // Load categories
@@ -40,9 +41,10 @@ export const CoachingHomePage = () => {
     const loadCats = async () => {
       try {
         const cats = await coachingService.getCategories();
-        setCategories(cats); setClasses((await coachingService.getFacets()).classes);
-      } catch (e) {
-        console.error("Categories error:", e);
+        setCategories(cats); setClasses((await coachingService.getFacets()).classes); setFilterError("");
+      } catch {
+        // Courses still load; only the filter choices are missing.
+        setFilterError("Course filters could not be loaded. Refresh the page to try again.");
       }
     };
     loadCats();
@@ -81,6 +83,7 @@ export const CoachingHomePage = () => {
   return (
     <div className="space-y-3.5 sm:space-y-5 max-w-7xl mx-auto">
       {error && <p role="alert" className="p-3 bg-red-50 border rounded-xl">{error}</p>}
+      {filterError && <p role="status" className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900">{filterError}</p>}
       {/* 1. Compact Search & Quick Filters Bar */}
       <div className="bg-white rounded-xl border border-[#E6E8EC] p-3 sm:p-4 shadow-2xs space-y-2.5">
         {/* Search Input */}

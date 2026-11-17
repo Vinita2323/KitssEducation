@@ -1,3 +1,4 @@
+import { placeholderImages } from '../../../../shared/ui/placeholders';
 import React, { useState, useEffect, useRef } from "react";
 import {
   X,
@@ -113,7 +114,7 @@ export const AdmissionApplicationModal = ({
         const data = await collegeService.getColleges();
         setColleges(data);
       } catch (err) {
-        console.error("Error loading colleges for modal:", err);
+        showError("Colleges could not be loaded: " + (err?.message || "please close and reopen this form."));
       } finally {
         setLoading(false);
       }
@@ -133,7 +134,8 @@ export const AdmissionApplicationModal = ({
         const college = await collegeService.getCollegeById(selectedCollegeId);
         setCourses((college?.courses || []).filter(course => course.admissionStatus === 'Open'));
       } catch (err) {
-        console.error("Error loading courses for selected college:", err);
+        setCourses([]);
+        showError("Courses for this college could not be loaded: " + (err?.message || "please choose the college again."));
       } finally {
         setLoading(false);
       }
@@ -378,7 +380,7 @@ export const AdmissionApplicationModal = ({
                             }`}
                           >
                             <img
-                              src={col.logo || "https://images.unsplash.com/photo-1592280771190-3e2e4d571952?w=100&auto=format&fit=crop&q=80"}
+                              src={col.logo || placeholderImages.college}
                               alt={col.name}
                               className="w-10 h-10 rounded-lg object-cover border border-gray-200 shrink-0"
                             />

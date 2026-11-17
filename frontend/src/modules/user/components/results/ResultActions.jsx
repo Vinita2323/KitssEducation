@@ -94,7 +94,7 @@ export const ResultActions = ({ result, onBack, onNewSearch }) => {
 
     const sourceEl = document.getElementById("printable-marksheet");
     if (!sourceEl) {
-      console.error("printable-marksheet element not found");
+      alert("The marksheet is not ready to download yet. Please wait for it to load and try again.");
       return;
     }
 
@@ -184,7 +184,6 @@ export const ResultActions = ({ result, onBack, onNewSearch }) => {
 
       downloadBlob(pdf.output("blob"), `${fileBase}.pdf`);
     } catch (err) {
-      console.error("Marksheet download failed:", err);
       alert("Could not download marksheet. Please try again.");
     } finally {
       if (host?.parentNode) host.parentNode.removeChild(host);
