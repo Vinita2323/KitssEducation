@@ -130,6 +130,8 @@ export function validateEnv(env) {
   if (config.auth.secret && config.auth.secret.length < 32) errors.push('AUTH_SECRET');
   if (nodeEnv === 'production' && !config.auth.secret) errors.push('AUTH_SECRET');
   if (config.smtp.host && (!/^[a-zA-Z0-9.-]+$/.test(config.smtp.host) || !config.smtp.user || !config.smtp.appPassword || !/^[^\s<>@]+@[^\s<>@]+\.[^\s<>@]+$/.test(config.smtp.from))) errors.push('SMTP_CONFIGURATION');
+  // Control characters are rejected on purpose (header injection).
+  // eslint-disable-next-line no-control-regex
   if (config.smtp.fromName.length > 100 || /[\r\n\x00-\x1f\x7f]/.test(config.smtp.fromName)) errors.push('SMTP_FROM_NAME');
   if (config.smtp.host.toLowerCase() === 'smtp.gmail.com' && (config.smtp.port !== 587 || config.smtp.secure)) errors.push('SMTP_GMAIL_STARTTLS');
   if (errors.length) throw new ConfigurationError(errors);

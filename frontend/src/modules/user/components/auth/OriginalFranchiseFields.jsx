@@ -35,6 +35,7 @@ import {
 import { motion } from "framer-motion";
 import { readOptions } from '../../services/collegeService';
 import { SearchableSelect } from '../common/SearchableSelect';
+import { phoneValidity, PHONE_MAX_LENGTH } from '../../../../shared/validation/phone';
 
 // The original fields and layout share the current application state and workflow.
 export function OriginalFranchiseFields({ form, setForm, step, policy, linked, setLinked, universities, colleges, onNext, onPrevious, logo, onLogo, onLogoError }) {
@@ -710,10 +711,10 @@ export function OriginalFranchiseFields({ form, setForm, step, policy, linked, s
                   </div>
                   <input
                     type="tel"
-                    pattern="[+0-9 ()-]{10,32}" aria-label="Contact mobile" required value={formData.mobile}
+                    ref={el => el && phoneValidity(el)} aria-label="Contact mobile" required value={formData.mobile}
                     onChange={(e) => handleInputChange("mobile", e.target.value)}
                     placeholder="10-digit mobile"
-                    maxLength={14}
+                    maxLength={PHONE_MAX_LENGTH}
                     className={`w-full pl-9 pr-3 py-2.5 text-xs bg-white border ${
                       errors.mobile ? "border-red-400 bg-red-50/20" : "border-[#CBD5E1]"
                     } rounded-md text-[#0A1D3F] focus:outline-none focus:border-[#FF8A00] focus:ring-2 focus:ring-[#FF8A00]/15 transition`}
@@ -734,7 +735,7 @@ export function OriginalFranchiseFields({ form, setForm, step, policy, linked, s
                   </div>
                   <input
                     type="tel"
-                    pattern="[+0-9 ()-]{10,32}" aria-label="Alternate mobile" value={formData.alternateMobile}
+                    ref={el => el && phoneValidity(el)} maxLength={PHONE_MAX_LENGTH} aria-label="Alternate mobile" value={formData.alternateMobile}
                     onChange={(e) => handleInputChange("alternateMobile", e.target.value)}
                     placeholder="Landline or mobile"
                     className="w-full pl-9 pr-3 py-2.5 text-xs bg-white border border-[#CBD5E1] rounded-md text-[#0A1D3F] focus:outline-none focus:border-[#FF8A00] focus:ring-2 focus:ring-[#FF8A00]/15 transition"

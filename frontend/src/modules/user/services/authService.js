@@ -42,7 +42,8 @@ export const authService = {
   },
   transfer: data => write('/auth/session/transfer', { ...data, confirmed: true, deviceLabel: 'Browser' }),
   createAccount: data => write('/auth/accounts', data),
-  resend: email => write('/auth/email/resend', { email }),
+  // The current challenge id lets a password chosen at re-registration survive a resend (see the backend).
+  resend: (email, challengeId) => write('/auth/email/resend', challengeId ? { email, challengeId } : { email }),
   activate: data => write('/auth/activate', data),
   acceptInvitation: data => write('/auth/invitations/accept', data),
   invite: data => write('/admin/users/invitations', data),

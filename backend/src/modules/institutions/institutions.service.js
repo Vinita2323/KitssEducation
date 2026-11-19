@@ -218,7 +218,10 @@ export function createInstitutionService({ models, authService, config, logger }
         if (raw.degree) filter.degreeType = raw.degree;
         if (raw.admissionStatus) { if (!['open', 'closed'].includes(raw.admissionStatus)) throw invalid('Invalid admissions status'); filter.admissionStatus = raw.admissionStatus; }
       }
-      if (query.q && !(kind === 'college' && !admin)) filter.$or = (kind === 'taxonomy' ? ['label', 'key'] : ['name']).map(k => ({ [k]: expression(query.q) }));
+      if (query.q && !(kind === 'college' && !admin)) {
+        const fields = kind === 'taxonomy' ? ['label', 'key'] : kind === 'university' ? ['name', 'shortName'] : kind === 'college' ? ['name', 'code'] : ['name'];
+        filter.$or = fields.map(k => ({ [k]: expression(query.q) }));
+      }
       const result = await paged(modelFor(kind), filter, query, kind === 'taxonomy' ? { sortOrder: 1, label: 1, _id: 1 } : undefined);
       result.data = kind === 'college' ? await decorateColleges(result.data, admin) : result.data.map(row => { const value = dto(row); if (!admin) for (const field of ['createdBy', 'updatedBy', 'deletedAt', 'shortNameNormalized', 'nameNormalized']) delete value[field]; return value; });
       if (kind === 'university' && admin) {

@@ -186,12 +186,16 @@ test('Stage 4 standalone institution/intake integration in fresh isolated MongoD
     assert.equal(await authModels.AuditLog.countDocuments({ subjectId: record.id }), 1);
     assert.equal((await models.DomainLock.findById('stage4-hierarchy')).owner, null);
   });
-  await t.test('standalone coordination recovers normal failures and never steals an abandoned lock', async () => {
+  await t.test('standalone coordination never steals a live lock and takes over one abandoned past its lease', async () => {
     assert.equal((await models.DomainLock.findById('stage4-hierarchy')).owner, null);
-    await models.DomainLock.updateOne({ _id: 'stage4-hierarchy' }, { $set: { owner: 'isolated-crashed-writer', acquiredAt: new Date(0) } });
+    // A writer that is still working (its lease is fresh) keeps the lock: others wait, then report busy.
+    await models.DomainLock.updateOne({ _id: 'stage4-hierarchy' }, { $set: { owner: 'isolated-live-writer', acquiredAt: new Date() } });
     await assert.rejects(service.create('university', { name: 'Blocked', shortName: 'BLOCKED' }, ctx), { code: 'DOMAIN_BUSY' });
-    assert.equal((await models.DomainLock.findById('stage4-hierarchy')).owner, 'isolated-crashed-writer');
-    // This is the exclusively owned test DB, never an automatic application unlock.
-    await models.DomainLock.updateOne({ _id: 'stage4-hierarchy', owner: 'isolated-crashed-writer' }, { $set: { owner: null } });
+    assert.equal((await models.DomainLock.findById('stage4-hierarchy')).owner, 'isolated-live-writer');
+    // A writer that died long ago (lease expired) no longer blocks everyone: the next write takes the lock over.
+    await models.DomainLock.updateOne({ _id: 'stage4-hierarchy', owner: 'isolated-live-writer' }, { $set: { owner: 'isolated-crashed-writer', acquiredAt: new Date(0) } });
+    const created = await service.create('university', { name: 'Recovered', shortName: 'RECOVERED' }, ctx);
+    assert.equal(created.name, 'Recovered');
+    assert.equal((await models.DomainLock.findById('stage4-hierarchy')).owner, null, 'released after the write');
   });
 });

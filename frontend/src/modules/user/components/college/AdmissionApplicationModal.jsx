@@ -20,6 +20,8 @@ import { collegeService } from "../../services/collegeService";
 import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../context/ToastContext";
 import { PrimaryButton, SecondaryButton } from "../common/PrimaryButton";
+import { SearchableSelect } from "../common/SearchableSelect";
+import { isPhoneNumber, PHONE_HINT, PHONE_MAX_LENGTH } from "../../../../shared/validation/phone";
 
 
 
@@ -194,6 +196,10 @@ export const AdmissionApplicationModal = ({
       }
       if (!studentDetails.mobileNumber.trim()) {
         showError("Please enter your mobile number.");
+        return;
+      }
+      if (!isPhoneNumber(studentDetails.mobileNumber)) {
+        showError(PHONE_HINT);
         return;
       }
       if (!studentDetails.email.trim()) {
@@ -528,7 +534,7 @@ export const AdmissionApplicationModal = ({
                       </label>
                       <input
                         type="tel"
-                        aria-label="Admission mobileNumber" value={studentDetails.mobileNumber}
+                        aria-label="Admission mobileNumber" maxLength={PHONE_MAX_LENGTH} value={studentDetails.mobileNumber}
                         onChange={(e) => handleInputChange("mobileNumber", e.target.value)}
                         placeholder="+91 98765 43210"
                         className="w-full text-xs sm:text-sm px-3.5 py-2.5 rounded-xl border border-[#E6E8EC] focus:border-[#FF8A00] focus:outline-none bg-white"
@@ -577,18 +583,17 @@ export const AdmissionApplicationModal = ({
                       <label className="block text-xs font-bold text-[#0A1D3F] mb-1">
                         Qualification
                       </label>
-                      <select
-                        aria-label="Admission educationalQualification" value={studentDetails.educationalQualification}
-                        onChange={(e) => handleInputChange("educationalQualification", e.target.value)}
-                        className="w-full text-xs sm:text-sm px-3.5 py-2.5 rounded-xl border border-[#E6E8EC] focus:border-[#FF8A00] focus:outline-none bg-white"
-                      >
-                        <option value="">Select qualification</option>
-                        {qualifications.map(({ label: option }) => (
-                          <option key={option} value={option}>
-                            {option}
-                          </option>
-                        ))}
-                      </select>
+                      <SearchableSelect
+                        options={qualifications.map((q) => (typeof q === "object" && q !== null ? q.label || q.name || q.id : String(q)))}
+                        value={studentDetails.educationalQualification}
+                        onChange={(value) => handleInputChange("educationalQualification", value)}
+                        placeholder="Select qualification"
+                        searchPlaceholder="Search qualification..."
+                        ariaLabel="Qualification"
+                        searchable={qualifications.length > 5}
+                        triggerClassName="px-3.5 py-2.5 rounded-xl bg-white border-[#E6E8EC] hover:border-[#FF8A00] text-xs sm:text-sm font-normal"
+                        valueClassName={studentDetails.educationalQualification ? "text-[#0A1D3F] font-medium text-xs sm:text-sm" : "text-slate-400 text-xs sm:text-sm"}
+                      />
                     </div>
 
                     <div className="sm:col-span-2">

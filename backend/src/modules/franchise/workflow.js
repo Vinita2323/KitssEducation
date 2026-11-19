@@ -7,6 +7,7 @@ import { workflowPolicy, initialWorkflowPolicy } from './policy.js';
 import { accessExpiry } from '../../utils/accessDuration.js';
 import { grantsFor } from '../auth/security.js';
 import { userScope, ownerScope } from '../../utils/domain-lock.js';
+import { isPhoneNumber, PHONE_RULE } from '../../utils/phone.js';
 const blocked = message => new AppError(409, 'FRANCHISE_REQUIREMENTS', message);
 const missing = () => new AppError(404, 'NOT_FOUND', 'Franchise application not found');
 const plain = row => row?.toObject?.() ?? row;
@@ -50,7 +51,8 @@ export function createFranchiseWorkflow(commerce, institutions) {
     if (data.institution?.type && !p.institutionTypes.includes(data.institution.type)) throw invalid('Institution type is not eligible under the current policy');
     if (data.institution?.yearEstablished && new Date().getUTCFullYear() - data.institution.yearEstablished < p.minimumYears) throw invalid('Institution does not meet the minimum years established');
     if (complete) {
-      if (!data.institution?.name || !data.institution?.type || !data.contact?.person || !data.contact?.email || !/^[+\d ()-]{10,32}$/.test(data.contact?.mobile || '') || !data.location?.address || !data.location?.city || !/^\d{6}$/.test(data.location?.pincode || '')) throw invalid('Complete institution, contact and address details');
+      if (!data.institution?.name || !data.institution?.type || !data.contact?.person || !data.contact?.email || !isPhoneNumber(data.contact?.mobile) || !data.location?.address || !data.location?.city || !/^\d{6}$/.test(data.location?.pincode || '')) throw invalid('Complete institution, contact and address details');
+      if (data.contact?.alternateMobile && !isPhoneNumber(data.contact.alternateMobile)) throw invalid('Invalid alternate mobile. ' + PHONE_RULE);
       if (p.minimumYears > 0 && !data.institution.yearEstablished) throw invalid('Year established is required for eligibility');
       if (data.pendingDocuments?.length) throw invalid('Attach uploaded documents instead of local file selections');
     }

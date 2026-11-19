@@ -10,6 +10,9 @@ import { chmod, lstat, statfs, unlink, writeFile } from 'node:fs/promises';
 import { fileDigest, inventory, privateBackupDirectory, sameInventory } from './local-recovery.js';
 
 const exec = promisify(execFile);
+// Run the Windows tools from System32 by full path: a bare name resolves through PATH, where another program with
+// the same name (Git for Windows ships a POSIX whoami.exe, for example) would run instead.
+const windowsTool = name => path.join(process.env.SystemRoot || 'C:\\Windows', 'System32', name);
 const fail = code => Object.assign(new Error(code), { code });
 
 export function validateRemoteApproval(config, approval) {
@@ -35,10 +38,10 @@ export async function restrictBackupDirectory(directory) {
   // or archive unless inheritance has been removed and explicit access applied.
   if (process.platform !== 'win32') { await chmod(directory, 0o700); return; }
   try {
-    const { stdout } = await exec('whoami.exe', ['/user', '/fo', 'csv', '/nh'], { windowsHide: true });
+    const { stdout } = await exec(windowsTool('whoami.exe'), ['/user', '/fo', 'csv', '/nh'], { windowsHide: true });
     const sid = stdout.match(/S-1-5-[\d-]+/)?.[0];
     if (!sid) throw new Error();
-    await exec('icacls.exe', [directory, '/inheritance:r', '/grant:r',
+    await exec(windowsTool('icacls.exe'), [directory, '/inheritance:r', '/grant:r',
       `*${sid}:(OI)(CI)F`, '*S-1-5-18:(OI)(CI)F', '*S-1-5-32-544:(OI)(CI)F'], { windowsHide: true });
   } catch { throw fail('BACKUP_ACCESS_RESTRICTION_FAILED'); }
 }

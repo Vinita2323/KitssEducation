@@ -14,7 +14,8 @@
     "bootstrap:admin": "node src/modules/auth/bootstrap.js",
     "seed:taxonomies": "node --env-file=.env scripts/seed-taxonomies.js",
     "test:client": "node --test ../frontend/src/shared/api/httpClient.test.js",
-    "approve:razorpay-test": "node scripts/approve-razorpay.js"
+    "approve:razorpay-test": "node scripts/approve-razorpay.js",
+    "lint": "eslint ."
   },
   "dependencies": {
     "argon2": "0.45.1",
@@ -27,5 +28,10 @@
     "pdf-lib": "1.17.1",
     "pino": "10.4.0",
     "sharp": "0.35.5"
+  },
+  "devDependencies": {
+    "@eslint/js": "9.39.5",
+    "eslint": "9.39.5",
+    "globals": "17.12.0"
   }
 }

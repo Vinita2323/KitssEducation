@@ -44,8 +44,13 @@ test('Stage 3 real MongoDB atomic authentication (dedicated fresh database only)
     assert.equal(user.challenges.verify.hash.includes(mail.messages.at(-1).code), false);
     assert.equal(user.roles.join(), 'student');
     await assert.rejects(service.login({ identifier: address, password }, ctx()), { code: 'INVALID_CREDENTIALS' });
+    // Registering an unverified email again within a minute is refused honestly (no code can be sent yet)...
+    await assert.rejects(service.register({ name: 'Other', email: address, password }, ctx()), { code: 'RESEND_COOLDOWN' });
+    // ...and after the cooldown it sends a fresh code for the same account; no second user is created.
+    clock = new Date(clock.getTime() + config.auth.resendMs + 1000);
     const duplicate = await service.register({ name: 'Other', email: address, password }, ctx());
     assert.equal(typeof duplicate.challengeId, 'string'); assert.equal(await User.countDocuments(), 1);
+    registered = duplicate; // the latest code belongs to this registration
   });
   await t.test('OTP wrong attempts, concurrent consumption and replay', async () => {
     const code = mail.messages.at(-1).code;

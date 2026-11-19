@@ -103,6 +103,7 @@ export function createMediaService({ models, storage, coordination, config, auth
       // unless the single-record CAS commits the clean destination.
       const prepared=await coordination.runAs(scope,()=>coordination.update(Media,doc,{cleanupKeys:[...(doc.cleanupKeys??[]),destination],cleanupAfterAt:new Date(Date.now()+900000)},doc.revision,'media_promotion_intent',ctx));
       let safe;
+      // eslint-disable-next-line no-useless-catch -- kept as an explicit boundary for this upload step
       try {
         const source=inspection.data?Readable.from(Buffer.from(inspection.data,'base64')):(await storage.getFile({key})).stream;
         safe=await storage.upload({stream:source,key:destination,contentType:inspection.mime,maxBytes:Math.min(doc.purpose === 'lesson_video' ? maxUploadBytes : 50*1024*1024,storage.maxBytes)});

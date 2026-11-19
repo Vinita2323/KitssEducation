@@ -7,6 +7,8 @@ export const registrationFields = {
   teacher: 'title fullName dob age studyLanguage instituteName startDate endDate isContinuing coachingCourse instituteAddress instituteContact contactNumber whatsappNumber email coachingExperience specializationNotes',
   'coaching-profile': 'name phone email dob gender state city board class',
 };
+// Fields holding a phone number. Drafts may hold anything typed so far; submission requires the shared phone rule.
+export const phoneFields = { study: ['callingNo', 'whatsappNo'], tuition: ['contactNo', 'whatsappNo', 'guardianContactNo'], teacher: ['contactNumber', 'whatsappNumber'], 'coaching-profile': ['phone'] };
 export const documentRequirements = { study: ['courseCertificate', 'aadharCard', 'passportPhoto'], tuition: ['aadharCard', 'passportPhoto', 'classIdCard'], teacher: ['passportPhoto', 'experienceDoc', 'aadharCard'], 'coaching-profile': [] };
 export function applicantInput(kind, applicant, user) {
   if (!registrationFields[kind]) throw invalid('Unsupported registration type');

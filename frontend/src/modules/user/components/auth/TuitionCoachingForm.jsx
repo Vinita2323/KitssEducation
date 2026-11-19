@@ -1,5 +1,6 @@
 import { RegistrationDraftControls } from './RegistrationDraftControls';
 import React, { useState } from "react";
+import { isPhoneNumber, PHONE_MAX_LENGTH } from "../../../../shared/validation/phone";
 import {
   User,
   Phone,
@@ -113,11 +114,14 @@ export const TuitionCoachingForm = ({ onBack }) => {
       if (!formData.fatherName.trim()) errs.fatherName = "Father's Name is required";
       if (!formData.motherName.trim()) errs.motherName = "Mother's Name is required";
       if (!formData.dob) errs.dob = "Date of Birth is required";
-      if (!formData.contactNo.trim() || formData.contactNo.length < 10) {
-        errs.contactNo = "Valid 10-digit Contact No is required";
+      if (!isPhoneNumber(formData.contactNo)) {
+        errs.contactNo = "Enter a valid contact number (10 to 15 digits)";
       }
-      if (!formData.guardianContactNo.trim() || formData.guardianContactNo.length < 10) {
-        errs.guardianContactNo = "Guardian Contact No is required";
+      if (formData.whatsappNo.trim() && !isPhoneNumber(formData.whatsappNo)) {
+        errs.whatsappNo = "Enter a valid WhatsApp number (10 to 15 digits)";
+      }
+      if (!isPhoneNumber(formData.guardianContactNo)) {
+        errs.guardianContactNo = "Enter a valid guardian contact number (10 to 15 digits)";
       }
       if (!formData.emailId.trim() || !formData.emailId.includes("@")) {
         errs.emailId = "Valid Email ID is required";
@@ -359,7 +363,7 @@ export const TuitionCoachingForm = ({ onBack }) => {
                         <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
                         <input
                           type="tel"
-                          name="contactNo" aria-label="Contact number"
+                          name="contactNo" maxLength={PHONE_MAX_LENGTH} aria-label="Contact number"
                           placeholder="+91 98765 43210"
                           value={formData.contactNo}
                           onChange={handleChange}
@@ -388,13 +392,14 @@ export const TuitionCoachingForm = ({ onBack }) => {
                         <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
                         <input
                           type="tel"
-                          name="whatsappNo" aria-label="WhatsApp number"
+                          name="whatsappNo" maxLength={PHONE_MAX_LENGTH} aria-label="WhatsApp number"
                           placeholder="+91 98765 43210"
                           value={formData.whatsappNo}
                           onChange={handleChange}
                           className="w-full pl-9 pr-3 py-2 bg-slate-50/70 border border-slate-200 rounded-lg text-xs sm:text-sm text-[#0A1D3F] focus:outline-none focus:border-[#FF8A00] focus:bg-white transition"
                         />
                       </div>
+                      {errors.whatsappNo && <p className="text-[11px] text-red-500 mt-0.5 font-medium">{errors.whatsappNo}</p>}
                     </div>
                   </div>
 
@@ -407,7 +412,7 @@ export const TuitionCoachingForm = ({ onBack }) => {
                       <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
                       <input
                         type="tel"
-                        name="guardianContactNo" aria-label="Guardian contact number"
+                        name="guardianContactNo" maxLength={PHONE_MAX_LENGTH} aria-label="Guardian contact number"
                         placeholder="Father / Mother Mobile (+91 98765 00000)"
                         value={formData.guardianContactNo}
                         onChange={handleChange}
@@ -661,22 +666,11 @@ export const TuitionCoachingForm = ({ onBack }) => {
                     </div>
                   </div>
 
-                  {/* 18. Aadhar Number & Card Upload */}
+                  {/* 18. Aadhar Card Upload */}
                   <div className="p-3 rounded-lg border border-slate-200 bg-slate-50/70 space-y-2">
                     <label className="block text-xs font-bold text-[#0A1D3F]">
-                      18. Aadhar Card Number & Document *
+                      18. Aadhar Card Document *
                     </label>
-                    <input
-                      type="text"
-                      maxLength="12"
-                      name="aadharNumber" disabled title="An identity number is not required for this application"
-                      placeholder="12-digit Aadhar Number (e.g. 1234 5678 9012)"
-                      value={formData.aadharNumber}
-                      onChange={handleChange}
-                      className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs sm:text-sm text-[#0A1D3F] focus:outline-none focus:border-[#FF8A00] transition"
-                      required
-                    />
-                    {errors.aadharNumber && <p className="text-[11px] text-red-500 font-medium">{errors.aadharNumber}</p>}
 
                     <div className="flex items-center gap-2.5">
                       <label className="flex-1 border border-dashed border-slate-300 hover:border-[#FF8A00] bg-white rounded-lg p-2.5 text-center cursor-pointer transition flex items-center justify-center gap-2 text-xs text-slate-600 font-medium shadow-2xs">

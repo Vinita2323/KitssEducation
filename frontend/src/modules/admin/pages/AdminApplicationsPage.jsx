@@ -280,7 +280,7 @@ export const AdminApplicationsPage = () => {
                     : "Recent";
                   return (
                     <tr key={appId} className="hover:bg-gray-50/70 transition">
-                      <td className="py-3.5 px-4">
+                      <td className="py-3.5 px-4 align-middle">
                         <div className="font-mono text-[11px] font-bold text-[#FF8A00]">
                           {app.applicationId}
                         </div>
@@ -288,40 +288,51 @@ export const AdminApplicationsPage = () => {
                           {app.studentDetails?.fullName}
                         </div>
                         {app.studentDetails?.educationalQualification && (
-                          <span className="text-[10px] text-[#667085]">
+                          <span className="text-[10px] text-[#667085] block mt-0.5">
                             {app.studentDetails.educationalQualification}
                           </span>
                         )}
                       </td>
 
-                      <td className="py-3.5 px-4 space-y-1">
-                        <div className="flex items-center gap-1.5 font-semibold text-[#0A1D3F]">
-                          <Phone className="w-3 h-3 text-[#667085]" />
-                          <a href={`tel:${app.studentDetails?.mobileNumber}`} className="hover:underline">
-                            {app.studentDetails?.mobileNumber}
-                          </a>
-                        </div>
-                        <div className="flex items-center gap-1.5 text-[#667085] text-[11px]">
-                          <Mail className="w-3 h-3 text-[#667085]" />
-                          <span className="truncate max-w-[150px]">{app.studentDetails?.email}</span>
+                      <td className="py-3.5 px-4 align-middle">
+                        <div className="space-y-1">
+                          <p className="m-0 p-0 leading-normal">
+                            <a
+                              href={`tel:${app.studentDetails?.mobileNumber}`}
+                              className="inline-flex items-center gap-1.5 font-semibold text-[#0A1D3F] hover:underline !min-h-0"
+                            >
+                              <Phone className="w-3.5 h-3.5 text-[#667085] shrink-0" />
+                              <span className="whitespace-nowrap">{app.studentDetails?.mobileNumber}</span>
+                            </a>
+                          </p>
+                          <p className="m-0 p-0 leading-normal">
+                            <a
+                              href={`mailto:${app.studentDetails?.email}`}
+                              className="inline-flex items-center gap-1.5 text-[#667085] text-[11px] hover:underline !min-h-0"
+                              title={app.studentDetails?.email}
+                            >
+                              <Mail className="w-3.5 h-3.5 text-[#667085] shrink-0" />
+                              <span className="truncate max-w-[170px] whitespace-nowrap">{app.studentDetails?.email}</span>
+                            </a>
+                          </p>
                         </div>
                       </td>
 
-                      <td className="py-3.5 px-4">
+                      <td className="py-3.5 px-4 align-middle">
                         <div className="font-bold text-[#0A1D3F] line-clamp-1">
                           {app.courseId?.courseName || "Course"}
                         </div>
                         <div className="text-[11px] text-[#667085] flex items-center gap-1 mt-0.5">
-                          <Building2 className="w-3 h-3 text-[#FF8A00]" />
+                          <Building2 className="w-3.5 h-3.5 text-[#FF8A00] shrink-0" />
                           <span className="line-clamp-1">{app.collegeId?.name || "College"}</span>
                         </div>
                       </td>
 
-                      <td className="py-3.5 px-4 text-[#667085]">
+                      <td className="py-3.5 px-4 align-middle text-[#667085] whitespace-nowrap">
                         {dateStr}
                       </td>
 
-                      <td className="py-3.5 px-4">
+                      <td className="py-3.5 px-4 align-middle">
                         <span
                           className={`inline-block px-2.5 py-1 rounded-full font-bold text-[11px] border ${
                             statusColors[app.status] || "bg-gray-50 text-gray-700"
@@ -331,10 +342,10 @@ export const AdminApplicationsPage = () => {
                         </span>
                       </td>
 
-                      <td className="py-3.5 px-4 text-right">
+                      <td className="py-3.5 px-4 align-middle text-right whitespace-nowrap">
                         <button
                           aria-label={"Review admission " + app.reference} onClick={() => handleOpenDetail(app)}
-                          className="px-3 py-1.5 rounded-xl text-xs font-bold text-[#0A1D3F] bg-gray-100 hover:bg-[#FF8A00] hover:text-white transition active:scale-95 shadow-2xs"
+                          className="px-3 py-1.5 rounded-xl text-xs font-bold text-[#0A1D3F] bg-gray-100 hover:bg-[#FF8A00] hover:text-white transition active:scale-95 shadow-2xs cursor-pointer"
                         >
                           Review & Notes
                         </button>

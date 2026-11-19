@@ -29,6 +29,8 @@ export function createHttpClient({ baseUrl = '/api/v1', timeoutMs = 15000,
       // via a caller-provided absolute URL, traversal or redirect.
       if (typeof endpoint !== 'string' || !/^\/(?!\/)/.test(endpoint)) throw new Error('Invalid API endpoint');
       const decodedPath = decodeURIComponent(endpoint.split('?')[0]);
+      // Rejects control characters and spaces in API paths on purpose.
+      // eslint-disable-next-line no-control-regex
       if (/[\\#?\u0000-\u0020]/.test(decodedPath) || decodedPath.startsWith('//') ||
         decodedPath.split('/').some(part => part === '.' || part === '..')) throw new Error('Invalid API endpoint');
       if (!Number.isSafeInteger(timeout) || timeout <= 0) throw new Error('Invalid API timeout');

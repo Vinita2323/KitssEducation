@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 import { AppError } from '../../utils/AppError.js';
 import { taxonomyKinds } from './institutions.models.js';
+import { isPhoneNumber, PHONE_RULE } from '../../utils/phone.js';
 
 export const invalid = message => new AppError(422, 'INVALID_INPUT', message);
 export const id = value => { if (typeof value !== 'string' || !/^[a-fA-F0-9]{24}$/.test(value)) throw invalid('Invalid resource reference'); return new mongoose.Types.ObjectId(value); };
@@ -9,6 +10,8 @@ export function object(value, allowed, required = []) {
   for (const key of required) if (value[key] === undefined || value[key] === null || value[key] === '') throw invalid(`Required field: ${key}`);
   return value;
 }
+// Control characters are rejected on purpose.
+// eslint-disable-next-line no-control-regex
 const text = (v, max = 160) => { if (typeof v !== 'string' || v.length > max || /[\u0000-\u0008\u000b-\u001f]/.test(v)) throw invalid('Invalid text field'); return v.trim(); };
 const integer = (v, min, max) => { if (!Number.isSafeInteger(v) || v < min || v > max) throw invalid('Invalid numeric field'); return v; };
 const url = v => { v = text(v, 2048); if (!v) return ''; let parsed; try { parsed = new URL(v); } catch { throw invalid('Use a complete HTTP(S) URL'); } if (!['https:', 'http:'].includes(parsed.protocol) || parsed.username || parsed.password) throw invalid('Unsafe URL'); return v; };
@@ -42,7 +45,7 @@ export function pageQuery(query, extra = []) {
 }
 export function admissionInput(input) {
   object(input, ['collegeId', 'programId', 'studentDetails', 'idempotencyKey'], ['collegeId', 'programId', 'studentDetails', 'idempotencyKey']);
-  const details = nested(input.studentDetails, { fullName: short, mobileNumber: v => { const s = text(v, 32); if (!/^[+\d ()-]{10,32}$/.test(s)) throw invalid('Invalid phone number'); return s; }, email, dob: v => { const s = text(v, 10); if (s && (!/^\d{4}-\d{2}-\d{2}$/.test(s) || Number.isNaN(Date.parse(s)) || new Date(s).toISOString().slice(0, 10) !== s || new Date(s) > new Date())) throw invalid('Invalid birth date'); return s; }, city: short, educationalQualification: short, passingYear: v => { const s = text(v, 4); if (s && (!/^\d{4}$/.test(s) || Number(s) > new Date().getFullYear())) throw invalid('Invalid passing year'); return s; }, additionalInfo: v => text(v, 2000) }, ['fullName', 'mobileNumber', 'email']);
+  const details = nested(input.studentDetails, { fullName: short, mobileNumber: v => { const s = text(v, 32); if (!isPhoneNumber(s)) throw invalid('Invalid phone number. ' + PHONE_RULE); return s; }, email, dob: v => { const s = text(v, 10); if (s && (!/^\d{4}-\d{2}-\d{2}$/.test(s) || Number.isNaN(Date.parse(s)) || new Date(s).toISOString().slice(0, 10) !== s || new Date(s) > new Date())) throw invalid('Invalid birth date'); return s; }, city: short, educationalQualification: short, passingYear: v => { const s = text(v, 4); if (s && (!/^\d{4}$/.test(s) || Number(s) > new Date().getFullYear())) throw invalid('Invalid passing year'); return s; }, additionalInfo: v => text(v, 2000) }, ['fullName', 'mobileNumber', 'email']);
   if (!details.fullName || !details.email) throw invalid('Name and email are required');
   return { collegeId: String(id(input.collegeId)), programId: String(id(input.programId)), studentDetails: details, idempotencyKey: key(input.idempotencyKey) };
 }

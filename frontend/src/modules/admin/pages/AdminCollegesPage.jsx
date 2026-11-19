@@ -16,7 +16,8 @@ import {
   ExternalLink,
   ChevronRight,
   Filter,
-  FileText
+  FileText,
+  Globe
 } from "lucide-react";
 import { Pagination } from '../../user/components/common/Pagination';
 import { useAuth } from '../../user/context/AuthContext';
@@ -194,8 +195,17 @@ export const AdminCollegesPage = () => {
 
     try {
       setSaving(true);
+      let website = formData.contactInformation?.website?.trim() || "";
+      if (website && !/^https?:\/\//i.test(website)) {
+        website = `https://${website}`;
+      }
       const payload = {
         ...formData,
+        contactInformation: {
+          phone: formData.contactInformation?.phone?.trim() || "",
+          email: formData.contactInformation?.email?.trim().toLowerCase() || "",
+          website,
+        },
         facilities: formData.facilities
           ? formData.facilities.split(",").map((s) => s.trim()).filter(Boolean)
           : [],
@@ -422,6 +432,21 @@ export const AdminCollegesPage = () => {
                           </span>
                         )}
                       </div>
+                      {college.contactInformation?.website && (
+                        <div className="pt-0.5">
+                          <a
+                            href={college.contactInformation.website}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-[11px] font-medium text-blue-600 hover:underline"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <Globe className="w-3 h-3 text-blue-500 shrink-0" />
+                            <span className="truncate max-w-[200px]">{college.contactInformation.website.replace(/^https?:\/\//i, "")}</span>
+                            <ExternalLink className="w-2.5 h-2.5 opacity-60" />
+                          </a>
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -679,6 +704,75 @@ export const AdminCollegesPage = () => {
                   placeholder="e.g. University Enclave, North Campus"
                   className="w-full px-3 py-2 bg-[#F7F8FA] border border-[#E6E8EC] rounded-xl text-xs sm:text-sm text-[#0A1D3F] focus:outline-none focus:border-[#0A1D3F]"
                 />
+              </div>
+
+              {/* Contact Information (Website, Phone, Email) */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="sm:col-span-1">
+                  <AdminField className="block text-xs font-bold text-[#0A1D3F] mb-1">
+                    Official Website
+                  </AdminField>
+                  <AdminInput
+                    type="text"
+                    aria-label="College website"
+                    value={formData.contactInformation?.website || ""}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        contactInformation: {
+                          ...formData.contactInformation,
+                          website: e.target.value,
+                        },
+                      })
+                    }
+                    placeholder="https://collegename.edu.in"
+                    className="w-full px-3 py-2 bg-[#F7F8FA] border border-[#E6E8EC] rounded-xl text-xs sm:text-sm text-[#0A1D3F] focus:outline-none focus:border-[#0A1D3F]"
+                  />
+                </div>
+
+                <div className="sm:col-span-1">
+                  <AdminField className="block text-xs font-bold text-[#0A1D3F] mb-1">
+                    Official Phone
+                  </AdminField>
+                  <AdminInput
+                    type="tel"
+                    aria-label="College phone"
+                    value={formData.contactInformation?.phone || ""}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        contactInformation: {
+                          ...formData.contactInformation,
+                          phone: e.target.value,
+                        },
+                      })
+                    }
+                    placeholder="e.g. 011-27667493"
+                    className="w-full px-3 py-2 bg-[#F7F8FA] border border-[#E6E8EC] rounded-xl text-xs sm:text-sm text-[#0A1D3F] focus:outline-none focus:border-[#0A1D3F]"
+                  />
+                </div>
+
+                <div className="sm:col-span-1">
+                  <AdminField className="block text-xs font-bold text-[#0A1D3F] mb-1">
+                    Official Email
+                  </AdminField>
+                  <AdminInput
+                    type="email"
+                    aria-label="College email"
+                    value={formData.contactInformation?.email || ""}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        contactInformation: {
+                          ...formData.contactInformation,
+                          email: e.target.value,
+                        },
+                      })
+                    }
+                    placeholder="admissions@college.edu.in"
+                    className="w-full px-3 py-2 bg-[#F7F8FA] border border-[#E6E8EC] rounded-xl text-xs sm:text-sm text-[#0A1D3F] focus:outline-none focus:border-[#0A1D3F]"
+                  />
+                </div>
               </div>
 
               {/* Description */}

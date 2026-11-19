@@ -12,8 +12,8 @@ export function equal(a, b) {
   return left.length === right.length && timingSafeEqual(left, right);
 }
 export function passwordPolicy(password) {
-  if (typeof password !== 'string' || password.length < 12 || password.length > 128 || !/\S/.test(password)) {
-    throw new AppError(422, 'WEAK_PASSWORD', 'Use a password of 12 to 128 characters');
+  if (typeof password !== 'string' || password.length < 6 || password.length > 128 || !/\S/.test(password)) {
+    throw new AppError(422, 'WEAK_PASSWORD', 'Use a password of 6 to 128 characters');
   }
 }
 export async function hashPassword(password) {

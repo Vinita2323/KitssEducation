@@ -241,7 +241,7 @@ export function AdminCoachingPage() {
         <td className="font-semibold min-w-[12rem] break-words">{row.title}</td>
         <td className="text-[#53647c]">{sectionTitle(row.subjectKey)}</td>
         <td><div className="flex flex-wrap gap-1.5 text-xs">{row.videoAssetId && <span className="inline-flex items-center gap-1 rounded-full bg-[#F1F5FB] px-2 py-0.5"><Video aria-hidden="true" size={12} />Video</span>}{row.documentAssetId && <span className="inline-flex items-center gap-1 rounded-full bg-[#F1F5FB] px-2 py-0.5"><FileText aria-hidden="true" size={12} />PDF</span>}{row.content?.trim() && <span className="inline-flex items-center gap-1 rounded-full bg-[#F1F5FB] px-2 py-0.5"><Type aria-hidden="true" size={12} />Text</span>}{(row.linkedBookIds ?? []).length > 0 && <span className="inline-flex items-center gap-1 rounded-full bg-[#F1F5FB] px-2 py-0.5"><BookOpen aria-hidden="true" size={12} />Book</span>}{row.previewAllowed && <span className="rounded-full bg-amber-50 text-amber-800 px-2 py-0.5">Free preview</span>}</div></td>
-        <td><Pill label={(lessonStatus[row.status] ?? [row.status])[0]} tone={(lessonStatus[row.status] ?? [, lessonStatus.draft[1]])[1]} /></td>
+        <td><Pill label={(lessonStatus[row.status] ?? [row.status])[0]} tone={(lessonStatus[row.status] ?? [undefined, lessonStatus.draft[1]])[1]} /></td>
         <td><div className="flex flex-wrap justify-end gap-2">{writable && row.status !== 'archived' && <button type="button" disabled={busy} onClick={() => open(row)}>Edit</button>}{archivable && row.status !== 'archived' && <button type="button" disabled={busy} className="text-red-700" onClick={() => remove(row)}>Archive</button>}{archivable && row.status === 'archived' && <button type="button" disabled={busy} onClick={() => restore(row)}>Restore</button>}</div></td>
       </tr>)}</tbody></table>}
 
@@ -249,7 +249,7 @@ export function AdminCoachingPage() {
         <td>{row.status !== 'archived' && orderButtons(rows, i, row.name)}</td>
         <td className="font-semibold min-w-[12rem] break-words">{row.name}</td>
         <td><span className="font-semibold">{row.priceMinor === undefined ? 'No price yet' : planLabel(row)}</span>{row.popular && <span className="ml-2 inline-flex items-center gap-1 text-xs rounded-full bg-amber-50 text-amber-800 px-2 py-0.5"><Star aria-hidden="true" size={11} />Popular</span>}</td>
-        <td><Pill label={(planStatus[row.status] ?? [row.status])[0]} tone={(planStatus[row.status] ?? [, planStatus.draft[1]])[1]} /></td>
+        <td><Pill label={(planStatus[row.status] ?? [row.status])[0]} tone={(planStatus[row.status] ?? [undefined, planStatus.draft[1]])[1]} /></td>
         <td><div className="flex flex-wrap justify-end gap-2">{writable && row.status !== 'archived' && <button type="button" disabled={busy} onClick={() => open(row)}>Edit</button>}{archivable && row.status !== 'archived' && <button type="button" disabled={busy} className="text-red-700" onClick={() => remove(row)}>Archive</button>}{archivable && row.status === 'archived' && <button type="button" disabled={busy} onClick={() => restore(row)}>Restore</button>}</div></td>
       </tr>)}</tbody></table>}
       {!busy && !rows.length && <p className="p-6 text-center text-[#53647c]">{q ? `No ${kind} match “${q}”.` : kind === 'courses' ? 'No courses yet. Add your first course to get started.' : kind === 'lessons' ? 'No lessons yet. Add the first lesson to this course.' : 'No plans yet. Add a free or paid plan so students can enroll.'}</p>}

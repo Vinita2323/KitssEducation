@@ -43,6 +43,8 @@ export async function publishingFixture(dbName, { actual = false, scanner, mail 
   };
   const models = { ...authModels, ...institutionModels, ...publishing.models };
   return { config, connection, logger, storage, auth, institutions, ...publishing, fixtureUser, models, ctx: { actorId: 'isolated-test-fixture', requestId: randomUUID(), ip: 'isolated' }, app: () => createApp({ config, logger, database: { isReady: async () => true }, storage, authService: auth, institutionService: institutions, publishingModule: publishing }),
+    // The cleanup guard throws on purpose rather than delete outside the temp folder.
+    // eslint-disable-next-line no-unsafe-finally
     async close() { if (actual) throw new Error('Actual verification records must be retained; close the connection explicitly'); try { for (const Model of Object.values(models)) { const ids = (await Model.find({}, { _id: 1 }).lean()).map(r => r._id); if (ids.length) await Model.deleteMany({ _id: { $in: ids } }); } } finally { await connection.close(); const resolved = path.resolve(root); if (!resolved.startsWith(path.resolve(os.tmpdir()) + path.sep) || !path.basename(root).startsWith('kitss-stage5-')) throw new Error('Unsafe test cleanup path'); await rm(root, { recursive: true, force: true }); } } };
   } catch (error) { await connection.close().catch(() => {}); if (!actual && root && path.resolve(root).startsWith(path.resolve(os.tmpdir()) + path.sep) && path.basename(root).startsWith('kitss-stage5-')) await rm(root, { recursive: true, force: true }); throw error; }
 }

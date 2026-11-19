@@ -34,7 +34,7 @@ export function RegistrationAccount({ applicantName = '', applicantEmail = '' })
   };
   const resend = async () => {
     setBusy(true); setError('');
-    try { const result = await authService.resend(user?.email || email); if (mounted.current) { setChallenge(result.challengeId); setMode('verify'); setMessage('A verification code has been requested. Check your email.'); } }
+    try { const result = await authService.resend(user?.email || email, challenge); if (mounted.current) { setChallenge(result.challengeId); setMode('verify'); setMessage('A verification code has been requested. Check your email.'); } }
     catch (failure) { if (mounted.current) setError(failure.message); }
     finally { if (mounted.current) setBusy(false); }
   };
@@ -48,7 +48,7 @@ export function RegistrationAccount({ applicantName = '', applicantEmail = '' })
       <fieldset disabled={busy} className="space-y-3">
         {mode === 'create' && !user && !applicantName && <label className="block text-sm">Account full name<input className={input} value={name} onChange={e => setName(e.target.value)} required maxLength={100} autoComplete="name" /></label>}
         {!user && (mode !== 'create' || !applicantEmail) && <label className="block text-sm">Login email<input className={input} type="email" value={email} onChange={e => setEmail(e.target.value)} readOnly={mode === 'verify'} required autoComplete="email" /></label>}
-        {mode === 'verify' ? <label className="block text-sm">Email verification code<input className={input} value={otp} onChange={e => setOtp(e.target.value)} pattern="[0-9]{6}" maxLength={6} inputMode="numeric" autoComplete="one-time-code" required /></label> : !user && <label className="block text-sm">{mode === 'create' ? 'Choose a password' : 'Account password'}<input className={input} type="password" value={password} onChange={e => setPassword(e.target.value)} minLength={mode === 'create' ? 12 : undefined} maxLength={128} required autoComplete={mode === 'create' ? 'new-password' : 'current-password'} /></label>}
+        {mode === 'verify' ? <label className="block text-sm">Email verification code<input className={input} value={otp} onChange={e => setOtp(e.target.value)} pattern="[0-9]{6}" maxLength={6} inputMode="numeric" autoComplete="one-time-code" required /></label> : !user && <label className="block text-sm">{mode === 'create' ? 'Choose a password' : 'Account password'}<input className={input} type="password" value={password} onChange={e => setPassword(e.target.value)} minLength={mode === 'create' ? 6 : undefined} maxLength={128} required autoComplete={mode === 'create' ? 'new-password' : 'current-password'} /></label>}
         {!user || mode === 'verify' ? <button type="submit" className="bg-[#0A1D3F] text-white rounded-xl px-4 py-2">{busy ? 'Please wait…' : mode === 'verify' ? 'Verify email' : mode === 'create' ? 'Create account and send code' : 'Sign in and continue'}</button> : null}
       </fieldset>
     </form>

@@ -62,9 +62,9 @@ export async function createAuthService({ models, config, mail, logger, now = ()
       throw error instanceof AppError ? error : new AppError(503, 'EMAIL_UNAVAILABLE', 'Email delivery is unavailable; please try again later');
     }
   }
-  async function sendOtp(user, purpose, ctx) {
+  async function sendOtp(user, purpose, ctx, options = {}) {
     const code = String(randomInt(100000, 1000000));
-    const item = challenge(purpose, code);
+    const item = challenge(purpose, code, options);
     const updated = await mutate({ _id: user._id, status: purpose === 'verify' ? 'pending' : 'active',
       $or: [{ [`challenges.${purpose}.sentAt`]: { $exists: false } }, { [`challenges.${purpose}.sentAt`]: { $lte: new Date(now().getTime() - config.auth.resendMs) } }] },
     { $set: { [`challenges.${purpose}`]: item } }, `${purpose}_requested`, ctx);
@@ -72,6 +72,12 @@ export async function createAuthService({ models, config, mail, logger, now = ()
     await deliver(updated, purpose, code, item);
     return item.id;
   }
+  // "Resend code" keeps a password chosen at re-registration only for whoever holds the current challenge id, which was
+  // returned to that registration alone. Anyone else asking for a new code gets one without it.
+  const carriedPassword = (user, challengeId) => {
+    const current = user.challenges?.verify;
+    return current?.pendingPasswordHash && typeof challengeId === 'string' && current.id && equal(challengeId, current.id) ? { pendingPasswordHash: current.pendingPasswordHash } : {};
+  };
   async function sessionFor(user, rememberMe, label) {
     const staff = !user.roles.includes('student');
     const token = opaque();
@@ -105,21 +111,45 @@ export async function createAuthService({ models, config, mail, logger, now = ()
       let user;
       try { user = await User.create({ publicId: `KITSS${randomUUID().replaceAll('-', '').slice(0, 16).toUpperCase()}`, name: input.name.trim(), emailNormalized: identifier,
         passwordHash, roles: ['student'], status: 'pending', auditOutbox: [event('identity_created', ctx)] }); }
-      catch (error) { if (error.code === 11000) return { message: 'If eligible, check your email to verify your account', challengeId: opaque() }; throw error; }
+      catch (error) {
+        if (error.code === 11000) {
+          const existing = await User.findOne({ emailNormalized: identifier });
+          if (existing?.status === 'active' && existing.emailVerifiedAt) {
+            throw new AppError(409, 'ACCOUNT_EXISTS', 'An account with this email is already registered. Please sign in instead.');
+          }
+          if (existing?.status === 'pending') {
+            // The new password is tied to this verification only and applied when its code is entered. Saving it on the
+            // account now would let anyone who re-registers an unverified email choose the password its owner then activates.
+            const lastSent = existing.challenges?.verify?.sentAt;
+            if (lastSent && lastSent > new Date(now().getTime() - config.auth.resendMs)) throw new AppError(429, 'RESEND_COOLDOWN', 'A verification code was sent less than a minute ago. Please wait a minute, then try again.');
+            const challengeId = await sendOtp(existing, 'verify', ctx, { pendingPasswordHash: passwordHash });
+            return { message: 'A verification code has been sent to your email to verify your pending account.', challengeId };
+          }
+          return { message: 'If eligible, check your email to verify your account', challengeId: opaque() };
+        }
+        throw error;
+      }
       await flushAudit(user);
       return { message: 'If eligible, check your email to verify your account', challengeId: await sendOtp(user, 'verify', ctx) };
     },
     async resend(input, ctx) {
       const identifier = email(input.email);
       await limit(ctx, identifier, 'resend', 5);
-      const user = await User.findOne({ emailNormalized: identifier, status: 'pending', passwordHash: { $exists: true } });
+      const user = await User.findOne({ emailNormalized: identifier, passwordHash: { $exists: true } });
+      if (input.challengeId !== undefined && typeof input.challengeId !== 'string') throw new AppError(422, 'INVALID_INPUT', 'Invalid verification request');
+      if (user && user.status === 'active' && user.emailVerifiedAt) {
+        throw new AppError(409, 'ACCOUNT_EXISTS', 'This account is already verified. Please sign in instead.');
+      }
       if (!mail.configured) throw new AppError(503, 'EMAIL_UNAVAILABLE', 'Email delivery is unavailable; please try again later');
-      return { message: 'If eligible, a verification code has been submitted for delivery', challengeId: user ? await sendOtp(user, 'verify', ctx) : opaque() };
+      return { message: 'If eligible, a verification code has been submitted for delivery', challengeId: user?.status === 'pending' ? await sendOtp(user, 'verify', ctx, carriedPassword(user, input.challengeId)) : opaque() };
     },
     async activate({ challengeId, otp }, ctx) {
       await limit(ctx, challengeId, 'verify');
+      // A password chosen when re-registering is applied together with this proof (same challenge id and code).
+      const proven = await User.findOne({ ...proofFilter('verify', challengeId, otp), status: 'pending' }).select('challenges.verify.pendingPasswordHash').lean();
+      const chosen = proven?.challenges?.verify?.pendingPasswordHash;
       const user = await mutate({ ...proofFilter('verify', challengeId, otp), status: 'pending', passwordHash: { $exists: true } },
-        { $set: { emailVerifiedAt: now(), status: 'active' }, $unset: { 'challenges.verify': 1 } }, 'email_verified', ctx);
+        { $set: { emailVerifiedAt: now(), status: 'active', ...(chosen ? { passwordHash: chosen } : {}) }, $unset: { 'challenges.verify': 1 } }, 'email_verified', ctx);
       if (!user) return wrongProof('verify', challengeId);
       return { user: userDTO(user), message: 'Email verified. Please sign in.' };
     },

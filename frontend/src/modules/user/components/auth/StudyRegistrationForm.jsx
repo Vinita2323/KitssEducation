@@ -1,5 +1,6 @@
 import { RegistrationDraftControls } from './RegistrationDraftControls';
 import React, { useState } from "react";
+import { isPhoneNumber, PHONE_MAX_LENGTH } from "../../../../shared/validation/phone";
 import {
   User,
   Mail,
@@ -146,11 +147,11 @@ export const StudyRegistrationForm = ({ onBack }) => {
 
     // STEP 2: Contact & Address
     else if (currentStep === 2) {
-      if (!formData.callingNo.trim() || formData.callingNo.length < 10) {
-        errs.callingNo = "Valid 10-digit Calling No is required";
+      if (!isPhoneNumber(formData.callingNo)) {
+        errs.callingNo = "Enter a valid calling number (10 to 15 digits)";
       }
-      if (!formData.whatsappNo.trim() || formData.whatsappNo.length < 10) {
-        errs.whatsappNo = "Valid 10-digit WhatsApp No is required";
+      if (!isPhoneNumber(formData.whatsappNo)) {
+        errs.whatsappNo = "Enter a valid WhatsApp number (10 to 15 digits)";
       }
       if (!formData.email.trim() || !formData.email.includes("@")) {
         errs.email = "Valid Email ID is required";
@@ -403,7 +404,7 @@ export const StudyRegistrationForm = ({ onBack }) => {
                           placeholder="10-digit mobile number"
                           value={formData.callingNo}
                           onChange={handleChange}
-                          maxLength={10}
+                          maxLength={PHONE_MAX_LENGTH}
                           className="w-full pl-9 pr-3 py-2 bg-slate-50/70 border border-slate-200 rounded-lg text-xs sm:text-sm text-[#0A1D3F] focus:outline-none focus:border-[#FF8A00] focus:bg-white transition"
                           required
                         />
@@ -452,7 +453,7 @@ export const StudyRegistrationForm = ({ onBack }) => {
                         placeholder="WhatsApp enabled contact number"
                         value={formData.whatsappNo}
                         onChange={handleChange}
-                        maxLength={10}
+                        maxLength={PHONE_MAX_LENGTH}
                         className="w-full pl-9 pr-3 py-2 bg-slate-50/70 border border-slate-200 rounded-lg text-xs sm:text-sm text-[#0A1D3F] focus:outline-none focus:border-[#FF8A00] focus:bg-white transition"
                         required
                       />
@@ -690,22 +691,6 @@ export const StudyRegistrationForm = ({ onBack }) => {
                       </span>
                     </div>
 
-                    <div>
-                      <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                        12-Digit Student Aadhar Number
-                      </label>
-                      <input
-                        type="text"
-                        name="aadharNumber" disabled title="An identity number is not required for this application"
-                        placeholder="XXXX XXXX XXXX (12 digits)"
-                        value={formData.aadharNumber}
-                        onChange={handleChange}
-                        maxLength={12}
-                        className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-mono font-bold text-[#0A1D3F] tracking-wider focus:outline-none focus:border-[#FF8A00]"
-                        required
-                      />
-                      {errors.aadharNumber && <p className="text-[11px] text-red-500 mt-0.5 font-medium">{errors.aadharNumber}</p>}
-                    </div>
 
                     <div>
                       <label className="block text-[11px] font-bold text-slate-700 mb-1">

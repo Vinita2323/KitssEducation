@@ -51,8 +51,4 @@ export const collegeService = {
     const result = await authenticatedWrite('/admission-applications', { collegeId: input.collegeId, programId: input.courseId, studentDetails: input.studentDetails, idempotencyKey: input.idempotencyKey });
     return { ...result, success: true, applicationId: result.reference };
   },
-  createFranchiseDraft: data => authenticatedWrite('/franchise-applications', data),
-  updateFranchiseDraft: (draft, data) => authenticatedWrite('/franchise-applications/' + draft.id, { ...data, expectedRevision: draft.revision }, 'PATCH', true, { 'X-Draft-Capability': draft.draftCapability }),
-  submitFranchiseDraft: draft => authenticatedWrite('/franchise-applications/' + draft.id + '/submit', { expectedRevision: draft.revision, declaration: { version: 'franchise-v1', accepted: true } }, 'POST', true, { 'X-Draft-Capability': draft.draftCapability }),
-  async getFranchiseStatus(draft) { return (await httpClient.request('/franchise-applications/' + draft.id + '/status', { headers: { 'X-Draft-Capability': draft.draftCapability } })).data; },
 };

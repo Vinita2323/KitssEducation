@@ -85,7 +85,7 @@ export function createAuthRouter({ service, config }) {
     reply(req, res, { user: result.user, permissions: result.permissions, session: { expiresAt: result.session.expiresAt, kind: result.session.kind } });
   }
   router.post('/auth/accounts', async (req, res) => reply(req, res, await service.register(body(req, ['name', 'email', 'password'], ['name', 'email', 'password']), context(req)), 202));
-  router.post('/auth/email/resend', async (req, res) => reply(req, res, await service.resend(body(req, ['email'], ['email']), context(req)), 202));
+  router.post('/auth/email/resend', async (req, res) => reply(req, res, await service.resend(body(req, ['email', 'challengeId'], ['email']), context(req)), 202));
   router.post('/auth/activate', async (req, res) => reply(req, res, await service.activate(body(req, ['challengeId', 'otp'], ['challengeId', 'otp']), context(req))));
   router.post('/auth/login', async (req, res) => {
     const result = await service.login(body(req, ['identifier', 'password', 'rememberMe', 'deviceLabel', 'kind'], ['identifier', 'password']), context(req));

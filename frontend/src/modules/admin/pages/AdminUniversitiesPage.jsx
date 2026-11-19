@@ -1,5 +1,6 @@
 import { AdminField, AdminInput, AdminSelect } from '../components/AdminFields';
 import { useDialogFocus } from '../../../shared/ui/useDialogFocus';
+import { useDebouncedValue } from '../../../shared/ui/useDebouncedValue';
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import {
@@ -34,6 +35,7 @@ export const AdminUniversitiesPage = () => {
 
   // Search & Filter
   const [search, setSearch] = useState("");
+  const debouncedSearch = useDebouncedValue(search.trim(), 250);
   const [statusFilter, setStatusFilter] = useState("All");
 
   // Modal state
@@ -55,7 +57,7 @@ export const AdminUniversitiesPage = () => {
       setLoading(true);
       const result = await adminService.page('universities', { page,
         status: statusFilter,
-        search,
+        search: debouncedSearch,
        });
       const data = result.data; setMeta(result.meta); setLoadError('');
       setUniversities(data || []);
@@ -68,9 +70,9 @@ export const AdminUniversitiesPage = () => {
 
   useEffect(() => {
     fetchUniversities();
-  }, [statusFilter, search, page]);
+  }, [statusFilter, debouncedSearch, page]);
 
-  useEffect(() => { setPage(1); }, [statusFilter, search]);
+  useEffect(() => { setPage(1); }, [statusFilter, debouncedSearch]);
   const handleSearchSubmit = (e) => {
     e.preventDefault();
     fetchUniversities();
@@ -217,30 +219,31 @@ export const AdminUniversitiesPage = () => {
       </div>
 
       {/* Universities Table / Cards */}
-      {loading ? (
-        <div className="bg-white rounded-2xl border border-[#E6E8EC] p-12 text-center text-gray-400 text-sm">
-          Loading universities...
-        </div>
-      ) : universities.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-[#E6E8EC] p-12 text-center space-y-3">
-          <div className="w-12 h-12 rounded-full bg-gray-100 text-gray-400 flex items-center justify-center mx-auto">
-            <GraduationCap className="w-6 h-6" />
+      <div className="min-h-[360px]">
+        {loading && universities.length === 0 ? (
+          <div className="bg-white rounded-2xl border border-[#E6E8EC] p-12 text-center text-gray-400 text-sm min-h-[360px] flex items-center justify-center">
+            Loading universities...
           </div>
-          <h3 className="text-base font-bold text-[#0A1D3F]">No Universities Found</h3>
-          <p className="text-xs text-[#667085] max-w-sm mx-auto">
-            No universities match your active filters. Click "Add University" above to add a university.
-          </p>
-          <button
-            onClick={handleOpenCreate}
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#0A1D3F] text-white text-xs font-semibold shadow-xs hover:bg-[#133C8B] transition cursor-pointer"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Add First University</span>
-          </button>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {universities.map((uni) => {
+        ) : universities.length === 0 ? (
+          <div className="bg-white rounded-2xl border border-[#E6E8EC] p-12 text-center space-y-3 min-h-[360px] flex flex-col items-center justify-center">
+            <div className="w-12 h-12 rounded-full bg-gray-100 text-gray-400 flex items-center justify-center mx-auto">
+              <GraduationCap className="w-6 h-6" />
+            </div>
+            <h3 className="text-base font-bold text-[#0A1D3F]">No Universities Found</h3>
+            <p className="text-xs text-[#667085] max-w-sm mx-auto">
+              No universities match your active filters. Click "Add University" above to add a university.
+            </p>
+            <button
+              onClick={handleOpenCreate}
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#0A1D3F] text-white text-xs font-semibold shadow-xs hover:bg-[#133C8B] transition cursor-pointer"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Add First University</span>
+            </button>
+          </div>
+        ) : (
+          <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 transition-opacity duration-150 ${loading ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}>
+            {universities.map((uni) => {
             const uId = uni._id || uni.id;
             return (
               <div
@@ -339,6 +342,7 @@ export const AdminUniversitiesPage = () => {
           })}
         </div>
       )}
+      </div>
 
       <Pagination meta={meta} onChange={setPage} loading={loading} />
 

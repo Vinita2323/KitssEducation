@@ -2,6 +2,7 @@ import { randomInt, randomUUID } from 'node:crypto';
 import { AppError } from '../../utils/AppError.js';
 import { object, text, invalid, id } from '../publishing/validation.js';
 import { email, checkPassword, mac, opaque, userDTO } from './security.js';
+import { isPhoneNumber, PHONE_RULE } from '../../utils/phone.js';
 // A real calendar date between 1900-01-01 and today (UTC).
 export function validBirthDate(value) {
   if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
@@ -57,8 +58,7 @@ export function createAccountService({
       }
       if ('phone' in input) {
         fields.phone = text(input.phone, 24);
-        const digits = fields.phone.replace(/\D/g, '');
-        if (fields.phone && (!/^\+?[0-9 ()-]{7,24}$/.test(fields.phone) || digits.length < 7 || digits.length > 15)) throw invalid('Invalid phone number');
+        if (fields.phone && !isPhoneNumber(fields.phone)) throw invalid('Invalid phone number. ' + PHONE_RULE);
       }
       if (input.profile) {
         object(input.profile, ['board', 'class', 'dob']);

@@ -40,7 +40,7 @@ export const LoginPage = ({ staff = false }) => {
 
     try {
       setLoading(true);
-      const res = await login(userId, password, rememberMe, staff ? 'admin' : 'student');
+      const res = await login(userId, password, staff ? false : rememberMe, staff ? 'admin' : 'student');
       if (res.success) {
         showSuccess(`Welcome back, ${res.user?.name || (staff ? "Staff" : "Student")}!`);
         const target = location.state?.returnTo;
@@ -130,16 +130,18 @@ export const LoginPage = ({ staff = false }) => {
         </div>
 
         {/* Remember Me & Forgot Password */}
-        <div className="flex items-center justify-between text-xs pt-0.5">
-          <label className="flex items-center gap-1.5 cursor-pointer text-[#667085]">
-            <input
-              type="checkbox"
-              checked={rememberMe}
-              onChange={(e) => setRememberMe(e.target.checked)}
-              className="w-3.5 h-3.5 rounded border-gray-300 text-[#0A1D3F] focus:ring-[#0A1D3F]"
-            />
-            <span className="text-[11px]">Remember Me</span>
-          </label>
+        <div className={`flex items-center text-xs pt-0.5 ${staff ? 'justify-end' : 'justify-between'}`}>
+          {!staff && (
+            <label className="flex items-center gap-1.5 cursor-pointer text-[#667085]">
+              <input
+                type="checkbox"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+                className="w-3.5 h-3.5 rounded border-gray-300 text-[#0A1D3F] focus:ring-[#0A1D3F]"
+              />
+              <span className="text-[11px]">Remember Me</span>
+            </label>
+          )}
 
           <Link
             to="/forgot-password"

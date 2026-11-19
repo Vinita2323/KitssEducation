@@ -107,8 +107,8 @@ export const ResetPasswordPage = () => {
       showError("Please enter the 6-digit OTP.");
       return;
     }
-    if (!newPassword || newPassword.length < 12) {
-      showError("Password must be at least 12 characters.");
+    if (!newPassword || newPassword.length < 6) {
+      showError("Password must be at least 6 characters.");
       return;
     }
     if (newPassword !== confirmPassword) {
@@ -163,7 +163,7 @@ export const ResetPasswordPage = () => {
             type="password"
             value={newPassword}
             onChange={(e) => setNewPassword(e.target.value)}
-            placeholder="At least 12 characters"
+            placeholder="At least 6 characters"
             className="w-full px-4 py-2.5 bg-[#F7F8FA] border border-[#E6E8EC] rounded-xl text-xs sm:text-sm text-[#0A1D3F] focus:outline-none focus:ring-2 focus:ring-[#0A1D3F]/20 focus:border-[#0A1D3F] transition"
             required
           />

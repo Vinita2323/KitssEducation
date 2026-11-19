@@ -33,7 +33,7 @@ export const SearchableSelect = ({
   const containerRef = useRef(null);
   const menuRef = useRef(null);
   const searchInputRef = useRef(null);
-  const triggerRef = useRef(null), listId = useId();
+  const triggerRef = useRef(null), listRef = useRef(null), listId = useId();
   const [activeIndex, setActiveIndex] = useState(0);
 
   const normalizedOptions = options.map((opt) => {
@@ -70,9 +70,22 @@ export const SearchableSelect = ({
 
   const showSearch = searchable || allowCustom;
   useEffect(() => setActiveIndex(0), [searchTerm, isOpen]);
+  // The highlighted option, for screen readers (aria-activedescendant). None when the list is empty.
+  const optionCount = filteredOptions.length + (showCustomOption ? 1 : 0);
+  const activeId = isOpen && optionCount ? `${listId}-${Math.min(activeIndex, optionCount - 1)}` : undefined;
+  // Keep the highlighted option visible while moving through a long list with the arrow keys.
+  // Only the list scrolls: scrollIntoView would also scroll the page, which re-positions the open menu.
+  useEffect(() => {
+    const option = activeId && document.getElementById(activeId), list = listRef.current;
+    if (!option || !list) return;
+    const top = option.offsetTop - list.offsetTop, bottom = top + option.offsetHeight;
+    if (top < list.scrollTop) list.scrollTop = top;
+    else if (bottom > list.scrollTop + list.clientHeight) list.scrollTop = bottom - list.clientHeight;
+  }, [activeId]);
   const menuKey = e => {
     if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); setIsOpen(false); triggerRef.current?.focus(); }
-    else if (e.key === 'Tab') setIsOpen(false);
+    // The list is rendered at the end of the page, so hand focus back to the field: Tab then moves on to the next field.
+    else if (e.key === 'Tab') { setIsOpen(false); triggerRef.current?.focus(); }
     else if (['ArrowDown','ArrowUp','Home','End'].includes(e.key)) {
       e.preventDefault(); const count = filteredOptions.length + (showCustomOption ? 1 : 0);
       setActiveIndex(i => e.key === 'Home' ? 0 : e.key === 'End' ? Math.max(0,count-1) : count ? (i+(e.key === 'ArrowDown'?1:-1)+count)%count : 0);
@@ -168,8 +181,11 @@ export const SearchableSelect = ({
       window.addEventListener("scroll", updateDropdownPlacement, true);
       window.addEventListener("resize", updateDropdownPlacement);
 
+      // With a search box, typing goes there; without one, the list itself takes focus so the highlighted option is announced.
       if (showSearch && searchInputRef.current) {
         setTimeout(() => searchInputRef.current?.focus(), 40);
+      } else if (!showSearch) {
+        setTimeout(() => listRef.current?.focus(), 40);
       }
     }
     return () => {
@@ -224,7 +240,7 @@ export const SearchableSelect = ({
                   ref={searchInputRef}
                   type="text"
                   role="combobox" aria-label={searchPlaceholder} aria-expanded="true" aria-controls={listId}
-                  aria-activedescendant={listId+'-'+activeIndex}
+                  aria-activedescendant={activeId}
                   placeholder={
                     allowCustom
                       ? "Search or type institute name"
@@ -252,14 +268,17 @@ export const SearchableSelect = ({
           )}
 
           <div
-            id={listId} role="listbox" aria-label={ariaLabel || placeholder}
+            id={listId} ref={listRef} role="listbox" aria-label={ariaLabel || placeholder}
+            tabIndex={showSearch ? undefined : -1} aria-activedescendant={showSearch ? undefined : activeId}
             style={{ maxHeight: `${menuMaxHeight}px` }}
             className="overflow-y-auto overflow-x-hidden p-1 space-y-0.5 overscroll-contain"
           >
             {showCustomOption && (
               <div
-                role="option" id={listId+'-'+filteredOptions.length} aria-selected={activeIndex===filteredOptions.length}
+                role="option" id={listId+'-'+filteredOptions.length} aria-selected={false}
                 onClick={handleSelectCustom}
+                onMouseEnter={() => setActiveIndex(filteredOptions.length)}
+                style={activeIndex===filteredOptions.length ? {outline:'2px solid #FF8A00', outlineOffset:'-2px'} : undefined}
                 className="px-2.5 py-1.5 rounded-md text-xs font-semibold cursor-pointer transition-all flex items-center gap-2 bg-[#FFF7ED] text-[#FF8A00] hover:bg-orange-100 border border-orange-100 mb-0.5"
               >
                 <Plus className="w-3.5 h-3.5 shrink-0" />
@@ -273,9 +292,9 @@ export const SearchableSelect = ({
                 const showGroup =
                   opt.group && opt.group !== filteredOptions[index - 1]?.group;
                 return (
-                  <div key={String(opt.value)}>
+                  <div key={String(opt.value)} role="none">
                     {showGroup && (
-                      <p className="px-2.5 pt-1.5 pb-0.5 text-[10px] font-bold uppercase tracking-wide text-[#667085]">
+                      <p aria-hidden="true" className="px-2.5 pt-1.5 pb-0.5 text-[10px] font-bold uppercase tracking-wide text-[#667085]">
                         {opt.group}
                       </p>
                     )}

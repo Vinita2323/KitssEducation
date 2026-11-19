@@ -7,7 +7,7 @@ export async function createFcmService({ connection, config, logger, authService
   const FcmToken = createFcmTokenModel(connection);
   const provider = transport ?? await createFirebaseTransport(config, logger);
   const { User, Session } = authService.models;
-  const validToken = token => { if (typeof token !== 'string' || !/^[A-Za-z0-9_:\-]{20,4096}$/.test(token)) throw invalid('Invalid bounded push token'); return token; };
+  const validToken = token => { if (typeof token !== 'string' || !/^[A-Za-z0-9_:-]{20,4096}$/.test(token)) throw invalid('Invalid bounded push token'); return token; };
   async function active(row) {
     const user = await User.findById(row.userId), session = await Session.findById(row.sessionId);
     return Boolean(user?.status === 'active' && user.emailVerifiedAt && user.securityVersion === row.securityVersion && session && !session.revokedAt && session.expiresAt > new Date() && session.lastSeenAt > new Date(Date.now() - (session.kind === 'admin' ? config.auth.staffIdleMs : config.auth.idleMs)) && session.securityVersion === user.securityVersion && String(session.userId) === String(user._id) && (session.kind !== 'student' || user.activeSessionId === session._id));

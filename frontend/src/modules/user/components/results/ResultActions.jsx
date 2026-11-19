@@ -17,9 +17,9 @@ export const ResultActions = ({ result, onBack, onNewSearch }) => {
 
   const getFileBaseName = () => {
     const safeBoard = String(result?.board || result?.boardName || "Result")
-      .replace(/[^\w\-]+/g, "_")
+      .replace(/[^\w-]+/g, "_")
       .slice(0, 24);
-    const safeRoll = String(result?.rollNumber || "Student").replace(/[^\w\-]+/g, "_");
+    const safeRoll = String(result?.rollNumber || "Student").replace(/[^\w-]+/g, "_");
     return `Marksheet_${safeBoard}_${safeRoll}`;
   };
 

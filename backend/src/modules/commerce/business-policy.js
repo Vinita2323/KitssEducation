@@ -2,7 +2,8 @@ import { refundPolicy, franchisePolicy, invoicePolicy, franchiseFeeStatus } from
 import { randomUUID } from 'node:crypto';
 import { AppError } from '../../utils/AppError.js';
 import { object, text, id, revision, key, invalid } from '../publishing/validation.js';
-import { registrationFields } from './registration.js';
+import { registrationFields, phoneFields } from './registration.js';
+import { isPhoneNumber, PHONE_RULE } from '../../utils/phone.js';
 import { grantsFor } from '../auth/security.js';
 import { userScope, ownerScope } from '../../utils/domain-lock.js';
 import { contentInput } from '../publishing/validation.js';
@@ -172,6 +173,7 @@ export function createBusinessPolicyService(commerce) {
       return coordination.runAs(userScope(auth), async () => {
         const row = await commerce.application(value, auth), p = await api.policy(row.kind);
         if (!['draft', 'needs_changes'].includes(row.status)) throw blocked('This application is already submitted');
+        for (const field of phoneFields[row.kind] || []) { const value = row.applicant?.[field]; if (value && !isPhoneNumber(String(value))) throw invalid('Invalid phone number in ' + field + '. ' + PHONE_RULE); }
         let guardianConsent;
         if (input.guardianConsent) {
           object(input.guardianConsent, ['version', 'guardianName', 'relationship', 'accepted'], ['version', 'guardianName', 'relationship', 'accepted']);

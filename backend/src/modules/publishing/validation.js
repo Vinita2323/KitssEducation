@@ -1,5 +1,7 @@
 import { id, invalid, object, key, revision } from '../institutions/validation.js';
 export { id, invalid, object, key, revision };
+// Control characters are rejected on purpose.
+// eslint-disable-next-line no-control-regex
 export const text = (v, max = 160) => { if (typeof v !== 'string' || v.length > max || /[\u0000-\u0008\u000b-\u001f]/.test(v)) throw invalid('Invalid text'); return v.trim(); };
 const integer = (v, max = 1000000000) => { if (!Number.isSafeInteger(v) || v < 0 || v > max) throw invalid('Invalid integer'); return v; };
 const bool = v => { if (typeof v !== 'boolean') throw invalid('Invalid boolean'); return v; };

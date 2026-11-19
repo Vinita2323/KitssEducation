@@ -10,6 +10,7 @@ import {
   GraduationCap,
 } from "lucide-react";
 import { SearchableSelect } from "../../components/common/SearchableSelect";
+import { isPhoneNumber, PHONE_MAX_LENGTH } from "../../../../shared/validation/phone";
 
 const inputClass = "w-full pl-10 pr-4 py-2.5 rounded-xl bg-[#F7F8FA] border border-[#E6E8EC] text-xs sm:text-sm text-[#0A1D3F] focus:outline-none focus:border-[#FF8A00] transition";
 const labelClass = "block text-xs font-bold text-[#0A1D3F] uppercase tracking-wider";
@@ -41,7 +42,7 @@ export const CourseRegistrationPage = () => {
     const errs = {};
     if (!formData.name.trim()) errs.name = "Full Name is required";
     if (!formData.phone.trim()) errs.phone = "Mobile Number is required";
-    else if (!/^\+?[0-9\s-]{10,14}$/.test(formData.phone.trim())) errs.phone = "Please enter a valid 10-digit mobile number";
+    else if (!isPhoneNumber(formData.phone)) errs.phone = "Enter a valid mobile number (10 to 15 digits)";
     if (!formData.email.trim()) errs.email = "Email Address is required";
     else if (!/\S+@\S+\.\S+/.test(formData.email)) errs.email = "Please enter a valid email address";
     if (!formData.dob) errs.dob = "Date of Birth is required";
@@ -90,7 +91,7 @@ export const CourseRegistrationPage = () => {
             <label htmlFor="coaching-phone" className={labelClass}>Mobile Number *</label>
             <div className="relative">
               <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#667085]" />
-              <input id="coaching-phone" type="tel" placeholder="+91 98765 43210" value={formData.phone}
+              <input id="coaching-phone" type="tel" maxLength={PHONE_MAX_LENGTH} placeholder="+91 98765 43210" value={formData.phone}
                 onChange={e => set("phone", e.target.value)} className={inputClass} />
             </div>
             {errorText(errors.phone)}

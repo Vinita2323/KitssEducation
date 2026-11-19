@@ -23,6 +23,7 @@ import { PrimaryButton, SecondaryButton } from "../../components/common/PrimaryB
 import { authService } from '../../services/authService';
 import { collegeService } from '../../services/collegeService';
 import { coachingService } from '../../services/coachingService';
+import { isPhoneNumber, PHONE_HINT } from '../../../../shared/validation/phone';
 
 // Today as YYYY-MM-DD in the viewer's own calendar, for the date-of-birth upper bound.
 const localToday = () => { const d = new Date(); return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10); };
@@ -85,6 +86,7 @@ export const ProfilePage = () => {
 
   const handleSaveProfile = async (e) => {
     e.preventDefault();
+    if (editData.phone.trim() && !isPhoneNumber(editData.phone)) { showError(PHONE_HINT); return; }
     setSavingProfile(true);
     try {
       await updateProfile({ name: editData.name, phone: editData.phone.trim(), profile: { board: editData.board, class: editData.class, dob: editData.dob } });
@@ -97,8 +99,8 @@ export const ProfilePage = () => {
 
   const handleChangePassword = async (e) => {
     e.preventDefault();
-    if (!newPass || newPass.length < 12) {
-      showError("New password must be at least 12 characters.");
+    if (!newPass || newPass.length < 6) {
+      showError("New password must be at least 6 characters.");
       return;
     }
     try { await authService.changePassword(currPass, newPass); await logout(); navigate('/login'); }
@@ -483,7 +485,7 @@ export const ProfilePage = () => {
               type="password"
               value={newPass}
               onChange={(e) => setNewPass(e.target.value)}
-              placeholder="At least 12 characters"
+              placeholder="At least 6 characters"
               className="w-full p-2.5 bg-[#F7F8FA] border border-[#E6E8EC] rounded-xl text-xs"
               required
             />

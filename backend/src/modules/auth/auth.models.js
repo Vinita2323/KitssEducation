@@ -6,7 +6,9 @@ export function createAuthModels(connection) {
   const { Schema } = mongoose;
   const challenge = new Schema({ id: String, hash: String, expiresAt: Date, attempts: { type: Number, default: 0 },
     sentAt: Date, delivered: { type: Boolean, default: false }, targetSessionId: String,
-    version: Number, rememberMe: Boolean, newEmail: String }, { _id: false });
+    version: Number, rememberMe: Boolean, newEmail: String,
+    // A password chosen when re-registering an unverified account; applied only when this challenge is verified.
+    pendingPasswordHash: String }, { _id: false });
   const event = new Schema({ id: String, action: String, actorId: String, requestId: String, permissionChange: { before: [String], after: [String] }, reason: { type: String, maxlength: 500 }, at: Date }, { _id: false });
   const userSchema = new Schema({
     publicId: { type: String, required: true, unique: true }, name: { type: String, required: true, maxlength: 100 },
