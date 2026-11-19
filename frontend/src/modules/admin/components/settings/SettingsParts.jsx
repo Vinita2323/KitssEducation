@@ -14,10 +14,39 @@ export function Notice({ tone = 'info', children }) {
 // Shared footer for policy forms: a required change reason, the save action and the change history.
 export function SaveBar({ reason, setReason, label, busy, disabled, dirty, history = [], extra }) {
   return <div className="space-y-3 border-t border-[#e1e7f0] pt-4">
-    <AdminField className="block" help={reasonPrompt}>Reason for this change<AdminTextarea aria-label="Reason for this change" rows={2} maxLength={500} value={reason} onChange={e => setReason(e.target.value)} /></AdminField>
+    <AdminField className="block" help={reasonPrompt}>
+      Reason for this change
+      <AdminTextarea
+        aria-label="Reason for this change"
+        placeholder="Briefly state what you changed and why (required to save changes)..."
+        rows={2}
+        maxLength={500}
+        value={reason}
+        onChange={e => setReason(e.target.value)}
+      />
+    </AdminField>
     <div className="flex flex-wrap items-center gap-3">
-      <button type="submit" disabled={busy || disabled || !reason.trim()} className="admin-btn admin-btn-primary">{label}</button>{extra}
-      {dirty && <span className="text-sm text-amber-800">Unsaved changes</span>}
+      <button
+        type="submit"
+        disabled={busy || disabled || !reason.trim()}
+        className="admin-btn admin-btn-primary cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+        title={!reason.trim() ? "Enter a reason above to enable saving" : undefined}
+      >
+        {label}
+      </button>
+      {extra}
+      {dirty && (
+        <div className="flex items-center gap-2 text-xs">
+          <span className="font-semibold text-amber-800 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-md">
+            Unsaved changes
+          </span>
+          {!reason.trim() && (
+            <span className="text-red-600 font-medium">
+              (Please enter a change reason above to enable saving)
+            </span>
+          )}
+        </div>
+      )}
     </div>
     {history.length > 0 && <details className="text-sm"><summary className="cursor-pointer font-semibold">Change history</summary>
       <ol className="mt-2 space-y-1">{[...history].reverse().slice(0, 20).map(h => <li key={h.revision}><span className="font-semibold">{showStamp(h.at)}</span> · {h.reason}</li>)}</ol></details>}

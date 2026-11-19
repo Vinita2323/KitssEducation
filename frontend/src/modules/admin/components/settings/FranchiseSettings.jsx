@@ -76,12 +76,50 @@ export function FranchiseSettings({ record, locked, onChanged }) {
       </AdminCard>
       <AdminCard title="Documents applicants upload" bodyClassName="space-y-3">
         {!docs.length && <p className="text-sm text-[#53647c]">No documents are requested.</p>}
-        {docs.map((d, i) => <div key={i} className="flex flex-wrap items-end gap-2">
-          <AdminField help="" className="block flex-1 min-w-48">Document {i + 1} name<AdminInput aria-label={'Franchise document ' + (i + 1) + ' name'} maxLength={100} value={d.label} onChange={e => setDocs(docs.map((v, n) => n === i ? { ...v, label: e.target.value } : v))} /></AdminField>
-          <label className="flex items-center gap-2 text-sm pb-2"><input type="checkbox" checked={d.required} onChange={e => setDocs(docs.map((v, n) => n === i ? { ...v, required: e.target.checked } : v))} />Required</label>
-          <button type="button" className="admin-btn admin-btn-ghost" onClick={() => setDocs(docs.filter((_, n) => n !== i))}>Remove</button>
-        </div>)}
-        <button type="button" className="admin-btn admin-btn-secondary" disabled={docs.length >= 10} onClick={() => setDocs([...docs, { label: '', required: true }])}>Add document</button>
+        {docs.map((d, i) => (
+          <div
+            key={i}
+            className="p-3 bg-slate-50/80 border border-slate-200/80 rounded-xl space-y-2.5 sm:space-y-0 sm:flex sm:items-end sm:gap-3"
+          >
+            <div className="flex-1 min-w-0">
+              <AdminField help="" className="block w-full">
+                Document {i + 1} name
+                <AdminInput
+                  aria-label={'Franchise document ' + (i + 1) + ' name'}
+                  maxLength={100}
+                  value={d.label}
+                  onChange={e => setDocs(docs.map((v, n) => n === i ? { ...v, label: e.target.value } : v))}
+                />
+              </AdminField>
+            </div>
+            <div className="flex items-center gap-2.5 shrink-0 sm:pb-1">
+              <label className="flex items-center gap-1.5 text-xs font-semibold text-[#0A1D3F] select-none cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={d.required}
+                  onChange={e => setDocs(docs.map((v, n) => n === i ? { ...v, required: e.target.checked } : v))}
+                  className="rounded text-[#FF8A00] focus:ring-[#FF8A00]"
+                />
+                <span>Required</span>
+              </label>
+              <button
+                type="button"
+                className="px-2.5 py-1.5 rounded-lg text-xs font-semibold text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 border border-red-200 transition cursor-pointer"
+                onClick={() => setDocs(docs.filter((_, n) => n !== i))}
+              >
+                Remove
+              </button>
+            </div>
+          </div>
+        ))}
+        <button
+          type="button"
+          className="admin-btn admin-btn-secondary cursor-pointer"
+          disabled={docs.length >= 10}
+          onClick={() => setDocs([...docs, { label: '', required: true }])}
+        >
+          Add document
+        </button>
         <p className="text-xs text-[#53647c]">Applicants can upload PDF, PNG or JPEG files up to 10 MB.</p>
       </AdminCard>
       <AdminCard title="Fees" bodyClassName="space-y-3">
