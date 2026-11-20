@@ -16,13 +16,33 @@ export function useOriginalRegistration(kind, formData, setFormData, setErrors) 
     if (user?.emailVerified) { const key = kind === 'tuition' ? 'emailId' : 'email'; setFormData(v => ({ ...v, [key]: v[key] || user.email })); }
   }, [user?.id, user?.emailVerified, kind]);
   const policy = config?.policies?.[kind], enabled = Boolean(config?.enabled?.[kind]);
-  const canChooseDocument = key => enabled && Boolean(policy.documents?.some(d => d.key === key));
+  const norm = k => String(k || '').replace(/[-_\s]/g, '').toLowerCase();
+  const findDoc = key => policy?.documents?.find(d => d.key === key || norm(d.key) === norm(key));
+  const canChooseDocument = key => enabled && Boolean(findDoc(key));
   const chooseDocument = (key, file) => {
-    if (!file || !canChooseDocument(key)) return;
-    if (!(policy.upload?.mime || ['application/pdf', 'image/png', 'image/jpeg']).includes(file.type) || file.size > (policy.upload?.maxBytes || 10485760)) { setErrors(v => ({ ...v, [key]: 'Choose a document of the allowed type and size.' })); return; }
-    setErrors(v => ({ ...v, [key]: '' }));
-    setFormData(v => ({ ...v, [key + 'File']: file, [key + 'Preview']: null }));
-    if (file.type.startsWith('image/')) { const reader = new FileReader(); reader.onload = () => setFormData(v => v[key + 'File'] === file ? { ...v, [key + 'Preview']: reader.result } : v); reader.readAsDataURL(file); }
+    const doc = findDoc(key);
+    if (!file || !enabled || !doc) return;
+    if (!(policy?.upload?.mime || ['application/pdf', 'image/png', 'image/jpeg']).includes(file.type) || file.size > (policy?.upload?.maxBytes || 10485760)) {
+      setErrors(v => ({ ...v, [key]: 'Choose a document of the allowed type and size.', [doc.key]: 'Choose a document of the allowed type and size.' }));
+      return;
+    }
+    setErrors(v => ({ ...v, [key]: '', [doc.key]: '' }));
+    setFormData(v => ({
+      ...v,
+      [key + 'File']: file,
+      [key + 'Preview']: null,
+      [doc.key + 'File']: file,
+      [doc.key + 'Preview']: null
+    }));
+    if (file.type.startsWith('image/')) {
+      const reader = new FileReader();
+      reader.onload = () => setFormData(v => (v[key + 'File'] === file || v[doc.key + 'File'] === file) ? {
+        ...v,
+        [key + 'Preview']: reader.result,
+        [doc.key + 'Preview']: reader.result
+      } : v);
+      reader.readAsDataURL(file);
+    }
   };
   return { kind, enabled, user, config, policy, application, setApplication, canChooseDocument, chooseDocument, choices: (type, selected) => [...new Set([...(taxonomy[type] || []).map(v => v.label), ...(selected ? [selected] : [])])] };
 }

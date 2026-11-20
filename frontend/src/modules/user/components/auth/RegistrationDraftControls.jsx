@@ -43,7 +43,18 @@ export function RegistrationDraftControls({ kind, formData, setFormData, showSub
           const file = formData[d.key + 'File'];
           if (!file) continue;
           const cached = pending.current[d.key];
-          let asset = cached?.file === file ? (await httpClient.request('/media/' + cached.asset.id + '/metadata')).data : await contentService.upload(file, 'registration_document');
+          let asset;
+          if (cached?.file === file) {
+            try {
+              asset = (await httpClient.request('/media/' + cached.asset.id + '/metadata')).data;
+              if (asset.status !== 'ready') throw new Error('Asset not ready');
+            } catch {
+              delete pending.current[d.key];
+              asset = await contentService.upload(file, 'registration_document');
+            }
+          } else {
+            asset = await contentService.upload(file, 'registration_document');
+          }
           if (!current()) return;
           pending.current[d.key] = { file, asset };
           if (asset.status !== 'ready') throw new Error(d.label + ' is awaiting a security check. Save again to check and attach it.');

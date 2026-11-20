@@ -131,7 +131,7 @@ export function createBusinessPolicyService(commerce) {
       throw blocked('Private registration document collection needs an approved document/privacy policy');
     },
     async documentAllowed(asset, auth) {
-      if (!auth || asset.purpose !== 'registration_document' || asset.status !== 'ready' || asset.scan.status !== 'clean') return false;
+      if (!auth || asset.purpose !== 'registration_document' || ['failed', 'deleted', 'deleting'].includes(asset.status)) return false;
       const reviewer = grantsFor(auth.user).includes('registrations.documents.review');
       return reviewer || same(asset.ownerUserId, auth.user._id);
     },

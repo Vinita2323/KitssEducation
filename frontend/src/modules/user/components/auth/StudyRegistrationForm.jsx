@@ -612,117 +612,115 @@ export const StudyRegistrationForm = ({ onBack }) => {
                 >
                   <div className="pb-1.5 border-b border-slate-100">
                     <h2 className="text-xs sm:text-sm font-bold text-[#0A1D3F]">4. Document Verification Copies</h2>
-                    <p className="text-[11px] text-slate-500">Course certificate / marksheet result, Aadhar card and Passport photo.</p>
+                    <p className="text-[11px] text-slate-500">
+                      Upload the required verification documents requested for this application.
+                    </p>
                   </div>
 
-                  {/* 12. Submit Complete Course Certificate / Result & 14. Passport Photo/}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {/* 12. Course Certificate / Result */}
-                    <div className="space-y-1">
-                      <label className="block text-xs font-bold text-[#0A1D3F]">
-                        12. Course Certificate / Previous Result *
-                      </label>
-                      <label className="block border border-dashed border-slate-300 hover:border-[#FF8A00] bg-slate-50/70 hover:bg-white rounded-lg p-2.5 text-center cursor-pointer transition shadow-2xs">
-                        {formData.courseCertificatePreview ? (
-                          <div className="relative inline-block">
-                            <img
-                              src={formData.courseCertificatePreview}
-                              alt="Result Preview"
-                              className="w-16 h-20 object-cover mx-auto rounded border shadow-2xs"
-                            />
-                            <span className="text-[10px] text-emerald-600 font-bold block mt-1">Certificate Attached ✓</span>
-                          </div>
-                        ) : (
-                          <div className="py-2 text-slate-500">
-                            <FileText className="w-6 h-6 mx-auto mb-1 text-slate-400" />
-                            <span className="text-xs font-bold block text-slate-700">Upload Marksheet / Certificate</span>
-                            <span className="text-[10px] text-slate-400">PDF, JPG, PNG (Max 5MB)</span>
-                          </div>
-                        )}
-                        <input
-                          type="file" aria-label="Select courseCertificate" disabled={!canChooseDocument("courseCertificate")} title="Documents follow the application requirements"
-                          accept="image/*,.pdf"
-                          onChange={(e) => handleFileChange("courseCertificate", e.target.files[0])}
-                          className="hidden"
-                        />
-                      </label>
-                      {errors.courseCertificate && <p className="text-[11px] text-red-500 font-medium">{errors.courseCertificate}</p>}
-                    </div>
+                  {workflow.policy?.documents && workflow.policy.documents.length > 0 ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                      {workflow.policy.documents.map((d, index) => {
+                        const normKey = d.key.replace(/[-_\s]/g, '');
+                        const file = formData[d.key + 'File'] || formData[normKey + 'File'];
+                        const preview = formData[d.key + 'Preview'] || formData[normKey + 'Preview'];
+                        const error = errors[d.key] || errors[normKey];
+                        const canUpload = canChooseDocument(d.key);
+                        const isPrivate = d.key.includes('aadhar') || d.label.toLowerCase().includes('aadhar');
+                        const isPhoto = d.key.includes('photo') || d.label.toLowerCase().includes('photo');
 
-                    {/* 14. Passport Photo/}
-                    <div className="space-y-1">
-                      <label className="block text-xs font-bold text-[#0A1D3F]">
-                        14. Passport Photo
-                      </label>
-                      <label className="block border border-dashed border-slate-300 hover:border-[#FF8A00] bg-slate-50/70 hover:bg-white rounded-lg p-2.5 text-center cursor-pointer transition shadow-2xs">
-                        {formData.passportPhotoPreview ? (
-                          <div className="relative inline-block">
-                            <img
-                              src={formData.passportPhotoPreview}
-                              alt="Passport Preview"
-                              className="w-16 h-20 object-cover mx-auto rounded border shadow-2xs"
-                            />
-                            <span className="text-[10px] text-emerald-600 font-bold block mt-1">Photo Selected ✓</span>
-                          </div>
-                        ) : (
-                          <div className="py-2 text-slate-500">
-                            <ImageIcon className="w-6 h-6 mx-auto mb-1 text-slate-400" />
-                            <span className="text-xs font-bold block text-slate-700">Upload Passport Photo</span>
-                            <span className="text-[10px] text-slate-400">Clear front face image</span>
-                          </div>
-                        )}
-                        <input
-                          type="file" aria-label="Select passportPhoto" disabled={!canChooseDocument("passportPhoto")} title="Documents follow the application requirements"
-                          accept="image/*"
-                          onChange={(e) => handleFileChange("passportPhoto", e.target.files[0])}
-                          className="hidden"
-                        />
-                      </label>
-                      {errors.passportPhoto && <p className="text-[11px] text-red-500 font-medium">{errors.passportPhoto}</p>}
-                    </div>
-                  </div>
+                        return (
+                          <div key={d.key} className="p-3.5 bg-slate-50/80 rounded-2xl border border-slate-200/90 space-y-2">
+                            <div className="flex items-center justify-between flex-wrap gap-1">
+                              <label className="text-xs font-bold text-[#0A1D3F]">
+                                {index + 1}. {d.label}
+                                {d.required !== false ? (
+                                  <span className="text-red-500 font-bold ml-1">*</span>
+                                ) : (
+                                  <span className="text-[11px] text-slate-400 font-normal ml-1.5">(Optional)</span>
+                                )}
+                              </label>
+                              {isPrivate && (
+                                <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                                  Private document
+                                </span>
+                              )}
+                            </div>
 
-                  {/* 13. Aadhar Card Number & Upload */}
-                  <div className="p-3 bg-slate-50/70 rounded-lg border border-slate-200 space-y-2.5">
-                    <div className="flex items-center justify-between">
-                      <label className="text-xs font-bold text-[#0A1D3F]">13. Submit Aadhar Card Details</label>
-                      <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                        Private documents
-                      </span>
-                    </div>
+                            <label
+                              className={`block border border-dashed rounded-xl p-3 text-center transition shadow-2xs ${
+                                canUpload
+                                  ? 'border-slate-300 hover:border-[#FF8A00] bg-white cursor-pointer hover:shadow-xs'
+                                  : 'border-slate-200 bg-slate-100/60 opacity-70 cursor-not-allowed'
+                              }`}
+                            >
+                              {preview ? (
+                                <div className="flex items-center justify-center gap-3 py-1">
+                                  <img
+                                    src={preview}
+                                    alt={d.label + ' Preview'}
+                                    className="w-14 h-16 object-cover rounded-lg border border-slate-200 shadow-2xs"
+                                  />
+                                  <div className="text-left space-y-0.5 min-w-0">
+                                    <span className="text-xs font-bold text-emerald-700 block">
+                                      File Selected ✓
+                                    </span>
+                                    <span className="text-[11px] text-slate-600 block truncate max-w-[170px]">
+                                      {file?.name || d.label}
+                                    </span>
+                                    <span className="text-[10px] text-slate-400 block">Click to change</span>
+                                  </div>
+                                </div>
+                              ) : file ? (
+                                <div className="flex items-center justify-center gap-2.5 py-2">
+                                  <FileText className="w-6 h-6 text-slate-500 shrink-0" />
+                                  <div className="text-left min-w-0">
+                                    <span className="text-xs font-bold text-[#0A1D3F] block truncate max-w-[170px]">
+                                      {file.name}
+                                    </span>
+                                    <span className="text-[10px] text-emerald-600 font-semibold block">Attached ✓ (Click to change)</span>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="py-2.5 text-slate-500 space-y-1">
+                                  {isPhoto ? (
+                                    <ImageIcon className="w-6 h-6 mx-auto text-slate-400" />
+                                  ) : (
+                                    <UploadCloud className="w-6 h-6 mx-auto text-slate-400" />
+                                  )}
+                                  <span className="text-xs font-bold block text-slate-700">
+                                    Upload {d.label}
+                                  </span>
+                                  <span className="text-[10px] text-slate-400 block">
+                                    PDF, JPG, PNG (Max 10MB)
+                                  </span>
+                                </div>
+                              )}
 
+                              <input
+                                type="file"
+                                aria-label={'Select ' + d.key}
+                                disabled={!canUpload}
+                                accept={workflow.policy?.upload?.mime?.join(',') || 'application/pdf,image/png,image/jpeg'}
+                                onChange={e => handleFileChange(d.key, e.target.files?.[0])}
+                                className="hidden"
+                              />
+                            </label>
 
-                    <div>
-                      <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                        Upload Aadhar Card Copy (Front/Back)
-                      </label>
-                      <label className="block border border-dashed border-slate-300 hover:border-[#FF8A00] bg-white rounded-lg p-2 text-center cursor-pointer transition shadow-2xs">
-                        {formData.aadharCardPreview ? (
-                          <div className="flex items-center justify-center gap-2">
-                            <img
-                              src={formData.aadharCardPreview}
-                              alt="Aadhar Preview"
-                              className="w-14 h-10 object-cover rounded border"
-                            />
-                            <span className="text-[11px] text-emerald-600 font-bold">Aadhar Copy Attached ✓</span>
+                            {error && <p className="text-[11px] text-red-500 font-medium">{error}</p>}
                           </div>
-                        ) : (
-                          <div className="py-1 text-slate-500 flex items-center justify-center gap-2">
-                            <UploadCloud className="w-4 h-4 text-slate-400" />
-                            <span className="text-xs font-semibold text-slate-700">Choose Aadhar Card Image / PDF</span>
-                          </div>
-                        )}
-                        <input
-                          type="file" aria-label="Select aadharCard" disabled={!canChooseDocument("aadharCard")} title="Documents follow the application requirements"
-                          accept="image/*,.pdf"
-                          onChange={(e) => handleFileChange("aadharCard", e.target.files[0])}
-                          className="hidden"
-                        />
-                      </label>
-                      {errors.aadharCard && <p className="text-[11px] text-red-500 mt-0.5 font-medium">{errors.aadharCard}</p>}
+                        );
+                      })}
                     </div>
-                  </div>
-                  {(workflow.policy?.documents || []).filter(d => !["courseCertificate", "aadharCard", "passportPhoto"].includes(d.key)).map(d => <label key={d.key} className="block text-xs font-bold text-[#0A1D3F]">{d.label}{d.required === false ? ' (optional)' : ' *'}<input type="file" className="block mt-2 text-xs w-full" aria-label={'Select ' + d.key} accept={workflow.policy?.upload?.mime?.join(',') || 'application/pdf,image/png,image/jpeg'} disabled={!canChooseDocument(d.key)} onChange={e => handleFileChange(d.key, e.target.files?.[0])} /></label>)}
+                  ) : (
+                    <div className="p-4 rounded-2xl border border-dashed border-slate-200 bg-slate-50/70 text-center text-xs text-slate-500 space-y-1">
+                      <FileText className="w-6 h-6 mx-auto text-slate-400 mb-1" />
+                      <p className="font-semibold text-slate-700">
+                        {!workflow.enabled ? "Document requirements will be shown when applications open." : "No documents are required for this application."}
+                      </p>
+                      <p className="text-[11px] text-slate-400">You can continue entering and reviewing your details.</p>
+                    </div>
+                  )}
+
                   <OriginalDocumentNotes workflow={workflow} formData={formData} />
                 </motion.div>
               )}

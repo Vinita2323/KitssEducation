@@ -139,7 +139,30 @@ export function AdminRegistrationsPage() {
     }
   };
 
+  const reloadSelected = async () => {
+    if (!selected) return;
+    setBusy(true);
+    setModalError('');
+    try {
+      const res = await httpClient.request('/admin/registration-applications?page=' + page);
+      setRows(res.data.items);
+      setTotal(res.data.total);
+      const fresh = res.data.items.find(r => r.id === selected.id);
+      if (fresh) {
+        setSelected(fresh);
+      }
+    } catch (e) {
+      setModalError(e.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const change = async fields => {
+    if (!reviewReason.trim()) {
+      setModalError('Please enter a Decision Reason in the field below before updating status or verifying documents.');
+      return;
+    }
     setBusy(true);
     setModalError('');
     try {
@@ -366,12 +389,22 @@ export function AdminRegistrationsPage() {
             <div className="p-4 sm:p-6 overflow-y-auto space-y-4 text-xs sm:text-sm">
               {/* Dynamic In-Modal Error Alert */}
               {modalError && (
-                <div role="alert" className="p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-700 font-medium flex items-start gap-2">
-                  <AlertCircle className="w-4 h-4 shrink-0 text-red-600 mt-0.5" />
-                  <div>
-                    <strong className="block">Action could not be completed:</strong>
-                    <span>{modalError}</span>
+                <div role="alert" className="p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-700 font-medium flex items-start justify-between gap-2">
+                  <div className="flex items-start gap-2">
+                    <AlertCircle className="w-4 h-4 shrink-0 text-red-600 mt-0.5" />
+                    <div>
+                      <strong className="block">Action could not be completed:</strong>
+                      <span>{modalError.toLowerCase().includes('refresh') || modalError.toLowerCase().includes('conflict') ? 'This application was updated concurrently. Click Refresh to load the latest data.' : modalError}</span>
+                    </div>
                   </div>
+                  <button
+                    type="button"
+                    onClick={reloadSelected}
+                    disabled={busy}
+                    className="px-2.5 py-1 bg-red-100 hover:bg-red-200 text-red-800 rounded-lg text-xs font-semibold cursor-pointer shrink-0 transition"
+                  >
+                    Refresh Data
+                  </button>
                 </div>
               )}
 
@@ -384,6 +417,19 @@ export function AdminRegistrationsPage() {
                   </div>
                   <p className="leading-relaxed">
                     This registration is an in-progress draft saved by the student. Official review decisions (Approve, Move to Review, Activate) unlock once the applicant completes and submits the application. You can still add internal counselor notes below.
+                  </p>
+                </div>
+              )}
+
+              {/* Informative Needs Changes Notice Banner */}
+              {selected?.status === 'needs_changes' && (
+                <div className="p-3.5 bg-amber-50 border border-amber-200 rounded-2xl text-xs text-amber-900 space-y-1">
+                  <div className="flex items-center gap-1.5 font-bold text-amber-950">
+                    <Info className="w-4 h-4 text-amber-600 shrink-0" />
+                    <span>Awaiting Applicant Resubmission</span>
+                  </div>
+                  <p className="leading-relaxed text-amber-800">
+                    Changes have been requested on this application. The applicant must review, update their details or documents, and re-submit on their portal. Once the applicant re-submits, status actions (Approve, Move to Review, Activate) will re-appear automatically.
                   </p>
                 </div>
               )}
@@ -477,21 +523,28 @@ export function AdminRegistrationsPage() {
                     )}
 
                     {can('registrations.documents.review') && (
-                      <div className="flex items-center gap-2 pt-1">
-                        <button
-                          disabled={busy || !reviewReason.trim()}
-                          onClick={() => change({ documentKey: d.key, documentStatus: 'verified' })}
-                          className="px-2.5 py-1 rounded-lg text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 transition cursor-pointer"
-                        >
-                          Verify {d.key}
-                        </button>
-                        <button
-                          disabled={busy || !reviewReason.trim()}
-                          onClick={() => change({ documentKey: d.key, documentStatus: 'rejected' })}
-                          className="px-2.5 py-1 rounded-lg text-xs font-bold text-red-700 bg-red-50 border border-red-200 hover:bg-red-100 disabled:opacity-40 transition cursor-pointer"
-                        >
-                          Reject {d.key}
-                        </button>
+                      <div className="space-y-1 pt-1">
+                        <div className="flex items-center gap-2">
+                          <button
+                            disabled={busy || !reviewReason.trim()}
+                            onClick={() => change({ documentKey: d.key, documentStatus: 'verified' })}
+                            className="px-2.5 py-1 rounded-lg text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 transition cursor-pointer"
+                          >
+                            Verify {d.key}
+                          </button>
+                          <button
+                            disabled={busy || !reviewReason.trim()}
+                            onClick={() => change({ documentKey: d.key, documentStatus: 'rejected' })}
+                            className="px-2.5 py-1 rounded-lg text-xs font-bold text-red-700 bg-red-50 border border-red-200 hover:bg-red-100 disabled:opacity-40 transition cursor-pointer"
+                          >
+                            Reject {d.key}
+                          </button>
+                        </div>
+                        {!reviewReason.trim() && (
+                          <span className="text-[10px] text-amber-700 block">
+                            * Type a Decision Reason below to enable verification.
+                          </span>
+                        )}
                       </div>
                     )}
                   </div>
@@ -567,6 +620,7 @@ export function AdminRegistrationsPage() {
                         return (
                           <button
                             key={st}
+                            aria-label={st}
                             disabled={busy || !reviewReason.trim() || !can(isApprove ? 'registrations.approve' : 'registrations.review')}
                             onClick={() => change({ status: st })}
                             className={`px-3 py-1.5 rounded-xl text-xs font-bold transition shadow-2xs cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
@@ -582,6 +636,15 @@ export function AdminRegistrationsPage() {
                         );
                       })}
                     </div>
+                  </div>
+                )}
+
+                {!isDraft && availableTransitions.length === 0 && selected.status === 'needs_changes' && (
+                  <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900 space-y-1">
+                    <span className="font-semibold block text-amber-950">Awaiting applicant resubmission</span>
+                    <p className="text-amber-800 leading-relaxed">
+                      Status actions will unlock automatically once the applicant submits their updated application on the portal.
+                    </p>
                   </div>
                 )}
               </div>

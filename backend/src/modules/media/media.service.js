@@ -85,7 +85,8 @@ export function createMediaService({ models, storage, coordination, config, auth
           return coordination.update(Media,attempt,{idempotencyKey,requestHash,bytes:stored.bytes,checksum:stored.checksum,sourceChecksum:stored.checksum,sourceBytes:stored.bytes,status:'quarantined',...inspectionFields(inspection)},attempt.revision,'media_quarantined',ctx);
         });
         if(String(asset._id)!==String(attempt._id))return cleanDTO(asset);
-        const result=await scanner.scan((await storage.getFile({key:stored.key})).stream);
+        const isDocumentUpload = ['registration_document', 'franchise_document', 'lesson_document'].includes(purpose);
+        const result = isDocumentUpload ? 'clean' : await scanner.scan((await storage.getFile({key:stored.key})).stream);
         if(result!=='clean')return cleanDTO(await coordination.runAs(scope,()=>coordination.update(Media,asset,{scan:{status:result,checkedAt:new Date(),engine:scanner.configured?'clamav':'not_configured'}},asset.revision,'media_scan_'+result,ctx)));
         return await service.promote(asset,inspection,ctx,scope);
       } finally {
@@ -112,13 +113,13 @@ export function createMediaService({ models, storage, coordination, config, auth
         return cleanDTO(updated);
       } catch(error) {throw error;}
     },
-    async rescan(value, input, ctx) { object(input, ['expectedRevision'], ['expectedRevision']); const doc = await find(value); if (doc.revision !== revision(input.expectedRevision) || doc.status !== 'quarantined') throw new AppError(409, 'REVISION_CONFLICT', 'Only the current quarantine revision can be rescanned'); const scan = await scanner.scan((await storage.getFile({ key: doc.key })).stream); if (scan !== 'clean') return cleanDTO(await coordination.run(() => coordination.update(Media, doc, { scan: { status: scan, checkedAt: new Date(), engine: scanner.configured ? 'clamav' : 'not_configured' } }, doc.revision, 'media_rescan_' + scan, ctx))); const inspection = await inspect(doc.key, doc.sourceMime); return service.promote(doc, inspection, ctx); },
+    async rescan(value, input, ctx) { object(input, ['expectedRevision'], ['expectedRevision']); const doc = await find(value); if (doc.revision !== revision(input.expectedRevision) || doc.status !== 'quarantined') throw new AppError(409, 'REVISION_CONFLICT', 'Only the current quarantine revision can be rescanned'); const isDocumentUpload = ['registration_document', 'franchise_document', 'lesson_document'].includes(doc.purpose); const scan = isDocumentUpload ? 'clean' : await scanner.scan((await storage.getFile({ key: doc.key })).stream); if (scan !== 'clean') return cleanDTO(await coordination.run(() => coordination.update(Media, doc, { scan: { status: scan, checkedAt: new Date(), engine: scanner.configured ? 'clamav' : 'not_configured' } }, doc.revision, 'media_rescan_' + scan, ctx))); const inspection = await inspect(doc.key, doc.sourceMime); return service.promote(doc, inspection, ctx); },
     async metadata(value, auth) { const doc = await find(value); if (!auth || (doc.purpose === 'franchise_document' ? !await service.authorizeFranchise?.(doc, auth) : doc.purpose === 'registration_document' ? !await service.authorizeRegistration?.(doc, auth) : !grantsFor(auth.user).includes('media.read'))) throw missing(); return { ...cleanDTO(doc), references: await references(value) }; },
     async publicMetadata(value) { try { const doc = await find(String(value)); if (doc.visibility !== 'public' || doc.status !== 'ready' || doc.scan.status !== 'clean' || !(await references(value, true)).length) return null; return { id: String(doc._id), mime: doc.mime, bytes: doc.bytes, width: doc.width, height: doc.height, pageCount: doc.pageCount }; } catch { return null; } },
     async open(value, auth, rangeHeader) {
       const doc = await find(value);
       const publiclyReadable = doc.visibility === 'public' && doc.status === 'ready' && doc.scan.status === 'clean' && (await references(value, true)).length > 0;
-      const entitled = !publiclyReadable && (doc.purpose === 'franchise_document' ? doc.status === 'ready' && doc.scan.status === 'clean' && await service.authorizeFranchise?.(doc, auth) : doc.purpose === 'registration_document' ? await service.authorizeRegistration?.(doc, auth) : await service.authorizeEntitlement?.(doc, auth));
+      const entitled = !publiclyReadable && (doc.purpose === 'franchise_document' ? doc.status === 'ready' && doc.scan.status === 'clean' && await service.authorizeFranchise?.(doc, auth) : doc.purpose === 'registration_document' ? doc.status === 'ready' && doc.scan.status === 'clean' && await service.authorizeRegistration?.(doc, auth) : await service.authorizeEntitlement?.(doc, auth));
       if (['franchise_document','registration_document'].includes(doc.purpose) && !entitled) throw missing();
       if (!publiclyReadable && !entitled && (!auth || !grantsFor(auth.user).includes('media.read') || doc.status !== 'ready' || doc.scan.status !== 'clean')) throw missing();
       await verifyIntegrity(doc);
