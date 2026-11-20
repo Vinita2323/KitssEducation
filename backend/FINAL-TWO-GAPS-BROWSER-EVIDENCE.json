@@ -18,7 +18,7 @@
     "/admin/taxonomies",
     "/admin/universities",
     "/admin/colleges",
-    "/admin/colleges/6afbe69a9e042744841fd7bb/courses",
+    "/admin/colleges/6afff5cc7d639b8cd1f40fd6/courses",
     "/admin/franchise-requests",
     "/admin/applications",
     "/admin/books"
@@ -100,7 +100,7 @@
       "violations": []
     },
     {
-      "label": "/admin/colleges/6afbe69a9e042744841fd7bb/courses",
+      "label": "/admin/colleges/6afff5cc7d639b8cd1f40fd6/courses",
       "violations": []
     },
     {
@@ -152,10 +152,6 @@
       "violations": []
     },
     {
-      "label": "registration review",
-      "violations": []
-    },
-    {
       "label": "Book editor",
       "violations": []
     },
@@ -181,14 +177,6 @@
     },
     {
       "label": "Franchise application review",
-      "violations": []
-    },
-    {
-      "label": "Program editor",
-      "violations": []
-    },
-    {
-      "label": "320px long validation alert",
       "violations": []
     },
     {

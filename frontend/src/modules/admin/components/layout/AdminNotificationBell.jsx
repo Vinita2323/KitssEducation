@@ -44,6 +44,52 @@ function getNotificationIcon(title, category) {
   return <Bell className="w-4 h-4 text-slate-600" />;
 }
 
+// Maps user-side links or notifications to their corresponding Admin management pages
+function resolveAdminRoute(item) {
+  if (!item) return '/admin';
+  const rawLink = item.link || '';
+  const title = (item.title || '').toLowerCase();
+  const msg = (item.message || '').toLowerCase();
+
+  // If already an admin route, preserve it
+  if (rawLink.startsWith('/admin')) {
+    return rawLink;
+  }
+
+  // 1. Franchise requests & applications
+  if (rawLink.includes('franchise') || title.includes('franchise') || msg.includes('franchise')) {
+    return '/admin/franchise-requests';
+  }
+
+  // 2. Student registration applications
+  if (rawLink.includes('registration') || title.includes('registration') || msg.includes('registration')) {
+    return '/admin/registrations';
+  }
+
+  // 3. College admission applications
+  if (rawLink.includes('applications') || rawLink.includes('admission') || title.includes('admission') || msg.includes('admission')) {
+    return '/admin/applications';
+  }
+
+  // 4. Orders, payments & refunds
+  if (rawLink.includes('order') || title.includes('payment') || title.includes('refund') || msg.includes('refund') || msg.includes('order')) {
+    return '/admin/orders';
+  }
+
+  // 5. Exam results
+  if (rawLink.includes('result') || title.includes('result') || msg.includes('result')) {
+    return '/admin/results';
+  }
+
+  // 6. Generic / user notification page -> Admin notifications & announcements
+  if (rawLink === '/notifications' || rawLink === '') {
+    return '/admin/notifications';
+  }
+
+  // Fallback: stay inside Admin
+  return '/admin';
+}
+
 export function AdminNotificationBell() {
   const navigate = useNavigate();
   const { showSuccess } = useToast();
@@ -71,14 +117,28 @@ export function AdminNotificationBell() {
 
   useEffect(() => {
     fetchNotifications();
-    const timer = setInterval(() => fetchNotifications(true), 20000);
+    const timer = setInterval(() => {
+      if (document.visibilityState !== 'hidden') {
+        fetchNotifications(true);
+      }
+    }, 30000);
+
     const handleChanged = () => fetchNotifications(true);
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        fetchNotifications(true);
+      }
+    };
+
     window.addEventListener('kitss:notifications-changed', handleChanged);
     window.addEventListener('focus', handleChanged);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
     return () => {
       clearInterval(timer);
       window.removeEventListener('kitss:notifications-changed', handleChanged);
       window.removeEventListener('focus', handleChanged);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [fetchNotifications]);
 
@@ -127,8 +187,9 @@ export function AdminNotificationBell() {
     } catch {
       // ignore
     }
-    if (item.link) {
-      navigate(item.link);
+    const destination = resolveAdminRoute(item);
+    if (destination) {
+      navigate(destination);
     }
   };
 
@@ -250,12 +311,10 @@ export function AdminNotificationBell() {
                       <p className="text-[11px] text-slate-500 line-clamp-2 mt-0.5 leading-snug">
                         {item.message}
                       </p>
-                      {item.link && (
-                        <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-blue-600 group-hover:underline mt-1">
-                          <span>Open action</span>
-                          <ChevronRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
-                        </span>
-                      )}
+                      <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-blue-600 group-hover:underline mt-1">
+                        <span>Open in Admin</span>
+                        <ChevronRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
+                      </span>
                     </div>
 
                     {/* Unread indicator dot */}

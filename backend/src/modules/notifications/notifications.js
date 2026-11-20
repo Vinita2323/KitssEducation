@@ -485,8 +485,11 @@ export function createNotificationRouter(service) {
     data,
     requestId: req.requestId
   });
+  let lastEventSync = 0;
   router.get('/me/notifications', requireSession, async (req, res) => {
-    if (req.auth?.user?.roles?.some(r => ['super_admin', 'staff'].includes(r))) {
+    const now = Date.now();
+    if (now - lastEventSync > 30000 && req.auth?.user?.roles?.some(r => ['super_admin', 'staff'].includes(r))) {
+      lastEventSync = now;
       try { await service.processBusinessEvents(); } catch (_) {}
     }
     res.json({
