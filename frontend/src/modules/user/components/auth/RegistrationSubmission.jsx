@@ -1,6 +1,8 @@
 import { Link } from 'react-router-dom';
 import { statusLabel } from '../../../../shared/ui/displayText';
 import React, { useEffect, useRef, useState } from 'react';
+import { Loader2, CheckCircle2, RefreshCw } from 'lucide-react';
+import { useToast } from '../../context/ToastContext';
 import { httpClient } from '../../../../shared/api/httpClient';
 import { authenticatedWrite } from '../../services/authService';
 import { contentService } from '../../services/contentService';
@@ -8,6 +10,7 @@ import { commerceService } from '../../services/commerceService';
 import { openRazorpayCheckout } from '../../services/razorpayService';
 
 export function RegistrationSubmission({ application, onChange, beforeSubmit }) {
+  const { showSuccess, showError, showInfo } = useToast();
   const [config, setConfig] = useState(null);
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
@@ -28,15 +31,28 @@ export function RegistrationSubmission({ application, onChange, beforeSubmit }) 
   const policy = config?.policies?.[application.kind];
   const editable = ['draft', 'needs_changes'].includes(application.status);
 
-  const action = async work => {
+  const action = async (work, successMessage) => {
     setBusy(true);
     setMessage('');
-    try { await work(); }
-    catch (e) { setMessage(e.message); }
-    finally { setBusy(false); }
+    try {
+      await work();
+      if (successMessage) {
+        showSuccess(successMessage);
+      }
+    } catch (e) {
+      setMessage(e.message);
+      showError(e.message);
+    } finally {
+      setBusy(false);
+    }
   };
 
-  const refresh = async () => onChange((await httpClient.request('/registration-applications/' + application.id + '/status')).data);
+  const refresh = async () => {
+    await action(async () => {
+      const res = (await httpClient.request('/registration-applications/' + application.id + '/status')).data;
+      onChange(res);
+    }, 'Application status refreshed.');
+  };
 
   const handleUpload = (e, doc) => {
     const file = e.target.files?.[0];
@@ -56,7 +72,7 @@ export function RegistrationSubmission({ application, onChange, beforeSubmit }) 
       });
       setReplacing(v => ({ ...v, [doc.key]: false }));
       onChange(updated);
-    });
+    }, `${doc.label || 'Document'} uploaded successfully.`);
   };
 
   const attachedByKey = Object.fromEntries((application.documents || []).map(d => [d.key, d]));
@@ -203,18 +219,29 @@ export function RegistrationSubmission({ application, onChange, beforeSubmit }) 
 
           <button
             type="button"
-            className="w-full sm:w-auto px-5 py-2.5 bg-[#0A1D3F] hover:bg-[#07152d] text-white font-medium rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
+            className="w-full sm:w-auto px-5 py-2.5 bg-[#0A1D3F] hover:bg-[#07152d] text-white font-medium rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm flex items-center justify-center gap-2 cursor-pointer"
             disabled={!accepted || busy}
             onClick={() => {
               if (beforeSubmit && !beforeSubmit()) return;
-              action(async () => onChange(await authenticatedWrite('/registration-applications/' + application.id + '/submit', {
-                expectedRevision: application.revision,
-                declaration: true,
-                ...(guardian.accepted ? { guardianConsent: { ...guardian, version: policy.guardian.version } } : {}),
-              })));
+              action(async () => {
+                const res = await authenticatedWrite('/registration-applications/' + application.id + '/submit', {
+                  expectedRevision: application.revision,
+                  declaration: true,
+                  ...(guardian.accepted ? { guardianConsent: { ...guardian, version: policy.guardian.version } } : {}),
+                });
+                onChange(res);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }, 'Registration application submitted for review successfully!');
             }}
           >
-            {busy ? 'Submitting...' : 'Submit registration for review'}
+            {busy ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin shrink-0" />
+                <span>Submitting for review...</span>
+              </>
+            ) : (
+              <span>Submit registration for review</span>
+            )}
           </button>
         </fieldset>
       )}
@@ -244,8 +271,9 @@ export function RegistrationSubmission({ application, onChange, beforeSubmit }) 
       {application.teacherProfileId && <Link to="/about" className="block text-xs text-blue-700 hover:underline">View KITSS faculty</Link>}
 
       <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
-        <button type="button" disabled={busy} className="text-xs text-slate-600 hover:text-slate-900 underline cursor-pointer" onClick={() => action(refresh)}>
-          Refresh application status
+        <button type="button" disabled={busy} className="text-xs text-slate-600 hover:text-slate-900 underline cursor-pointer flex items-center gap-1.5" onClick={refresh}>
+          <RefreshCw className={`w-3.5 h-3.5 ${busy ? 'animate-spin' : ''}`} />
+          <span>Refresh application status</span>
         </button>
         {message && <p role="status" className="text-xs text-red-600 font-medium">{message}</p>}
       </div>

@@ -222,7 +222,18 @@ export async function createNotificationService({
       ]);
       for (const event of events) {
         const notice = await businessNotice(event, { connection, User: authService.models.User });
-        if (notice) try { await Notification.updateOne({ sourceEventId: notice.sourceEventId }, { $setOnInsert: notice }, { upsert: true, runValidators: true }); } catch (e) { if(e.code !== 11000) throw e; }
+        if (notice) {
+          const list = Array.isArray(notice) ? notice : [notice];
+          for (const item of list) {
+            if (item?.sourceEventId) {
+              try {
+                await Notification.updateOne({ sourceEventId: item.sourceEventId }, { $setOnInsert: item }, { upsert: true, runValidators: true });
+              } catch (e) {
+                if (e.code !== 11000) throw e;
+              }
+            }
+          }
+        }
         await Job.updateOne({ key: 'notice-event:' + event._id }, { $set: { state: 'done' }, $setOnInsert: { kind: 'notification_event' } }, { upsert: true });
       }
     },
@@ -474,10 +485,15 @@ export function createNotificationRouter(service) {
     data,
     requestId: req.requestId
   });
-  router.get('/me/notifications', requireSession, async (req, res) => res.json({
-    ...(await service.list(req.query, req.auth)),
-    requestId: req.requestId
-  }));
+  router.get('/me/notifications', requireSession, async (req, res) => {
+    if (req.auth?.user?.roles?.some(r => ['super_admin', 'staff'].includes(r))) {
+      try { await service.processBusinessEvents(); } catch (_) {}
+    }
+    res.json({
+      ...(await service.list(req.query, req.auth)),
+      requestId: req.requestId
+    });
+  });
   router.put('/me/notifications/:id/read', requireSession, async (req, res) => {
     object(req.body, []);
     send(req, res, await service.mark(req.params.id, req.auth));

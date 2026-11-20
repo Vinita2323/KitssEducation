@@ -12,7 +12,11 @@ export const contentService = {
   archive: (path, row) => authenticatedWrite(path + '/' + row.id, { expectedRevision: row.revision }, 'DELETE'),
   deleteBanner: row => authenticatedWrite('/admin/content/banners/' + row.id, { expectedRevision: row.revision, remove: true }, 'DELETE'),
   async upload(file, purpose, key = crypto.randomUUID(), onState) {
-    const data = new FormData(); data.append('purpose', purpose); data.append('idempotencyKey', key); data.append('file', file);
+    const data = new FormData();
+    data.append('purpose', purpose);
+    data.append('idempotencyKey', key);
+    const cleanName = (file.name || 'document').replaceAll('\\', '/').split('/').at(-1).replaceAll('..', '');
+    data.append('file', file, cleanName);
     onState?.('Uploading and validating…');
     const result = await authenticatedUpload('/media', data, true, percent => onState?.(percent === 100 ? 'Upload complete. Inspecting and scanning...' : percent === null ? 'Uploading...' : 'Uploading: ' + percent + '%'));
     onState?.(result.status === 'ready' ? 'Clean and ready' : 'Waiting for a security check'); return result;

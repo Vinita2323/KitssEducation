@@ -19,6 +19,7 @@ import { useAuth } from '../../../user/context/AuthContext';
 import { PageSuspense } from "../../../../shared/ui/lazyPage";
 import { AdminNavigation } from './AdminNavigation';
 import { AdminPageGuide } from './AdminPageGuide';
+import { AdminNotificationBell } from './AdminNotificationBell';
 import { useDialogFocus } from '../../../../shared/ui/useDialogFocus';
 export const AdminLayout = () => {
   const { user, logout } = useAuth();
@@ -95,6 +96,8 @@ export const AdminLayout = () => {
                 <span>Student Portal</span>
                 <ExternalLink aria-hidden="true" className="w-3.5 h-3.5" />
               </Link>
+
+              <AdminNotificationBell />
 
               <div className="admin-user-chip">
                 <div className="admin-avatar" aria-hidden="true">{initials}</div>

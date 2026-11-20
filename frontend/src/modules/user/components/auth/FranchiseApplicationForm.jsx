@@ -16,10 +16,12 @@ import {
   Building2,
   Clock,
   RotateCcw,
-  Check
+  Check,
+  Loader2
 } from 'lucide-react';
 import { statusLabel, userMessage } from '../../../../shared/ui/displayText';
 import { useAuth } from '../../context/AuthContext';
+import { useToast } from '../../context/ToastContext';
 import { httpClient } from '../../../../shared/api/httpClient';
 import { authenticatedWrite } from '../../services/authService';
 import { contentService } from '../../services/contentService';
@@ -51,6 +53,7 @@ const empty = () => ({
 
 export function FranchiseApplicationForm({ onBack }) {
   const { user, loading } = useAuth();
+  const { showSuccess, showError, showInfo } = useToast();
   const [params, setParams] = useSearchParams();
   const [config, setConfig] = useState(null);
   const [row, setRow] = useState(null);
@@ -60,6 +63,9 @@ export function FranchiseApplicationForm({ onBack }) {
   const [universities, setUniversities] = useState([]);
   const [colleges, setColleges] = useState([]);
   const [busy, setBusy] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [savingDraft, setSavingDraft] = useState(false);
+  const [actionStage, setActionStage] = useState('');
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [accepted, setAccepted] = useState(false);
@@ -213,9 +219,15 @@ export function FranchiseApplicationForm({ onBack }) {
     try {
       await action();
     } catch (e) {
-      if (identity.current === ticket) setError(e.message);
+      if (identity.current === ticket) {
+        setError(e.message);
+        showError(e.message);
+      }
     } finally {
-      if (identity.current === ticket) setBusy(false);
+      if (identity.current === ticket) {
+        setBusy(false);
+        setActionStage('');
+      }
     }
   };
 
@@ -295,15 +307,18 @@ export function FranchiseApplicationForm({ onBack }) {
       const ticket = identity.current;
       if (!files[d.key] && !pendingAssets[d.key]) return;
 
-      // Automatically persist application draft if not yet saved
+      setActionStage(`Saving draft for ${d.label}...`);
       let currentApp = row;
       if (!currentApp) {
         currentApp = await persist();
       }
 
+      setActionStage(`Uploading ${d.label}...`);
       let asset = pendingAssets[d.key];
       if (!asset) {
-        asset = await contentService.upload(files[d.key], 'franchise_document', crypto.randomUUID(), setMessage);
+        asset = await contentService.upload(files[d.key], 'franchise_document', crypto.randomUUID(), msg => {
+          if (msg) setActionStage(`Uploading ${d.label}: ${msg}`);
+        });
       } else {
         asset = (await httpClient.request('/media/' + asset.id + '/metadata')).data;
       }
@@ -312,9 +327,11 @@ export function FranchiseApplicationForm({ onBack }) {
       if (asset.status !== 'ready') {
         setPendingAssets(v => ({ ...v, [d.key]: asset }));
         setMessage('Your file is being processed. Click Check scan & attach once ready.');
+        showInfo('Your file is being processed. Click Check scan & attach once ready.');
         return;
       }
 
+      setActionStage(`Attaching ${d.label}...`);
       const value = await authenticatedWrite(path + '/' + currentApp.id + '/documents', {
         expectedRevision: currentApp.revision,
         key: d.key,
@@ -330,65 +347,90 @@ export function FranchiseApplicationForm({ onBack }) {
       setFiles(v => ({ ...v, [d.key]: null }));
       setReplaceDoc(v => ({ ...v, [d.key]: false }));
       setMessage(d.label + ' uploaded and attached successfully.');
+      showSuccess(d.label + ' uploaded and attached successfully.');
     });
 
   const saveDraftWithDocuments = () =>
     run(async () => {
-      const ticket = identity.current;
-      let currentApp = await persist();
+      setSavingDraft(true);
+      setActionStage('Saving application draft...');
+      try {
+        const ticket = identity.current;
+        let currentApp = await persist();
 
-      // Upload and attach any selected files that were picked before clicking save
-      for (const d of policy.documents || []) {
-        if (files[d.key]) {
-          let asset = await contentService.upload(files[d.key], 'franchise_document', crypto.randomUUID(), setMessage);
-          sameAccount(ticket);
-          if (asset.status === 'ready') {
-            currentApp = await authenticatedWrite(path + '/' + currentApp.id + '/documents', {
-              expectedRevision: currentApp.revision,
-              key: d.key,
-              assetId: asset.id
+        // Upload and attach any selected files that were picked before clicking save
+        for (const d of policy.documents || []) {
+          if (files[d.key]) {
+            setActionStage(`Uploading ${d.label}...`);
+            let asset = await contentService.upload(files[d.key], 'franchise_document', crypto.randomUUID(), msg => {
+              if (msg) setActionStage(`Uploading ${d.label}: ${msg}`);
             });
             sameAccount(ticket);
-            setRow(currentApp);
-            setFiles(v => ({ ...v, [d.key]: null }));
-            setReplaceDoc(v => ({ ...v, [d.key]: false }));
+            if (asset.status === 'ready') {
+              setActionStage(`Attaching ${d.label}...`);
+              currentApp = await authenticatedWrite(path + '/' + currentApp.id + '/documents', {
+                expectedRevision: currentApp.revision,
+                key: d.key,
+                assetId: asset.id
+              });
+              sameAccount(ticket);
+              setRow(currentApp);
+              setFiles(v => ({ ...v, [d.key]: null }));
+              setReplaceDoc(v => ({ ...v, [d.key]: false }));
+            }
           }
         }
+        setMessage('Draft and documents saved successfully.');
+        showSuccess('Application draft saved successfully.');
+      } finally {
+        setSavingDraft(false);
       }
-      setMessage('Draft and documents saved successfully.');
     });
 
   const submit = () =>
     run(async () => {
-      const ticket = identity.current;
-      let saved = await persist();
+      setSubmitting(true);
+      setActionStage('Saving application details...');
+      try {
+        const ticket = identity.current;
+        let saved = await persist();
 
-      // Auto-upload and attach any selected files that haven't been attached yet
-      for (const d of policy.documents || []) {
-        if (files[d.key]) {
-          let asset = await contentService.upload(files[d.key], 'franchise_document', crypto.randomUUID(), setMessage);
-          sameAccount(ticket);
-          if (asset.status === 'ready') {
-            saved = await authenticatedWrite(path + '/' + saved.id + '/documents', {
-              expectedRevision: saved.revision,
-              key: d.key,
-              assetId: asset.id
+        // Auto-upload and attach any selected files that haven't been attached yet
+        for (const d of policy.documents || []) {
+          if (files[d.key]) {
+            setActionStage(`Uploading ${d.label}...`);
+            let asset = await contentService.upload(files[d.key], 'franchise_document', crypto.randomUUID(), msg => {
+              if (msg) setActionStage(`Uploading ${d.label}: ${msg}`);
             });
             sameAccount(ticket);
-            setRow(saved);
-            setFiles(v => ({ ...v, [d.key]: null }));
-            setReplaceDoc(v => ({ ...v, [d.key]: false }));
+            if (asset.status === 'ready') {
+              setActionStage(`Attaching ${d.label}...`);
+              saved = await authenticatedWrite(path + '/' + saved.id + '/documents', {
+                expectedRevision: saved.revision,
+                key: d.key,
+                assetId: asset.id
+              });
+              sameAccount(ticket);
+              setRow(saved);
+              setFiles(v => ({ ...v, [d.key]: null }));
+              setReplaceDoc(v => ({ ...v, [d.key]: false }));
+            }
           }
         }
-      }
 
-      const value = await authenticatedWrite(path + '/' + saved.id + '/submit', {
-        expectedRevision: saved.revision,
-        declaration: { version: policy.agreement.version, accepted }
-      });
-      sameAccount(ticket);
-      setRow(value);
-      setMessage('Application submitted! KITSS staff will review your details and documents.');
+        setActionStage('Submitting application for KITSS review...');
+        const value = await authenticatedWrite(path + '/' + saved.id + '/submit', {
+          expectedRevision: saved.revision,
+          declaration: { version: policy.agreement.version, accepted }
+        });
+        sameAccount(ticket);
+        setRow(value);
+        setMessage('Application submitted! KITSS staff will review your details and documents.');
+        showSuccess('Franchise application submitted successfully! KITSS staff will review your details and documents.');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } finally {
+        setSubmitting(false);
+      }
     });
 
   const refresh = async () => {
@@ -396,6 +438,7 @@ export function FranchiseApplicationForm({ onBack }) {
     const value = (await httpClient.request(path + '/' + row.id + '/status')).data;
     sameAccount(ticket);
     setRow(value);
+    showInfo('Application status refreshed.');
     return value;
   };
 
@@ -936,6 +979,21 @@ export function FranchiseApplicationForm({ onBack }) {
             </label>
           )}
 
+          {/* Live Progress Feedback while performing actions */}
+          {busy && (
+            <div className="p-4 bg-orange-50/90 border border-orange-200 rounded-2xl flex items-center gap-3.5 shadow-xs text-xs text-[#0A1D3F] animate-pulse">
+              <Loader2 className="w-5 h-5 text-[#FF8A00] animate-spin shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="font-bold text-[#0A1D3F] truncate">
+                  {actionStage || (submitting ? 'Submitting franchise application...' : savingDraft ? 'Saving application draft...' : 'Processing request...')}
+                </p>
+                <p className="text-[11px] text-slate-500 mt-0.5">
+                  Please wait while your data and documents are securely processed and verified.
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Bottom Action Bar */}
           {editable && (
             <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-slate-200">
@@ -953,9 +1011,16 @@ export function FranchiseApplicationForm({ onBack }) {
                   type="button"
                   disabled={!canSave || busy}
                   onClick={saveDraftWithDocuments}
-                  className="flex-1 sm:flex-none py-2.5 px-4 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-[#0A1D3F] text-xs font-semibold shadow-2xs transition disabled:opacity-50 cursor-pointer"
+                  className="flex-1 sm:flex-none py-2.5 px-4 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-[#0A1D3F] text-xs font-semibold shadow-2xs transition disabled:opacity-50 cursor-pointer flex items-center justify-center gap-1.5"
                 >
-                  {busy ? 'Saving...' : 'Save application draft'}
+                  {savingDraft ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin shrink-0" />
+                      <span>Saving draft...</span>
+                    </>
+                  ) : (
+                    <span>Save application draft</span>
+                  )}
                 </button>
                 <button
                   type="button"
@@ -963,11 +1028,92 @@ export function FranchiseApplicationForm({ onBack }) {
                   onClick={() => {
                     if (checkSteps(true)) submit();
                   }}
-                  className="flex-1 sm:flex-none py-2.5 px-5 rounded-xl bg-[#FF8A00] hover:bg-[#E67C00] text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs transition disabled:opacity-50 cursor-pointer"
+                  className="flex-1 sm:flex-none py-2.5 px-5 rounded-xl bg-[#FF8A00] hover:bg-[#E67C00] text-white text-xs font-bold flex items-center justify-center gap-2 shadow-xs transition disabled:opacity-50 cursor-pointer"
                 >
-                  <CheckCircle2 className="w-4 h-4" />
-                  <span>Submit franchise application</span>
+                  {submitting ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin shrink-0" />
+                      <span className="truncate">{actionStage || 'Submitting application...'}</span>
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="w-4 h-4 shrink-0" />
+                      <span>Submit franchise application</span>
+                    </>
+                  )}
                 </button>
+              </div>
+            </div>
+          )}
+
+          {/* Celebratory Post-Submission Summary at Bottom */}
+          {!editable && row && row.status === 'pending' && (
+            <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-6 text-center space-y-4 shadow-xs">
+              <div className="w-12 h-12 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center mx-auto shadow-2xs">
+                <CheckCircle2 className="w-7 h-7" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-base font-bold text-[#0A1D3F]">Franchise Application Submitted!</h3>
+                <p className="text-xs text-slate-600 max-w-md mx-auto leading-relaxed">
+                  Your franchise application has been received and is currently <span className="font-semibold text-emerald-800">under KITSS review</span>.
+                </p>
+                <p className="text-xs text-slate-500 font-mono">
+                  Reference: <span className="font-bold text-slate-800">{row.reference}</span>
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => run(refresh)}
+                  className="py-2.5 px-4 rounded-xl border border-emerald-300 bg-white hover:bg-emerald-50 text-emerald-800 font-semibold text-xs shadow-2xs transition flex items-center gap-1.5 cursor-pointer"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${busy ? 'animate-spin' : ''}`} />
+                  <span>Refresh Status</span>
+                </button>
+                <Link
+                  to="/my-applications"
+                  className="py-2.5 px-5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs transition inline-flex items-center gap-1.5 cursor-pointer"
+                >
+                  <span>Go to My Applications</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </Link>
+              </div>
+            </div>
+          )}
+
+          {/* Under Review Card at Bottom */}
+          {!editable && row && row.status === 'under_review' && (
+            <div className="bg-blue-50 border border-blue-200 rounded-2xl p-6 text-center space-y-4 shadow-xs">
+              <div className="w-12 h-12 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center mx-auto">
+                <Clock className="w-7 h-7" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-base font-bold text-[#0A1D3F]">Application Under Review</h3>
+                <p className="text-xs text-slate-600 max-w-md mx-auto leading-relaxed">
+                  KITSS administrators are actively verifying your institution details and credentials.
+                </p>
+                <p className="text-xs text-slate-500 font-mono">
+                  Reference: <span className="font-bold text-slate-800">{row.reference}</span>
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => run(refresh)}
+                  className="py-2.5 px-4 rounded-xl border border-blue-300 bg-white hover:bg-blue-50 text-blue-800 font-semibold text-xs shadow-2xs transition flex items-center gap-1.5 cursor-pointer"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${busy ? 'animate-spin' : ''}`} />
+                  <span>Refresh Status</span>
+                </button>
+                <Link
+                  to="/my-applications"
+                  className="py-2.5 px-5 rounded-xl bg-[#0A1D3F] hover:bg-[#07152d] text-white font-bold text-xs shadow-xs transition inline-flex items-center gap-1.5 cursor-pointer"
+                >
+                  <span>Go to My Applications</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </Link>
               </div>
             </div>
           )}

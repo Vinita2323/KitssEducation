@@ -59,9 +59,37 @@ export function createMediaService({ models, storage, coordination, config, auth
       if (purpose === 'registration_document') { if (!service.registrationUploadAllowed) throw new AppError(409, 'BUSINESS_POLICY_PENDING', 'Registration document collection is not configured'); await service.registrationUploadAllowed(); }
       const rule = purposes[purpose]; if (!rule) throw invalid('This media purpose is not enabled');
       validateKey(idempotencyKey);
-      if (typeof originalName !== 'string' || !/^[\p{L}\p{N}][\p{L}\p{N} ._()-]{0,149}\.(?:mp4|json|pdf|png|jpe?g|webp)$/iu.test(originalName) || originalName.includes('..') || !rule.mime.includes(mime)) throw new AppError(415, 'INVALID_MEDIA', 'Unsafe filename or unsupported MIME type');
-      const extension = originalName.split('.').at(-1).toLowerCase();
-      if (!(mime === 'video/mp4' ? ['mp4'] : mime === 'application/json' ? ['json'] : mime === 'application/pdf' ? ['pdf'] : mime === 'image/png' ? ['png'] : mime === 'image/jpeg' ? ['jpg', 'jpeg'] : ['webp']).includes(extension)) throw invalid('Filename extension does not match media type');
+
+      // Normalize MIME type aliases (e.g. from Windows / mobile uploads)
+      if (mime === 'image/pjpeg' || mime === 'image/jpg') mime = 'image/jpeg';
+      if (mime === 'image/x-png') mime = 'image/png';
+      if (mime === 'application/x-pdf') mime = 'application/pdf';
+
+      const rawExt = typeof originalName === 'string' && originalName.includes('.') ? originalName.split('.').at(-1).toLowerCase() : '';
+      if (mime === 'application/octet-stream' || !mime) {
+        if (rawExt === 'pdf') mime = 'application/pdf';
+        else if (rawExt === 'png') mime = 'image/png';
+        else if (['jpg', 'jpeg'].includes(rawExt)) mime = 'image/jpeg';
+      }
+
+      const defaultExt = mime === 'application/pdf' ? 'pdf' : mime === 'image/png' ? 'png' : mime === 'image/jpeg' ? 'jpg' : mime === 'video/mp4' ? 'mp4' : mime === 'application/json' ? 'json' : (rawExt || 'bin');
+      let extension = rawExt || defaultExt;
+      if (!['mp4', 'json', 'pdf', 'png', 'jpg', 'jpeg', 'webp'].includes(extension)) {
+        extension = defaultExt;
+      }
+
+      // Safely sanitize filename instead of rejecting it
+      if (typeof originalName !== 'string' || !originalName.trim()) {
+        originalName = `document.${extension}`;
+      } else {
+        originalName = originalName.replaceAll('\\', '/').split('/').at(-1).replaceAll('..', '').trim().slice(0, 150);
+        if (!originalName) originalName = `document.${extension}`;
+        else if (!originalName.includes('.')) originalName += `.${extension}`;
+      }
+
+      if (!rule.mime.includes(mime)) {
+        throw new AppError(415, 'INVALID_MEDIA', `Unsupported file type (${mime}). Please upload a valid document (${rule.mime.map(m => m.split('/')[1]).join(', ')}).`);
+      }
       await authService.limit(ctx, String(auth.user._id), 'media-upload', 20);
       let stored, asset, attempt;
       const reservedKey = storage.createKey({ visibility:'quarantine', purpose:purpose.replaceAll('_','-'), extension });
