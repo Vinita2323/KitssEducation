@@ -2,6 +2,48 @@ import { spawn } from 'node:child_process';
 import { pipeline } from 'node:stream/promises';
 import { AppError } from '../../utils/AppError.js';
 
+// Messages shown to the admin who uploads a video, in plain words: what is wrong, then how to fix it.
+// The admin panel shows each line on its own line.
+const HOW_TO_FIX = [
+  'How to fix it:',
+  '1. Install HandBrake (free, from handbrake.fr) and open this video in it.',
+  '2. Choose the preset "Fast 1080p30" and tick "Web Optimized".',
+  '3. Click Start, then upload the new video file it creates.',
+].join('\n');
+const structureMessages = {
+  'not-mp4': 'This file is not a real MP4 video, even though its name ends in .mp4.\n' + HOW_TO_FIX,
+  'not-fast-start': 'This video is not ready for the website yet. It plays on your computer, but it was saved in a way that cannot play online.\n' + HOW_TO_FIX,
+  damaged: 'This video file is broken or incomplete. It may not have finished downloading or saving.\nHow to fix it: download or export the video again, then upload the new file.',
+};
+// Lists every format rule the video breaks, in plain words (same rules as before, one line per problem).
+export function videoProblems(probe) {
+  const streams = probe.streams ?? [], videos = streams.filter(s => s.codec_type === 'video'), audio = streams.filter(s => s.codec_type === 'audio');
+  const v = videos[0], duration = Number(probe.format?.duration), rate = String(v?.avg_frame_rate).split('/').map(Number), fps = rate[0] / rate[1];
+  const problems = [];
+  if (!['isom','iso2','iso5','iso6','mp41','mp42','avc1'].includes(probe.format?.tags?.major_brand)) problems.push('It is an iPhone/QuickTime (MOV) type of file, not a standard MP4.');
+  if (!videos.length) problems.push('It has no picture, only sound.');
+  if (videos.length > 1) problems.push('It has more than one video track.');
+  if (audio.length > 1) problems.push('It has more than one sound track.');
+  if (streams.length !== videos.length + audio.length) problems.push('It has extra tracks, such as subtitles.');
+  if (v) {
+    if (v.codec_name !== 'h264') problems.push(v.codec_name === 'hevc' ? 'It is recorded in HEVC (H.265), the space-saving format used by iPhones and many new phones.' : `It uses the ${String(v.codec_name || 'unknown').toUpperCase()} video format, which is not supported.`);
+    else if (!['Baseline', 'Constrained Baseline', 'Main', 'High'].includes(v.profile) || v.level > 42) problems.push('Its video settings are too advanced for playing online.');
+    if (v.pix_fmt !== 'yuv420p') problems.push('It uses HDR or 10-bit colour.');
+    if (!v.width || !v.height) problems.push('Its picture size could not be read.');
+    else if (v.width > 1920 || v.height > 1080) problems.push(`It is too large (${v.width} x ${v.height}). The maximum is Full HD, 1920 x 1080.`);
+    if (!Number.isFinite(fps)) problems.push('Its frame rate could not be read.');
+    else if (fps > 60) problems.push(`It has ${Math.round(fps)} frames per second. The maximum is 60.`);
+  }
+  if (!Number.isFinite(duration) || duration <= 0) problems.push('Its length could not be read.');
+  else if (duration > 7200) problems.push(`It is ${Math.round(duration / 60)} minutes long. The maximum is 2 hours, so split it into shorter videos.`);
+  for (const a of audio) {
+    if (a.codec_name !== 'aac') problems.push(`Its sound is in ${String(a.codec_name || 'an unknown').toUpperCase()} format, which is not supported.`);
+    else if (a.profile !== 'LC') problems.push('Its sound settings are not supported.');
+    if (a.channels > 2) problems.push('It has surround sound (more than 2 channels).');
+  }
+  return problems;
+}
+
 // Validate ISO BMFF framing incrementally, without buffering media payloads.
 export async function validateMp4(storage, key) {
   const { stream, metadata } = await storage.getFile({ key });
@@ -18,13 +60,14 @@ export async function validateMp4(storage, key) {
         if (header.length < need || need === 8 && header.readUInt32BE(0) === 1) continue;
         const size = need === 16 ? Number(header.readBigUInt64BE(8)) : header.readUInt32BE(0);
         const type = header.toString('ascii', 4, 8);
-        if (!Number.isSafeInteger(size) || size < need || offset - need + size > metadata.bytes) throw new Error('Framing');
-        if (!seen.size && type !== 'ftyp' || type === 'mdat' && !seen.has('moov')) throw new Error('Fast start MP4 required');
+        if (!Number.isSafeInteger(size) || size < need || offset - need + size > metadata.bytes) throw new Error('damaged');
+        if (!seen.size && type !== 'ftyp') throw new Error('not-mp4');
+        if (type === 'mdat' && !seen.has('moov')) throw new Error('not-fast-start');
         seen.add(type); remaining = size - need; header = Buffer.alloc(0);
       }
     }
-    if (remaining || header.length || !['ftyp', 'moov', 'mdat'].every(t => seen.has(t))) throw new Error('Incomplete MP4');
-  } catch { throw new AppError(415, 'INVALID_VIDEO', 'Upload a complete fast-start MP4 (H.264 and optional AAC audio)'); }
+    if (remaining || header.length || !['ftyp', 'moov', 'mdat'].every(t => seen.has(t))) throw new Error('damaged');
+  } catch (error) { throw new AppError(415, 'INVALID_VIDEO', structureMessages[error.message] || structureMessages.damaged); }
 }
 
 async function run(storage, key, command, args, timeout) {
@@ -41,13 +84,14 @@ async function run(storage, key, command, args, timeout) {
     return Buffer.concat(chunks).toString('utf8');
   } catch (error) {
     child.kill(); stream.destroy();
-    throw new AppError(error.code === 'ENOENT' ? 503 : 415, error.code === 'ENOENT' ? 'VIDEO_INSPECTION_UNAVAILABLE' : 'INVALID_VIDEO', error.code === 'ENOENT' ? 'Configure installed FFprobe and FFmpeg before uploading video' : 'Video inspection or complete decode failed');
+    if (error.code === 'ENOENT') throw new AppError(503, 'VIDEO_INSPECTION_UNAVAILABLE', 'Video checking is not set up on this server: FFmpeg and FFprobe must be installed before videos can be uploaded. Ask your technical administrator.');
+    throw new AppError(415, 'INVALID_VIDEO', timedOut ? 'Checking this video took too long. Use a shorter video, or convert it to Full HD first.\n' + HOW_TO_FIX : 'This video could not be played during checking. The file may be damaged or only partly saved.\n' + HOW_TO_FIX);
   } finally { clearTimeout(timer); }
 }
 
 let inspecting = 0;
 export async function inspectVideo(storage, key, config = {}) {
-  if (inspecting >= 2) throw new AppError(429, 'VIDEO_INSPECTION_BUSY', 'Video inspection is busy; retry this upload later');
+  if (inspecting >= 2) throw new AppError(429, 'VIDEO_INSPECTION_BUSY', 'Two videos are already being checked. Wait a minute, then upload this video again.');
   inspecting++;
   try { return await inspect(storage, key, config); } finally { inspecting--; }
 }
@@ -56,10 +100,11 @@ async function inspect(storage, key, config) {
   await validateMp4(storage, key);
   const output = await run(storage, key, config.ffprobe || 'ffprobe', ['-v', 'error', '-max_alloc', '67108864', '-threads', '1', '-protocol_whitelist', 'pipe', '-i', 'pipe:0', '-count_packets', '-show_streams', '-show_format', '-of', 'json'], config.videoInspectionTimeoutMs ?? 120000);
   let probe;
-  try { probe = JSON.parse(output); } catch { throw new AppError(415, 'INVALID_VIDEO', 'Invalid video metadata'); }
+  try { probe = JSON.parse(output); } catch { throw new AppError(415, 'INVALID_VIDEO', 'The details of this video could not be read.\n' + HOW_TO_FIX); }
   const streams = probe.streams ?? [], videos = streams.filter(s => s.codec_type === 'video'), audio = streams.filter(s => s.codec_type === 'audio');
   const v = videos[0], duration = Number(probe.format?.duration), rate = String(v?.avg_frame_rate).split('/').map(Number);
-  if (!['isom','iso2','iso5','iso6','mp41','mp42','avc1'].includes(probe.format?.tags?.major_brand) || videos.length !== 1 || audio.length > 1 || streams.length !== videos.length + audio.length || v.codec_name !== 'h264' || v.pix_fmt !== 'yuv420p' || !['Baseline', 'Constrained Baseline', 'Main', 'High'].includes(v.profile) || v.level > 42 || !v.width || !v.height || v.width > 1920 || v.height > 1080 || !Number.isFinite(rate[0] / rate[1]) || rate[0] / rate[1] > 60 || !Number.isFinite(duration) || duration <= 0 || duration > 7200 || audio.some(a => a.codec_name !== 'aac' || a.channels > 2 || !['LC'].includes(a.profile))) throw new AppError(415, 'UNSUPPORTED_VIDEO', 'Use fast-start MP4, H.264 8-bit 4:2:0 up to 1080p/60fps/level 4.2, optional stereo AAC-LC, maximum two hours');
+  const problems = videoProblems(probe);
+  if (problems.length) throw new AppError(415, 'UNSUPPORTED_VIDEO', 'This video cannot be used because:\n' + problems.map(problem => '- ' + problem).join('\n') + '\n' + HOW_TO_FIX);
   // Probe metadata alone cannot certify that all packets decode successfully.
   await run(storage, key, config.ffmpeg || 'ffmpeg', ['-v', 'error', '-max_alloc', '67108864', '-xerror', '-err_detect', 'explode', '-threads', '1', '-protocol_whitelist', 'pipe', '-i', 'pipe:0', '-map', '0:v:0', '-map', '0:a?', '-f', 'null', '-'], config.videoInspectionTimeoutMs ?? 120000);
   return { mime: 'video/mp4', width: v.width, height: v.height, durationSeconds: duration, videoCodec: 'h264', audioCodec: audio.length ? 'aac' : null, inspectionVersion: 'mp4-h264-aac-v1' };

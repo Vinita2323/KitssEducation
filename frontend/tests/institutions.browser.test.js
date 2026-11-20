@@ -87,7 +87,7 @@ test('Stage 4 existing UI with REAL API/MongoDB and responsive matrix', { skip: 
     await page.getByRole('button', { name: 'View Details', exact: true }).click(); await page.getByRole('button', { name: 'Close modal' }).waitFor(); await page.getByRole('button', { name: 'Close modal' }).click();
     await page.getByRole('button', { name: 'Apply Now', exact: true }).click();
     await page.getByRole('dialog', { name: 'Admission application' }).getByText('Test Program', { exact: true }).click(); await page.getByRole('button', { name: 'Continue', exact: true }).click();
-    await by('Admission mobileNumber').fill('9000000000'); await by('Admission educationalQualification').selectOption('Test Qualification');
+    await by('Admission mobileNumber').fill('9000000000'); await page.getByRole('button', { name: /^Qualification:/ }).click(); await page.getByRole('option', { name: 'Test Qualification', exact: true }).click();
     await page.getByRole('button', { name: 'Continue', exact: true }).click(); const submitted = response('/admission-applications'); await page.getByRole('button', { name: 'Submit Application', exact: true }).click(); assert.equal((await submitted).status(), 201);
     assert.equal(await models.AdmissionApplication.countDocuments(), 1);
   });

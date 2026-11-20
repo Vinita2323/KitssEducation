@@ -350,8 +350,9 @@ export function FranchiseApplicationForm({ onBack }) {
       showSuccess(d.label + ' uploaded and attached successfully.');
     });
 
-  const saveDraftWithDocuments = () =>
-    run(async () => {
+  const saveDraftWithDocuments = () => {
+    if (!checkSteps(false)) return;
+    return run(async () => {
       setSavingDraft(true);
       setActionStage('Saving application draft...');
       try {
@@ -380,12 +381,13 @@ export function FranchiseApplicationForm({ onBack }) {
             }
           }
         }
-        setMessage('Draft and documents saved successfully.');
-        showSuccess('Application draft saved successfully.');
+        setMessage('Draft saved. Attach the required documents before submitting.');
+        showSuccess('Application draft saved.');
       } finally {
         setSavingDraft(false);
       }
     });
+  };
 
   const submit = () =>
     run(async () => {
@@ -425,8 +427,8 @@ export function FranchiseApplicationForm({ onBack }) {
         });
         sameAccount(ticket);
         setRow(value);
-        setMessage('Application submitted! KITSS staff will review your details and documents.');
-        showSuccess('Franchise application submitted successfully! KITSS staff will review your details and documents.');
+        setMessage('Application submitted. KITSS staff will review your details and documents.');
+        showSuccess('Franchise application submitted successfully!');
         window.scrollTo({ top: 0, behavior: 'smooth' });
       } finally {
         setSubmitting(false);
@@ -679,6 +681,7 @@ export function FranchiseApplicationForm({ onBack }) {
                 <button
                   type="button"
                   disabled={busy}
+                  aria-label={label}
                   aria-current={step === index ? 'step' : undefined}
                   onClick={() => setStep(index)}
                   className="w-full flex flex-col items-center gap-1.5 text-[10px] sm:text-xs cursor-pointer"
@@ -749,9 +752,11 @@ export function FranchiseApplicationForm({ onBack }) {
       {/* ========================================================
           STEP 5: REVIEW, DOCUMENTS, AGREEMENT & SUBMISSION
          ======================================================== */}
-      {(!editable || step === 4) && approvedPolicy && (
+      {(!editable || step === 4) && (
         <div className="space-y-6 pt-2">
-          {/* Step 5 Intro Banner */}
+          {approvedPolicy ? (
+            <>
+              {/* Step 5 Intro Banner */}
           <div className="bg-slate-50/70 border border-slate-200 rounded-xl p-3.5 flex flex-wrap items-center justify-between gap-2 text-xs text-[#0A1D3F]">
             <div>
               <span className="font-bold text-sm block">Step 5: Review & Supporting Documents</span>
@@ -992,6 +997,10 @@ export function FranchiseApplicationForm({ onBack }) {
                 </p>
               </div>
             </div>
+          )}
+            </>
+          ) : (
+            <p className="text-sm text-slate-600">Document requirements will appear when applications open.</p>
           )}
 
           {/* Bottom Action Bar */}

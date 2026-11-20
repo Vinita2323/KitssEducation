@@ -63,7 +63,8 @@ test('franchise policy and applicant/admin screens: isolated HTTP, browser, fake
     const draft=await f.service.franchise.status(id,student.auth);assert.ok(draft.institution.logoAssetId);assert.deepEqual(draft.programsOffered,['Synthetic Program']);assert.ok(draft.location.stateId);assert.equal(draft.location.mapsUrl,'https://maps.google.com/?q=synthetic');
     for(const label of ['Institution registration proof','Authorization letter']){
       await app.getByLabel('Select '+label,{exact:true}).setInputFiles({name:'synthetic-proof.pdf',mimeType:'application/pdf',buffer:await pdfBytes(1)});
-      await app.getByRole('button',{name:'Upload '+label,exact:true}).click();await app.getByText(label+' uploaded and attached.',{exact:true}).waitFor();
+      // One document is chosen at a time, so a single "Upload now" button is shown; the confirmation also appears as a toast.
+      await app.getByRole('button',{name:'Upload now',exact:true}).click();await app.getByText(label+' uploaded and attached successfully.',{exact:true}).first().waitFor();
     }
     await app.getByRole('checkbox',{name:'Accept franchise agreement',exact:true}).check();await app.getByRole('button',{name:'Submit franchise application',exact:true}).click();await app.getByText('Application submitted. KITSS staff will review your details and documents.',{exact:true}).waitFor();
     assert.equal((await f.service.franchise.status(id,student.auth)).status,'pending');
@@ -75,16 +76,16 @@ test('franchise policy and applicant/admin screens: isolated HTTP, browser, fake
     await page.goto(base+'/admin/franchise-requests',{waitUntil:'domcontentloaded',timeout:120000});
     const row=page.getByRole('row').filter({hasText:'BROWSER FRANCHISE INSTITUTE'});await row.waitFor();
     await row.getByRole('button').first().click();
-    await page.getByLabel('Add Admin Note / Rejection Reason',{exact:true}).fill('Evidence reviewed in isolated browser test');
-    const verification=page.getByRole('region',{name:'Franchise verification'});
-    const buttons=verification.getByRole('button',{name:'Verify document',exact:true});await buttons.first().click();
-    await page.getByText('Document review saved',{exact:true}).first().waitFor();
-    await page.waitForFunction(()=>[...document.querySelectorAll('button')].filter(b=>b.textContent==='Verify document').every(b=>!b.disabled));
-    await buttons.nth(1).click();
-    await page.waitForFunction(()=>[...document.querySelectorAll('p')].filter(p=>/^(Institution registration proof|Authorization letter): verified$/.test(p.textContent)).length===2);
-    await page.getByRole('button',{name:'Approve Franchise',exact:true}).click();
-    await page.waitForFunction(()=>[...document.querySelectorAll('p')].some(p=>p.textContent.startsWith('Affiliation: active')));
-    await app.getByRole('button',{name:'Refresh application status',exact:true}).click();await app.getByText('Affiliation: active',{exact:true}).waitFor();
+    const review=page.getByRole('dialog',{name:'Franchise application review'});
+    await review.getByLabel(/^Admin Review Note \/ Decision Reason/).fill('Evidence reviewed in isolated browser test');
+    // Each document card has its own "Verify" button, disabled once that document is verified.
+    const nextVerify=()=>review.locator('button:enabled',{hasText:/^Verify$/}).first();
+    await nextVerify().click();await review.getByText('1 / 2 Verified',{exact:true}).waitFor();
+    await nextVerify().click();await review.getByText('All Required Verified ✓',{exact:true}).waitFor();
+    await review.getByRole('button',{name:'Approve Franchise',exact:true}).click();
+    for(let i=0;i<60&&(await f.service.franchise.status(id,student.auth)).affiliationState!=='active';i++)await new Promise(r=>setTimeout(r,500));
+    await review.getByText('active',{exact:true}).waitFor();
+    await app.getByRole('button',{name:'Refresh status',exact:true}).first().click();await app.getByText('active',{exact:true}).first().waitFor();
     assert.equal((await f.service.franchise.status(id,student.auth)).affiliationState,'active');
     await page.screenshot({path:fileURLToPath(new URL('../../.runtime/franchise-admin-review.png',import.meta.url)),fullPage:true});
     await app.goto(base+'/institutes',{waitUntil:'domcontentloaded'});
@@ -104,16 +105,16 @@ test('franchise policy and applicant/admin screens: isolated HTTP, browser, fake
     await page.reload({waitUntil:'domcontentloaded'});await page.getByRole('row').filter({hasText:'BROWSER FRANCHISE INSTITUTE'}).getByRole('button').first().click();
     const listing=page.getByRole('region',{name:'Public franchise listing'});
     await listing.getByLabel('Existing institution listing',{exact:true}).selectOption(college.id);
-    await page.getByLabel('Add Admin Note / Rejection Reason',{exact:true}).fill('Same institution confirmed; use existing profile');
+    await page.getByLabel(/^Admin Review Note \/ Decision Reason/).fill('Same institution confirmed; use existing profile');
     const associated=page.waitForResponse(r=>r.url().endsWith('/listing')&&r.request().method()==='POST');
     await listing.getByRole('button',{name:'Save listing association',exact:true}).click();assert.equal((await associated).status(),200);
-    await page.waitForFunction(node=>node.value==='',await page.getByLabel('Add Admin Note / Rejection Reason',{exact:true}).elementHandle());
+    await page.waitForFunction(node=>node.value==='',await page.getByLabel(/^Admin Review Note \/ Decision Reason/).elementHandle());
     await app.reload({waitUntil:'domcontentloaded'});await app.getByRole('heading',{name:'BROWSER FRANCHISE INSTITUTE',exact:true}).waitFor();assert.equal(await app.getByRole('heading',{name:'BROWSER FRANCHISE INSTITUTE',exact:true}).count(),1);
     await app.getByRole('button',{name:'Apply Now',exact:true}).waitFor();
     await app.getByRole('button',{name:'View Details',exact:true}).click();await app.getByRole('button',{name:'Close modal',exact:true}).click();
     await f.institutions.create('taxonomy',{kind:'qualification',key:randomUUID(),label:'Synthetic Qualification'},f.ctx);
     await app.getByRole('button',{name:'Apply Now',exact:true}).click();await app.getByRole('dialog',{name:'Admission application',exact:true}).getByText('Synthetic Public Program',{exact:true}).click();
-    await app.getByRole('button',{name:'Continue',exact:true}).click();await app.getByLabel('Admission mobileNumber',{exact:true}).fill('9999999999');await app.getByLabel('Admission educationalQualification',{exact:true}).selectOption('Synthetic Qualification');
+    await app.getByRole('button',{name:'Continue',exact:true}).click();await app.getByLabel('Admission mobileNumber',{exact:true}).fill('9999999999');await app.getByRole('button',{name:/^Qualification:/}).click();await app.getByRole('option',{name:'Synthetic Qualification',exact:true}).click();
     await app.getByRole('button',{name:'Continue',exact:true}).click();const submitted=app.waitForResponse(r=>r.url().endsWith('/admission-applications')&&r.request().method()==='POST');await app.getByRole('button',{name:'Submit Application',exact:true}).click();assert.equal((await submitted).status(),201);assert.equal(await f.models.AdmissionApplication.countDocuments({collegeId:college.id}),1);
     await app.keyboard.press('Escape');
     for(const width of [390,320]){await app.setViewportSize({width,height:844});assert.ok(await app.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));}

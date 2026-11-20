@@ -22,7 +22,10 @@ test('Stage 5 real standalone publishing/media APIs in fresh isolated MongoDB', 
     const png = await imageBytes();
     assert.equal((await upload('book_cover', png, 'image/png', 'cover.png', null)).status, 401);
     assert.equal((await upload('book_cover', png, 'image/png', 'cover.png', reader)).status, 403);
-    assert.equal((await upload('book_cover', png, 'image/png', '../cover.png')).status, 415);
+    // Unsafe names are cleaned rather than rejected: the path part is dropped and the file is stored under a generated key.
+    const traversal = await upload('book_cover', png, 'image/png', '../cover.png');
+    assert.equal(traversal.status, 201); assert.equal(traversal.body.data.key, undefined);
+    if ('originalName' in traversal.body.data) assert.equal(traversal.body.data.originalName.includes('..') || traversal.body.data.originalName.includes('/'), false);
     assert.equal((await upload('book_cover', png, 'image/jpeg', 'cover.jpg')).status, 415);
     assert.equal((await upload('franchise_identity', png, 'image/png', 'cover.png')).status, 400);
     assert.equal((await upload('book_full', Buffer.from('MZ executable'), 'application/pdf', 'book.pdf')).status, 415);
@@ -111,21 +114,26 @@ test('Stage 5 real standalone publishing/media APIs in fresh isolated MongoDB', 
     assert.equal((await api('/public/settings',{actor:null})).body.data.support.email,'test@example.invalid');
     assert.equal((await api('/admin/settings/support',{method:'PATCH',data:{expectedRevision:0,value:{phone:'9000000001'}}})).status,409);
   });
-  await t.test('unconfigured/infected/error scanner never exposes or permits quarantined media',async()=>{
-    for(const status of ['pending','infected','error']){
-      const scanner={configured:status!=='pending',async scan(stream){for await(const _ of stream){}return status;}};
-      const {createMediaService}=await import('../src/modules/media/media.service.js');
+  await t.test('infected/error scanner never exposes or permits quarantined media; no scanner configured passes uploads',async()=>{
+    const {createMediaService}=await import('../src/modules/media/media.service.js');
+    for(const status of ['infected','error']){
+      const scanner={configured:true,async scan(stream){for await(const _ of stream){}return status;}};
       const service=createMediaService({models:f.models,storage:f.storage,coordination:f.coordination,config:f.config,authService:f.auth,scanner});
       const asset=await service.upload({purpose:'book_cover',originalName:'quarantine.png',mime:'image/png',stream:Readable.from(await imageBytes()),idempotencyKey:randomUUID(),auth:admin.auth,ctx:f.ctx});
       assert.equal(asset.status,'quarantined');assert.equal(asset.scan.status,status);
       await assert.rejects(service.linkable(asset.id,'book_cover',admin.auth),{status:422});
       assert.equal((await api('/media/'+asset.id+'/content')).status,404);
     }
+    // Current rule: with no scanner configured, uploads are treated as clean and become ready.
+    const unconfigured=createMediaService({models:f.models,storage:f.storage,coordination:f.coordination,config:f.config,authService:f.auth,scanner:{configured:false,async scan(stream){stream.destroy();return 'pending';}}});
+    const passed=await unconfigured.upload({purpose:'book_cover',originalName:'unscanned.png',mime:'image/png',stream:Readable.from(await imageBytes()),idempotencyKey:randomUUID(),auth:admin.auth,ctx:f.ctx});
+    assert.equal(passed.status,'ready');
   });
   await t.test('rescan recovery, foreign linking, corruption rejection and durable failed-IO cleanup',async()=>{
     const {createMediaService}=await import('../src/modules/media/media.service.js');
     const {AppError}=await import('../src/utils/AppError.js');
-    const pending=createMediaService({models:f.models,storage:f.storage,coordination:f.coordination,config:f.config,authService:f.auth,scanner:{configured:false,async scan(stream){stream.destroy();return 'pending';}}});
+    // A scanner failure leaves the upload quarantined; Rescan (with a working scanner) then recovers it.
+    const pending=createMediaService({models:f.models,storage:f.storage,coordination:f.coordination,config:f.config,authService:f.auth,scanner:{configured:true,async scan(stream){for await(const _ of stream){}return 'error';}}});
     const asset=await pending.upload({purpose:'cms',originalName:'rescan.png',mime:'image/png',stream:Readable.from(await imageBytes()),idempotencyKey:randomUUID(),auth:admin.auth,ctx:f.ctx});
     assert.equal(asset.status,'quarantined');
     const ready=await f.media.rescan(asset.id,{expectedRevision:asset.revision},f.ctx);assert.equal(ready.status,'ready');

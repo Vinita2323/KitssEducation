@@ -36,7 +36,7 @@ test('admin field help, native upload and draft persistence (synthetic local fix
     await editor.getByLabel('Book title', { exact: true }).fill('ADMIN UI SYNTHETIC DRAFT');
     await editor.getByLabel('Book price', { exact: true }).fill('123.45');
     await editor.getByLabel('Upload Book cover', { exact: true }).setInputFiles({ name: 'synthetic.png', mimeType: 'image/png', buffer: await imageBytes() });
-    await editor.locator('button').filter({ hasText: /^Upload Book cover$/ }).click();
+    // Choosing the file uploads it straight away; there is no separate Upload click.
     await page.waitForFunction(() => document.querySelector('select[aria-label="Book cover"]')?.value);
     await help(); await page.screenshot({ path: artifacts + 'admin-workspace-editor-desktop.png' });
     await page.setViewportSize({ width: 390, height: 844 });

@@ -105,15 +105,17 @@ test('Stage 10 admin-to-user persisted workflows and responsive shared navigatio
     await identity(admin); await goto('/admin/registrations');
     for (const draft of drafts) {
       await page.getByRole('button').filter({ hasText: draft.reference }).click();
-      await page.getByText(draft.field + ': STAGE10 ' + draft.kind + ' APPLICANT', { exact: true }).waitFor();
+      // The review shows each applicant field as a label with its value underneath.
+      const review = page.getByRole('dialog', { name: 'Registration ' + draft.reference });
+      await review.getByText('STAGE10 ' + draft.kind + ' APPLICANT', { exact: true }).waitFor();
       await page.getByLabel('Registration review note').fill('STAGE10 reviewed safe draft ' + draft.kind);
       const response = page.waitForResponse(r => r.url().endsWith('/notes') && r.request().method() === 'POST');
-      await page.getByRole('button', { name: 'Add review note', exact: true }).click(); assert.equal((await response).status(), 200);
+      await page.getByRole('button', { name: 'Add Review Note', exact: true }).click(); assert.equal((await response).status(), 200);
       await page.getByText('STAGE10 reviewed safe draft ' + draft.kind, { exact: true }).waitFor();
       assert.equal((await f.models.RegistrationApplication.findById(draft.id)).notes.length, 1);
       // The review is a modal over the list: close it before opening the next application.
       await page.getByRole('button', { name: 'Close registration review', exact: true }).first().click();
-      await page.getByRole('region', { name: 'Registration review' }).waitFor({ state: 'detached' });
+      await review.waitFor({ state: 'detached' });
     }
   });
   await check('public settings update the real header; job/book/order administration is usable', async () => {

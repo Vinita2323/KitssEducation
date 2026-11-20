@@ -108,7 +108,7 @@ export function MediaPicker({ purpose, label, value, onChange }) {
         {/* Existing Assets Dropdown */}
         <div className="min-w-0 sm:max-w-xs w-full">
           <AdminSelect
-            aria-label={`${label} selector`}
+            aria-label={label}
             className="w-full p-1.5 border rounded-lg bg-white text-xs truncate"
             value={value || ''}
             onChange={e => {
@@ -136,6 +136,7 @@ export function MediaPicker({ purpose, label, value, onChange }) {
           <input
             ref={fileInputRef}
             type="file"
+            aria-label={'Upload ' + label}
             accept={acceptTypes}
             className="hidden"
             disabled={busy}
@@ -213,9 +214,9 @@ export function MediaPicker({ purpose, label, value, onChange }) {
         </p>
       )}
       {error && (
-        <p role="alert" className="text-xs text-rose-700 font-medium flex items-center gap-1.5 mt-1">
-          <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-          <span className="break-words">{error}</span>
+        <p role="alert" className="text-xs text-rose-700 font-medium flex items-start gap-1.5 mt-1">
+          <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+          <span className="break-words whitespace-pre-line leading-relaxed">{error}</span>
         </p>
       )}
     </div>
