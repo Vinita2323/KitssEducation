@@ -339,14 +339,49 @@ export function createCoachingService({
       }
       if (query.sort && !['title', 'newest'].includes(query.sort)) throw invalid('Unsupported sort');
       const total = await Course.countDocuments(filter);
+      const courses = await Course.find(filter).sort(query.sort === 'title' ? {
+        'publishedSnapshot.title': 1,
+        _id: 1
+      } : {
+        createdAt: -1,
+        _id: 1
+      }).skip((page - 1) * pageSize).limit(pageSize);
+      const courseIds = courses.map(c => c._id);
+      const activePlans = courseIds.length ? await CoursePlan.find({
+        courseId: { $in: courseIds },
+        status: 'active',
+        rulesApproved: true
+      }).sort({ priceMinor: 1, sortOrder: 1, createdAt: 1 }).lean() : [];
+      const planSummaryByCourse = new Map();
+      for (const plan of activePlans) {
+        const key = String(plan.courseId);
+        const existing = planSummaryByCourse.get(key);
+        if (!existing) {
+          planSummaryByCourse.set(key, {
+            activePlanCount: 1,
+            lowestPlan: {
+              id: String(plan._id),
+              name: plan.name,
+              priceMinor: plan.priceMinor,
+              durationDays: plan.durationDays,
+              durationMonths: plan.durationMonths,
+              free: plan.priceMinor === 0
+            }
+          });
+        } else {
+          existing.activePlanCount += 1;
+        }
+      }
       return {
-        data: await Promise.all((await Course.find(filter).sort(query.sort === 'title' ? {
-          'publishedSnapshot.title': 1,
-          _id: 1
-        } : {
-          createdAt: -1,
-          _id: 1
-        }).skip((page - 1) * pageSize).limit(pageSize)).map(service.publicDTO)),
+        data: await Promise.all(courses.map(async row => {
+          const base = await service.publicDTO(row);
+          const summary = planSummaryByCourse.get(String(row._id));
+          return {
+            ...base,
+            activePlanCount: summary?.activePlanCount ?? 0,
+            lowestPlan: summary?.lowestPlan ?? null
+          };
+        })),
         meta: {
           page,
           pageSize,

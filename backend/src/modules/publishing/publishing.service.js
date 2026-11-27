@@ -187,5 +187,6 @@ export function createPublishingService({ models, taxonomy, coordination, media 
     async settings(admin = false) { const rows = await models.SiteSettings.find(admin ? {} : { key: { $nin: ['registrationFees', 'businessPolicies'] } }).lean(); return Object.fromEntries(rows.map(r => [r.key, admin ? cleanDTO(r) : r.value])); },
     async setSetting(keyName, input, ctx) { const { value, expectedRevision } = settingInput(keyName, input); return coordination.run(async () => { let doc = await models.SiteSettings.findOne({ key: keyName }); if (!doc) { if (expectedRevision !== 0) throw new AppError(409, 'REVISION_CONFLICT', 'New settings require revision zero'); doc = await models.SiteSettings.create({ key: keyName, value, createdBy: ctx.actorId, updatedBy: ctx.actorId, auditOutbox: [coordination.event('settings_created', ctx)] }); await coordination.flush(models.SiteSettings, doc); return cleanDTO(doc); } return cleanDTO(await coordination.update(models.SiteSettings, doc, { value }, expectedRevision, 'settings_updated', ctx)); }); },
     publicData,
+    withTaxonomyLabels,
   }; return service;
 }

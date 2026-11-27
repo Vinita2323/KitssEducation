@@ -211,7 +211,9 @@ test('Stage 8 real API/Mongo browser; synthetic source/mail only', {
     await page.getByRole('button', { name: 'Back', exact: true }).click();
     await page.getByRole('button', { name: 'University Result' }).click();
     await page.getByRole('button', { name: /SYNTHETIC BROWSER ISSUER/ }).click();
-    await page.getByLabel('Examination / Class / Course').selectOption(exam.id);
+    // The examination is a searchable dropdown: open it, then choose the exam by its displayed name.
+    await page.getByRole('button', { name: /^Examination \/ Class \/ Course:/ }).click();
+    await page.getByRole('option', { name: /^SYNTHETIC BROWSER EXAM \// }).click();
     await page.getByLabel('Roll number').fill(row.rollNumber);
     await page.getByLabel('Date of birth').fill('2000-01-01');
     await page.getByRole('button', {
@@ -306,7 +308,7 @@ test('Stage 8 real API/Mongo browser; synthetic source/mail only', {
     await page.getByLabel('Student result examination').selectOption({ label: 'SYNTHETIC MANAGED UNIVERSITY EXAM / 2026 / TEST' });
     await page.getByLabel('Student User ID').fill(student.user.publicId);
     await page.getByLabel('Student roll number').fill('SYNTHETIC-MANAGED-001');
-    await page.getByLabel('Student name').fill('SYNTHETIC MANAGED CANDIDATE');
+    await page.getByLabel('Student name', { exact: true }).fill('SYNTHETIC MANAGED CANDIDATE');
     await page.getByLabel('Result issue date').fill('2026-10-31');
     await page.getByLabel('Institution result reference').fill('SYNTHETIC-MANAGED-REF');
     await page.getByLabel('Answer: Date of birth').fill('2000-01-01');
@@ -326,7 +328,8 @@ test('Stage 8 real API/Mongo browser; synthetic source/mail only', {
     await identity(student); await goto('/results');
     await page.getByRole('button', { name: 'University Result' }).click();
     await page.getByRole('button', { name: /SYNTHETIC CREATED ISSUER FULL/ }).click();
-    await page.getByLabel('Examination / Class / Course').selectOption({ label: 'SYNTHETIC MANAGED UNIVERSITY EXAM / 2026 / TEST' });
+    await page.getByRole('button', { name: /^Examination \/ Class \/ Course:/ }).click();
+    await page.getByRole('option', { name: 'SYNTHETIC MANAGED UNIVERSITY EXAM / 2026 / TEST', exact: true }).click();
     await page.getByLabel('Roll number').fill('SYNTHETIC-MANAGED-001');
     await page.getByLabel('Date of birth').fill('2000-01-01');
     await page.getByRole('button', { name: 'Check Result', exact: true }).click();

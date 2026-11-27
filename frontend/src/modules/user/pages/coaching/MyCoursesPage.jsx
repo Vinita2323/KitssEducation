@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { coachingService } from "../../services/coachingService";
 import { CollegePromoCarousel } from "../../components/coaching/CollegePromoCarousel";
+import { placeholderImages } from "../../../../shared/ui/placeholders";
 
 export const MyCoursesPage = () => {
   const [courses, setCourses] = useState([]);
@@ -105,8 +106,12 @@ export const MyCoursesPage = () => {
                   {/* Thumbnail & Title */}
                   <div className="flex items-center gap-2.5">
                     <img
-                      src={course.thumbnail}
+                      src={course.thumbnail || placeholderImages.course}
                       alt={course.title}
+                      onError={(e) => {
+                        e.currentTarget.onerror = null;
+                        e.currentTarget.src = placeholderImages.course;
+                      }}
                       className="w-12 h-12 rounded-md object-cover border border-[#E6E8EC] shrink-0"
                     />
                     <div className="min-w-0 flex-1 space-y-0.5">
@@ -162,14 +167,23 @@ export const MyCoursesPage = () => {
                   </div>
                 </div>
 
-                {/* Continue Learning Action */}
-                <div className="pt-2 border-t border-[#E6E8EC]/70">
+                {/* Continue Learning Actions */}
+                <div className="pt-2 border-t border-[#E6E8EC]/70 flex items-center gap-2">
+                  {course.lastLessonId && (
+                    <Link
+                      to={`/coaching/${course.id}/lecture/${course.lastLessonId}`}
+                      className="flex-1 py-2 px-3 rounded-md bg-[#FF8A00] hover:bg-[#E67C00] text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-xs transition-all active:scale-95"
+                    >
+                      <span>Resume Lesson</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </Link>
+                  )}
                   <Link
                     to={`/coaching/${course.id}/dashboard`}
-                    className="w-full py-2 px-3 rounded-md bg-[#0A1D3F] hover:bg-[#133C8B] text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-xs transition-all active:scale-95"
+                    className="flex-1 py-2 px-3 rounded-md bg-[#0A1D3F] hover:bg-[#133C8B] text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-xs transition-all active:scale-95"
                   >
-                    <span>Continue Learning</span>
-                    <ArrowRight className="w-4 h-4" />
+                    <span>{course.lastLessonId ? "Dashboard" : "Continue Learning"}</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
                   </Link>
                 </div>
               </div>

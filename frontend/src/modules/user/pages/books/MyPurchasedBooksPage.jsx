@@ -11,7 +11,7 @@ import {
   Globe2,
   Languages
 } from "lucide-react";
-import { bookService } from "../../services/bookService";
+import { bookService, formatClassLabel } from "../../services/bookService";
 import { useLibrary } from "../../context/LibraryContext";
 import { SkeletonLoader, EmptyState } from "../../components/common/EmptyState";
 
@@ -28,8 +28,9 @@ export const MyPurchasedBooksPage = () => {
   const { user } = useAuth();
   const [error,setError] = useState('');
   const navigate = useNavigate();
-  const { purchasedBookIds, getBookProgress } = useLibrary();
+  const { purchasedBookIds } = useLibrary();
   const [books, setBooks] = useState([]);
+  const [failedCovers, setFailedCovers] = useState({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -39,7 +40,6 @@ export const MyPurchasedBooksPage = () => {
       try {
         setLoading(true);
         const all = await bookService.getMyLibraryBooks();
-        const idSet = new Set(purchasedBookIds.map(String));
         const purchased = all.filter(b => b.canReadFull === true);
         if (!cancelled) setBooks(purchased);
       } catch (err) {
@@ -96,7 +96,9 @@ export const MyPurchasedBooksPage = () => {
         <div className="space-y-2.5">
           {books.map((book) => {
             const IconComponent = coverIconMap[book.coverIcon] || BookOpen;
-            const progress = book.readingState ?? getBookProgress(book.id);
+            const progress = book.readingState;
+            const classText = formatClassLabel(book.class);
+            const showCover = Boolean(book.coverUrl && !failedCovers[book.id]);
             return (
               <div
                 key={book.id}
@@ -106,10 +108,22 @@ export const MyPurchasedBooksPage = () => {
                   <div
                     className={`w-14 h-[4.5rem] rounded-xl bg-gradient-to-br ${
                       book.coverColor || "from-[#0A1D3F] to-[#133C8B]"
-                    } p-2 flex flex-col justify-between text-white shrink-0 shadow-xs`}
+                    } p-2 flex flex-col justify-between text-white shrink-0 shadow-xs relative overflow-hidden`}
                   >
-                    <IconComponent className="w-4 h-4 text-white/80" />
-                    <span className="text-[9px] font-bold truncate">Cl {book.class}</span>
+                    {showCover ? (
+                      <img
+                        src={book.coverUrl}
+                        alt={book.title + " cover"}
+                        onError={() => setFailedCovers((prev) => ({ ...prev, [book.id]: true }))}
+                        className="absolute inset-0 w-full h-full object-cover"
+                        loading="lazy"
+                      />
+                    ) : (
+                      <>
+                        <IconComponent className="w-4 h-4 text-white/80" />
+                        <span className="text-[9px] font-bold truncate">{classText || book.board}</span>
+                      </>
+                    )}
                   </div>
 
                   <div className="min-w-0 flex-1">
@@ -119,12 +133,12 @@ export const MyPurchasedBooksPage = () => {
                         Purchased
                       </span>
                       <span className="text-[10px] text-[#667085]">
-                        {book.subject} • Class {book.class} • {book.board}
+                        {[book.subject, classText, book.board].filter(Boolean).join(" • ")}
                       </span>
                     </div>
                     <h3 className="text-sm font-bold text-[#0A1D3F] truncate">{book.title}</h3>
                     <p className="text-[11px] text-[#667085] truncate mt-0.5">
-                      {book.pages} pages • {book.fileSize || "PDF"}
+                      {[book.pages ? `${book.pages} pages` : null, book.fileSize || "PDF"].filter(Boolean).join(" • ")}
                     </p>
 
                     {progress?.percentage > 0 && (
@@ -156,13 +170,13 @@ export const MyPurchasedBooksPage = () => {
                   >
                     Details
                   </Link>}
-                  <a
-                    href={`/books/${book.id}/read`} target="_blank" rel="noopener noreferrer"
+                  <Link
+                    to={`/books/${book.id}/read`}
                     className="px-4 py-1.5 bg-[#0A1D3F] hover:bg-[#133C8B] text-white text-xs font-bold rounded-lg transition active:scale-95 shadow-xs flex items-center gap-1.5"
                   >
                     <BookOpen className="w-3.5 h-3.5" />
                     <span>Open secure PDF</span>
-                  </a>
+                  </Link>
                 </div>
               </div>
             );

@@ -23,27 +23,33 @@ export function LibraryProvider({
   const [purchasedBookIds, setBooks] = useState([]),
     [wishlistBookIds, setWishlist] = useState([]),
     [subscribedCourseIds, setCourses] = useState([]);
+  const loadLibrary = async (signal) => {
+    if (!user) return;
+    const owner = user.id;
+    const issued = wishlistVersion.current;
+    const options = signal ? { signal } : {};
+    const [books, wishlist, courses] = await Promise.all([
+      httpClient.request('/me/books', options),
+      httpClient.request('/me/wishlist', options),
+      readOptions('/me/enrollments', { state: 'active' }, signal),
+    ]);
+    if (identity.current === owner) {
+      setBooks(books.data.filter(b => b.canReadFull).map(b => b.id));
+      if (issued === wishlistVersion.current) setWishlist(wishlist.data);
+      setCourses(courses.map(c => String(c.courseId)));
+    }
+  };
   useEffect(() => {
     setDataOwner(user?.id);
-    const issued = wishlistVersion.current;
     setBooks([]);
     setWishlist([]);
     setCourses([]);
     if (!user) return;
-    const controller = new AbortController(),
-      owner = user.id;
-    const options = {
-      signal: controller.signal
-    };
-    Promise.all([httpClient.request('/me/books', options), httpClient.request('/me/wishlist', options), readOptions('/me/enrollments', {state:'active'}, controller.signal)]).then(([books, wishlist, courses]) => {
-      if (identity.current === owner) {
-        setBooks(books.data.filter(b => b.canReadFull).map(b => b.id));
-        if (issued === wishlistVersion.current) setWishlist(wishlist.data);
-        setCourses(courses.map(c => String(c.courseId)));
-      }
-    }).catch(() => {});
+    const controller = new AbortController();
+    loadLibrary(controller.signal).catch(() => {});
     return () => controller.abort();
   }, [user?.id]);
+  const refreshLibrary = () => loadLibrary().catch(() => {});
   const toggleWishlist = async bookId => {
     if (!user) {
       showError('Sign in to save your wishlist.');
@@ -79,6 +85,7 @@ export function LibraryProvider({
     isBookOwned: id => dataOwner === user?.id && purchasedBookIds.includes(String(id)),
     canAccessBook: book => book?.canReadFull === true,
     isWishlisted: id => dataOwner === user?.id && wishlistBookIds.includes(String(id)),
+    refreshLibrary,
     toggleWishlist,
     markBookPurchased: blocked,
     markCourseSubscribed: blocked,

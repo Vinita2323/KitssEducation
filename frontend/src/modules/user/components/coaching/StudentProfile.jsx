@@ -105,7 +105,7 @@ export const StudentProfile = ({ student, enrolledCourses = [] }) => {
                 Location
               </span>
               <span className="font-semibold text-[#0A1D3F] truncate block">
-                {student.city}, {student.state}
+                {[student.city, student.state].filter(Boolean).join(", ") || "Not Provided"}
               </span>
             </div>
           </div>
@@ -119,7 +119,7 @@ export const StudentProfile = ({ student, enrolledCourses = [] }) => {
                 Date of Birth
               </span>
               <span className="font-semibold text-[#0A1D3F] truncate block">
-                {student.dob || "15 Aug 2009"}
+                {student.dob || "Not Provided"}
               </span>
             </div>
           </div>

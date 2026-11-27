@@ -16,15 +16,27 @@ export function computeSubscriptionExpiry(course) {
     expiryStatus: expiryTime && expiryTime > Date.now() ? 'Active' : 'Unavailable'
   };
 }
+const formatPlanDuration = plan => plan ? (plan.durationMonths ? `${plan.durationMonths} mo` : `${plan.durationDays} days`) : 'See plans';
+const formatMediaUrl = src => {
+  if (!src) return null;
+  if (/^https?:\/\//i.test(src) || src.startsWith('data:')) return src;
+  const base = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '');
+  if (!base || base === '/api/v1' || src.startsWith(base)) return src;
+  return src.startsWith('/api/v1/') ? base + src.slice('/api/v1'.length) : src;
+};
 const view = row => ({
   ...row,
   board: row.board ?? row.category,
   class: row.class ?? '',
   subjects: row.subjects ?? [],
-  teacher: row.teacher ?? 'Instructor details in course',
+  teacher: row.teacher || 'Instructor details in course',
+  thumbnail: formatMediaUrl(row.thumbnail),
+  teacherAvatar: formatMediaUrl(row.teacherAvatar),
   lecturesCount: row.lessonCount ?? 0,
   booksCount: row.linkedBookIds?.length ?? 0,
-  duration: 'See approved plan',
+  duration: row.lowestPlan ? formatPlanDuration(row.lowestPlan) : 'See plans',
+  lowestPlan: row.lowestPlan ?? null,
+  activePlanCount: row.activePlanCount ?? 0,
   isEnrolled: false,
   subjectsData: []
 });
@@ -75,12 +87,24 @@ export const coachingService = {
     const enrollment = syllabus.enrollment;
     // All linked handbooks in one request; unpublished ones are left out, as before.
     const linked = row.linkedBookIds ?? [];
-    const books = linked.length ? await get('/books/by-ids?ids=' + linked.map(encodeURIComponent).join(','), signal).catch(e => { if (e.code === 'ABORTED') throw e; return []; }) : [];
+    const books = (linked.length ? await get('/books/by-ids?ids=' + linked.map(encodeURIComponent).join(','), signal).catch(e => { if (e.code === 'ABORTED') throw e; return []; }) : [])
+      .filter(Boolean)
+      .map(b => ({
+        ...b,
+        cover: formatMediaUrl(b.cover || (b.coverAssetId ? '/api/v1/media/' + b.coverAssetId + '/content' : null))
+      }));
+    const lowestPlan = plans.length
+      ? [...plans].sort((a, b) => (a.priceMinor ?? 0) - (b.priceMinor ?? 0))[0]
+      : null;
     return {
       ...view(row),
       ...computeSubscriptionExpiry(enrollment ?? {}),
+      duration: lowestPlan ? formatPlanDuration(lowestPlan) : view(row).duration,
+      lowestPlan,
+      activePlanCount: plans.length,
       isEnrolled: enrollment?.canAccess === true,
       enrollment,
+      linkedBooks: books,
       progressPercentage: syllabus.completionPercentage,
       completedLectures: syllabus.lessons.filter(l => l.progress?.status === 'completed').length,
       subscriptionPlans: plans.map(p => ({
@@ -89,7 +113,7 @@ export const coachingService = {
         price: p.priceMinor / 100,
         duration: p.durationMonths ? p.durationMonths + ' calendar months' : p.durationDays + ' days'
       })),
-      subjectsData: syllabus.sections.map(section => ({
+      subjectsData: syllabus.sections.map((section, idx) => ({
         id: section.key,
         subjectName: section.title,
         lectures: syllabus.lessons.filter(l => l.subjectKey === section.key).map(l => ({
@@ -97,7 +121,7 @@ export const coachingService = {
           isCompleted: l.progress?.status === 'completed',
           isLocked: l.locked
         })),
-        books: books.filter(Boolean)
+        books: idx === 0 ? books : []
       })),
       syllabus
     };

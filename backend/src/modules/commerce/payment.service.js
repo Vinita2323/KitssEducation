@@ -238,7 +238,9 @@ export class PaymentService {
       const asset = book?.publishedSnapshot?.documentAssetId && assets.get(String(book.publishedSnapshot.documentAssetId));
       // Display details come from the owner's snapshot so off-sale books still render in the library.
       if (asset && await this.canReadAsset(asset, auth)) result.push({ ...this.publishingModule.publishing.publicData('books', book), onSale: book.status === 'published', id: String(row.bookId), title: book.publishedSnapshot.title, canReadFull: true, contentUrl: '/api/v1/media/' + asset._id + '/content', simulated: row.simulated, readingState: this.learning && Number.isSafeInteger(asset.pageCount) && asset.pageCount > 0 ? await this.learning.bookState(String(row.bookId),auth) : null });
-    } return result;
+    }
+    await this.publishingModule.publishing.withTaxonomyLabels?.(result);
+    return result;
   }
   async receipt(value, auth) {
     const doc = await this.owned(value, auth); if (doc.status !== 'captured') throw new AppError(409, 'RECEIPT_PENDING', 'Receipt requires verified capture');

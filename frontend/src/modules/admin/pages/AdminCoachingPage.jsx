@@ -30,8 +30,16 @@ const blank = {
 const singular = { courses: 'course', lessons: 'lesson', plans: 'plan' };
 
 function Pill({ label, tone }) { return <span className={'inline-block whitespace-nowrap px-2.5 py-1 rounded-full text-xs font-semibold ring-1 ' + tone}>{label}</span>; }
-function Section({ title, hint, children }) {
-  return <section className="rounded-2xl border border-[#E6E8EC] p-4 space-y-3" aria-label={title}>
+function Thumb({ id, canRead, alt = '', fallbackText = null, className = 'w-16 aspect-video rounded-lg', iconSize = 16 }) {
+  const [failed, setFailed] = useState(false);
+  useEffect(() => { setFailed(false); }, [id]);
+  if (!id || !canRead || failed) {
+    return <div className={className + ' bg-gradient-to-br from-[#0A1D3F] to-[#133C8B] grid place-items-center overflow-hidden shrink-0 text-white'}>{fallbackText ? <span className="text-xs px-2 text-center">{fallbackText}</span> : <GraduationCap aria-hidden="true" size={iconSize} />}</div>;
+  }
+  return <div className={className + ' bg-gradient-to-br from-[#0A1D3F] to-[#133C8B] grid place-items-center overflow-hidden shrink-0'}><img src={mediaUrl(id)} alt={alt} loading="lazy" onError={() => setFailed(true)} className="w-full h-full object-cover" /></div>;
+}
+function Section({ id, title, hint, children }) {
+  return <section id={id} className="rounded-2xl border border-[#E6E8EC] p-4 space-y-3 scroll-mt-2" aria-label={title}>
     <div><h3 className="font-bold">{title}</h3>{hint && <p className="text-sm text-[#53647c] mt-0.5">{hint}</p>}</div>{children}
   </section>;
 }
@@ -42,12 +50,18 @@ function Confirm({ title, children, label, danger, busy, onConfirm, onClose }) {
     <div className="flex justify-end gap-2 pt-2"><button type="button" onClick={onClose}>Cancel</button>{onConfirm && <button type="button" disabled={busy} onClick={onConfirm} className={(danger ? 'bg-red-600' : 'bg-[#0A1D3F]') + ' text-white rounded-xl px-4 py-2 font-semibold disabled:opacity-50'}>{label}</button>}</div>
   </div></div>;
 }
-function Readiness({ items }) {
+function Readiness({ items, onAction }) {
   const done = items.filter(([, ok]) => ok).length;
   return <div className="space-y-2">
     <div className="flex items-center justify-between gap-3 text-sm"><span className="font-semibold">{done === items.length ? 'Ready to publish' : `Ready to publish: ${done} of ${items.length}`}</span></div>
     <div className="h-2 rounded-full bg-[#E6E8EC] overflow-hidden" aria-hidden="true"><div className="h-full bg-emerald-500" style={{ width: (done / items.length * 100) + '%' }} /></div>
-    <ul className="grid sm:grid-cols-2 gap-x-4 gap-y-1 text-sm">{items.map(([label, ok]) => <li key={label} className={'flex items-center gap-1.5 ' + (ok ? 'text-emerald-800' : 'text-[#53647c]')}>{ok ? <CheckCircle2 aria-hidden="true" size={14} /> : <Circle aria-hidden="true" size={14} />}<span>{(ok ? 'Done: ' : 'Missing: ') + label}</span></li>)}</ul>
+    <ul className="grid sm:grid-cols-2 gap-x-4 gap-y-1.5 text-sm">{items.map(([label, ok]) => {
+      const fix = !ok && onAction ? onAction(label) : null;
+      return <li key={label} className={'flex items-center justify-between gap-2 ' + (ok ? 'text-emerald-800' : 'text-[#53647c]')}>
+        <span className="flex items-center gap-1.5">{ok ? <CheckCircle2 aria-hidden="true" size={14} /> : <Circle aria-hidden="true" size={14} />}<span>{(ok ? 'Done: ' : 'Missing: ') + label}</span></span>
+        {fix && <button type="button" onClick={fix.run} className="text-xs font-semibold text-[#133C8B] hover:text-[#FF8A00] underline shrink-0">{fix.label}</button>}
+      </li>;
+    })}</ul>
   </div>;
 }
 
@@ -157,6 +171,16 @@ export function AdminCoachingPage() {
   const live = detail?.status === 'published', liveSections = new Set(detail?.publication?.liveSectionKeys ?? []);
   const sectionTitle = key => (detail?.syllabus ?? []).find(s => s.key === key)?.title ?? key;
   const categories = [...new Set([...choices.category.map(c => c.label), ...(form?.category ? [form.category] : [])])];
+  const toggleLessonStatus = (row, nextStatus) => write(() => authenticatedWrite('/admin/coaching/courses/' + course.id + '/lessons/' + row.id, { status: nextStatus, expectedRevision: row.revision }, 'PATCH'));
+  const togglePlanStatus = (row, nextStatus) => write(() => authenticatedWrite('/admin/coaching/courses/' + course.id + '/plans/' + row.id, { status: nextStatus, ...(nextStatus === 'active' ? { rulesApproved: true } : {}), expectedRevision: row.revision }, 'PATCH'));
+  const addDefaultModule = () => detail && write(() => authenticatedWrite('/admin/coaching/courses/' + detail.id, { syllabus: [{ key: 'module-1', title: 'Module 1', sortOrder: 0 }], expectedRevision: detail.revision }, 'PATCH'));
+  const readinessAction = label => {
+    if (!detail || detail.status === 'archived') return null;
+    const lower = label.toLowerCase();
+    if (lower.includes('lesson')) return can('coaching.create') ? { label: 'Fix: add a lesson', run: () => { setDialog(null); go('lessons'); open(null, 'lessons'); } } : null;
+    if (lower.includes('plan')) return can('commerce.plans.write') ? { label: 'Fix: add a plan', run: () => { setDialog(null); go('plans'); open(null, 'plans'); } } : null;
+    return can('coaching.edit') ? { label: 'Fix: edit course details', run: () => { setDialog(null); open(detail, 'courses'); } } : null;
+  };
 
   const courseActions = row => <>
     <button type="button" onClick={() => go('lessons', row)}>Manage lessons</button>
@@ -178,12 +202,13 @@ export function AdminCoachingPage() {
 
     {course && <section className="admin-card p-4 sm:p-5 space-y-4" aria-label="Course workspace">
       <div className="flex flex-wrap items-start gap-4">
-        <div className="w-28 aspect-video rounded-xl bg-gradient-to-br from-[#0A1D3F] to-[#133C8B] grid place-items-center overflow-hidden shrink-0">{detail?.thumbnailId && can('media.read') ? <img src={mediaUrl(detail.thumbnailId)} alt="" className="w-full h-full object-cover" /> : <GraduationCap aria-hidden="true" className="text-white" />}</div>
+        <Thumb id={detail?.thumbnailId} canRead={can('media.read')} className="w-28 aspect-video rounded-xl" iconSize={24} />
         <div className="flex-1 min-w-[12rem]">
           <h2 className="text-lg font-bold break-words">{detail?.title ?? course.title}</h2>
           <p className="text-sm text-[#53647c] flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
             {detail?.category && <span>{detail.category} ·</span>}
             {detail && <span>{detail.stats.lessons.published} of {detail.stats.lessons.total} lessons published ·</span>}
+            {detail && <span>{(detail.stats.activePlans ?? []).length} plan{(detail.stats.activePlans ?? []).length === 1 ? '' : 's'} on sale ·</span>}
             {detail && (can('learning.read') && detail.stats.activeStudents > 0 ? (
               <Link to={`/admin/enrollments?kind=course&productId=${encodeURIComponent(course.id)}&state=active`} className="text-[#0A1D3F] font-medium hover:underline" title="View active students">
                 {`${detail.stats.activeStudents} active student${detail.stats.activeStudents === 1 ? '' : 's'}`}
@@ -200,7 +225,11 @@ export function AdminCoachingPage() {
           {can('coaching.edit') && detail.status !== 'archived' && <button type="button" disabled={busy} onClick={() => open(detail, 'courses')}>Edit course</button>}
         </div>}
       </div>
-      {detail && detail.status !== 'published' && detail.status !== 'archived' && <Readiness items={courseRequirements(detail, detail.stats)} />}
+      {detail && detail.status !== 'published' && detail.status !== 'archived' && <Readiness items={courseRequirements(detail, detail.stats)} onAction={readinessAction} />}
+      {detail && !(detail.syllabus ?? []).length && detail.status !== 'archived' && can('coaching.edit') && <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 flex flex-wrap items-center justify-between gap-2 text-sm text-amber-950">
+        <span>This course has no syllabus sections yet. Add a section before creating lessons.</span>
+        <button type="button" disabled={busy} onClick={addDefaultModule} className="font-semibold underline shrink-0">Quick-add Module 1</button>
+      </div>}
       {live && <p className="text-sm text-[#53647c]">This course is live. Lesson and plan changes apply straight away; course details and new sections go live when you publish changes.</p>}
       <nav className="flex flex-wrap items-center gap-2 border-t border-[#E6E8EC] pt-3" aria-label="Course sections">
         <button type="button" onClick={() => go('courses', null)} className="inline-flex items-center gap-1"><ArrowLeft aria-hidden="true" size={15} />All courses</button>
@@ -213,7 +242,7 @@ export function AdminCoachingPage() {
 
     <div className="admin-table">
       {kind === 'courses' && <table className="w-full text-sm"><thead><tr><th className="text-left">Course</th><th className="text-left">Lessons &amp; plans</th><th className="text-left">Students</th><th className="text-left">Status</th><th className="text-right">Actions</th></tr></thead><tbody>{rows.map(row => <tr key={row.id}>
-        <td className="min-w-[15rem]"><div className="flex items-start gap-3"><div className="w-16 aspect-video rounded-lg bg-gradient-to-br from-[#0A1D3F] to-[#133C8B] grid place-items-center overflow-hidden shrink-0">{row.thumbnailId && can('media.read') ? <img src={mediaUrl(row.thumbnailId)} alt="" loading="lazy" className="w-full h-full object-cover" /> : <GraduationCap aria-hidden="true" size={16} className="text-white" />}</div><div className="min-w-0"><p className="font-bold break-words">{row.title}</p><p className="text-sm text-[#53647c]">{row.category || 'No category'}</p></div></div></td>
+        <td className="min-w-[15rem]"><div className="flex items-start gap-3"><Thumb id={row.thumbnailId} canRead={can('media.read')} className="w-16 aspect-video rounded-lg" iconSize={16} /><div className="min-w-0"><p className="font-bold break-words">{row.title}</p><p className="text-sm text-[#53647c]">{row.category || 'No category'}</p></div></div></td>
         <td className="min-w-[11rem]"><p>{row.stats ? `${row.stats.lessons.published} of ${row.stats.lessons.total} lessons published` : ''}</p><p className="text-sm text-[#53647c]">{row.stats?.activePlans.length ? row.stats.activePlans.slice(0, 2).map(planLabel).join(' · ') + (row.stats.activePlans.length > 2 ? ` +${row.stats.activePlans.length - 2} more` : '') : 'No plan on sale'}</p></td>
         <td className="whitespace-nowrap">
           {row.stats?.activeStudents > 0 && can('learning.read') ? (
@@ -242,7 +271,7 @@ export function AdminCoachingPage() {
         <td className="text-[#53647c]">{sectionTitle(row.subjectKey)}</td>
         <td><div className="flex flex-wrap gap-1.5 text-xs">{row.videoAssetId && <span className="inline-flex items-center gap-1 rounded-full bg-[#F1F5FB] px-2 py-0.5"><Video aria-hidden="true" size={12} />Video</span>}{row.documentAssetId && <span className="inline-flex items-center gap-1 rounded-full bg-[#F1F5FB] px-2 py-0.5"><FileText aria-hidden="true" size={12} />PDF</span>}{row.content?.trim() && <span className="inline-flex items-center gap-1 rounded-full bg-[#F1F5FB] px-2 py-0.5"><Type aria-hidden="true" size={12} />Text</span>}{(row.linkedBookIds ?? []).length > 0 && <span className="inline-flex items-center gap-1 rounded-full bg-[#F1F5FB] px-2 py-0.5"><BookOpen aria-hidden="true" size={12} />Book</span>}{row.previewAllowed && <span className="rounded-full bg-amber-50 text-amber-800 px-2 py-0.5">Free preview</span>}</div></td>
         <td><Pill label={(lessonStatus[row.status] ?? [row.status])[0]} tone={(lessonStatus[row.status] ?? [undefined, lessonStatus.draft[1]])[1]} /></td>
-        <td><div className="flex flex-wrap justify-end gap-2">{writable && row.status !== 'archived' && <button type="button" disabled={busy} onClick={() => open(row)}>Edit</button>}{archivable && row.status !== 'archived' && <button type="button" disabled={busy} className="text-red-700" onClick={() => remove(row)}>Archive</button>}{archivable && row.status === 'archived' && <button type="button" disabled={busy} onClick={() => restore(row)}>Restore</button>}</div></td>
+        <td><div className="flex flex-wrap justify-end gap-2">{writable && row.status !== 'archived' && <button type="button" disabled={busy} onClick={() => toggleLessonStatus(row, row.status === 'published' ? 'draft' : 'published')}>{row.status === 'published' ? 'Set draft' : 'Publish'}</button>}{writable && row.status !== 'archived' && <button type="button" disabled={busy} onClick={() => open(row)}>Edit</button>}{archivable && row.status !== 'archived' && <button type="button" disabled={busy} className="text-red-700" onClick={() => remove(row)}>Archive</button>}{archivable && row.status === 'archived' && <button type="button" disabled={busy} onClick={() => restore(row)}>Restore</button>}</div></td>
       </tr>)}</tbody></table>}
 
       {kind === 'plans' && <table className="w-full text-sm"><thead><tr><th className="text-left">Order</th><th className="text-left">Plan</th><th className="text-left">Price &amp; access</th><th className="text-left">Status</th><th className="text-right">Actions</th></tr></thead><tbody>{rows.map((row, i) => <tr key={row.id}>
@@ -250,7 +279,7 @@ export function AdminCoachingPage() {
         <td className="font-semibold min-w-[12rem] break-words">{row.name}</td>
         <td><span className="font-semibold">{row.priceMinor === undefined ? 'No price yet' : planLabel(row)}</span>{row.popular && <span className="ml-2 inline-flex items-center gap-1 text-xs rounded-full bg-amber-50 text-amber-800 px-2 py-0.5"><Star aria-hidden="true" size={11} />Popular</span>}</td>
         <td><Pill label={(planStatus[row.status] ?? [row.status])[0]} tone={(planStatus[row.status] ?? [undefined, planStatus.draft[1]])[1]} /></td>
-        <td><div className="flex flex-wrap justify-end gap-2">{writable && row.status !== 'archived' && <button type="button" disabled={busy} onClick={() => open(row)}>Edit</button>}{archivable && row.status !== 'archived' && <button type="button" disabled={busy} className="text-red-700" onClick={() => remove(row)}>Archive</button>}{archivable && row.status === 'archived' && <button type="button" disabled={busy} onClick={() => restore(row)}>Restore</button>}</div></td>
+        <td><div className="flex flex-wrap justify-end gap-2">{writable && row.status !== 'archived' && (row.priceMinor !== undefined && (row.durationDays || row.durationMonths)) && <button type="button" disabled={busy} onClick={() => togglePlanStatus(row, row.status === 'active' ? 'draft' : 'active')}>{row.status === 'active' ? 'Set draft' : 'Put on sale'}</button>}{writable && row.status !== 'archived' && <button type="button" disabled={busy} onClick={() => open(row)}>Edit</button>}{archivable && row.status !== 'archived' && <button type="button" disabled={busy} className="text-red-700" onClick={() => remove(row)}>Archive</button>}{archivable && row.status === 'archived' && <button type="button" disabled={busy} onClick={() => restore(row)}>Restore</button>}</div></td>
       </tr>)}</tbody></table>}
       {!busy && !rows.length && <p className="p-6 text-center text-[#53647c]">{q ? `No ${kind} match “${q}”.` : kind === 'courses' ? 'No courses yet. Add your first course to get started.' : kind === 'lessons' ? 'No lessons yet. Add the first lesson to this course.' : 'No plans yet. Add a free or paid plan so students can enroll.'}</p>}
     </div>
@@ -264,19 +293,24 @@ export function AdminCoachingPage() {
       <div className="overflow-y-auto px-4 sm:px-6 py-4 space-y-4">
         {error && <p role="alert">{error}</p>}{choicesWarning}
         {editorKind === 'courses' && <>
-          <Section title="Basics">
+          <nav className="flex flex-wrap gap-1.5 pb-2 border-b border-[#E6E8EC] text-xs" aria-label="Course editor sections">
+            {[['course-sec-basics', 'Basics'], ['course-sec-class', 'Classification'], ['course-sec-team', 'Team & Books'], ['course-sec-outcomes', 'Outcomes'], ['course-sec-thumb', 'Thumbnail'], ['course-sec-syllabus', 'Syllabus']].map(([href, label]) => (
+              <a key={href} href={'#' + href} className="px-2.5 py-1 rounded-full bg-[#F7F8FA] border border-[#E6E8EC] text-[#0A1D3F] font-medium hover:border-[#FF8A00]">{label}</a>
+            ))}
+          </nav>
+          <Section id="course-sec-basics" title="Basics">
             {field('title', 'Course title')}
             <AdminField className="block" help={choices.category.length ? 'Students browse courses by category. Manage the list in Dropdown settings.' : 'Add course categories in Dropdown settings first.'}>Category<AdminSelect aria-label="Category" className={css} value={form.category || ''} onChange={e => change('category', e.target.value)}><option value="">{choiceLoading.category ? 'Loading...' : 'Select category'}</option>{categories.map(c => <option key={c} value={c}>{c}</option>)}</AdminSelect></AdminField>
             <AdminField className="block">Description<AdminTextarea className={css} rows={4} value={form.description} onChange={e => change('description', e.target.value)} /></AdminField>
           </Section>
-          <Section title="Classification" hint="Students filter the catalogue by these.">
+          <Section id="course-sec-class" title="Classification" hint="Students filter the catalogue by these.">
             <div className="grid sm:grid-cols-2 gap-3">{select('languageId', 'Language', choices.language)}{select('boardId', 'Board', choices.board)}{select('classId', 'Educational level', choices.class)}{select('stateId', 'State', choices.state)}</div>
             {select('subjectIds', 'Subjects', choices.subject, true)}
           </Section>
-          <Section title="Teaching team & books" hint="Hold Ctrl (Cmd on Mac) to choose more than one.">{select('facultyIds', 'Published instructors', choices.faculty, true)}{select('linkedBookIds', 'Linked published books', choices.books, true)}</Section>
-          <Section title="What students get">{lines('whatYouWillLearn', 'Learning outcomes', 'One per line. Shown on the course page.')}{lines('benefits', 'Course benefits', 'One per line.')}</Section>
-          <Section title="Thumbnail"><div className="grid sm:grid-cols-[9rem_1fr] gap-3 items-start"><div className="w-36 aspect-video rounded-xl border bg-[#F7F8FA] grid place-items-center overflow-hidden text-xs text-[#53647c]">{form.thumbnailId && can('media.read') ? <img src={mediaUrl(form.thumbnailId)} alt="Selected course thumbnail" className="w-full h-full object-cover" /> : 'No thumbnail yet'}</div><MediaPicker purpose="course_thumbnail" label="Course thumbnail" value={form.thumbnailId} onChange={v => change('thumbnailId', v)} /></div></Section>
-          <Section title="Syllabus sections" hint="Lessons are grouped under these sections, in this order.">
+          <Section id="course-sec-team" title="Teaching team & books" hint="Hold Ctrl (Cmd on Mac) to choose more than one.">{select('facultyIds', 'Published instructors', choices.faculty, true)}{select('linkedBookIds', 'Linked published books', choices.books, true)}</Section>
+          <Section id="course-sec-outcomes" title="What students get">{lines('whatYouWillLearn', 'Learning outcomes', 'One per line. Shown on the course page.')}{lines('benefits', 'Course benefits', 'One per line.')}</Section>
+          <Section id="course-sec-thumb" title="Thumbnail"><div className="grid sm:grid-cols-[9rem_1fr] gap-3 items-start"><Thumb id={form.thumbnailId} canRead={can('media.read')} alt="Selected course thumbnail" fallbackText="No thumbnail yet" className="w-36 aspect-video rounded-xl border" /><MediaPicker purpose="course_thumbnail" label="Course thumbnail" value={form.thumbnailId} onChange={v => change('thumbnailId', v)} /></div></Section>
+          <Section id="course-sec-syllabus" title="Syllabus sections" hint="Lessons are grouped under these sections, in this order.">
             {form.syllabus.length > 0 && <ol className="space-y-2">{form.syllabus.map((s, i) => <li key={i} className="flex gap-2 items-end">
               <AdminField className="flex-1" help="">{'Section ' + (i + 1)}<AdminInput aria-label={'Section title ' + (i + 1)} className={css} value={s.title} maxLength={160} onChange={e => change('syllabus', form.syllabus.map((x, j) => j === i ? { ...x, title: e.target.value } : x))} /></AdminField>
               <button type="button" aria-label={'Move section ' + (i + 1) + ' up'} disabled={i === 0} className="!px-2" onClick={() => { const next = [...form.syllabus]; [next[i - 1], next[i]] = [next[i], next[i - 1]]; change('syllabus', next); }}><ArrowUp aria-hidden="true" size={14} /></button>

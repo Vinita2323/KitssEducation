@@ -8,18 +8,12 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import {
   ArrowLeft,
   ShieldCheck,
-  CreditCard,
-  Smartphone,
-  Building,
   CheckCircle2,
-  Lock,
   ArrowRight,
   BookOpen
 } from "lucide-react";
 import { bookService } from "../../services/bookService";
-import { orderService } from "../../services/orderService";
 import { useLibrary } from "../../context/LibraryContext";
-import { useToast } from "../../context/ToastContext";
 import { PrimaryButton } from "../../components/common/PrimaryButton";
 import { Modal } from "../../components/common/Modal";
 import { SkeletonLoader, ErrorState } from "../../components/common/EmptyState";
@@ -36,13 +30,11 @@ export const BookCheckoutPage = () => {
   const creationKey = useRef(crypto.randomUUID()), attemptKey = useRef(crypto.randomUUID());
   useEffect(() => { const c = new AbortController(); setOrder(null); setInvalidOrder(false); setPaymentMessage(''); setShowSuccessModal(false); setCompletedOrder(null); setProcessing(false); creationKey.current=crypto.randomUUID(); attemptKey.current=crypto.randomUUID(); commerceService.config(c.signal).then(value=>{if(!c.signal.aborted)setAvailability(value);}).catch(e=>{if(!c.signal.aborted)setPaymentMessage(e.message);}); return ()=>c.abort(); }, [user?.id,id]);
   const orderId = params.get('order');
-  useEffect(() => { setOrder(null); setInvalidOrder(false); if (!orderId) return; const c = new AbortController(); let count=0; const refresh=()=>commerceService.status(orderId,c.signal).then(row=>{if(c.signal.aborted)return; if(row.product?.kind!=='book'||row.product.id!==id){setInvalidOrder(true);setOrder(null);setPaymentMessage('This order does not belong to this book. Open the correct purchase from order history.');return;} setOrder(row); if(row.orderStatus==='captured'&&row.activationStatus==='applied'){setCompletedOrder({...row,amount:row.amountMinor/100});setShowSuccessModal(true);}}).catch(e=>{if(!c.signal.aborted)setPaymentMessage(e.message);});refresh();const timer=setInterval(()=>{if(++count<=40)refresh();},3000);return()=>{c.abort();clearInterval(timer);};},[orderId,user?.id,id]);
-  const { markBookPurchased, isBookOwned } = useLibrary();
-  const { showSuccess, showError } = useToast();
+  useEffect(() => { setOrder(null); setInvalidOrder(false); if (!orderId) return; const c = new AbortController(); let count=0; const refresh=()=>commerceService.status(orderId,c.signal).then(row=>{if(c.signal.aborted)return; if(row.product?.kind!=='book'||row.product.id!==id){setInvalidOrder(true);setOrder(null);setPaymentMessage('This order does not belong to this book. Open the correct purchase from order history.');return;} setOrder(row); if(row.orderStatus==='captured'&&row.activationStatus==='applied'){setCompletedOrder({...row,amount:row.amountMinor/100});setShowSuccessModal(true);refreshLibrary();}}).catch(e=>{if(!c.signal.aborted)setPaymentMessage(e.message);});refresh();const timer=setInterval(()=>{if(++count<=40)refresh();},3000);return()=>{c.abort();clearInterval(timer);};},[orderId,user?.id,id]);
+  const { isBookOwned, refreshLibrary } = useLibrary();
 
   const [book, setBook] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [paymentMethod, setPaymentMethod] = useState("upi");
   const [processing, setProcessing] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [completedOrder, setCompletedOrder] = useState(null);
@@ -129,7 +121,7 @@ export const BookCheckoutPage = () => {
   if (isFree && !order) {
     const claimFree = async () => {
       setClaiming(true); setClaimError("");
-      try { await authenticatedWrite("/books/" + book.id + "/access", {}); navigate(`/books/${book.id}/read`); }
+      try { await authenticatedWrite("/books/" + book.id + "/access", {}); await refreshLibrary(); navigate(`/books/${book.id}/read`); }
       catch (e) { setClaimError(e.message); }
       finally { setClaiming(false); }
     };
@@ -209,65 +201,10 @@ export const BookCheckoutPage = () => {
           </div>
         </div>
 
-        {/* Payment Methods */}
-        <div className="space-y-2.5">
-          <label className="text-xs font-bold text-[#0A1D3F] uppercase tracking-wider block">
-            Select Payment Method
-          </label>
-
-          <div className="space-y-2">
-            {[
-              { id: "upi", name: "UPI (Google Pay, PhonePe, Paytm)", icon: Smartphone, desc: "Choose a payment method in Razorpay Checkout" },
-              { id: "card", name: "Debit / Credit Card", icon: CreditCard, desc: "Visa, MasterCard, RuPay" },
-              { id: "netbanking", name: "Net Banking", icon: Building, desc: "Availability is determined by Razorpay" },
-            ].map((method) => {
-              const Icon = method.icon;
-              const isSelected = paymentMethod === method.id;
-
-              return (
-                <button
-                  key={method.id}
-                  type="button"
-                  onClick={() => setPaymentMethod(method.id)}
-                  className={`w-full flex items-center justify-between p-3 rounded-2xl border text-left transition cursor-pointer ${
-                    isSelected
-                      ? "bg-orange-50/50 border-[#FF8A00] ring-1 ring-[#FF8A00]"
-                      : "bg-white border-[#E6E8EC] hover:bg-gray-50"
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <div
-                      className={`w-9 h-9 rounded-xl flex items-center justify-center ${
-                        isSelected ? "bg-[#FF8A00] text-white" : "bg-[#F7F8FA] text-[#0A1D3F]"
-                      }`}
-                    >
-                      <Icon className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <span className="text-xs font-bold text-[#0A1D3F] block">
-                        {method.name}
-                      </span>
-                      <span className="text-[11px] text-[#667085]">{method.desc}</span>
-                    </div>
-                  </div>
-
-                  <div
-                    className={`w-4 h-4 rounded-full border flex items-center justify-center ${
-                      isSelected ? "border-[#FF8A00] bg-[#FF8A00]" : "border-gray-300"
-                    }`}
-                  >
-                    {isSelected && <div className="w-1.5 h-1.5 bg-white rounded-full" />}
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
         {/* Bill Summary */}
         <div className="p-4 bg-[#F7F8FA] rounded-2xl border border-[#E6E8EC] space-y-2 text-xs">
           <div className="flex justify-between text-[#667085]">
-            <span>Original Price:</span>
+            <span>Price:</span>
             <span>₹{order ? displayPrice : book.originalPrice || displayPrice}</span>
           </div>
           {discountVal > 0 && (
@@ -276,10 +213,6 @@ export const BookCheckoutPage = () => {
               <span>-₹{discountVal}</span>
             </div>
           )}
-          <div className="flex justify-between text-[#667085]">
-            <span>Tax and fee policy:</span>
-            <span className="text-[#17B26A] font-semibold">Pending confirmation</span>
-          </div>
           <div className="border-t border-[#E6E8EC] pt-2 flex justify-between text-sm font-bold text-[#0A1D3F]">
             <span>Final Payable Amount:</span>
             <span className="text-[#FF8A00]">₹{displayPrice}</span>
@@ -288,8 +221,8 @@ export const BookCheckoutPage = () => {
 
         {/* Security Assurance */}
         <div className="flex items-center justify-center gap-1.5 text-[11px] text-[#667085]">
-          <ShieldCheck className="w-4 h-4 text-[#17B26A]" />
-          <span>Razorpay Standard Checkout - Test Mode only</span>
+          <ShieldCheck className="w-4 h-4 text-[#17B26A] shrink-0" />
+          <span>Choose UPI, Card, or Net Banking in Razorpay Checkout (Test Mode)</span>
         </div>
 
         {paymentMessage && <p role="status" className="text-xs text-amber-800">{paymentMessage}</p>}
@@ -356,19 +289,27 @@ export const BookCheckoutPage = () => {
               fullWidth
               onClick={() => {
                 setShowSuccessModal(false);
-                navigate("/orders");
+                navigate(`/books/${book.id}/read`);
               }}
               icon={ArrowRight}
             >
               Start Reading Now
             </PrimaryButton>
 
-            <Link
-              to="/books"
-              className="inline-block text-xs font-semibold text-slate-600 hover:text-slate-900 hover:underline"
-            >
-              Browse More Books
-            </Link>
+            <div className="flex items-center justify-center gap-4">
+              <Link
+                to="/orders"
+                className="inline-block text-xs font-semibold text-slate-600 hover:text-slate-900 hover:underline"
+              >
+                View Order Receipt
+              </Link>
+              <Link
+                to="/books"
+                className="inline-block text-xs font-semibold text-slate-600 hover:text-slate-900 hover:underline"
+              >
+                Browse More Books
+              </Link>
+            </div>
           </div>
         </div>
       </Modal>

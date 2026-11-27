@@ -277,6 +277,31 @@ export function createInstitutionService({ models, authService, config, logger }
         await flush(AdmissionApplication, doc); return { id: String(doc._id), reference: doc.reference, status: doc.status };
       });
     },
+    async myAdmissions(raw = {}, auth) {
+      if (!auth || auth.user.status !== 'active' || !auth.user.emailVerifiedAt) throw new AppError(401, 'UNAUTHENTICATED', 'Sign in with a verified account to view applications');
+      const query = pageQuery(raw, ['status']);
+      const filter = { userId: auth.user._id };
+      if (raw.status) {
+        if (!['new', 'contacted', 'in_process', 'approved', 'rejected'].includes(raw.status)) throw invalid('Invalid application status');
+        filter.status = raw.status;
+      }
+      const result = await paged(AdmissionApplication, filter, query, { createdAt: -1, _id: -1 });
+      result.data = result.data.map(row => {
+        const value = dto(row);
+        return {
+          id: value.id,
+          reference: value.reference,
+          collegeId: value.collegeId,
+          programId: value.programId,
+          programSnapshot: value.programSnapshot,
+          status: value.status,
+          createdAt: value.createdAt,
+          reviewedAt: value.reviewedAt,
+          statusHistory: (value.statusHistory ?? []).map(h => ({ from: h.from, to: h.to, at: h.at, ...(h.reason ? { reason: h.reason } : {}) })),
+        };
+      });
+      return result;
+    },
     async createDraft(input, auth, ctx) {
       const fields = franchiseInput(input, true);
       await authService.limit(ctx, auth?.user.publicId ?? ctx.ip, 'franchise', 10);

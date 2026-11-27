@@ -5,7 +5,20 @@ import { contentService } from './contentService';
 import { authenticatedWrite } from './authService';
 import { cachedRequest } from '../../../shared/api/requestCache';
 const palette = { navy: 'from-[#0A1D3F] to-[#133C8B]', orange: 'from-amber-600 to-orange-700', teal: 'from-teal-700 to-teal-800' };
-export const bookDTO = row => ({ ...row, price: row.priceMinor === undefined ? undefined : row.priceMinor / 100, originalPrice: row.originalPriceMinor === undefined ? undefined : row.originalPriceMinor / 100, isFree: row.priceMinor === 0, coverIcon: row.iconKey || 'BookOpen', coverColor: palette[row.coverVariant] || palette.navy, chapters: (row.toc ?? []).map(c => c.title), pages: row.pageCount, format: 'PDF', canReadFull: false, fileSize: 'Private PDF', discount: row.originalPriceMinor > row.priceMinor ? Math.round((1 - row.priceMinor / row.originalPriceMinor) * 100) + '% OFF' : '' });
+const formatMediaUrl = src => {
+  if (!src) return null;
+  if (/^https?:\/\//i.test(src) || src.startsWith('data:')) return src;
+  const base = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '');
+  if (!base || base === '/api/v1' || src.startsWith(base)) return src;
+  return src.startsWith('/api/v1/') ? base + src.slice('/api/v1'.length) : src;
+};
+export const formatClassLabel = value => {
+  if (!value) return '';
+  const text = String(value).trim();
+  if (!text) return '';
+  return /^(class|undergraduate|postgraduate|diploma)\b/i.test(text) ? text : `Class ${text}`;
+};
+export const bookDTO = row => ({ ...row, coverUrl: formatMediaUrl(row.coverUrl), price: row.priceMinor === undefined ? undefined : row.priceMinor / 100, originalPrice: row.originalPriceMinor === undefined ? undefined : row.originalPriceMinor / 100, isFree: row.priceMinor === 0, coverIcon: row.iconKey || 'BookOpen', coverColor: palette[row.coverVariant] || palette.navy, chapters: (row.toc ?? []).map(c => c.title), pages: row.pageCount, format: 'PDF', canReadFull: false, fileSize: 'Private PDF', discount: row.originalPriceMinor > row.priceMinor ? Math.round((1 - row.priceMinor / row.originalPriceMinor) * 100) + '% OFF' : '' });
 const filters = input => {
   const { query, board, className, subject, language, sort, minPrice, maxPrice, status, ...rest } = input ?? {};
   const select = (value, name) => value && value !== 'All' ? /^[a-f0-9]{24}$/i.test(value) ? { [name + 'Id']: value } : { [name]: value } : {};
@@ -22,8 +35,8 @@ export const bookService = {
   async getAvailableSubjects(board, className) { const query = {}; for (const [k, v] of [['board', board], ['class', className]]) if (v && v !== 'All') query[/^[a-f0-9]{24}$/i.test(v) ? k + 'Id' : k] = v; return (await this.getFacets(query)).subjects; },
   async getClasses() { return (await this.getFacets()).classes; },
   async getPreview(id, signal) { return (await httpClient.request('/books/' + id + '/preview', { signal })).data.assets; },
-  // Owned rows carry their own snapshot details; the public page is only used to refresh live books.
-  async getMyLibraryBooks() { return Promise.all((await commerceService.books()).map(async row => ({ ...(row.onSale === false ? bookDTO(row) : await this.getBookById(row.id).catch(() => bookDTO(row))), ...row }))); },
+  // Owned rows already include snapshot details and taxonomy labels from /me/books.
+  async getMyLibraryBooks() { return Promise.all((await commerceService.books()).map(async row => { const needsLabels = row.onSale !== false && ((row.boardId && !row.board) || (row.classId && !row.class) || (row.subjectId && !row.subject)); const enriched = needsLabels ? await this.getBookById(row.id).catch(() => bookDTO(row)) : bookDTO(row); return { ...enriched, ...row, coverUrl: formatMediaUrl(row.coverUrl || enriched.coverUrl) }; })); },
   async purchaseBook() { throw new Error('Please use the book checkout page to purchase access.'); },
   async adminPage(input) { const result = await contentService.adminList('/admin/books', filters(input)); return { ...result, data: result.data.map(bookDTO) }; },
   async getAllBooksForAdmin(input) { return (await this.adminPage(input)).data; },

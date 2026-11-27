@@ -20,8 +20,9 @@ import {
   ShieldCheck,
   ShoppingBag
 } from "lucide-react";
-import { bookService } from "../../services/bookService";
+import { bookService, formatClassLabel } from "../../services/bookService";
 import { useLibrary } from "../../context/LibraryContext";
+import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../context/ToastContext";
 import { PriceDisplay, RatingBadge } from "../../components/common/SectionHeader";
 import { PrimaryButton, SecondaryButton } from "../../components/common/PrimaryButton";
@@ -40,15 +41,20 @@ const iconMap = {
 export const BookDetailsPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { isBookOwned, isWishlisted, isWishlistPending, toggleWishlist, getBookProgress } = useLibrary();
-  const { showSuccess, showInfo } = useToast();
+  const { user } = useAuth();
+  const { isBookOwned, isWishlisted, isWishlistPending, toggleWishlist, refreshLibrary } = useLibrary();
+  const { showInfo } = useToast();
 
   const [paymentAvailable,setPaymentAvailable] = useState(false);
   useEffect(()=>{const c=new AbortController();commerceService.config(c.signal).then(r=>setPaymentAvailable(r.available)).catch(()=>{});return()=>c.abort();},[]);
   const [book, setBook] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [claiming, setClaiming] = useState(false);
   const [error, setError] = useState(null);
+  const [actionError, setActionError] = useState('');
+  const [coverFailed, setCoverFailed] = useState(false);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
+  useEffect(() => { setCoverFailed(false); }, [book?.coverUrl]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -98,7 +104,7 @@ export const BookDetailsPage = () => {
   const isFree = book.isFree === true || Number(book.price) === 0;
   const owned = isBookOwned(book.id);
   const wishlisted = isWishlisted(book.id);
-  const progress = getBookProgress(book.id);
+  const classText = formatClassLabel(book.class);
   const IconComponent = iconMap[book.coverIcon] || BookOpen;
 
   return (
@@ -159,7 +165,7 @@ export const BookDetailsPage = () => {
 
               <div>
                 <p className="text-xs text-white/70 font-medium">
-                  Class {book.class} • {book.subject}
+                  {[classText, book.subject].filter(Boolean).join(" • ")}
                 </p>
                 <h3 className="text-lg font-extrabold leading-snug mt-1">
                   {book.title}
@@ -170,7 +176,7 @@ export const BookDetailsPage = () => {
                 {book.author}
               </div>
 
-              {book.coverUrl && <img src={book.coverUrl} alt={book.title + ' cover'} className="absolute inset-0 w-full h-full object-cover" />}
+              {book.coverUrl && !coverFailed && <img src={book.coverUrl} alt={book.title + ' cover'} onError={() => setCoverFailed(true)} className="absolute inset-0 w-full h-full object-cover" />}
               {/* Decorative circle */}
               <div className="absolute -bottom-10 -right-10 w-32 h-32 rounded-full border-4 border-white/10 pointer-events-none" />
             </div>
@@ -193,15 +199,21 @@ export const BookDetailsPage = () => {
             <div>
               {/* Hierarchy Badges: Board -> Class -> Subject */}
               <div className="flex flex-wrap items-center gap-1.5 mb-2">
-                <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#0A1D3F] text-white">
-                  {book.board}
-                </span>
-                <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#FF8A00]/15 text-[#FF8A00]">
-                  Class {book.class}
-                </span>
-                <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-teal-50 text-teal-700 border border-teal-200">
-                  {book.subject}
-                </span>
+                {book.board && (
+                  <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#0A1D3F] text-white">
+                    {book.board}
+                  </span>
+                )}
+                {classText && (
+                  <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#FF8A00]/15 text-[#FF8A00]">
+                    {classText}
+                  </span>
+                )}
+                {book.subject && (
+                  <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-teal-50 text-teal-700 border border-teal-200">
+                    {book.subject}
+                  </span>
+                )}
                 {owned && !isFree && (
                   <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1">
                     <CheckCircle2 className="w-3 h-3" /> Purchased
@@ -277,8 +289,33 @@ export const BookDetailsPage = () => {
                 3. Paid book (unpurchased): [ Pay Now for ₹Price ] -> /books/:id/checkout
             */}
             <div className="pt-4 border-t border-[#E6E8EC] space-y-2">
-              <PrimaryButton variant="orange" size="lg" fullWidth disabled={loading || (!isFree && !owned && !paymentAvailable)} onClick={async()=>{if(owned){navigate(`/books/${book.id}/read`);return;} if(!isFree){navigate(`/books/${book.id}/checkout`);return;}setLoading(true);try{await authenticatedWrite('/books/'+book.id+'/access',{});navigate(`/books/${book.id}/read`);}catch(e){setError(e.message);}finally{setLoading(false);}}}>{owned ? 'Read Book' : isFree ? 'Read Free PDF' : paymentAvailable ? 'Review Test Mode Checkout' : 'Test payments unavailable'}</PrimaryButton>
-              <p className="text-xs text-[#667085]">Public samples are available below when approved. No payment or full-book access is granted here.</p>
+              {actionError && <p role="alert" className="text-xs text-red-700 bg-red-50 border border-red-200 rounded-xl p-2.5">{actionError}</p>}
+              <PrimaryButton
+                variant="orange"
+                size="lg"
+                fullWidth
+                loading={claiming}
+                disabled={claiming || (!isFree && !owned && !paymentAvailable)}
+                onClick={async () => {
+                  setActionError('');
+                  if (owned) { navigate(`/books/${book.id}/read`); return; }
+                  if (!user) { navigate('/login'); return; }
+                  if (!isFree) { navigate(`/books/${book.id}/checkout`); return; }
+                  setClaiming(true);
+                  try {
+                    await authenticatedWrite('/books/' + book.id + '/access', {});
+                    await refreshLibrary();
+                    navigate(`/books/${book.id}/read`);
+                  } catch (e) {
+                    setActionError(e.message);
+                  } finally {
+                    setClaiming(false);
+                  }
+                }}
+              >
+                {owned ? 'Read Book' : isFree ? (user ? 'Read Free PDF' : 'Sign in to Read Free') : !paymentAvailable ? 'Test payments unavailable' : (user ? `Buy Now — ₹${book.price}` : 'Sign in to Buy')}
+              </PrimaryButton>
+              <p className="text-xs text-[#667085]">Use “Preview Sample Pages” under the cover for approved samples. Full PDFs unlock in your library immediately after access.</p>
             </div>
           </div>
         </div>

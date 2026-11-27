@@ -4,13 +4,16 @@ import { GraduationCap, Building2, School, ChevronRight } from "lucide-react";
 export const ResultTypeSelector = ({
   selectedType,
   onSelectType,
-  mode = "cards"
+  mode = "cards",
+  config = null
 }) => {
+  const countFor = type => (config?.issuers || []).filter(i => i.type === type).length;
   const options = [
     {
       id: "school",
       title: "Board Result",
       subtitle: "10th & 12th Examination",
+      badge: config && !config.boardAvailable ? "Coming soon" : null,
       icon: GraduationCap,
       iconStyle: "bg-teal-50 text-teal-600 border-teal-200/70",
     },
@@ -18,6 +21,7 @@ export const ResultTypeSelector = ({
       id: "university",
       title: "University Result",
       subtitle: "Colleges & Degrees",
+      badge: config && countFor("university") > 0 ? `${countFor("university")} available` : null,
       icon: Building2,
       iconStyle: "bg-orange-50 text-[#FF8A00] border-orange-200/70",
     },
@@ -25,6 +29,7 @@ export const ResultTypeSelector = ({
       id: "institute",
       title: "Institute Class / School",
       subtitle: "Schools, institutes & coaching",
+      badge: config && countFor("institute") > 0 ? `${countFor("institute")} available` : null,
       icon: School,
       iconStyle: "bg-blue-50 text-[#133C8B] border-blue-200/70",
     }
@@ -75,9 +80,18 @@ export const ResultTypeSelector = ({
                   <Icon className="w-3.5 h-3.5" />
                 </div>
                 <div className="min-w-0">
-                  <h3 className="text-xs sm:text-sm font-bold text-[#0A1D3F] group-hover:text-[#FF8A00] transition-colors truncate">
-                    {opt.title}
-                  </h3>
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <h3 className="text-xs sm:text-sm font-bold text-[#0A1D3F] group-hover:text-[#FF8A00] transition-colors truncate">
+                      {opt.title}
+                    </h3>
+                    {opt.badge && (
+                      <span className={`px-1.5 py-0.5 rounded text-[9px] font-semibold shrink-0 ${
+                        opt.id === "school" ? "bg-slate-100 text-slate-600" : "bg-emerald-50 text-emerald-700"
+                      }`}>
+                        {opt.badge}
+                      </span>
+                    )}
+                  </div>
                   <p className="text-[10px] text-slate-400 truncate">
                     {opt.subtitle}
                   </p>

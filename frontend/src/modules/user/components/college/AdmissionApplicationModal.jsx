@@ -1,5 +1,6 @@
 import { placeholderImages } from '../../../../shared/ui/placeholders';
 import React, { useState, useEffect, useRef } from "react";
+import { Link } from "react-router-dom";
 import {
   X,
   CheckCircle2,
@@ -19,6 +20,7 @@ import {
 import { collegeService } from "../../services/collegeService";
 import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../context/ToastContext";
+import { RegistrationAccount } from "../auth/RegistrationAccount";
 import { PrimaryButton, SecondaryButton } from "../common/PrimaryButton";
 import { SearchableSelect } from "../common/SearchableSelect";
 import { isPhoneNumber, PHONE_HINT, PHONE_MAX_LENGTH } from "../../../../shared/validation/phone";
@@ -102,11 +104,17 @@ export const AdmissionApplicationModal = ({
     if (preselectedCollegeId) setSelectedCollegeId(preselectedCollegeId);
     if (preselectedCourseId) setSelectedCourseId(preselectedCourseId);
 
-    // Fill personal details from the student registration profile once per open.
+    // Fill personal details from the student registration profile once per open, keeping non-empty guest input.
     const profileKey = user?.id || user?.email || "";
     if (profileKey && filledProfileKey.current !== profileKey) {
       filledProfileKey.current = profileKey;
-      setStudentDetails(detailsFromRegistration(user));
+      setStudentDetails((prev) => {
+        const fromUser = detailsFromRegistration(user);
+        const kept = Object.fromEntries(
+          Object.entries(prev).filter(([, value]) => Boolean(String(value || "").trim()))
+        );
+        return { ...fromUser, ...kept };
+      });
     }
 
     // Fetch colleges
@@ -342,10 +350,17 @@ export const AdmissionApplicationModal = ({
                 </div>
               </div>
 
-              <div className="pt-3">
+              <div className="pt-3 space-y-2">
                 <PrimaryButton variant="navy" fullWidth onClick={handleModalClose}>
                   Done
                 </PrimaryButton>
+                <Link
+                  to="/my-applications"
+                  onClick={handleModalClose}
+                  className="inline-block text-xs font-semibold text-[#FF8A00] hover:underline"
+                >
+                  Track Application Status in My Applications
+                </Link>
               </div>
             </div>
           ) : (
@@ -388,6 +403,10 @@ export const AdmissionApplicationModal = ({
                             <img
                               src={col.logo || placeholderImages.college}
                               alt={col.name}
+                              onError={(e) => {
+                                e.currentTarget.onerror = null;
+                                e.currentTarget.src = placeholderImages.college;
+                              }}
                               className="w-10 h-10 rounded-lg object-cover border border-gray-200 shrink-0"
                             />
                             <div className="flex-1 min-w-0">
@@ -483,9 +502,9 @@ export const AdmissionApplicationModal = ({
                               <div className="text-right shrink-0 flex flex-col items-end justify-between self-stretch">
                                 <div>
                                   <div className="text-xs sm:text-sm font-extrabold text-[#0A1D3F] leading-tight">
-                                    ₹{crs.fee ? crs.fee.toLocaleString() : "Contact"}
+                                    {crs.fee === 0 ? "Free" : crs.fee ? `₹${crs.fee.toLocaleString("en-IN")}` : "Contact"}
                                   </div>
-                                  <span className="text-[10px] text-[#667085]">Per Year</span>
+                                  {crs.fee > 0 && <span className="text-[10px] text-[#667085]">Per Year</span>}
                                 </div>
                                 <input
                                   type="radio"
@@ -656,8 +675,8 @@ export const AdmissionApplicationModal = ({
                         {selectedCourse?.courseName}
                       </h4>
                       <p className="text-xs text-[#667085]">
-                        {selectedCourse?.degreeType} • {selectedCourse?.duration} • Fee: ₹
-                        {selectedCourse?.fee ? selectedCourse.fee.toLocaleString() : "N/A"} / year
+                        {selectedCourse?.degreeType} • {selectedCourse?.duration} • Fee:{" "}
+                        {selectedCourse?.fee === 0 ? "Free" : selectedCourse?.fee ? `₹${selectedCourse.fee.toLocaleString("en-IN")} / year` : "N/A"}
                       </p>
                     </div>
 
@@ -681,6 +700,13 @@ export const AdmissionApplicationModal = ({
                       </div>
                     </div>
                   </div>
+
+                  {!user?.emailVerified && (
+                    <RegistrationAccount
+                      applicantName={studentDetails.fullName}
+                      applicantEmail={studentDetails.email}
+                    />
+                  )}
 
                   <p className="text-[11px] text-[#667085] leading-relaxed">
                     By submitting, your enquiry will be registered with our authorized franchise admission desk. A dedicated educational counselor will assist with document verification and seat booking.
@@ -712,10 +738,11 @@ export const AdmissionApplicationModal = ({
                     variant="orange"
                     size="sm"
                     loading={submitting}
+                    disabled={submitting || !user?.emailVerified}
                     onClick={handleSubmitApplication}
                     icon={CheckCircle2}
                   >
-                    Submit Application
+                    {user?.emailVerified ? "Submit Application" : "Verify account above to submit"}
                   </PrimaryButton>
                 )}
               </div>

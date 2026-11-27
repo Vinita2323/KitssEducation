@@ -1,8 +1,9 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { BookOpen, Calculator, Atom, BookMarked, Globe2, Languages, Heart, CheckCircle2 } from "lucide-react";
 import { RatingBadge } from "../common/SectionHeader";
 import { useLibrary } from "../../context/LibraryContext";
+import { formatClassLabel } from "../../services/bookService";
 
 const iconMap = {
   Calculator,
@@ -16,14 +17,18 @@ const iconMap = {
 export const BookCard = ({
   book,
   layout = "grid", // 'grid' | 'horizontal' | 'library'
-  onRead,
-  onBuy
 }) => {
   const { isBookOwned, isWishlisted, toggleWishlist, getBookProgress } = useLibrary();
+  const [coverFailed, setCoverFailed] = useState(false);
+  useEffect(() => {
+    setCoverFailed(false);
+  }, [book?.coverUrl]);
   const owned = isBookOwned(book.id);
   const isFree = book.isFree === true || Number(book.price) === 0;
   const wishlisted = isWishlisted(book.id);
-  const progress = getBookProgress(book.id);
+  const progress = book.readingState ?? getBookProgress(book.id);
+  const classText = formatClassLabel(book.class);
+  const showCover = Boolean(book.coverUrl && !coverFailed);
 
   const IconComponent = iconMap[book.coverIcon] || BookOpen;
 
@@ -45,14 +50,17 @@ export const BookCard = ({
             </div>
 
             <div>
-              <p className="text-[10px] text-white/70 font-medium">
-                {book.subtitle || `Class ${book.class}`}
-              </p>
+              {classText || book.subtitle ? (
+                <p className="text-[10px] text-white/70 font-medium">
+                  {book.subtitle || classText}
+                </p>
+              ) : null}
               <h4 className="text-xs font-bold leading-tight line-clamp-2 mt-0.5">
                 {book.title}
               </h4>
             </div>
 
+            {showCover && <img src={book.coverUrl} alt={book.title + ' cover'} onError={() => setCoverFailed(true)} className="absolute inset-0 w-full h-full object-cover pointer-events-none" loading="lazy" />}
             <div className="absolute -bottom-6 -right-6 w-16 h-16 rounded-full border-4 border-white/10 pointer-events-none" />
           </div>
 
@@ -61,7 +69,7 @@ export const BookCard = ({
               {book.title}
             </h4>
             <div className="flex items-center justify-between text-[10px] sm:text-[11px]">
-              <span className="text-[#667085]">Class {book.class}</span>
+              <span className="text-[#667085]">{classText || book.board}</span>
               {book.ratingSummary?.source && <RatingBadge rating={book.ratingSummary.value} />}
             </div>
             <div className="pt-1 flex items-baseline justify-between">
@@ -88,10 +96,16 @@ export const BookCard = ({
           <div
             className={`w-14 h-18 rounded-xl bg-gradient-to-br ${
               book.coverColor || "from-[#0A1D3F] to-[#133C8B]"
-            } p-2 flex flex-col justify-between text-white shrink-0 shadow-xs`}
+            } p-2 flex flex-col justify-between text-white shrink-0 shadow-xs relative overflow-hidden`}
           >
-            <IconComponent className="w-4 h-4 text-white/80" />
-            <span className="text-[9px] font-bold truncate">Cl {book.class}</span>
+            {showCover ? (
+              <img src={book.coverUrl} alt={book.title + ' cover'} onError={() => setCoverFailed(true)} className="absolute inset-0 w-full h-full object-cover" loading="lazy" />
+            ) : (
+              <>
+                <IconComponent className="w-4 h-4 text-white/80" />
+                <span className="text-[9px] font-bold truncate">{classText || book.board}</span>
+              </>
+            )}
           </div>
 
           <div className="min-w-0 flex-1">
@@ -100,13 +114,13 @@ export const BookCard = ({
                 {isFree ? "Free E-Book" : "Purchased"}
               </span>
               <span className="text-[10px] text-[#667085]">{book.fileSize || "PDF"}</span>
-              <span className="text-[10px] text-[#667085]">• {book.board}</span>
+              {book.board && <span className="text-[10px] text-[#667085]">• {book.board}</span>}
             </div>
             <h4 className="text-xs sm:text-sm font-bold text-[#0A1D3F] truncate">
               {book.title}
             </h4>
             <p className="text-[11px] text-[#667085] truncate">
-              {book.subject} • Class {book.class} • {book.pages} Pages
+              {[book.subject, classText, book.pages ? `${book.pages} Pages` : null].filter(Boolean).join(" • ")}
             </p>
 
             {/* Reading progress bar */}
@@ -153,7 +167,8 @@ export const BookCard = ({
       <div className="min-w-0">
         {/* Book Cover */}
         <div className="relative overflow-hidden rounded-lg sm:rounded-xl">
-          <Link to={`/books/${book.id}`} className="block">
+          {/* The cover repeats the title link below for mouse users; screen readers and Tab use the title link only. */}
+          <Link to={`/books/${book.id}`} className="block" aria-hidden="true" tabIndex={-1}>
             <div
               className={`w-full aspect-3/4 rounded-lg sm:rounded-xl bg-gradient-to-br ${
                 book.coverColor || "from-[#0A1D3F] to-[#133C8B]"
@@ -167,9 +182,11 @@ export const BookCard = ({
               </div>
 
               <div>
-                <p className="text-[10px] sm:text-xs text-white/75 font-medium">
-                  Class {book.class}
-                </p>
+                {classText && (
+                  <p className="text-[10px] sm:text-xs text-white/75 font-medium">
+                    {classText}
+                  </p>
+                )}
                 <h3 className="text-xs sm:text-sm font-bold leading-tight line-clamp-2 mt-0.5">
                   {book.title}
                 </h3>
@@ -180,7 +197,7 @@ export const BookCard = ({
             </div>
           </Link>
 
-          {book.coverUrl && <img src={book.coverUrl} alt={book.title + ' cover'} className="absolute inset-0 w-full h-full object-cover pointer-events-none" />}
+          {showCover && <img src={book.coverUrl} alt={book.title + ' cover'} onError={() => setCoverFailed(true)} className="absolute inset-0 w-full h-full object-cover pointer-events-none" loading="lazy" />}
           {/* Wishlist toggle */}
           <button
             type="button"

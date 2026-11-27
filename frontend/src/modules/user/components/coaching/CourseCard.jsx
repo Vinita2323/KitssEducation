@@ -37,9 +37,25 @@ export const CourseCard = ({
     status = "Active",
     thumbnail,
     isEnrolled,
+    lowestPlan,
     progressPercentage = 0,
     completedLectures = 0,
   } = course;
+
+  const badgeText = isEnrolled
+    ? "Enrolled"
+    : lowestPlan?.priceMinor === 0
+      ? "Free"
+      : lowestPlan?.priceMinor != null
+        ? `₹${(lowestPlan.priceMinor / 100).toLocaleString("en-IN")}`
+        : status === "published"
+          ? "Available"
+          : status;
+  const badgePositive = isEnrolled || lowestPlan?.priceMinor === 0 || status === "Active" || status === "published";
+  const fallbackThumb = (e) => {
+    e.currentTarget.onerror = null;
+    e.currentTarget.src = placeholderImages.course;
+  };
 
   // Modern compact discovery card for Home page
   if (layout === "compact") {
@@ -58,6 +74,7 @@ export const CourseCard = ({
                 placeholderImages.course
               }
               alt={title}
+              onError={fallbackThumb}
               className="w-full h-full object-cover group-hover:scale-106 transition-transform duration-500 ease-out"
               loading="lazy"
             />
@@ -67,8 +84,12 @@ export const CourseCard = ({
             <div className="absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between pointer-events-none">
               <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-[#0A1D3F]/85 text-white backdrop-blur-md border border-white/15 shadow-xs uppercase tracking-wider">
                 <span>{board}</span>
-                <span>•</span>
-                <span>{gradeClass}</span>
+                {gradeClass ? (
+                  <>
+                    <span>•</span>
+                    <span>{gradeClass}</span>
+                  </>
+                ) : null}
               </span>
 
               <span
@@ -83,7 +104,7 @@ export const CourseCard = ({
                     isEnrolled ? "bg-white" : "bg-emerald-500"
                   } animate-pulse`}
                 />
-                <span>{isEnrolled ? "Enrolled" : status}</span>
+                <span>{badgeText}</span>
               </span>
             </div>
 
@@ -180,6 +201,7 @@ export const CourseCard = ({
             placeholderImages.course
           }
           alt={title}
+          onError={fallbackThumb}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
           loading="lazy"
         />
@@ -191,19 +213,21 @@ export const CourseCard = ({
             <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-slate-900/80 text-white backdrop-blur-md border border-white/15 shadow-xs">
               {board}
             </span>
-            <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-white/90 text-slate-900 backdrop-blur-md border border-slate-200/40 shadow-xs">
-              {gradeClass}
-            </span>
+            {gradeClass ? (
+              <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-white/90 text-slate-900 backdrop-blur-md border border-slate-200/40 shadow-xs">
+                {gradeClass}
+              </span>
+            ) : null}
           </div>
 
           <span
-            className={`px-2 py-0.5 rounded-md text-[10px] font-semibold uppercase tracking-wider shadow-xs ${
-              status === "Active"
+            className={`px-2 py-0.5 rounded-md text-[10px] font-semibold tracking-wider shadow-xs ${
+              badgePositive
                 ? "bg-emerald-600 text-white"
-                : "bg-amber-600 text-white"
+                : "bg-slate-800 text-white"
             }`}
           >
-            {status}
+            {badgeText}
           </span>
         </div>
 

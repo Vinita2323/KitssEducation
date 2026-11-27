@@ -4,15 +4,15 @@ export const ownerOnly = ['accounts.roles.manage', 'results.publish'];
 
 export const staffRoles = [
   { name: 'Content manager', summary: 'Create, edit and publish books, courses, pages, media and notifications.',
-    permissions: ['books.read', 'books.create', 'books.edit', 'books.publish', 'books.archive', 'coaching.read', 'coaching.create', 'coaching.edit', 'coaching.publish', 'coaching.archive', 'content.read', 'content.write', 'content.publish', 'media.read', 'media.write', 'notifications.read', 'notifications.write', 'notifications.publish'] },
+    permissions: ['books.read', 'books.create', 'books.edit', 'books.publish', 'books.archive', 'coaching.read', 'coaching.create', 'coaching.edit', 'coaching.publish', 'coaching.archive', 'commerce.read', 'content.read', 'content.write', 'content.publish', 'media.read', 'media.write', 'notifications.read', 'notifications.write', 'notifications.publish'] },
   { name: 'Admissions manager', summary: 'Manage universities and colleges, and review admission applications and registrations with their documents.',
     permissions: ['institutions.read', 'institutions.write', 'admissions.read', 'admissions.write', 'admissions.review', 'registrations.read', 'registrations.write', 'registrations.review', 'registrations.approve', 'registrations.documents.review'] },
   { name: 'Franchise manager', summary: 'Review and approve franchise applications and renewals.',
     permissions: ['institutions.read', 'franchises.read', 'franchises.write', 'franchises.review', 'franchises.approve'] },
   { name: 'Finance manager', summary: 'View orders, check payment status, set course plan prices and review refund requests.',
     permissions: ['commerce.read', 'commerce.reconcile', 'commerce.plans.write', 'refunds.read', 'refunds.review'] },
-  { name: 'Results manager', summary: 'Upload and correct exam results. Publishing results stays with the owner.',
-    permissions: ['results.read', 'results.manage'] },
+  { name: 'Results manager', summary: 'Configure result institutions and exams, upload and correct student marks, and submit them for owner approval.',
+    permissions: ['results.read', 'results.manage', 'media.read', 'media.write'] },
   { name: 'Student support', summary: 'Look up students, orders, enrollments and registrations, and request exceptional access for the owner to approve.',
     permissions: ['accounts.read', 'commerce.read', 'learning.read', 'registrations.read', 'access.read', 'access.request'] },
 ].map(role => ({ ...role, permissions: ['dashboard.read', ...role.permissions] }));

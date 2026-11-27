@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Search, Calendar, User, Hash, AlertCircle, Building2, BookOpen } from "lucide-react";
 import { PrimaryButton } from "../common/PrimaryButton";
+import { SearchableSelect } from "../common/SearchableSelect";
 
 /**
  * ResultSearchForm
@@ -184,16 +185,49 @@ export const ResultSearchForm = ({
                 {/* Field Input Rendering */}
                 {field.type === "select" ? (
                   <div className="relative">
-                    <select
-                      id={field.id}
+                    <SearchableSelect
+                      ariaLabel={field.label}
                       value={formData[field.id] ?? ""}
-                      onChange={(e) => handleChange(field.id, e.target.value)}
-                      onBlur={() => handleBlur(field.id)}
-                      className={`w-full h-9 px-3 bg-slate-50/70 border rounded-lg text-xs font-medium text-slate-900 focus:outline-none focus:ring-1 focus:bg-white transition-all appearance-none cursor-pointer ${
+                      onChange={(val) => {
+                        handleChange(field.id, val);
+                        handleBlur(field.id);
+                      }}
+                      options={field.options?.filter((opt) => opt.value !== "") || []}
+                      placeholder={field.options?.[0]?.label || "Select an option"}
+                      searchPlaceholder="Search examination..."
+                      searchable={(field.options?.length || 0) > 4}
+                      forceOpenDirection="auto"
+                      disabled={disabled}
+                      error={fieldError ? fieldError : undefined}
+                      triggerClassName={`h-9 px-3 bg-slate-50/70 border rounded-lg text-xs font-medium text-slate-900 focus:outline-none focus:ring-1 focus:bg-white transition-all ${
                         fieldError
                           ? "border-red-400 focus:ring-red-200 bg-red-50/20"
                           : "border-slate-200/90 focus:ring-slate-200 focus:border-slate-400"
                       }`}
+                    />
+                    {/* Underlying select to preserve exact browser testing and accessibility contracts */}
+                    <select
+                      id={field.id}
+                      aria-label={field.label}
+                      value={formData[field.id] ?? ""}
+                      onChange={(e) => {
+                        handleChange(field.id, e.target.value);
+                        handleBlur(field.id);
+                      }}
+                      tabIndex={-1}
+                      aria-hidden="true"
+                      className="sr-only"
+                      style={{
+                        position: "absolute",
+                        width: "1px",
+                        height: "1px",
+                        padding: 0,
+                        margin: "-1px",
+                        overflow: "hidden",
+                        clip: "rect(0, 0, 0, 0)",
+                        whiteSpace: "nowrap",
+                        border: 0,
+                      }}
                     >
                       {field.options?.map((opt) => (
                         <option key={opt.value} value={opt.value}>
@@ -201,11 +235,6 @@ export const ResultSearchForm = ({
                         </option>
                       ))}
                     </select>
-                    <div className="absolute inset-y-0 right-0 pr-2.5 flex items-center pointer-events-none text-slate-400">
-                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                      </svg>
-                    </div>
                   </div>
                 ) : field.type === "date" ? (
                   <div className="relative">

@@ -12,6 +12,7 @@ export function createResultRouter(service) {
     requestId: req.requestId
   });
   router.get('/admin/results/organizations', requirePermission('results.read'), async (req,res) => res.json({ ...await service.organizations(req.query), requestId:req.requestId }));
+  router.get('/admin/results/students', requirePermission('results.manage'), async (req, res) => send(req, res, await service.students(req.query)));
   router.get('/results/config', async (req, res) => send(req, res, await service.config()));
   router.get('/results/issuers/:id', async (req, res) => send(req, res, await service.issuer(req.params.id)));
   router.post('/results/lookup', requireSession, async (req, res) => send(req, res, await service.lookup(req.body, req.auth, ctx(req))));
@@ -34,8 +35,11 @@ export function createResultRouter(service) {
     ...(await service.list('records', req.query)),
     requestId: req.requestId
   }));
+  router.post('/admin/results/records', requirePermission('results.manage'), async (req, res) => send(req, res, await service.createDirectRecords(req.body, req.auth, ctx(req)), 201));
+  router.post('/admin/results/records/batch', requirePermission('results.manage'), async (req, res) => send(req, res, await service.createDirectRecords(req.body, req.auth, ctx(req))));
+  router.post('/admin/results/records/batch-action', requirePermission('results.manage'), (req, res, next) => ['approve', 'reject', 'publish', 'approve_and_publish', 'withdraw'].includes(req.body?.action) ? requirePermission('results.publish')(req, res, next) : next(), async (req, res) => send(req, res, await service.batchChangeRecords(req.body, ctx(req))));
   router.get('/admin/results/records/:id', requirePermission('results.read'), async (req, res) => send(req, res, await service.detail('records', req.params.id)));
   router.post('/admin/results/imports', requirePermission('results.manage'), async (req, res) => send(req, res, await service.importRecords(req.body, req.auth, ctx(req))));
-  for (const action of ['submit', 'approve', 'reject', 'publish', 'corrections', 'withdraw']) router.post('/admin/results/records/:id/' + action, requirePermission(['submit', 'approve', 'reject', 'corrections'].includes(action) ? 'results.manage' : 'results.publish'), async (req, res) => send(req, res, await service.changeRecord(req.params.id, action, req.body, ctx(req))));
+  for (const action of ['submit', 'approve', 'reject', 'publish', 'approve_and_publish', 'corrections', 'withdraw']) router.post('/admin/results/records/:id/' + action, requirePermission(['submit', 'corrections'].includes(action) ? 'results.manage' : 'results.publish'), async (req, res) => send(req, res, await service.changeRecord(req.params.id, action, req.body, ctx(req))));
   return router;
 }

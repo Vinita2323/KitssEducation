@@ -114,7 +114,7 @@ test('inline account creation, all three applications, owner tracking and admin 
     }
     const listing = panel.getByRole('region', { name: 'KITSS teacher listing' });
     await listing.getByLabel('Upload Public teacher portrait', { exact: true }).setInputFiles({ name: 'public-teacher.png', mimeType: 'image/png', buffer: await imageBytes() });
-    await listing.locator('button').filter({ hasText: /^Upload Public teacher portrait$/ }).click();
+    // Choosing the file uploads it straight away; there is no separate Upload click.
     await panel.waitForFunction(() => Boolean(document.querySelector('[aria-label="Public teacher portrait"]')?.value));
     await listing.getByRole('button', { name: 'Mark as KITSS teacher and publish', exact: true }).click();
     await listing.getByText('This applicant has been marked as a KITSS teacher.', { exact: true }).waitFor();

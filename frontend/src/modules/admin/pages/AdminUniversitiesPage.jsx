@@ -24,6 +24,19 @@ import { adminService } from "../services/adminService";
 import { useToast } from "../../user/context/ToastContext";
 import { PrimaryButton, SecondaryButton } from "../../user/components/common/PrimaryButton";
 
+function LogoTile({ logo, name, className = "w-12 h-12 rounded-xl" }) {
+  const [failed, setFailed] = useState(false);
+  useEffect(() => { setFailed(false); }, [logo]);
+  if (!logo || failed) {
+    return (
+      <div className={className + " bg-[#0A1D3F]/10 text-[#0A1D3F] border border-[#E6E8EC] grid place-items-center shrink-0"}>
+        <GraduationCap aria-hidden="true" className="w-5 h-5" />
+      </div>
+    );
+  }
+  return <img src={logo} alt={name} onError={() => setFailed(true)} className={className + " object-cover border border-[#E6E8EC] shrink-0"} />;
+}
+
 export const AdminUniversitiesPage = () => {
   const { can } = useAuth();
   const [page, setPage] = useState(1);
@@ -132,7 +145,7 @@ export const AdminUniversitiesPage = () => {
       showSuccess(`University status updated to ${uni.status === "active" ? "Inactive" : "Active"}`);
       fetchUniversities();
     } catch (err) {
-      showError("Failed to update status");
+      showError(err?.message || "Failed to update status");
     }
   };
 
@@ -201,8 +214,8 @@ export const AdminUniversitiesPage = () => {
         </form>
 
         {/* Status Filter Tabs */}
-        <div className="flex items-center gap-1.5 p-1 bg-[#F7F8FA] rounded-xl border border-[#E6E8EC] self-start sm:self-auto shrink-0">
-          {["All", "active", "inactive"].map((st) => (
+        <div className="flex items-center gap-1.5 p-1 bg-[#F7F8FA] rounded-xl border border-[#E6E8EC] self-start sm:self-auto shrink-0 flex-wrap">
+          {["All", "draft", "active", "inactive"].map((st) => (
             <button
               key={st} aria-pressed={statusFilter === st}
               onClick={() => setStatusFilter(st)}
@@ -255,11 +268,7 @@ export const AdminUniversitiesPage = () => {
                   {/* Top Row: Logo, Name, Status */}
                   <div className="flex items-start justify-between gap-3 mb-3">
                     <div className="flex items-center gap-3 min-w-0">
-                      <img
-                        src={uni.logo}
-                        alt={uni.name}
-                        className="w-12 h-12 rounded-xl object-cover border border-[#E6E8EC] shrink-0"
-                      />
+                      <LogoTile logo={uni.logo} name={uni.name} />
                       <div className="min-w-0">
                         <span className="text-[10px] font-bold text-[#FF8A00] bg-[#FF8A00]/10 px-2 py-0.5 rounded uppercase tracking-wider inline-block mb-0.5">
                           {uni.shortName}

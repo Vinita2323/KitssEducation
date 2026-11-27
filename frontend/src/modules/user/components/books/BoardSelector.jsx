@@ -21,7 +21,7 @@ export const BoardDropdown = ({
       <div className="flex items-center justify-between">
         <label className="text-[11px] font-bold text-[#0A1D3F] uppercase tracking-wider flex items-center gap-1.5 truncate">
           <GraduationCap className="w-3.5 h-3.5 text-[#FF8A00] shrink-0" />
-          <span>1. Select Board</span>
+          <span>Board</span>
         </label>
         {selectedBoard !== "All" && (
           <button
@@ -50,7 +50,7 @@ export const ClassDropdown = ({
       <div className="flex items-center justify-between">
         <label className="text-[11px] font-bold text-[#0A1D3F] uppercase tracking-wider flex items-center gap-1.5 truncate">
           <Layers className="w-3.5 h-3.5 text-[#133C8B] shrink-0" />
-          <span>2. Select Class</span>
+          <span>Class</span>
         </label>
         {selectedClass !== "All" && (
           <button
@@ -79,7 +79,7 @@ export const SubjectDropdown = ({
       <div className="flex items-center justify-between">
         <label className="text-[11px] font-bold text-[#0A1D3F] uppercase tracking-wider flex items-center gap-1.5 truncate">
           <BookOpen className="w-3.5 h-3.5 text-[#17B26A] shrink-0" />
-          <span>3. Select Subject</span>
+          <span>Subject</span>
         </label>
         {selectedSubject !== "All" && (
           <button
@@ -108,7 +108,7 @@ export const LanguageDropdown = ({
       <div className="flex items-center justify-between">
         <label className="text-[11px] font-bold text-[#0A1D3F] uppercase tracking-wider flex items-center gap-1.5 truncate">
           <Languages className="w-3.5 h-3.5 text-[#E11D48] shrink-0" />
-          <span>4. Language Medium</span>
+          <span>Language</span>
         </label>
         {selectedLanguage !== "All" && (
           <button

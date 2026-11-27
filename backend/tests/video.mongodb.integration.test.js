@@ -63,7 +63,8 @@ test('Video real inspection, private range delivery, progress and replacement on
     assert.equal((await api('/media/'+asset.id+'/content')).status,404);assert.equal((await api('/media/'+replacement.id+'/content',d.student,{headers:{Range:'bytes=0-15'}})).status,206);
     assert.equal((await L.lesson(course.id,lesson.id,d.student.auth)).progress.positionSeconds,0);
     await f.media.remove(asset.id,{expectedRevision:asset.revision},f.ctx);
-    const pending=createMediaService({models:f.models,storage:f.storage,coordination:f.coordination,config:f.config,authService:f.auth,scanner:{configured:false,scan:async stream=>{stream.destroy();return 'pending';}}});
+    // A configured scanner that fails keeps the upload quarantined (with no scanner configured, uploads are now treated as clean).
+    const pending=createMediaService({models:f.models,storage:f.storage,coordination:f.coordination,config:f.config,authService:f.auth,scanner:{configured:true,scan:async stream=>{for await(const _ of stream){}return 'error';}}});
     const quarantined=await pending.upload({purpose:'lesson_video',originalName:'pending.mp4',mime:'video/mp4',stream:Readable.from(bytes),idempotencyKey:randomUUID(),auth:d.admin.auth,ctx:f.ctx});
     assert.equal(quarantined.status,'quarantined');await assert.rejects(f.media.linkable(quarantined.id,'lesson_video',d.admin.auth));assert.equal((await api('/media/'+quarantined.id+'/content',d.admin)).status,404);
   });

@@ -43,6 +43,7 @@ export const CollegesListingPage = () => {
   // Application Modal state
   const [applyModalOpen, setApplyModalOpen] = useState(false);
   const [selectedCollegeForApply, setSelectedCollegeForApply] = useState("");
+  const [selectedCourseForApply, setSelectedCourseForApply] = useState("");
 
   // Details Modal state
   const [detailsModalOpen, setDetailsModalOpen] = useState(false);
@@ -82,8 +83,9 @@ export const CollegesListingPage = () => {
     setSelectedDistrict("All");
   };
 
-  const openApplyModal = (collegeId) => {
+  const openApplyModal = (collegeId, courseId = "") => {
     setSelectedCollegeForApply(collegeId);
+    setSelectedCourseForApply(courseId);
     setApplyModalOpen(true);
   };
 
@@ -149,9 +151,26 @@ export const CollegesListingPage = () => {
           </button>
         </form>
 
-        <label className="block text-xs font-semibold">Institution network<select aria-label="Institution network" className="block w-full sm:w-auto border border-slate-200 rounded-lg p-2 mt-1 bg-slate-50" value={network} onChange={e=>{setPage(1);setSelectedCategory('All');setSelectedState('All');setSelectedDistrict('All');const next=new URLSearchParams(params);if(e.target.value==='franchise')next.set('network','franchise');else next.delete('network');setParams(next);}}><option value="all">All institutions</option><option value="franchise">KITSS Franchises</option></select></label>
-        {/* 3-Dropdown Filter Grid: Type, State, District */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-2 border-t border-[#E6E8EC]/60">
+        {/* 4-Dropdown Filter Grid: Network, Type, State, District */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 pt-2 border-t border-[#E6E8EC]/60">
+          {/* 0. Network Filter */}
+          <div className="space-y-1 min-w-0">
+            <label htmlFor="college-network-select" className="text-[11px] font-bold text-[#0A1D3F] uppercase tracking-wider flex items-center gap-1.5 truncate">
+              <Building className="w-3.5 h-3.5 text-[#0A1D3F] shrink-0" />
+              <span>Institution network</span>
+            </label>
+            <select
+              id="college-network-select"
+              aria-label="Institution network"
+              className="w-full px-3 py-2 bg-[#F7F8FA] border border-[#E6E8EC] rounded-lg text-xs sm:text-sm text-[#0A1D3F] font-medium focus:outline-none focus:border-[#FF8A00] transition cursor-pointer"
+              value={network}
+              onChange={e=>{setPage(1);setSelectedCategory('All');setSelectedState('All');setSelectedDistrict('All');const next=new URLSearchParams(params);if(e.target.value==='franchise')next.set('network','franchise');else next.delete('network');setParams(next);}}
+            >
+              <option value="all">All institutions</option>
+              <option value="franchise">KITSS Franchises</option>
+            </select>
+          </div>
+
           {/* 1. Institution Type / Category Dropdown */}
           <div className="space-y-1 min-w-0">
             <div className="flex items-center justify-between">
@@ -272,6 +291,10 @@ export const CollegesListingPage = () => {
                     {college.franchiseOnly ? <div className="h-full w-full flex items-center justify-center bg-gradient-to-br from-slate-100 to-blue-100"><Building2 className="w-16 h-16 text-blue-800/50" aria-hidden="true"/></div> : <img
                       src={college.banner || college.image || placeholderImages.college}
                       alt={college.name}
+                      onError={(e) => {
+                        e.currentTarget.onerror = null;
+                        e.currentTarget.src = placeholderImages.college;
+                      }}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                       loading="lazy"
                     />}
@@ -385,6 +408,7 @@ export const CollegesListingPage = () => {
         isOpen={applyModalOpen}
         onClose={() => setApplyModalOpen(false)}
         preselectedCollegeId={selectedCollegeForApply}
+        preselectedCourseId={selectedCourseForApply}
       />
 
       {/* In-App College Details Preview Modal */}
@@ -392,6 +416,10 @@ export const CollegesListingPage = () => {
         college={selectedCollegeForDetails}
         isOpen={detailsModalOpen}
         onClose={() => setDetailsModalOpen(false)}
+        onApply={(colId, crsId = "") => {
+          setDetailsModalOpen(false);
+          openApplyModal(colId, crsId);
+        }}
       />
     </div>
   );

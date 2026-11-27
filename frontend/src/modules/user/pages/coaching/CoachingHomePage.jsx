@@ -30,18 +30,25 @@ export const CoachingHomePage = () => {
   const searchTerm = useDebouncedValue(query); // search once typing pauses
   const [selectedCategory, setSelectedCategory] = useState(searchParams.get("category") || "All");
   const [selectedClass, setSelectedClass] = useState("All");
+  const [selectedSubject, setSelectedSubject] = useState("All");
+  const [selectedLanguage, setSelectedLanguage] = useState("All");
+  const [showMoreFilters, setShowMoreFilters] = useState(false);
   const [courses, setCourses] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filterError, setFilterError] = useState("");
-  const [error, setError] = useState(""), [classes, setClasses] = useState([]), [page, setPage] = useState(1), [total, setTotal] = useState(0), [meta, setMeta] = useState(null);
+  const [error, setError] = useState(""), [classes, setClasses] = useState([]), [subjects, setSubjects] = useState([]), [languages, setLanguages] = useState([]), [page, setPage] = useState(1), [total, setTotal] = useState(0), [meta, setMeta] = useState(null);
 
   // Load categories
   useEffect(() => {
     const loadCats = async () => {
       try {
-        const cats = await coachingService.getCategories();
-        setCategories(cats); setClasses((await coachingService.getFacets()).classes); setFilterError("");
+        const [cats, f] = await Promise.all([coachingService.getCategories(), coachingService.getFacets()]);
+        setCategories(cats);
+        setClasses(f.classes || []);
+        setSubjects(f.subjects || []);
+        setLanguages(f.languages || []);
+        setFilterError("");
       } catch {
         // Courses still load; only the filter choices are missing.
         setFilterError("Course filters could not be loaded. Refresh the page to try again.");
@@ -50,7 +57,7 @@ export const CoachingHomePage = () => {
     loadCats();
   }, []);
 
-  useEffect(()=>setPage(1),[selectedCategory,selectedClass,searchTerm]);
+  useEffect(()=>setPage(1),[selectedCategory,selectedClass,selectedSubject,selectedLanguage,searchTerm]);
   // Fetch courses with filter
   useEffect(() => {
     const controller=new AbortController();
@@ -61,6 +68,8 @@ export const CoachingHomePage = () => {
           page,
           category: selectedCategory,
           classGrade: selectedClass,
+          subject: selectedSubject,
+          language: selectedLanguage,
           query: searchTerm,
         },controller.signal);
         setCourses(result.data);
@@ -73,7 +82,7 @@ export const CoachingHomePage = () => {
       }
     };
     fetchCourses();return()=>controller.abort();
-  }, [selectedCategory, selectedClass, searchTerm,page]);
+  }, [selectedCategory, selectedClass, selectedSubject, selectedLanguage, searchTerm,page]);
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
@@ -150,6 +159,48 @@ export const CoachingHomePage = () => {
             <FilterSelect label="Filter by Class" tone="orange" triggerSize="py-2 rounded-xl" value={selectedClass} onChange={setSelectedClass} searchPlaceholder="Search class" options={[{ value: "All", label: "All Classes" }, ...classes.map(c => ({ value: c.name, label: c.name }))]} />
           </div>
         </div>
+
+        {(subjects.length > 0 || languages.length > 0) && (
+          <div className="pt-1 flex items-center justify-between gap-2 flex-wrap">
+            <button
+              type="button"
+              onClick={() => setShowMoreFilters((prev) => !prev)}
+              className="text-[11px] font-bold text-[#133C8B] hover:text-[#FF8A00] flex items-center gap-1 cursor-pointer"
+            >
+              <Filter className="w-3 h-3" />
+              <span>{showMoreFilters ? "Hide extra filters" : "More filters (Subject, Language)"}</span>
+            </button>
+            {(selectedSubject !== "All" || selectedLanguage !== "All") && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedSubject("All");
+                  setSelectedLanguage("All");
+                }}
+                className="text-[10px] font-bold text-[#FF8A00] hover:text-[#E67A00] cursor-pointer"
+              >
+                Clear Subject & Language
+              </button>
+            )}
+          </div>
+        )}
+
+        {showMoreFilters && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-2 border-t border-[#E6E8EC]/60">
+            <div className="space-y-1 min-w-0">
+              <label className="text-[11px] font-bold text-[#0A1D3F] uppercase tracking-wider block">
+                Subject
+              </label>
+              <FilterSelect label="Filter by Subject" triggerSize="py-2 rounded-xl" value={selectedSubject} onChange={setSelectedSubject} searchPlaceholder="Search subject" options={[{ value: "All", label: "All Subjects" }, ...subjects.map(s => ({ value: s.name, label: s.name }))]} />
+            </div>
+            <div className="space-y-1 min-w-0">
+              <label className="text-[11px] font-bold text-[#0A1D3F] uppercase tracking-wider block">
+                Language
+              </label>
+              <FilterSelect label="Filter by Language" tone="orange" triggerSize="py-2 rounded-xl" value={selectedLanguage} onChange={setSelectedLanguage} searchPlaceholder="Search language" options={[{ value: "All", label: "All Languages" }, ...languages.map(l => ({ value: l.name, label: l.name }))]} />
+            </div>
+          </div>
+        )}
       </div>
 
       {/* 2. Available Courses Section */}

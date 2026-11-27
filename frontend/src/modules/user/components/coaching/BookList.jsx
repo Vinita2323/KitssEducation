@@ -3,11 +3,19 @@ import { BookOpen, ShieldCheck } from "lucide-react";
 import { BookCard } from "./BookCard";
 
 export const BookList = ({ subjectsData = [], onReadOnline }) => {
-  const subjectsWithBooks = (subjectsData || []).filter(
-    (subj) => subj.books && subj.books.length > 0
-  );
+  const uniqueBooks = [];
+  const seenBookIds = new Set();
+  for (const subj of subjectsData || []) {
+    for (const book of subj?.books || []) {
+      const key = book?.id || book?._id || book?.title;
+      if (book && key && !seenBookIds.has(key)) {
+        seenBookIds.add(key);
+        uniqueBooks.push(book);
+      }
+    }
+  }
 
-  if (subjectsWithBooks.length === 0) {
+  if (uniqueBooks.length === 0) {
     return (
       <div className="bg-white rounded-md border border-[#E6E8EC] p-6 text-center space-y-2">
         <div className="w-10 h-10 rounded-md bg-[#FF8A00]/10 text-[#FF8A00] flex items-center justify-center mx-auto">
@@ -38,33 +46,28 @@ export const BookList = ({ subjectsData = [], onReadOnline }) => {
         </div>
       </div>
 
-      {/* Grouped by Subjects */}
-      {subjectsWithBooks.map((subj, sIdx) => (
-        <div key={sIdx} className="space-y-2.5">
-          <div className="flex items-center gap-2 pb-1.5 border-b border-[#E6E8EC]">
-            <div
-              className="w-2.5 h-2.5 rounded-full"
-              style={{ backgroundColor: subj.color || "#FF8A00" }}
-            />
-            <h3 className="font-bold text-xs sm:text-sm text-[#0A1D3F]">
-              {subj.subjectName} Study Material
-            </h3>
-            <span className="text-[10px] font-semibold text-[#667085] bg-[#F7F8FA] px-1.5 py-0.2 rounded border border-[#E6E8EC] ml-auto">
-              {subj.books.length} Books
-            </span>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-3">
-            {subj.books.map((book) => (
-              <BookCard
-                key={book.id}
-                book={book}
-                onReadOnline={onReadOnline}
-              />
-            ))}
-          </div>
+      {/* Course Study Materials */}
+      <div className="space-y-2.5">
+        <div className="flex items-center gap-2 pb-1.5 border-b border-[#E6E8EC]">
+          <div className="w-2.5 h-2.5 rounded-full bg-[#FF8A00]" />
+          <h3 className="font-bold text-xs sm:text-sm text-[#0A1D3F]">
+            Course Study Material
+          </h3>
+          <span className="text-[10px] font-semibold text-[#667085] bg-[#F7F8FA] px-1.5 py-0.2 rounded border border-[#E6E8EC] ml-auto">
+            {uniqueBooks.length} {uniqueBooks.length === 1 ? "Book" : "Books"}
+          </span>
         </div>
-      ))}
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-3">
+          {uniqueBooks.map((book) => (
+            <BookCard
+              key={book.id || book._id || book.title}
+              book={book}
+              onReadOnline={onReadOnline}
+            />
+          ))}
+        </div>
+      </div>
     </div>
   );
 };

@@ -33,6 +33,7 @@ export function createInstitutionRouter(service) {
   router.get('/colleges/:id', async (req, res) => send(req, res, await service.detail('college', req.params.id)));
   router.get('/colleges/:id/programs', async (req, res) => list(req, res, await service.list('program', req.query, false, req.params.id)));
   router.post('/admission-applications', requireSession, async (req, res) => send(req, res, await service.submitAdmission(req.body, req.auth, ctx(req)), 201));
+  router.get('/me/admission-applications', requireSession, async (req, res) => list(req, res, await service.myAdmissions(req.query, req.auth)));
   router.post('/franchise-applications', async (req, res) => send(req, res, await (service.franchiseWorkflow ? service.franchiseWorkflow.create(req.body, req.auth, ctx(req)) : service.createDraft(req.body, req.auth, ctx(req))), 201));
   router.patch('/franchise-applications/:id', async (req, res) => send(req, res, await (service.franchiseWorkflow ? service.franchiseWorkflow.edit(req.params.id, req.body, req.auth, ctx(req)) : service.editDraft(req.params.id, req.body, req.auth, req.get('X-Draft-Capability'), ctx(req)))));
   router.post('/franchise-applications/:id/submit', async (req, res) => send(req, res, await (service.franchiseWorkflow ? service.franchiseWorkflow.submit(req.params.id, req.body, req.auth, ctx(req)) : service.submitFranchise(req.params.id, req.body, req.auth, req.get('X-Draft-Capability'), ctx(req)))));

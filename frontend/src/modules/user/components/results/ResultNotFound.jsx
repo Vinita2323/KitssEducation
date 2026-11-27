@@ -45,7 +45,7 @@ export const ResultNotFound = ({
         <ul className="list-disc list-inside space-y-0.5 text-[11px]">
           <li>Ensure the Roll Number matches your official examination hall ticket.</li>
           <li>Check that the correct Board and Examination Year were selected.</li>
-          <li>Try sample demo roll numbers: <strong className="font-mono text-[#0A1D3F]">1024501</strong> or <strong className="font-mono text-[#0A1D3F]">1024502</strong>.</li>
+          <li>Make sure you are signed in with the verified student account linked to your result.</li>
         </ul>
       </div>
 

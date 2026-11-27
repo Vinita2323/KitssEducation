@@ -35,9 +35,10 @@ test('Final video admin upload, playback/resume' + (workflowsOnly ? ' workflows 
     await page.getByRole('row').filter({hasText:d.course.title}).getByRole('button',{name:'Manage lessons',exact:true}).click();
     await page.getByRole('button',{name:'Add lesson',exact:true}).click();
     await page.getByLabel('Lesson title',{exact:true}).fill('FINAL VIDEO BROWSER LESSON');await page.getByLabel('Syllabus section',{exact:true}).selectOption('section-1');
-    await page.getByLabel('Upload Lesson video',{exact:true}).setInputFiles(process.env.KITSS_REAL_MEDIA_VIDEO || fileURLToPath(new URL('../../backend/tests/fixtures/lesson-generated.mp4',import.meta.url)));
+    // Choosing the file uploads it straight away, so start waiting for the upload first.
     const uploaded=page.waitForResponse(r=>r.url().endsWith('/api/v1/media')&&r.request().method()==='POST');
-    await page.locator('button').filter({hasText:/^Upload Lesson video$/}).click();const response=await uploaded;assert.equal(response.status(),201,await response.text());asset=(await response.json()).data;
+    await page.getByLabel('Upload Lesson video',{exact:true}).setInputFiles(process.env.KITSS_REAL_MEDIA_VIDEO || fileURLToPath(new URL('../../backend/tests/fixtures/lesson-generated.mp4',import.meta.url)));
+    const response=await uploaded;assert.equal(response.status(),201,await response.text());asset=(await response.json()).data;
     await page.waitForFunction(()=>{const v=document.querySelector('video[aria-label="Admin lesson video preview"]');return v?.readyState>=2;});
     await page.getByLabel('Status',{exact:true}).selectOption('published');
     await page.getByRole('button',{name:'Save lesson',exact:true}).click();await page.getByText('FINAL VIDEO BROWSER LESSON',{exact:true}).waitFor();
@@ -54,9 +55,9 @@ test('Final video admin upload, playback/resume' + (workflowsOnly ? ' workflows 
     await row.getByTitle('Edit Book').click();const form=page.getByRole('dialog',{name:'Book editor'});
     await form.getByLabel('Book price',{exact:true}).fill('0');
     const pdf=await pdfBytes(3,'Stage 15 self-generated browser PDF');
-    await form.getByLabel('Upload Full book PDF',{exact:true}).setInputFiles({name:'stage15-browser.pdf',mimeType:'application/pdf',buffer:pdf});
     response=page.waitForResponse(r=>r.url().endsWith('/media')&&r.request().method()==='POST');
-    await form.locator('button').filter({hasText:/^Upload Full book PDF$/}).click();const uploaded=await response;assert.equal(uploaded.status(),201);const media=(await uploaded.json()).data;assert.equal(media.scan.status,'clean');
+    await form.getByLabel('Upload Full book PDF',{exact:true}).setInputFiles({name:'stage15-browser.pdf',mimeType:'application/pdf',buffer:pdf});
+    const uploaded=await response;assert.equal(uploaded.status(),201);const media=(await uploaded.json()).data;assert.equal(media.scan.status,'clean');
     response=page.waitForResponse(r=>r.url().includes('/admin/books/')&&r.request().method()==='PATCH');await form.getByRole('button',{name:'Save Book Draft',exact:true}).click();assert.equal((await response).status(),200);
     row=page.getByRole('row').filter({has:page.getByRole('heading',{name:d.book.title,exact:true})});response=page.waitForResponse(r=>r.url().endsWith('/publish')&&r.request().method()==='POST');await row.getByTitle('Click to toggle status').click();assert.equal((await response).status(),200);
     await identity(d.student);await go('/books/'+d.book.id);await page.getByRole('button',{name:'Read Free PDF',exact:true}).click();await page.locator('canvas[data-rendered-page]').waitFor();

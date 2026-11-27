@@ -9,7 +9,7 @@ export const businessActions = [
   'franchise_activated', 'franchise_renewed', 'franchise_renewal_reviewed',
   'franchise_renewal_reminder', 'franchise_expired',
   'refund_requested', 'refund_reviewed',
-  'result_submit', 'result_approve', 'result_reject',
+  'result_submit', 'result_approve', 'result_reject', 'result_publish',
   'staff_invited', 'account_roles_changed', 'account_status_changed'
 ];
 
@@ -178,10 +178,23 @@ export async function businessNotice(event, { connection, User }) {
       return {
         sourceEventId: key,
         title,
-        message: 'A result draft requires main-admin review. Source and privacy gates remain in force.',
+        message: `A result draft (${record.student?.name || record.rollNormalized}) requires main-admin review. Source and privacy gates remain in force.`,
         category,
         link: '/admin/results',
         audience: { kind: 'users', userIds: [...new Set(recipients.map(String))] },
+        status: 'published',
+        publishedAt: event.at
+      };
+    }
+    if (action === 'result_publish') {
+      const exam = await connection.models.Exam?.findById(record.examId).select('title').lean();
+      return {
+        sourceEventId: key,
+        title: 'Result published',
+        message: `Your result${exam?.title ? ' for ' + exam.title : ''} (${record.rollNormalized}) is now published. Open Examination Results to view your marksheet.`,
+        category,
+        link: '/results',
+        audience: { kind: 'users', userIds: [String(record.userId)] },
         status: 'published',
         publishedAt: event.at
       };

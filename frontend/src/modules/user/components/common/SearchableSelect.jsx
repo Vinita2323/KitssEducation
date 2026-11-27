@@ -309,7 +309,7 @@ export const SearchableSelect = ({
                           : "text-[#0A1D3F] hover:bg-slate-50 hover:text-[#0A1D3F]"
                       }`}
                     >
-                      <span className="truncate">{opt.label}</span>
+                      <span className="truncate" title={opt.label}>{opt.label}</span>
                       {isSelected && (
                         <Check className="w-3 h-3 text-[#FF8A00] shrink-0 stroke-[2.5]" />
                       )}

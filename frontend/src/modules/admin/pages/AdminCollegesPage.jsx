@@ -26,6 +26,19 @@ import { adminService } from "../services/adminService";
 import { useToast } from "../../user/context/ToastContext";
 import { PrimaryButton, SecondaryButton } from "../../user/components/common/PrimaryButton";
 
+function CollegeLogoTile({ logo, name }) {
+  const [failed, setFailed] = useState(false);
+  useEffect(() => { setFailed(false); }, [logo]);
+  if (!logo || failed) {
+    return (
+      <div className="w-10 h-10 rounded-xl bg-[#0A1D3F]/10 text-[#0A1D3F] border border-[#E6E8EC] grid place-items-center shrink-0">
+        <Building2 aria-hidden="true" className="w-4 h-4" />
+      </div>
+    );
+  }
+  return <img src={logo} alt={name} onError={() => setFailed(true)} className="w-10 h-10 rounded-xl object-cover border border-[#E6E8EC] shrink-0" />;
+}
+
 
 
 export const AdminCollegesPage = () => {
@@ -116,7 +129,7 @@ export const AdminCollegesPage = () => {
     fetchColleges();
   }, [selectedUniFilter, statusFilter, search, page]);
 
-  useEffect(() => { setPage(1); }, [statusFilter, search]);
+  useEffect(() => { setPage(1); }, [statusFilter, search, selectedUniFilter]);
   const handleSearchSubmit = (e) => {
     e.preventDefault();
     fetchColleges();
@@ -172,6 +185,7 @@ export const AdminCollegesPage = () => {
       facilities: Array.isArray(college.facilities)
         ? college.facilities.join(", ")
         : college.facilities || "",
+      pincode: college.pincode || "",
       admissionInformation: college.admissionInformation || "",
       contactInformation: {
         phone: college.contactInformation?.phone || "",
@@ -240,7 +254,7 @@ export const AdminCollegesPage = () => {
       );
       fetchColleges();
     } catch (err) {
-      showError("Failed to update status");
+      showError(err?.message || "Failed to update status");
     }
   };
 
@@ -330,8 +344,8 @@ export const AdminCollegesPage = () => {
           </div>
 
           {/* Status Filter */}
-          <div className="flex items-center gap-1.5 p-1 bg-[#F7F8FA] rounded-xl border border-[#E6E8EC] shrink-0">
-            {["All", "active", "inactive"].map((st) => (
+          <div className="flex items-center gap-1.5 p-1 bg-[#F7F8FA] rounded-xl border border-[#E6E8EC] shrink-0 flex-wrap">
+            {["All", "draft", "active", "inactive"].map((st) => (
               <button
                 key={st} aria-pressed={statusFilter === st}
                 onClick={() => setStatusFilter(st)}
@@ -383,40 +397,51 @@ export const AdminCollegesPage = () => {
                 className="bg-white rounded-2xl border border-[#E6E8EC] p-4 sm:p-5 shadow-2xs hover:shadow-md transition-all flex flex-col justify-between space-y-3.5"
               >
                 <div>
-                  {/* Top: University Badge & Status */}
-                  <div className="flex items-center justify-between gap-2 mb-2">
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#0A1D3F]/10 text-[#0A1D3F] text-[10px] font-bold uppercase tracking-wider truncate max-w-[65%]">
+                  {/* Top: University Badge, Visibility & Status */}
+                  <div className="flex items-center justify-between gap-2 mb-2 flex-wrap">
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#0A1D3F]/10 text-[#0A1D3F] text-[10px] font-bold uppercase tracking-wider truncate max-w-[60%]">
                       <GraduationCap className="w-3 h-3 shrink-0" />
                       <span className="truncate">{uniShort || uniName}</span>
                     </span>
 
-                    <button
-                      disabled={!can('institutions.write')} onClick={() => handleToggleStatus(college)}
-                      title={`Click to ${
-                        college.status === "active" ? "deactivate" : "activate"
-                      }`}
-                      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold capitalize transition cursor-pointer ${
-                        college.status === "active"
-                          ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                          : "bg-gray-100 text-gray-500 border border-gray-200"
-                      }`}
-                    >
-                      {college.status === "active" ? (
-                        <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                      ) : (
-                        <XCircle className="w-3 h-3 text-gray-400" />
-                      )}
-                      <span>{college.status}</span>
-                    </button>
+                    <div className="flex items-center gap-1.5">
+                      <span
+                        className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border ${
+                          college.status === "active" && college.verified
+                            ? "bg-blue-50 text-blue-700 border-blue-200"
+                            : "bg-amber-50 text-amber-800 border-amber-200"
+                        }`}
+                      >
+                        {college.status === "active" && college.verified
+                          ? "Public"
+                          : college.verified
+                            ? "Hidden"
+                            : "Unverified"}
+                      </span>
+                      <button
+                        disabled={!can('institutions.write')} onClick={() => handleToggleStatus(college)}
+                        title={`Click to ${
+                          college.status === "active" ? "deactivate" : "activate"
+                        }`}
+                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold capitalize transition cursor-pointer ${
+                          college.status === "active"
+                            ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                            : "bg-gray-100 text-gray-500 border border-gray-200"
+                        }`}
+                      >
+                        {college.status === "active" ? (
+                          <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                        ) : (
+                          <XCircle className="w-3 h-3 text-gray-400" />
+                        )}
+                        <span>{college.status}</span>
+                      </button>
+                    </div>
                   </div>
 
                   {/* College Name & Code */}
                   <div className="flex items-start gap-3">
-                    <img
-                      src={college.logo}
-                      alt={college.name}
-                      className="w-10 h-10 rounded-xl object-cover border border-[#E6E8EC] shrink-0"
-                    />
+                    <CollegeLogoTile logo={college.logo} name={college.name} />
                     <div className="min-w-0">
                       <h3 className="text-sm font-bold text-[#0A1D3F] leading-tight">
                         {college.name}
@@ -791,6 +816,42 @@ export const AdminCollegesPage = () => {
                   className="w-full px-3 py-2 bg-[#F7F8FA] border border-[#E6E8EC] rounded-xl text-xs text-[#0A1D3F] focus:outline-none focus:border-[#0A1D3F]"
                 />
               </div>
+
+              <details className="rounded-xl border border-[#E6E8EC] bg-[#F8FAFC] p-3 space-y-3">
+                <summary className="text-xs font-bold text-[#0A1D3F] cursor-pointer">
+                  Media, Campus Facilities &amp; Admission Details (Optional)
+                </summary>
+                <div className="space-y-3 pt-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <AdminField className="block text-xs font-bold text-[#0A1D3F] mb-1">Logo URL</AdminField>
+                      <AdminInput type="text" aria-label="College logo URL" value={formData.logo} onChange={(e) => setFormData({ ...formData, logo: e.target.value })} placeholder="https://..." className="w-full px-3 py-2 bg-white border border-[#E6E8EC] rounded-xl text-xs text-[#0A1D3F]" />
+                    </div>
+                    <div>
+                      <AdminField className="block text-xs font-bold text-[#0A1D3F] mb-1">Banner URL</AdminField>
+                      <AdminInput type="text" aria-label="College banner URL" value={formData.banner} onChange={(e) => setFormData({ ...formData, banner: e.target.value })} placeholder="https://..." className="w-full px-3 py-2 bg-white border border-[#E6E8EC] rounded-xl text-xs text-[#0A1D3F]" />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <AdminField className="block text-xs font-bold text-[#0A1D3F] mb-1">Postal Code</AdminField>
+                      <AdminInput type="text" aria-label="College pincode" value={formData.pincode || ""} onChange={(e) => setFormData({ ...formData, pincode: e.target.value })} placeholder="e.g. 110001" maxLength={6} className="w-full px-3 py-2 bg-white border border-[#E6E8EC] rounded-xl text-xs text-[#0A1D3F]" />
+                    </div>
+                    <div>
+                      <AdminField className="block text-xs font-bold text-[#0A1D3F] mb-1">Facilities (comma separated)</AdminField>
+                      <AdminInput type="text" aria-label="College facilities" value={formData.facilities} onChange={(e) => setFormData({ ...formData, facilities: e.target.value })} placeholder="Library, Hostel, Labs" className="w-full px-3 py-2 bg-white border border-[#E6E8EC] rounded-xl text-xs text-[#0A1D3F]" />
+                    </div>
+                  </div>
+                  <div>
+                    <AdminField className="block text-xs font-bold text-[#0A1D3F] mb-1">Detailed About Text</AdminField>
+                    <AdminTextarea rows={2} aria-label="College about" value={formData.about} onChange={(e) => setFormData({ ...formData, about: e.target.value })} placeholder="Detailed institutional background..." className="w-full px-3 py-2 bg-white border border-[#E6E8EC] rounded-xl text-xs text-[#0A1D3F]" />
+                  </div>
+                  <div>
+                    <AdminField className="block text-xs font-bold text-[#0A1D3F] mb-1">Admission Guidance</AdminField>
+                    <AdminTextarea rows={2} aria-label="College admission info" value={formData.admissionInformation} onChange={(e) => setFormData({ ...formData, admissionInformation: e.target.value })} placeholder="Counselling dates, entrance requirements, quotas..." className="w-full px-3 py-2 bg-white border border-[#E6E8EC] rounded-xl text-xs text-[#0A1D3F]" />
+                  </div>
+                </div>
+              </details>
 
               {/* Status */}
               <div>

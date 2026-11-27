@@ -46,7 +46,7 @@ export const CourseSelectorPage = () => {
   const [preferenceReady,setPreferenceReady]=useState(false),[preferenceError,setPreferenceError]=useState(''),[savingPreference,setSavingPreference]=useState(false);
   const openSelector = searchParams.get("choose") === "1";
 
-  const [filtersSaved] = useState(() => !openSelector && Boolean(savedPrefs));
+  const [filtersSaved, setFiltersSaved] = useState(() => !openSelector && Boolean(savedPrefs));
   const [selectedBoard, setSelectedBoard] = useState(savedPrefs?.board || "All");
   const [selectedState, setSelectedState] = useState(savedPrefs?.state || "All");
   const [selectedSubject, setSelectedSubject] = useState(savedPrefs?.subject || "All");
@@ -247,9 +247,18 @@ export const CourseSelectorPage = () => {
       )}
 
       {filtersSaved && (
-        <p className="text-[11px] text-[#667085]">
-          Showing <strong className="text-[#0A1D3F]">{courses.length}</strong> courses for your saved selection
-        </p>
+        <div className="flex items-center justify-between gap-2 text-[11px] text-[#667085] bg-white rounded-md border border-[#E6E8EC] px-3 py-2">
+          <span>
+            Showing <strong className="text-[#0A1D3F]">{courses.length}</strong> courses for your saved selection
+          </span>
+          <button
+            type="button"
+            onClick={() => setFiltersSaved(false)}
+            className="text-[#133C8B] hover:text-[#FF8A00] font-bold cursor-pointer"
+          >
+            Change filters
+          </button>
+        </div>
       )}
 
       {/* Matching Courses Grid */}
@@ -340,7 +349,11 @@ export const CourseSelectorPage = () => {
                 </div>
 
                 <p className="text-xs text-[#667085] text-center font-medium">
-                  You are about to join this course.
+                  {!user
+                    ? "Sign in with a verified student account to enroll."
+                    : selectedCourseForJoin.lowestPlan?.free
+                      ? "You are about to join this free plan course."
+                      : "View approved plans and complete enrollment on the course page."}
                 </p>
 
                 <div className="flex items-center gap-3 pt-2">
@@ -351,14 +364,32 @@ export const CourseSelectorPage = () => {
                   >
                     Cancel
                   </button>
-                  <button
-                    type="button"
-                    onClick={handleConfirmEnrollment}
-                    disabled={joining}
-                    className="flex-1 py-2.5 px-4 rounded-xl bg-[#FF8A00] hover:bg-[#E67C00] text-white font-bold text-xs transition cursor-pointer"
-                  >
-                    {joining ? "Joining..." : "Confirm & Join"}
-                  </button>
+                  {!user ? (
+                    <button
+                      type="button"
+                      onClick={() => navigate("/login")}
+                      className="flex-1 py-2.5 px-4 rounded-xl bg-[#FF8A00] hover:bg-[#E67C00] text-white font-bold text-xs transition cursor-pointer"
+                    >
+                      Sign in to Join
+                    </button>
+                  ) : selectedCourseForJoin.lowestPlan?.free ? (
+                    <button
+                      type="button"
+                      onClick={handleConfirmEnrollment}
+                      disabled={joining}
+                      className="flex-1 py-2.5 px-4 rounded-xl bg-[#FF8A00] hover:bg-[#E67C00] text-white font-bold text-xs transition cursor-pointer"
+                    >
+                      {joining ? "Joining..." : "Confirm & Join"}
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => navigate(`/coaching/${selectedCourseForJoin.id}`)}
+                      className="flex-1 py-2.5 px-4 rounded-xl bg-[#FF8A00] hover:bg-[#E67C00] text-white font-bold text-xs transition cursor-pointer"
+                    >
+                      View Plans &amp; Enroll
+                    </button>
+                  )}
                 </div>
               </div>
             )}

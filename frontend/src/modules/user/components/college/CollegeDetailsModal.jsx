@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 
 import { collegeService } from '../../services/collegeService';
-export const CollegeDetailsModal = ({ college: selectedCollege, isOpen, onClose }) => {
+export const CollegeDetailsModal = ({ college: selectedCollege, isOpen, onClose, onApply }) => {
   const [college, setCollege] = React.useState(null);
   const [error, setError] = React.useState('');
   React.useEffect(() => { let active = true; if (isOpen && selectedCollege?.id) { setCollege(null); setError(''); collegeService.getCollegeById(selectedCollege.id).then(value => { if (active) setCollege(value); }).catch(failure => { if (active) setError(failure.message); }); } return () => { active = false; }; }, [isOpen, selectedCollege?.id]);
@@ -43,26 +43,23 @@ export const CollegeDetailsModal = ({ college: selectedCollege, isOpen, onClose 
   if (!isOpen) return null;
   if (!college) return <div className="fixed inset-0 z-50 bg-black/60 p-4 flex items-center justify-center"><div className="bg-white p-6 rounded-2xl"><p role={error ? 'alert' : 'status'}>{error || 'Loading college details…'}</p><button onClick={onClose}>Close</button></div></div>;
 
-  // Resolve official website of the college
+  // Resolve official website if a real non-placeholder HTTP(S) URL is saved.
   const getOfficialWebsite = () => {
-    let url = college?.contactInformation?.website || college?.website || "";
-    if (url) {
-      if (!/^https?:\/\//i.test(url)) {
-        url = `https://${url}`;
-      }
-      return url;
+    let url = (college?.contactInformation?.website || college?.website || "").trim();
+    if (!url) return null;
+    if (!/^https?:\/\//i.test(url)) url = `https://${url}`;
+    try {
+      const parsed = new URL(url);
+      if (parsed.hostname.endsWith(".invalid")) return null;
+      return parsed.href;
+    } catch {
+      return null;
     }
-    return `https://www.google.com/search?q=${encodeURIComponent((college?.name || "College") + " official website")}`;
   };
 
   const officialWebsite = getOfficialWebsite();
-
-  const handleOpenWebsite = (e) => {
-    if (e) {
-      e.stopPropagation();
-    }
-    window.open(officialWebsite, "_blank", "noopener,noreferrer");
-  };
+  const activeCourses = (college?.courses || []).filter((c) => c.status !== "inactive" && c.status !== "archived");
+  const openCourses = activeCourses.filter((c) => c.admissionStatus === "Open");
 
   return (
     <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 overflow-y-auto animate-in fade-in duration-200">
@@ -83,15 +80,15 @@ export const CollegeDetailsModal = ({ college: selectedCollege, isOpen, onClose 
         {/* Scrollable Modal Content */}
         <div className="overflow-y-auto flex-1 overscroll-contain">
           {/* Top Banner Image & Badges */}
-          <div
-            onClick={handleOpenWebsite}
-            className="relative aspect-16/8 sm:aspect-21/9 w-full overflow-hidden bg-slate-900 cursor-pointer group"
-            title={`Visit ${college.name} official website`}
-          >
+          <div className="relative aspect-16/8 sm:aspect-21/9 w-full overflow-hidden bg-slate-900">
             <img
               src={college.banner || college.image || placeholderImages.college}
               alt={college.name}
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+              onError={(e) => {
+                e.currentTarget.onerror = null;
+                e.currentTarget.src = placeholderImages.college;
+              }}
+              className="w-full h-full object-cover"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/25 to-transparent" />
 
@@ -115,11 +112,7 @@ export const CollegeDetailsModal = ({ college: selectedCollege, isOpen, onClose 
             {/* Header Title & Location */}
             <div className="space-y-1 pb-3 border-b border-slate-200/80">
               <div className="flex items-center gap-2 flex-wrap">
-                <h2
-                  onClick={handleOpenWebsite}
-                  className="text-lg sm:text-xl font-bold text-slate-900 leading-tight hover:text-slate-700 transition-colors cursor-pointer tracking-tight"
-                  title={`Visit ${college.name} official website`}
-                >
+                <h2 className="text-lg sm:text-xl font-bold text-slate-900 leading-tight tracking-tight">
                   {college.name}
                 </h2>
                 {college.verified && (
@@ -127,9 +120,12 @@ export const CollegeDetailsModal = ({ college: selectedCollege, isOpen, onClose 
                 )}
               </div>
 
-              <p className="text-xs text-slate-500 flex items-center gap-1.5 pt-0.5">
+              <p className="text-xs text-slate-500 flex items-center gap-1.5 pt-0.5 flex-wrap">
                 <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                 <span>{college.district ? `${college.district}, ${college.state}` : college.location || `${college.city}, ${college.state}`}</span>
+                {college.university?.name && (
+                  <span className="text-slate-600 font-medium">· Affiliated to {college.university.name}</span>
+                )}
               </p>
             </div>
 
@@ -139,15 +135,55 @@ export const CollegeDetailsModal = ({ college: selectedCollege, isOpen, onClose 
                 About Institution
               </h3>
               <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
-                {college.about || college.description}
+                {college.about || college.description || "Partner institution profile."}
               </p>
             </div>
 
-            {/* Popular Courses / Available Programs */}
-            {college.popularCourses && college.popularCourses.length > 0 && (
+            {/* Available Programs & Courses with Direct Apply */}
+            {activeCourses.length > 0 ? (
               <div className="space-y-2">
                 <h3 className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
-                  Popular Programs & Degree Tracks
+                  Programs &amp; Admissions ({activeCourses.length})
+                </h3>
+                <div className="space-y-2">
+                  {activeCourses.map((crs) => {
+                    const crsId = crs._id || crs.id;
+                    const isOpenAdm = crs.admissionStatus === "Open";
+                    return (
+                      <div key={crsId} className="p-3 rounded-lg bg-slate-50 border border-slate-200/80 flex items-center justify-between gap-3">
+                        <div className="min-w-0 space-y-0.5">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-[#0A1D3F] text-white">{crs.degreeType}</span>
+                            <span className="text-[11px] text-slate-600">{crs.duration}</span>
+                            <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${isOpenAdm ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-slate-200 text-slate-600"}`}>
+                              {isOpenAdm ? "Admissions Open" : "Closed"}
+                            </span>
+                          </div>
+                          <p className="text-xs sm:text-sm font-bold text-slate-900">{crs.courseName}</p>
+                          <p className="text-[11px] text-slate-600">
+                            {crs.fee === 0 ? "Free" : `₹${Number(crs.fee || 0).toLocaleString("en-IN")} / year`}
+                            {crs.availableSeats !== undefined && crs.availableSeats !== null ? ` · ${crs.availableSeats} seats` : ""}
+                            {crs.eligibility ? ` · ${crs.eligibility}` : ""}
+                          </p>
+                        </div>
+                        {onApply && isOpenAdm && (
+                          <button
+                            type="button"
+                            onClick={() => onApply(college.id, crsId)}
+                            className="px-3 py-1.5 rounded-lg bg-[#FF8A00] hover:bg-[#E67C00] text-white text-xs font-bold shrink-0 cursor-pointer transition"
+                          >
+                            Apply
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : college.popularCourses && college.popularCourses.length > 0 && (
+              <div className="space-y-2">
+                <h3 className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                  Popular Programs &amp; Degree Tracks
                 </h3>
                 <div className="flex items-center gap-1.5 flex-wrap">
                   {college.popularCourses.map((course, idx) => (
@@ -200,7 +236,7 @@ export const CollegeDetailsModal = ({ college: selectedCollege, isOpen, onClose 
                     {college.contactInformation.phone}
                   </span>
                 )}
-                {college.contactInformation.website && (
+                {officialWebsite && (
                   <a
                     href={officialWebsite}
                     target="_blank"
@@ -209,7 +245,7 @@ export const CollegeDetailsModal = ({ college: selectedCollege, isOpen, onClose 
                     className="flex items-center gap-1.5 font-medium text-slate-800 hover:text-slate-950 transition-colors"
                   >
                     <Globe className="w-3.5 h-3.5 text-slate-400" />
-                    <span>{college.contactInformation.website.replace(/^https?:\/\//i, "")}</span>
+                    <span>{officialWebsite.replace(/^https?:\/\//i, "")}</span>
                     <ExternalLink className="w-3 h-3 opacity-60" />
                   </a>
                 )}
@@ -218,8 +254,8 @@ export const CollegeDetailsModal = ({ college: selectedCollege, isOpen, onClose 
           </div>
         </div>
 
-        {/* Modal Footer with "Explore College" CTA - Navigates to Official Website */}
-        <div className="p-3 sm:p-4 bg-slate-50/90 border-t border-slate-200/80 flex items-center justify-between gap-3 shrink-0">
+        {/* Modal Footer */}
+        <div className="p-3 sm:p-4 bg-slate-50/90 border-t border-slate-200/80 flex items-center justify-between gap-3 shrink-0 flex-wrap">
           <button
             type="button"
             onClick={onClose}
@@ -228,16 +264,30 @@ export const CollegeDetailsModal = ({ college: selectedCollege, isOpen, onClose 
             Close
           </button>
 
-          <a
-            href={officialWebsite}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={(e) => e.stopPropagation()}
-            className="px-5 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs sm:text-sm font-semibold flex items-center gap-2 shadow-xs transition-colors active:scale-[0.99] cursor-pointer"
-          >
-            <span>Explore College</span>
-            <ExternalLink className="w-3.5 h-3.5" />
-          </a>
+          <div className="flex items-center gap-2 ml-auto">
+            {officialWebsite && (
+              <a
+                href={officialWebsite}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                className="px-4 py-2 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-slate-800 text-xs sm:text-sm font-semibold flex items-center gap-1.5 transition cursor-pointer"
+              >
+                <span>Website</span>
+                <ExternalLink className="w-3.5 h-3.5" />
+              </a>
+            )}
+            {onApply && openCourses.length > 0 && (
+              <button
+                type="button"
+                onClick={() => onApply(college.id)}
+                className="px-5 py-2 rounded-lg bg-[#FF8A00] hover:bg-[#E67C00] text-white text-xs sm:text-sm font-semibold flex items-center gap-2 shadow-xs transition cursor-pointer"
+              >
+                <span>Apply Now</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </div>

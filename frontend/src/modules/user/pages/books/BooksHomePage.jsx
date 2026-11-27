@@ -163,17 +163,26 @@ export const BooksHomePage = () => {
     setQuery("");
   };
 
+  const optionLabel = useCallback((items, value) => {
+    if (!value || value === "All") return value;
+    const match = items.find((item) => item.id === value || item.name === value);
+    return match?.name || match?.label || value;
+  }, []);
+  const boardLabel = optionLabel(boards, selectedBoard);
+  const subjectLabel = optionLabel(availableSubjects, selectedSubject);
+  const languageLabel = optionLabel(languages, selectedLanguage);
+
   // Determine dynamic hierarchy heading
   const headingContext = useMemo(() => {
     const parts = [];
-    if (selectedBoard !== "All") parts.push(selectedBoard);
-    if (selectedClass !== "All") parts.push(`Class ${selectedClass}`);
-    if (selectedSubject !== "All") parts.push(selectedSubject);
-    if (selectedLanguage !== "All") parts.push(selectedLanguage === "Hindi" ? "Hindi Medium" : "English Medium");
+    if (selectedBoard !== "All") parts.push(boardLabel);
+    if (selectedClass !== "All") parts.push(/^(class|undergraduate|postgraduate|diploma)\b/i.test(String(selectedClass)) ? selectedClass : `Class ${selectedClass}`);
+    if (selectedSubject !== "All") parts.push(subjectLabel);
+    if (selectedLanguage !== "All") parts.push(languageLabel);
 
     if (parts.length === 0) return "All Educational Books";
     return parts.join(" • ");
-  }, [selectedBoard, selectedClass, selectedSubject, selectedLanguage]);
+  }, [selectedBoard, selectedClass, selectedSubject, selectedLanguage, boardLabel, subjectLabel, languageLabel]);
 
   const hasActiveFilters =
     selectedBoard !== "All" ||
@@ -239,7 +248,7 @@ export const BooksHomePage = () => {
               onClick={() => setSelectedBoard("All")}
               className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#0A1D3F]/10 text-[#0A1D3F] text-[11px] font-semibold shrink-0 cursor-pointer hover:bg-[#0A1D3F]/15"
             >
-              <span>{selectedBoard}</span>
+              <span>{boardLabel}</span>
               <X className="w-3 h-3" />
             </button>
           )}
@@ -248,7 +257,7 @@ export const BooksHomePage = () => {
               onClick={() => setSelectedClass("All")}
               className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#FF8A00]/15 text-[#FF8A00] text-[11px] font-semibold shrink-0 cursor-pointer hover:bg-[#FF8A00]/20"
             >
-              <span>Class {selectedClass}</span>
+              <span>{/^(class|undergraduate|postgraduate|diploma)\b/i.test(String(selectedClass)) ? selectedClass : `Class ${selectedClass}`}</span>
               <X className="w-3 h-3" />
             </button>
           )}
@@ -257,7 +266,7 @@ export const BooksHomePage = () => {
               onClick={() => setSelectedSubject("All")}
               className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#0D9488]/15 text-[#0D9488] text-[11px] font-semibold shrink-0 cursor-pointer hover:bg-[#0D9488]/20"
             >
-              <span>{selectedSubject}</span>
+              <span>{subjectLabel}</span>
               <X className="w-3 h-3" />
             </button>
           )}
@@ -266,7 +275,7 @@ export const BooksHomePage = () => {
               onClick={() => setSelectedLanguage("All")}
               className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-rose-100 text-rose-700 text-[11px] font-semibold shrink-0 cursor-pointer hover:bg-rose-200"
             >
-              <span>{selectedLanguage === "Hindi" ? "Hindi Medium" : "English Medium"}</span>
+              <span>{languageLabel}</span>
               <X className="w-3 h-3" />
             </button>
           )}

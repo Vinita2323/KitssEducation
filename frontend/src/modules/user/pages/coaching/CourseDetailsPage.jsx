@@ -96,10 +96,6 @@ export const CourseDetailsPage = () => {
 
   return (
     <div className="max-w-5xl mx-auto space-y-3 sm:space-y-4">
-      <section className="bg-white border border-[#E6E8EC] rounded-xl p-4 space-y-2"><h2 className="font-bold text-[#0A1D3F]">Course syllabus</h2>{course.syllabus?.lessons.map(lesson=><div key={lesson.id} className="p-2 border-b text-sm">{lesson.locked?<span>{lesson.title} — Enrollment required</span>:<Link to={`/coaching/${course.id}/lecture/${lesson.id}`}>{lesson.title}{lesson.previewAllowed?' — Public preview':''}</Link>}</div>)}</section>
-      <div id="course-access" ref={courseAccess} tabIndex={-1} className="scroll-mt-20 rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF8A00]">
-        <VerifiedCoursePurchase course={course} onRefresh={async () => setCourse(await coachingService.getCourseById(id))} />
-      </div>
       {/* Top Breadcrumb & Share */}
       <div className="flex items-center justify-between">
         <Link
@@ -125,8 +121,12 @@ export const CourseDetailsPage = () => {
         {/* Banner Background Image with Gradient Overlay */}
         <div className="absolute inset-0 overflow-hidden">
           <img
-            src={course.banner || course.thumbnail}
+            src={course.banner || course.thumbnail || placeholderImages.course}
             alt={course.title}
+            onError={(e) => {
+              e.currentTarget.onerror = null;
+              e.currentTarget.src = placeholderImages.course;
+            }}
             className="w-full h-full object-cover opacity-30"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-[#0A1D3F] via-[#0A1D3F]/65 to-transparent" />
@@ -135,14 +135,18 @@ export const CourseDetailsPage = () => {
         {/* Compact Banner Details */}
         <div className="relative z-10 space-y-2 sm:space-y-2.5">
           <div className="flex items-center gap-1.5 flex-wrap">
-            <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-[#FF8A00] text-white shadow-2xs">
-              {course.board}
-            </span>
-            <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-white/20 text-white backdrop-blur-xs">
-              Class {course.class}
-            </span>
+            {course.board && (
+              <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-[#FF8A00] text-white shadow-2xs">
+                {course.board}
+              </span>
+            )}
+            {course.class && (
+              <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-white/20 text-white backdrop-blur-xs">
+                {course.class}
+              </span>
+            )}
             <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-[#17B26A] text-white">
-              {course.status}
+              {isEnrolled ? "Enrolled" : lowestPlan?.priceMinor === 0 ? "Free" : "Available"}
             </span>
           </div>
 
@@ -199,6 +203,80 @@ export const CourseDetailsPage = () => {
               </div>
             </div>
           </div>
+
+          {/* Course Syllabus Grouped by Section */}
+          <section className="bg-white rounded-md border border-[#E6E8EC] p-3.5 sm:p-4 shadow-2xs space-y-3">
+            <div className="flex items-center justify-between gap-2">
+              <h2 className="text-sm sm:text-base font-bold text-[#0A1D3F]">Course syllabus</h2>
+              <span className="text-[11px] font-semibold text-[#667085]">
+                {(course.syllabus?.lessons || []).length} lessons
+              </span>
+            </div>
+            {(course.syllabus?.sections || []).length > 0 ? (
+              <div className="space-y-2.5">
+                {course.syllabus.sections.map((section, sIdx) => {
+                  const sectionLessons = (course.syllabus?.lessons || []).filter(
+                    (lesson) => lesson.subjectKey === section.key
+                  );
+                  return (
+                    <div key={section.key || sIdx} className="rounded-lg border border-[#E6E8EC] overflow-hidden">
+                      <div className="bg-[#F7F8FA] px-3 py-2 flex items-center justify-between text-xs font-bold text-[#0A1D3F] border-b border-[#E6E8EC]">
+                        <span>{sIdx + 1}. {section.title}</span>
+                        <span className="text-[11px] font-semibold text-[#667085]">{sectionLessons.length} lessons</span>
+                      </div>
+                      {sectionLessons.length > 0 ? (
+                        <div className="divide-y divide-[#E6E8EC]">
+                          {sectionLessons.map((lesson) => (
+                            <div key={lesson.id} className="px-3 py-2 text-xs sm:text-sm flex items-center justify-between gap-2">
+                              {lesson.locked ? (
+                                <span className="text-[#667085]">{lesson.title} — Enrollment required</span>
+                              ) : (
+                                <Link
+                                  to={`/coaching/${course.id}/lecture/${lesson.id}`}
+                                  className="font-semibold text-[#133C8B] hover:text-[#FF8A00] hover:underline transition"
+                                >
+                                  {lesson.title}{lesson.previewAllowed ? " — Public preview" : ""}
+                                </Link>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="px-3 py-2 text-xs text-[#667085]">Lessons coming soon in this section.</p>
+                      )}
+                    </div>
+                  );
+                })}
+                {(course.syllabus?.lessons || [])
+                  .filter((lesson) => !(course.syllabus?.sections || []).some((s) => s.key === lesson.subjectKey))
+                  .map((lesson) => (
+                    <div key={lesson.id} className="p-2 border border-[#E6E8EC] rounded-lg text-sm">
+                      {lesson.locked ? (
+                        <span>{lesson.title} — Enrollment required</span>
+                      ) : (
+                        <Link to={`/coaching/${course.id}/lecture/${lesson.id}`}>
+                          {lesson.title}{lesson.previewAllowed ? " — Public preview" : ""}
+                        </Link>
+                      )}
+                    </div>
+                  ))}
+              </div>
+            ) : (
+              <div className="divide-y divide-[#E6E8EC]">
+                {(course.syllabus?.lessons || []).map((lesson) => (
+                  <div key={lesson.id} className="py-2 text-sm">
+                    {lesson.locked ? (
+                      <span>{lesson.title} — Enrollment required</span>
+                    ) : (
+                      <Link to={`/coaching/${course.id}/lecture/${lesson.id}`}>
+                        {lesson.title}{lesson.previewAllowed ? " — Public preview" : ""}
+                      </Link>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
 
           {/* What You'll Learn Card (Minimized Border Radius: rounded-md) */}
           <div className="bg-white rounded-md border border-[#E6E8EC] p-3.5 sm:p-4 shadow-2xs space-y-2.5">
@@ -262,8 +340,11 @@ export const CourseDetailsPage = () => {
           </div>
         </div>
 
-        {/* Right Column: Dynamic Join / Registration CTA Card (Minimized Border Radius: rounded-md) */}
+        {/* Right Column: Course Access Plans & Summary Sidebar */}
         <div className="lg:col-span-1 sticky top-20 space-y-3">
+          <div id="course-access" ref={courseAccess} tabIndex={-1} className="scroll-mt-20 rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF8A00]">
+            <VerifiedCoursePurchase course={course} onRefresh={async () => setCourse(await coachingService.getCourseById(id))} />
+          </div>
           <div className="bg-white rounded-md border border-[#E6E8EC] p-4 shadow-2xs space-y-3">
             <div className="space-y-1">
               <span className="text-[10px] font-bold uppercase tracking-wider text-[#FF8A00]">
@@ -324,16 +405,16 @@ export const CourseDetailsPage = () => {
             {/* CTA Buttons (Minimized Border Radius: rounded-md) */}
             <div className="pt-2">
               {!isAuthenticated ? (
-                /* Not registered / logged in */
+                /* Not logged in */
                 <div className="space-y-1.5">
                   <p className="text-[11px] font-semibold text-[#0A1D3F] text-center">
-                    Register to Join This Course
+                    Sign in with a verified student account to join
                   </p>
                   <Link
-                    to="/coaching/register"
+                    to="/login"
                     className="w-full py-2.5 px-3 rounded-md bg-[#FF8A00] hover:bg-[#E67C00] text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 shadow-2xs transition active:scale-98 text-center cursor-pointer"
                   >
-                    <span>Register Now</span>
+                    <span>Sign in to Join</span>
                     <ArrowRight className="w-4 h-4" />
                   </Link>
                 </div>

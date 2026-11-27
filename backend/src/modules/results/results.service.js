@@ -114,6 +114,19 @@ export async function createResultService({
         })).map(dto)
       };
     },
+    async students(query = {}) {
+      object(query, ['q']);
+      const q = text(query.q ?? '', 80);
+      if (q.length < 2) return [];
+      const match = new RegExp(escapeRegex(q), 'i');
+      const users = await authService.models.User.find({
+        status: 'active',
+        emailVerifiedAt: { $ne: null },
+        roles: 'student',
+        $or: [{ name: match }, { emailNormalized: match }, { publicId: match }]
+      }).select('publicId name emailNormalized profile.dob').sort({ name: 1 }).limit(20).lean();
+      return users.map(u => ({ id: u.publicId, name: u.name, email: u.emailNormalized, dob: u.profile?.dob || '' }));
+    },
     async list(kind, query = {}) {
       object(query, ['page', 'pageSize', 'q', 'status', 'issuerId', 'examId', 'year', 'reviewStatus']);
       const Model = {
@@ -129,16 +142,50 @@ export async function createResultService({
       for (const field of ['issuerId', 'examId']) if (query[field]) filter[field] = id(query[field]);
       if (query.reviewStatus) { if (kind !== "records" || !["draft", "submitted", "approved", "rejected"].includes(query.reviewStatus)) throw invalid("Invalid review filter"); filter["review.status"] = query.reviewStatus; }
       if (query.status) filter.status = text(query.status, 30);
-      if (query.q) filter[kind === 'records' ? 'rollNormalized' : kind === 'issuers' ? 'name' : 'title'] = {
-        $regex: escapeRegex(text(query.q, 80)),
-        $options: 'i'
-      };
+      if (query.q) {
+        const rx = { $regex: escapeRegex(text(query.q, 80)), $options: 'i' };
+        if (kind === 'records') filter.$or = [{ rollNormalized: rx }, { 'student.name': rx }];
+        else filter[kind === 'issuers' ? 'name' : 'title'] = rx;
+      }
       const total = await Model.countDocuments(filter);
+      const rawRows = await Model.find(filter).sort({
+        createdAt: -1,
+        _id: -1
+      }).skip((page - 1) * pageSize).limit(pageSize);
+      let data = rawRows.map(dto);
+      if (kind === 'records' && data.length) {
+        const examIds = [...new Set(data.map(r => String(r.examId)))];
+        const exams = new Map((await Exam.find({ _id: { $in: examIds } }).lean()).map(e => [String(e._id), e]));
+        const issuerIds = [...new Set([...exams.values()].map(e => String(e.issuerId)))];
+        const issuers = new Map((issuerIds.length ? await Issuer.find({ _id: { $in: issuerIds } }).lean() : []).map(i => [String(i._id), i]));
+        const userIds = [...new Set(data.map(r => r.userId).filter(Boolean))];
+        const users = new Map((userIds.length ? await authService.models.User.find({ _id: { $in: userIds } }).select('publicId').lean() : []).map(u => [String(u._id), u.publicId]));
+        data = data.map(r => {
+          const exam = exams.get(String(r.examId));
+          const issuer = exam ? issuers.get(String(exam.issuerId)) : null;
+          return {
+            ...r,
+            candidatePublicId: users.get(String(r.userId)) || '',
+            examTitle: exam?.title || '',
+            examStatus: exam?.status || '',
+            examYear: exam?.year,
+            examSession: exam?.session || '',
+            issuerId: issuer ? String(issuer._id) : '',
+            issuerName: issuer?.fullName || issuer?.name || '',
+            issuerStatus: issuer?.status || ''
+          };
+        });
+      }
+      if (kind === 'exams' && data.length) {
+        const issuerIds = [...new Set(data.map(e => String(e.issuerId)))];
+        const issuers = new Map((await Issuer.find({ _id: { $in: issuerIds } }).lean()).map(i => [String(i._id), i]));
+        data = data.map(e => {
+          const issuer = issuers.get(String(e.issuerId));
+          return { ...e, issuerName: issuer?.fullName || issuer?.name || '', issuerStatus: issuer?.status || '' };
+        });
+      }
       return {
-        data: (await Model.find(filter).sort({
-          createdAt: -1,
-          _id: -1
-        }).skip((page - 1) * pageSize).limit(pageSize)).map(dto),
+        data,
         meta: {
           page,
           pageSize,
@@ -158,9 +205,24 @@ export async function createResultService({
       }).sort({
         at: -1
       }).limit(30).lean();
+      let extra = {};
+      if (kind === 'records') {
+        const exam = await Exam.findById(row.examId).lean();
+        const issuer = exam ? await Issuer.findById(exam.issuerId).lean() : null;
+        extra = {
+          candidatePublicId: (await authService.models.User.findById(row.userId).select('publicId'))?.publicId || '',
+          examTitle: exam?.title || '',
+          examStatus: exam?.status || '',
+          examYear: exam?.year,
+          examSession: exam?.session || '',
+          issuerId: issuer ? String(issuer._id) : '',
+          issuerName: issuer?.fullName || issuer?.name || '',
+          issuerStatus: issuer?.status || ''
+        };
+      }
       return {
         ...dto(row),
-        ...(kind === 'records' ? {candidatePublicId:(await authService.models.User.findById(row.userId).select('publicId'))?.publicId || ''} : {}),
+        ...extra,
         audit
       };
     },
@@ -231,8 +293,8 @@ export async function createResultService({
         return dto(created);
       });
     },
-    async validateRecord(input, issuer) {
-      object(input, ['rollNumber', 'userPublicId', 'student', 'subjects', 'totals', 'verificationFields', 'issueDate', 'externalId'], ['rollNumber', 'userPublicId', 'student', 'subjects', 'totals', 'verificationFields', 'issueDate', 'externalId']);
+    async validateRecord(input, issuer, { skipProof = false } = {}) {
+      object(input, ['rollNumber', 'userPublicId', 'student', 'subjects', 'totals', 'verificationFields', 'issueDate', 'externalId'], ['rollNumber', 'userPublicId', 'student', 'subjects', 'totals', ...(skipProof ? [] : ['verificationFields']), 'issueDate', 'externalId']);
       const user = await authService.models.User.findOne({
         publicId: text(input.userPublicId, 80),
         status: 'active',
@@ -287,7 +349,7 @@ export async function createResultService({
         student,
         subjects,
         totals,
-        verificationHash: proof(input.verificationFields, issuer),
+        ...(skipProof ? {} : { verificationHash: proof(input.verificationFields, issuer) }),
         issueDate,
         externalId
       };
@@ -318,10 +380,11 @@ export async function createResultService({
         errors = [];
       for (let n = 0; n < raw.length; n++) try {
         rows.push(await service.validateRecord(raw[n], issuer));
-      } catch {
+      } catch (err) {
         errors.push({
           row: n + 1,
-          code: 'INVALID_RESULT_ROW'
+          code: 'INVALID_RESULT_ROW',
+          message: err instanceof AppError ? err.message : 'Invalid row data'
         });
       }
       if (new Set(rows.map(r => r.rollNormalized)).size !== rows.length) errors.push({
@@ -416,37 +479,199 @@ export async function createResultService({
         return resultSummary;
       });
     },
-    async changeRecord(value, action, input, ctx) {
-      if (!["submit", "approve", "reject", "publish", "corrections", "withdraw"].includes(action)) throw invalid("Unknown result action");
-      object(input, action === 'corrections' ? ['correctedFields', 'reason', 'source', 'expectedRevision'] : ['expectedRevision', 'sourceApproval', 'reason'], ['expectedRevision', ...(action === 'publish' ? [] : ['reason'])]);
+    async createDirectRecords(input, auth, ctx) {
+      object(input, ['examId', 'rows', 'idempotencyKey', 'submit', 'reason', 'dryRun'], ['examId', 'rows', 'idempotencyKey']);
+      key(input.idempotencyKey);
+      if (input.submit !== undefined && typeof input.submit !== 'boolean') throw invalid('Invalid submit flag');
+      if (input.dryRun !== undefined && typeof input.dryRun !== 'boolean') throw invalid('Invalid dryRun flag');
+      if (!Array.isArray(input.rows) || !input.rows.length || input.rows.length > 200) throw invalid('Provide 1 to 200 student result rows');
+      const exam = await get(Exam, input.examId), issuer = await get(Issuer, exam.issuerId);
+      const raw = input.rows;
+      const rows = [], errors = [];
+      const seenRolls = new Set();
+      for (let n = 0; n < raw.length; n++) {
+        try {
+          const validated = await service.validateRecord(raw[n], issuer);
+          if (seenRolls.has(validated.rollNormalized)) {
+            errors.push({ row: n + 1, rollNumber: validated.rollNormalized, code: 'DUPLICATE_CANDIDATE', message: 'Duplicate roll number ' + validated.rollNormalized + ' in this batch' });
+          } else {
+            seenRolls.add(validated.rollNormalized);
+            const existing = await Record.findOne({ examId: exam._id, rollNormalized: validated.rollNormalized, revision: 1 }).select('_id').lean();
+            if (existing) errors.push({ row: n + 1, rollNumber: validated.rollNormalized, code: 'RESULT_EXISTS', message: 'Roll number ' + validated.rollNormalized + ' already exists for this examination; use corrections instead' });
+            else rows.push(validated);
+          }
+        } catch (err) {
+          errors.push({
+            row: n + 1,
+            rollNumber: typeof raw[n]?.rollNumber === 'string' ? raw[n].rollNumber : '',
+            code: 'INVALID_RESULT_ROW',
+            message: err instanceof AppError ? err.message : 'Invalid row data'
+          });
+        }
+      }
+      if (input.dryRun === true) {
+        return {
+          dryRun: true,
+          rows: raw.length,
+          validRows: rows.length,
+          errors,
+          preview: rows.slice(0, 50).map(r => ({
+            rollNumber: r.rollNormalized,
+            name: r.student.name,
+            obtained: r.totals.obtained,
+            max: r.totals.max,
+            percentage: r.totals.percentage,
+            status: r.totals.status
+          }))
+        };
+      }
+      if (errors.length) throw invalid(errors[0].message + (errors.length > 1 ? ` (and ${errors.length - 1} more row error${errors.length > 2 ? 's' : ''})` : ''));
+      const batchKey = 'result-direct:' + auth.user._id + ':' + input.idempotencyKey;
+      const checksum = createHash('sha256').update(JSON.stringify(raw)).digest('hex');
+      const requestHash = createHash('sha256').update(JSON.stringify({
+        examId: String(exam._id),
+        checksum,
+        submit: Boolean(input.submit)
+      })).digest('hex');
+      const submitNow = Boolean(input.submit);
+      const reviewReason = submitNow ? text(input.reason?.trim() || 'Submitted for main-admin review', 2000) : '';
       return coordination.run(async () => {
-        const row = await get(Record, value),
-          exam = await get(Exam, row.examId),
-          issuer = await get(Issuer, exam.issuerId);
+        const currentIssuer = await get(Issuer, issuer._id);
+        const Job = commerceService.models.Job, prior = await Job.findOne({ key: batchKey });
+        if (prior) {
+          if (prior.requestHash !== requestHash) throw new AppError(409, 'IDEMPOTENCY_CONFLICT', 'Import key belongs to another submission');
+          return prior.resultSummary;
+        }
+        for (const row of rows) {
+          const existing = await Record.findOne({ examId: exam._id, rollNormalized: row.rollNormalized, revision: 1 });
+          if (existing && (existing.source?.batchId !== batchKey || existing.source?.checksum !== checksum)) {
+            throw new AppError(409, 'RESULT_EXISTS', 'Use the correction workflow for an existing candidate (' + row.rollNormalized + ')');
+          }
+        }
+        const now = new Date();
+        await Record.bulkWrite(rows.map(({ externalId, ...row }) => ({
+          updateOne: {
+            filter: { examId: exam._id, rollNormalized: row.rollNormalized, revision: 1 },
+            update: {
+              $setOnInsert: {
+                ...row,
+                examId: exam._id,
+                revision: 1,
+                __v: 0,
+                status: 'draft',
+                review: submitNow ? { status: 'submitted', reason: reviewReason, actorId: ctx.actorId, at: now, academicRevision: 1 } : { status: 'draft' },
+                source: { batchId: batchKey, checksum, externalId, importedBy: ctx.actorId },
+                auditOutbox: [coordination.event('result_imported', ctx), ...(submitNow ? [coordination.event('result_submit', ctx)] : [])]
+              }
+            },
+            upsert: true
+          }
+        })), { ordered: true });
+        const created = await Record.find({ examId: exam._id, rollNormalized: { $in: rows.map(r => r.rollNormalized) }, revision: 1 });
+        const resultSummary = {
+          dryRun: false,
+          imported: rows.length,
+          submitted: submitNow,
+          status: 'draft',
+          reviewStatus: submitNow ? 'submitted' : 'draft',
+          record: created.length === 1 ? dto(created[0]) : undefined,
+          recordIds: created.map(r => String(r._id)),
+          publicationEnabled: await publicationReady(currentIssuer)
+        };
+        await Job.create({ key: batchKey, kind: 'result_import', requestHash, state: 'done', resultSummary });
+        await service.maintenance();
+        return resultSummary;
+      });
+    },
+    async changeRecord(value, action, input, ctx) {
+      if (!["submit", "approve", "reject", "publish", "approve_and_publish", "corrections", "withdraw"].includes(action)) throw invalid("Unknown result action");
+      const allowedFields = action === 'corrections'
+        ? ['correctedFields', 'reason', 'source', 'expectedRevision', 'keepVerification']
+        : ['expectedRevision', 'sourceApproval', 'reason', 'publishExam', 'supersedePrevious'];
+      const requiredFields = ['expectedRevision', ...(action === 'corrections' || action === 'reject' || action === 'withdraw' ? ['reason'] : [])];
+      object(input, allowedFields, requiredFields);
+      return coordination.run(async () => {
+        const query = Record.findById(id(String(value)));
+        if (action === 'corrections' && input.keepVerification === true) query.select('+verificationHash');
+        const row = await query;
+        if (!row) throw absent();
+        let exam = await get(Exam, row.examId);
+        const issuer = await get(Issuer, exam.issuerId);
         if (integer(input.expectedRevision, 1, 1000000) !== row.__v + 1) throw new AppError(409, 'REVISION_CONFLICT', 'Refresh result revision');
-        if (['approve', 'reject', 'publish'].includes(action)) {
+        if (['approve', 'reject', 'publish', 'approve_and_publish', 'withdraw'].includes(action)) {
           const actor = await authService.models.User.findOne({ publicId: ctx.actorId, status: 'active' });
           if (!actor?.emailVerifiedAt || !actor.roles.includes('super_admin')) throw new AppError(403, 'MAIN_ADMIN_REQUIRED', 'Final result approval and publication require the main admin');
         }
         if (['submit', 'approve', 'reject'].includes(action)) {
-          if (!text(input.reason, 2000).trim()) throw invalid('Review reason required');
+          const reasonText = text(input.reason ?? '', 2000).trim();
+          if (action === 'reject' && !reasonText) throw invalid('Review reason required');
           const status = row.review?.status ?? 'draft';
           if (row.status !== 'draft' || (action === 'submit' ? !['draft', 'rejected'].includes(status) : status !== 'submitted')) throw new AppError(409, 'REVIEW_STATE_CONFLICT', 'Submit a current draft before final review');
           if (!row.source?.checksum) throw invalid('Source provenance required for review');
-          const review = { status: action === 'submit' ? 'submitted' : action === 'approve' ? 'approved' : 'rejected', reason: text(input.reason, 2000), actorId: ctx.actorId, at: new Date(), academicRevision: row.revision };
+          const finalReason = reasonText || (action === 'submit' ? 'Submitted for main-admin review' : 'Approved by main admin');
+          const review = { status: action === 'submit' ? 'submitted' : action === 'approve' ? 'approved' : 'rejected', reason: finalReason, actorId: ctx.actorId, at: new Date(), academicRevision: row.revision };
           const changed = await Record.findOneAndUpdate({ _id: row._id, __v: row.__v }, { $set: { review }, $inc: { __v: 1 }, $push: { auditOutbox: coordination.event('result_' + action, ctx) } }, { returnDocument: 'after', runValidators: true });
+          if (!changed) throw new AppError(409, 'REVISION_CONFLICT', 'Refresh result revision');
+          await coordination.flush(Record, changed);
+          return dto(changed);
+        }
+        if (action === 'approve_and_publish') {
+          if (row.status !== 'draft') throw new AppError(409, 'REVIEW_STATE_CONFLICT', 'Only draft results can be approved and published');
+          if (!row.source?.checksum || !issuer.source?.authorizationReference) throw invalid('Source provenance required');
+          if (issuer.status !== 'active' || !(await publicationReady(issuer))) throw new AppError(409, 'SOURCE_APPROVAL_REQUIRED', 'Activate the institution and confirm its result source before publishing');
+          if (exam.status === 'draft' && input.publishExam === true) {
+            exam = await coordination.update(Exam, exam, { status: 'published' }, exam.revision, 'result_exams_updated', ctx);
+          }
+          if (exam.status !== 'published') throw new AppError(409, 'SOURCE_APPROVAL_REQUIRED', 'The institution or examination is not currently available for result publication');
+          if (row.supersedesId) {
+            const priorPublished = await Record.findOne({ examId: row.examId, rollNormalized: row.rollNormalized, _id: { $ne: row._id }, status: 'published' });
+            if (priorPublished) {
+              const withdrawn = await Record.findOneAndUpdate(
+                { _id: priorPublished._id, __v: priorPublished.__v },
+                { $set: { status: 'withdrawn', withdrawalReason: 'Superseded by revision ' + row.revision }, $inc: { __v: 1 }, $push: { auditOutbox: coordination.event('result_withdraw', ctx) } },
+                { returnDocument: 'after', runValidators: true }
+              );
+              if (withdrawn) await coordination.flush(Record, withdrawn);
+            }
+          }
+          const finalReason = text(input.reason ?? '', 2000).trim() || 'Approved and published by main admin';
+          const review = { status: 'approved', reason: finalReason, actorId: ctx.actorId, at: new Date(), academicRevision: row.revision };
+          const changed = await Record.findOneAndUpdate(
+            { _id: row._id, __v: row.__v },
+            { $set: { review, status: 'published', publishedAt: new Date() }, $inc: { __v: 1 }, $push: { auditOutbox: { $each: [coordination.event('result_approve', ctx), coordination.event('result_publish', ctx)] } } },
+            { returnDocument: 'after', runValidators: true }
+          );
           if (!changed) throw new AppError(409, 'REVISION_CONFLICT', 'Refresh result revision');
           await coordination.flush(Record, changed);
           return dto(changed);
         }
         if (action === 'publish') {
           if (row.review?.status !== 'approved' || row.review.academicRevision !== row.revision) throw new AppError(409, 'MAIN_ADMIN_APPROVAL_REQUIRED', 'Current academic revision needs final main-admin approval');
-          if (row.status !== 'draft' || exam.status !== 'published' || issuer.status !== 'active' || !(await publicationReady(issuer))) throw new AppError(409, 'SOURCE_APPROVAL_REQUIRED', 'The institution or examination is not currently available for result publication');
+          if (row.status !== 'draft') throw new AppError(409, 'REVIEW_STATE_CONFLICT', 'Only draft results can be published');
+          if (exam.status === 'draft' && input.publishExam === true && issuer.status === 'active' && (await publicationReady(issuer))) {
+            exam = await coordination.update(Exam, exam, { status: 'published' }, exam.revision, 'result_exams_updated', ctx);
+          }
+          if (exam.status !== 'published' || issuer.status !== 'active' || !(await publicationReady(issuer))) throw new AppError(409, 'SOURCE_APPROVAL_REQUIRED', 'The institution or examination is not currently available for result publication');
           if (!issuer.source?.authorizationReference || !row.source?.checksum) throw invalid('Source provenance required');
-        } else if (!text(input.reason, 2000)) throw invalid('Reason required');
+          const existingPublished = await Record.findOne({ examId: row.examId, rollNormalized: row.rollNormalized, _id: { $ne: row._id }, status: 'published' });
+          if (existingPublished) {
+            if (input.supersedePrevious === true) {
+              const withdrawn = await Record.findOneAndUpdate(
+                { _id: existingPublished._id, __v: existingPublished.__v },
+                { $set: { status: 'withdrawn', withdrawalReason: 'Superseded by revision ' + row.revision }, $inc: { __v: 1 }, $push: { auditOutbox: coordination.event('result_withdraw', ctx) } },
+                { returnDocument: 'after', runValidators: true }
+              );
+              if (withdrawn) await coordination.flush(Record, withdrawn);
+            } else {
+              throw new AppError(409, 'PUBLISHED_VERSION_EXISTS', 'Another revision is already published for this roll number. Withdraw the previous version or use Publish correction.');
+            }
+          }
+        } else if (!text(input.reason ?? '', 2000).trim()) throw invalid('Reason required');
         if (action === 'corrections') {
           if (row.status === 'withdrawn' || !input.source || typeof input.source !== 'string' || !input.source.trim()) throw invalid('Correction source reference required');
-          const corrected = await service.validateRecord(input.correctedFields, issuer);
+          const keepProof = input.keepVerification === true;
+          if (keepProof && !row.verificationHash) throw invalid('Enter student verification answers');
+          const corrected = await service.validateRecord(input.correctedFields, issuer, { skipProof: keepProof });
           if (corrected.rollNormalized !== row.rollNormalized || String(corrected.userId) !== String(row.userId)) throw invalid('Corrections cannot change candidate identity');
           const next = await Record.findOne({
             examId: row.examId,
@@ -460,6 +685,7 @@ export async function createResultService({
           } = corrected;
           const doc = await Record.create({
             ...fields,
+            ...(keepProof ? { verificationHash: row.verificationHash } : {}),
             examId: row.examId,
             revision: next.revision + 1,
             __v: 0,
@@ -501,6 +727,28 @@ export async function createResultService({
         await coordination.flush(Record, changed);
         return dto(changed);
       });
+    },
+    async batchChangeRecords(input, ctx) {
+      object(input, ['ids', 'action', 'reason', 'publishExam'], ['ids', 'action']);
+      if (!Array.isArray(input.ids) || !input.ids.length || input.ids.length > 100) throw invalid('Select 1 to 100 records');
+      if (!['submit', 'approve', 'reject', 'publish', 'approve_and_publish', 'withdraw'].includes(input.action)) throw invalid('Unknown batch result action');
+      const uniqueIds = [...new Set(input.ids.map(v => String(id(String(v)))))];
+      const succeeded = [], failed = [];
+      for (const recordId of uniqueIds) {
+        try {
+          const current = await Record.findById(recordId).select('__v rollNormalized').lean();
+          if (!current) { failed.push({ id: recordId, message: 'Record not found' }); continue; }
+          const updated = await service.changeRecord(recordId, input.action, {
+            expectedRevision: (current.__v ?? 0) + 1,
+            ...(input.reason !== undefined ? { reason: input.reason } : {}),
+            ...(input.publishExam !== undefined ? { publishExam: Boolean(input.publishExam) } : {})
+          }, ctx);
+          succeeded.push(updated);
+        } catch (err) {
+          failed.push({ id: recordId, message: err instanceof AppError ? err.message : 'Action failed' });
+        }
+      }
+      return { action: input.action, succeededCount: succeeded.length, failedCount: failed.length, succeeded, failed };
     },
     async lookup(input, auth, ctx) {
       object(input, ['issuerId', 'examId', 'rollNumber', 'verificationFields'], ['issuerId', 'examId', 'rollNumber', 'verificationFields']);
@@ -557,14 +805,22 @@ export async function createResultService({
       const available = [];
       for (const record of records) {
         const exam = exams.get(String(record.examId)), issuer = exam && issuers.get(String(exam.issuerId));
-        if (!exam || !issuer) throw absent(); // unchanged: a missing exam or institution makes history unavailable
+        if (!exam || !issuer) continue;
         const isReady = () => { const key = String(issuer._id); if (!ready.has(key)) ready.set(key, publicationReady(issuer)); return ready.get(key); };
         if (record.review?.status === 'approved' && record.review.academicRevision === record.revision && exam.status === 'published' && issuer.status === 'active' && (await isReady())) available.push({
           ...dto(record),
           issuerId: String(issuer._id),
           issuerName: issuer.name,
+          issuerFullName: issuer.fullName,
           issuerType: issuer.type,
-          examTitle: exam.title
+          examTitle: exam.title,
+          exam: dto(exam),
+          issuer: {
+            id: String(issuer._id),
+            name: issuer.name,
+            fullName: issuer.fullName,
+            type: issuer.type
+          }
         });
       }
       return {

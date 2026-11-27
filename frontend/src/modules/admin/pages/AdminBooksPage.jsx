@@ -3,7 +3,7 @@ import { useDialogFocus } from '../../../shared/ui/useDialogFocus';
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { BookOpen, Plus, Search, Edit2, Trash2, Eye, CheckCircle2, AlertCircle, RotateCcw, Users, ExternalLink, UploadCloud } from "lucide-react";
-import { bookService, bookDTO } from "../../user/services/bookService";
+import { bookService, bookDTO, formatClassLabel } from "../../user/services/bookService";
 import { collegeService } from '../../user/services/collegeService';
 import { useAuth } from '../../user/context/AuthContext';
 import { Pagination } from '../../user/components/common/Pagination';
@@ -17,10 +17,17 @@ const filterLabel = 'text-xs font-semibold text-[#53647c] block mb-1';
 const iconButton = '!p-2 w-9 h-9';
 
 function Stat({ label, value, detail }) {
-  return <div className="admin-card p-4 min-w-0">
-    <span className="text-sm font-semibold text-[#53647c] block">{label}</span>
-    <div className="text-2xl font-extrabold text-[#0A1D3F] mt-1 leading-tight">{value ?? '–'}</div>
-    {detail && <span className="text-sm text-[#53647c] block mt-0.5">{detail}</span>}
+  return <div className="admin-card p-3 min-w-0">
+    <span className="text-xs font-semibold text-[#53647c] block">{label}</span>
+    <div className="text-xl font-extrabold text-[#0A1D3F] mt-0.5 leading-tight">{value ?? '–'}</div>
+    {detail && <span className="text-xs text-[#53647c] block mt-0.5">{detail}</span>}
+  </div>;
+}
+function BookThumb({ coverAssetId, canRead, coverColor }) {
+  const [failed, setFailed] = useState(false);
+  useEffect(() => { setFailed(false); }, [coverAssetId]);
+  return <div className={`w-10 h-14 rounded-md bg-gradient-to-br ${coverColor} text-white grid place-items-center shrink-0 overflow-hidden`}>
+    {coverAssetId && canRead && !failed ? <img src={mediaUrl(coverAssetId)} alt="" onError={() => setFailed(true)} className="w-full h-full object-cover" loading="lazy" /> : <BookOpen aria-hidden="true" className="w-4 h-4" />}
   </div>;
 }
 
@@ -77,7 +84,7 @@ export const AdminBooksPage = () => {
   const removeDialog = useDialogFocus(Boolean(removeConfirm), () => setRemoveConfirm(null));
 
   return (
-    <div className="space-y-6 text-[#0A1D3F]">
+    <div className="space-y-4 text-[#0A1D3F]">
       {loadError && <p role="alert">{loadError}</p>}
       {toastMessage && (
         <div role="status" className="fixed top-20 right-6 left-6 sm:left-auto z-50 bg-[#0A1D3F] text-white px-4 py-3 rounded-2xl shadow-xl border border-[#FF8A00] flex items-center gap-2">
@@ -98,18 +105,18 @@ export const AdminBooksPage = () => {
         <Stat label="Off sale" value={summary?.offSale} detail="Owners still read" />
       </div>
 
-      <div className="admin-card p-4 space-y-3">
-        <div className="flex flex-col sm:flex-row gap-3">
+      <div className="admin-card p-3 space-y-2.5">
+        <div className="flex flex-col sm:flex-row gap-2.5">
           <div className="relative flex-1">
             <Search aria-hidden="true" className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
             <AdminInput type="text" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="Search by title, author, board, or subject..." />
           </div>
           {filtersActive && <button type="button" onClick={clearFilters} className="admin-btn admin-btn-ghost shrink-0">Clear Filters</button>}
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 pt-1">
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
           {[
             ['Board', filterBoard, setFilterBoard, [['All', 'All Boards'], ...tax.board.map(t => [t.id, t.label])]],
-            ['Class', filterClass, setFilterClass, [['All', 'All Classes'], ...tax.class.map(t => [t.label, 'Class ' + t.label])]],
+            ['Class', filterClass, setFilterClass, [['All', 'All Classes'], ...tax.class.map(t => [t.label, formatClassLabel(t.label)])]],
             ['Subject', filterSubject, setFilterSubject, [['All', 'All Subjects'], ...tax.subject.map(t => [t.id, t.label])]],
             ['Pricing', filterType, setFilterType, [['all', 'All Types'], ['free', 'Free Only'], ['paid', 'Paid Only']]],
             ['Status', filterStatus, setFilterStatus, [['all', 'All Statuses'], ['published', 'Live'], ['draft', 'Drafts & off sale'], ['archived', 'Removed']]]
@@ -133,9 +140,7 @@ export const AdminBooksPage = () => {
                   return <tr key={book.id}>
                     <td className="min-w-[16rem]">
                       <div className="flex items-start gap-3">
-                        <div className={`w-10 h-14 rounded-md bg-gradient-to-br ${book.coverColor} text-white grid place-items-center shrink-0 overflow-hidden`}>
-                          {book.coverAssetId && can('media.read') ? <img src={mediaUrl(book.coverAssetId)} alt="" className="w-full h-full object-cover" loading="lazy" /> : <BookOpen aria-hidden="true" className="w-4 h-4" />}
-                        </div>
+                        <BookThumb coverAssetId={book.coverAssetId} canRead={can('media.read')} coverColor={book.coverColor} />
                         <div className="min-w-0">
                           <h4 className="font-bold break-words">{book.title}</h4>
                           {book.author && <p className="text-sm">{book.author}</p>}
@@ -155,7 +160,7 @@ export const AdminBooksPage = () => {
                     </td>
                     <td className="min-w-[9rem]">
                       <span className="font-semibold block">{book.board || 'No board'}</span>
-                      <span className="text-sm text-[#53647c] block">{[book.class && 'Class ' + book.class, book.subject, book.language].filter(Boolean).join(' · ') || 'Not classified'}</span>
+                      <span className="text-sm text-[#53647c] block">{[formatClassLabel(book.class), book.subject, book.language].filter(Boolean).join(' · ') || 'Not classified'}</span>
                     </td>
                     <td className="whitespace-nowrap">
                       <span className="font-bold block">{rupees(book.priceMinor)}</span>
@@ -181,7 +186,7 @@ export const AdminBooksPage = () => {
       <Pagination meta={meta} onChange={setPage} loading={loading} />
 
       {review && <BookReviewDialog bookId={review.id} intent={review.intent} onClose={() => setReview(null)} onEdit={row => { setReview(null); handleOpenEditModal(bookDTO(row)); }} onPublished={message => { setReview(null); showToast(message); loadBooks(); }} />}
-      {modalOpen && <BookEditor book={editingBook} onClose={() => setModalOpen(false)} onSaved={() => { setModalOpen(false); showToast(editingBook?.status === 'published' ? 'Changes saved. Publish them when ready.' : 'Book draft saved.'); loadBooks(); }} />}
+      {modalOpen && <BookEditor book={editingBook} onClose={() => setModalOpen(false)} onSaved={(saved, reviewNow) => { setModalOpen(false); loadBooks(); if (reviewNow && saved?.id) { setReview({ id: saved.id, intent: 'publish' }); } else { showToast(editingBook?.status === 'published' ? 'Changes saved. Publish them when ready.' : 'Book draft saved.'); } }} />}
 
       {removeConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
